@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { TYPES_PAPIER, type Papier } from '@/lib/papiers-travail'
 
-const inp = 'px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs w-full'
+const inp = 'px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs w-full'
 const VIDE = { type: 'TEST', titre: '', objectif: '', travaux: '', conclusion: '', reference: '' }
 const BADGE: Record<string, string> = {
   BROUILLON: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200',
@@ -51,7 +51,7 @@ export default function PapiersTravailPanel({ missionId, readOnly = false }: { m
       </div>
       {error && <p role="alert" className="text-red-700">{error}</p>}
       {form && (
-        <div className="space-y-1.5 rounded border border-gray-200 p-2 dark:border-gray-700">
+        <div className="space-y-1.5 rounded-sm border border-gray-200 p-2 dark:border-gray-700">
           <select aria-label={l.papierType} className={inp} value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
             {TYPES_PAPIER.map(x => <option key={x} value={x}>{typeLabel(x)}</option>)}
           </select>
@@ -71,7 +71,7 @@ export default function PapiersTravailPanel({ missionId, readOnly = false }: { m
         {papiers.map(p => {
           const mien = p.preparePar === moi
           return (
-            <li key={p.id} className="rounded border border-gray-200 p-2 dark:border-gray-700">
+            <li key={p.id} className="rounded-sm border border-gray-200 p-2 dark:border-gray-700">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-medium text-gray-800 dark:text-gray-100">{p.titre}</span>
                 <span className="text-gray-400">{typeLabel(p.type)}</span>

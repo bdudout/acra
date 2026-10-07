@@ -27,7 +27,7 @@ export default function EntiteLiens({ tier, services, contrats, contratsLibres, 
   const titre = `${c.grapheTitre} — ${tier.nom}`
 
   return (
-    <div className="mb-3 space-y-3 rounded border border-gray-200 p-3 dark:border-gray-700">
+    <div className="mb-3 space-y-3 rounded-sm border border-gray-200 p-3 dark:border-gray-700">
       <figure>
         <svg role="img" aria-label={titre} viewBox={`0 0 ${g.largeur} ${g.hauteur}`} className="w-full max-w-2xl" style={{ maxHeight: 320 }}>
           {g.liens.map(l => { const a = parId.get(l.de)!, b = parId.get(l.vers)!; return <line key={`${l.de}-${l.vers}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="currentColor" className="text-gray-300 dark:text-gray-600" strokeWidth={1.5} /> })}

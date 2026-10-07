@@ -89,11 +89,11 @@ export default function ConformiteGauges({ conforme, pertinents, couvDerog, couv
           { c: C_PARTIEL, l: labels.legendPartiel },
         ].map(x => (
           <li key={x.l} className="flex items-center gap-1.5">
-            <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: x.c }} aria-hidden="true" />{x.l}
+            <span className="inline-block h-2.5 w-2.5 rounded-xs" style={{ backgroundColor: x.c }} aria-hidden="true" />{x.l}
           </li>
         ))}
         <li className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-gray-200 dark:bg-gray-700" aria-hidden="true" />{labels.legendReste}
+          <span className="inline-block h-2.5 w-2.5 rounded-xs bg-gray-200 dark:bg-gray-700" aria-hidden="true" />{labels.legendReste}
         </li>
       </ul>
     </div>

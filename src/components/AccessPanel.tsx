@@ -303,7 +303,7 @@ export default function AccessPanel({
 
           {/* Propriétaire */}
           <div className="flex items-center gap-3 p-3 bg-ebios-50 rounded-lg border border-ebios-100 mb-3">
-            <div className="w-8 h-8 rounded-full bg-ebios-500 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-ebios-500 text-white flex items-center justify-center text-sm font-bold shrink-0">
               {(ownerName ?? ownerEmail ?? '?')[0].toUpperCase()}
             </div>
             <div className="flex-1">
@@ -325,22 +325,22 @@ export default function AccessPanel({
             <div className="space-y-2 mb-4">
               {accès.map(a => (
                 <div key={a.id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-lg hover:bg-gray-50">
-                  <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-bold shrink-0">
                     {(a.user.name ?? a.user.email)[0].toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-gray-800 truncate">{a.user.name || a.user.email}</div>
                     <div className="text-xs text-gray-500 truncate">{a.user.email}</div>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${ROLE_COLORS[a.user.role]}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${ROLE_COLORS[a.user.role]}`}>
                     {ROLE_LABELS[a.user.role]}
                   </span>
-                  <span className="text-xs text-gray-500 flex-shrink-0">
+                  <span className="text-xs text-gray-500 shrink-0">
                     {permLabel(a.permission)}
                   </span>
                   <button
                     onClick={() => handleRemove(a.userId)}
-                    className="text-gray-500 hover:text-red-500 transition-colors flex-shrink-0 ml-1"
+                    className="text-gray-500 hover:text-red-500 transition-colors shrink-0 ml-1"
                     title={t.access.removeTitle}
                   >
                     ✕
@@ -403,7 +403,7 @@ export default function AccessPanel({
                 <button
                   onClick={handleInvite}
                   disabled={inviting || !inviteEmail.trim()}
-                  className="btn-primary text-sm disabled:opacity-50 flex-shrink-0"
+                  className="btn-primary text-sm disabled:opacity-50 shrink-0"
                 >
                   {inviting ? t.access.inviting : t.access.inviteBtn}
                 </button>

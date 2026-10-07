@@ -83,7 +83,7 @@ export default function QuestionnaireModeles({ conformiteActive }: { conformiteA
     await charger()
   }
 
-  const inp = 'mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100'
+  const inp = 'mt-1 w-full rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100'
   const lbl = 'block text-xs text-gray-600 dark:text-gray-300'
 
   return <section className="space-y-3">
@@ -102,7 +102,7 @@ export default function QuestionnaireModeles({ conformiteActive }: { conformiteA
             <option value="">{q.none}</option>{referentiels.map(r => <option key={r.code} value={r.code}>{r.nom}</option>)}
           </select></label>
         {refCode && <fieldset><legend className={lbl}>{q.exigences} ({exigenceRefs.length})</legend>
-          <div className="mt-1 max-h-64 overflow-y-auto rounded border border-gray-200 p-2 dark:border-gray-700">
+          <div className="mt-1 max-h-64 overflow-y-auto rounded-sm border border-gray-200 p-2 dark:border-gray-700">
             {(exigences[refCode] ?? []).map(e => <label key={e.ref} className="flex gap-2 py-0.5 text-sm"><input type="checkbox" checked={exigenceRefs.includes(e.ref)}
               onChange={() => setExigenceRefs(rs => (rs.includes(e.ref) ? rs.filter(x => x !== e.ref) : [...rs, e.ref]))} /><span><span className="text-gray-500">{e.ref}</span> {e.nom}</span></label>)}
           </div></fieldset>}

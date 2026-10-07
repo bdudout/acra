@@ -24,7 +24,7 @@ function Critere({ titre, question }: { titre: string; question: string }) {
 function Groupe({ titre, gauche, droite }: { titre: string; gauche: { t: string; q: string }; droite: { t: string; q: string } }) {
   return (
     <div>
-      <div className="mb-1.5 rounded bg-slate-700 py-1 text-[10px] font-semibold uppercase tracking-wide text-white dark:bg-slate-600">{titre}</div>
+      <div className="mb-1.5 rounded-sm bg-slate-700 py-1 text-[10px] font-semibold uppercase tracking-wide text-white dark:bg-slate-600">{titre}</div>
       <div className="flex items-stretch gap-1.5">
         <Critere titre={gauche.t} question={gauche.q} />
         <span className="flex items-center text-lg font-bold text-gray-400 dark:text-gray-500" aria-hidden="true">×</span>

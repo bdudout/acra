@@ -9,7 +9,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import { CONCEPTIONS } from '@/lib/controle-l3'
 
 export interface ConceptionValue { statut: string; commentaire?: string; evalueLe?: string }
-const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
 
 export default function ConceptionPanel({ conception, canEdit, busy, onSave }: {
   conception: ConceptionValue | null; canEdit: boolean; busy: boolean; onSave: (v: { statut: string; commentaire?: string } | null) => void
@@ -36,7 +36,7 @@ export default function ConceptionPanel({ conception, canEdit, busy, onSave }: {
             {CONCEPTIONS.map(x => <option key={x} value={x}>{labels[x]}</option>)}
           </select>
         </label>
-        <label className="text-xs text-gray-500 dark:text-gray-400 flex-1 min-w-[12rem]">{c.ctl_conceptionCommentaire}
+        <label className="text-xs text-gray-500 dark:text-gray-400 flex-1 min-w-48">{c.ctl_conceptionCommentaire}
           <input aria-label={c.ctl_conceptionCommentaire} value={commentaire} maxLength={2000} onChange={e => setCommentaire(e.target.value)} className={`${inp} block w-full mt-1`} />
         </label>
         <button type="button" disabled={busy} onClick={() => onSave(statut ? { statut, ...(commentaire.trim() ? { commentaire: commentaire.trim() } : {}) } : null)} className="btn-secondary text-xs disabled:opacity-50">{c.save}</button>

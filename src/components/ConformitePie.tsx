@@ -70,7 +70,7 @@ export default function ConformitePie({ stats, frameworkNom, title, rateLabel, l
             if (!label || (seg.key === 'deroge' && (stats.deroge ?? 0) === 0)) return null
             return (
               <li key={seg.key} className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: seg.color }} />
+                <span className="h-2.5 w-2.5 rounded-xs shrink-0" style={{ backgroundColor: seg.color }} />
                 <span className="text-gray-600 flex-1">{label}</span>
                 <span className="font-semibold text-gray-800">{stats[seg.key] as number}</span>
               </li>

@@ -151,7 +151,7 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
     await fetch(`/api/risk-items/${id}`, { method: 'DELETE' }); reload()
   }
 
-  const sel = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+  const sel = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
   // Sélecteur de cotation : niveaux et libellés de l'ÉCHELLE CONFIGURÉE (pas 1-5 codé en dur).
   const cote = (v: string, set: (s: string) => void, ph: string, levels: EchelleNiveau[]) => (
     <select value={v} onChange={e => set(e.target.value)} className={sel}>
@@ -266,7 +266,7 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
                 <tr className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40">
                   <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
                     {x.intitule}
-                    {x.provenance !== 'MANUEL' && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-ebios-100 text-ebios-700">{x.provenance}</span>}
+                    {x.provenance !== 'MANUEL' && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-sm bg-ebios-100 text-ebios-700">{x.provenance}</span>}
                     {x.entite && <span className="block text-xs text-gray-400">{x.entite}</span>}
                   </td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{taxoLabel(x.taxonomieCode)}</td>

@@ -54,7 +54,7 @@ export default function QualificationQuestionnaireEditor({ initial, builtins }: 
     if (res.ok) { const d = await res.json().catch(() => null); if (d?.qualificationQuestionnaire) { setOverrides(d.qualificationQuestionnaire.overrides ?? {}); setCustom(d.qualificationQuestionnaire.custom ?? []); setRiskRules(d.qualificationQuestionnaire.riskRules ?? DEFAULT_QUALIFICATION_RISK_RULES) } setSaved(true) }
   }
 
-  const inp = 'px-2 py-1 text-sm border border-gray-300 rounded bg-white text-gray-900'
+  const inp = 'px-2 py-1 text-sm border border-gray-300 rounded-sm bg-white text-gray-900'
 
   // Questions sélectionnables dans les règles de risques : natives actives (libellé
   // surchargé ou i18n, options traduites) + questions personnalisées.
@@ -112,7 +112,7 @@ export default function QualificationQuestionnaireEditor({ initial, builtins }: 
         )}
         {/* Ajout */}
         <div className="flex flex-wrap items-end gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
-          <label className="flex flex-col gap-1 text-xs text-gray-500 flex-1 min-w-[12rem]">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 flex-1 min-w-48">
             <span>{e.newLabel}</span>
             <input className={inp} value={nLabel} onChange={ev => setNLabel(ev.target.value)} placeholder={e.newLabelPh} />
           </label>
@@ -124,7 +124,7 @@ export default function QualificationQuestionnaireEditor({ initial, builtins }: 
             </select>
           </label>
           {nType === 'choice' && (
-            <label className="flex flex-col gap-1 text-xs text-gray-500 flex-1 min-w-[12rem]">
+            <label className="flex flex-col gap-1 text-xs text-gray-500 flex-1 min-w-48">
               <span>{e.newOptions}</span>
               <input className={inp} value={nOpts} onChange={ev => setNOpts(ev.target.value)} placeholder={e.newOptionsPh} />
             </label>

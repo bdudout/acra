@@ -56,7 +56,7 @@ export default function EntitySyncManager({ orgId }: { orgId: string }) {
       </>}
     </div>
     <div className="flex flex-wrap gap-2"><button type="button" onClick={save} disabled={busy || !config.endpoint.trim()} className="btn-secondary text-sm">{e.syncSave}</button><button type="button" onClick={preview} disabled={busy || !config.endpoint.trim()} className="btn-primary text-sm">{e.syncPreview}</button></div>
-    {entities.length > 0 && <div className="rounded border border-gray-200 p-3 space-y-2"><button type="button" onClick={() => setSelected(entities)} className="text-xs text-ebios-700 underline">{e.syncSelectAll}</button>{entities.map(name => <label key={name} className="block text-sm text-gray-700"><input type="checkbox" checked={selected.includes(name)} onChange={() => toggle(name)} className="mr-2" />{name}</label>)}<button type="button" onClick={importSelection} disabled={busy || !selected.length} className="btn-primary text-sm">{e.syncImport}</button></div>}
+    {entities.length > 0 && <div className="rounded-sm border border-gray-200 p-3 space-y-2"><button type="button" onClick={() => setSelected(entities)} className="text-xs text-ebios-700 underline">{e.syncSelectAll}</button>{entities.map(name => <label key={name} className="block text-sm text-gray-700"><input type="checkbox" checked={selected.includes(name)} onChange={() => toggle(name)} className="mr-2" />{name}</label>)}<button type="button" onClick={importSelection} disabled={busy || !selected.length} className="btn-primary text-sm">{e.syncImport}</button></div>}
     {entities.length === 0 && notice === '' && <p className="text-xs text-gray-400">{e.syncNone}</p>}
     {notice && <p role="status" className="text-sm text-gray-700">{notice}</p>}
   </section>

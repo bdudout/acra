@@ -109,9 +109,9 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
         <div className="flex items-center gap-2 py-2 border-b border-gray-100 dark:border-gray-800" style={{ paddingLeft: `${depth * 20}px` }}>
           <span className="text-gray-400 text-xs">{depth > 0 ? '↳' : '▸'}</span>
           <span className="text-sm font-medium text-gray-800 dark:text-gray-100 flex-1">{n.nom}</span>
-          {n.criticite != null && <span className="text-[11px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">{p.criticiteShort} {n.criticite}</span>}
+          {n.criticite != null && <span className="text-[11px] px-1.5 py-0.5 rounded-sm bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">{p.criticiteShort} {n.criticite}</span>}
           {n.criticiteDora && (
-            <span className={`text-[11px] px-1.5 py-0.5 rounded font-medium ${DORA_STYLE[n.criticiteDora as CriticiteDora] ?? 'bg-gray-100 text-gray-700'}`} title={p.criticiteDoraHint}>
+            <span className={`text-[11px] px-1.5 py-0.5 rounded-sm font-medium ${DORA_STYLE[n.criticiteDora as CriticiteDora] ?? 'bg-gray-100 text-gray-700'}`} title={p.criticiteDoraHint}>
               {p.fciBadge} · {p.doraLevels[n.criticiteDora as CriticiteDora] ?? n.criticiteDora}
             </span>
           )}
@@ -122,7 +122,7 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
             const manquants = champsManquantsProcessus(n)
             if (!manquants.length) return null
             const detail = manquants.map(c => p.champs[c]).join(', ')
-            return <span data-testid="processus-a-completer" className="text-[11px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-300" title={p.aCompleterHint.replace('{champs}', detail)} aria-label={p.aCompleterHint.replace('{champs}', detail)}>{p.aCompleter}</span>
+            return <span data-testid="processus-a-completer" className="text-[11px] px-1.5 py-0.5 rounded-sm bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-300" title={p.aCompleterHint.replace('{champs}', detail)} aria-label={p.aCompleterHint.replace('{champs}', detail)}>{p.aCompleter}</span>
           })()}
           {canEdit && <>
             <button onClick={() => startEdit(n)} className="text-xs text-ebios-600 hover:underline">{p.edit}</button>
@@ -152,13 +152,13 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
           <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{editId ? p.editTitle : p.addTitle}</p>
           {error && <p className="text-xs text-red-600">{error}</p>}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))} placeholder={p.nomPlaceholder} className="px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
-            <select value={form.parentId} onChange={e => setForm(f => ({ ...f, parentId: e.target.value }))} className="px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+            <input value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))} placeholder={p.nomPlaceholder} className="px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+            <select value={form.parentId} onChange={e => setForm(f => ({ ...f, parentId: e.target.value }))} className="px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
               <option value="">{p.noParent}</option>
               {parentOptions.map(x => <option key={x.id} value={x.id}>{x.nom}</option>)}
             </select>
-            <input value={form.proprietaire} onChange={e => setForm(f => ({ ...f, proprietaire: e.target.value }))} placeholder={p.ownerPlaceholder} className="px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
-            <select value={form.criticite} onChange={e => setForm(f => ({ ...f, criticite: e.target.value }))} className="px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+            <input value={form.proprietaire} onChange={e => setForm(f => ({ ...f, proprietaire: e.target.value }))} placeholder={p.ownerPlaceholder} className="px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+            <select value={form.criticite} onChange={e => setForm(f => ({ ...f, criticite: e.target.value }))} className="px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
               <option value="">{p.criticiteNone}</option>
               {[1, 2, 3, 4].map(n => <option key={n} value={n}>{p.criticiteShort} {n}</option>)}
             </select>
@@ -168,7 +168,7 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-gray-100 dark:border-gray-800">
             <label className="flex flex-col gap-1 min-w-0">
               <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{p.criticiteDoraLabel}</span>
-              <select value={form.criticiteDora} onChange={e => setForm(f => ({ ...f, criticiteDora: e.target.value }))} className="px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+              <select value={form.criticiteDora} onChange={e => setForm(f => ({ ...f, criticiteDora: e.target.value }))} className="px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
                 <option value="">{p.criticiteDoraNone}</option>
                 {CRITICITES_DORA.map(c => <option key={c} value={c}>{p.doraLevels[c]}</option>)}
               </select>
@@ -176,12 +176,12 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
             </label>
             <label className="flex flex-col gap-1 min-w-0">
               <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{p.rtoLabel}</span>
-              <input type="number" min={0} step={0.25} value={form.rtoHeures} onChange={e => setForm(f => ({ ...f, rtoHeures: e.target.value }))} placeholder={p.dureeHeuresPlaceholder} className="px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+              <input type="number" min={0} step={0.25} value={form.rtoHeures} onChange={e => setForm(f => ({ ...f, rtoHeures: e.target.value }))} placeholder={p.dureeHeuresPlaceholder} className="px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
               <span className="text-[11px] text-gray-400">{form.rtoHeures.trim() !== '' && Number.isFinite(Number(form.rtoHeures)) ? `${p.dureeApercu} ${formatDuree(heuresToMinutes(form.rtoHeures), p.dureeUnites)}` : p.rtoHint}</span>
             </label>
             <label className="flex flex-col gap-1 min-w-0">
               <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{p.rpoLabel}</span>
-              <input type="number" min={0} step={0.25} value={form.rpoHeures} onChange={e => setForm(f => ({ ...f, rpoHeures: e.target.value }))} placeholder={p.dureeHeuresPlaceholder} className="px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+              <input type="number" min={0} step={0.25} value={form.rpoHeures} onChange={e => setForm(f => ({ ...f, rpoHeures: e.target.value }))} placeholder={p.dureeHeuresPlaceholder} className="px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
               <span className="text-[11px] text-gray-400">{form.rpoHeures.trim() !== '' && Number.isFinite(Number(form.rpoHeures)) ? `${p.dureeApercu} ${formatDuree(heuresToMinutes(form.rpoHeures), p.dureeUnites)}` : p.rpoHint}</span>
             </label>
           </div>

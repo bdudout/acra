@@ -83,7 +83,7 @@ export default function McpActivity() {
     { label: a.erreurs, v: data.totaux.erreurs },
     { label: a.enAttente, v: data.totaux.enAttente },
   ]
-  const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+  const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
 
   return (
     <div className="space-y-6">
@@ -118,10 +118,10 @@ export default function McpActivity() {
         {secret && (
           <div className="mb-4 rounded-lg border border-ebios-300 bg-ebios-50 dark:bg-ebios-500/10 dark:border-ebios-500/30 p-3 space-y-2">
             <p className="text-xs font-medium text-ebios-800 dark:text-ebios-200">{a.secretUneFois}</p>
-            <code className="block text-xs break-all bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 font-mono">{secret}</code>
+            <code className="block text-xs break-all bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-sm px-2 py-1.5 font-mono">{secret}</code>
             <p className="text-xs text-gray-600 dark:text-gray-300">{a.connexion}</p>
             <div className="flex items-center gap-2">
-              <code className="flex-1 text-xs break-all bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 font-mono">{commande}</code>
+              <code className="flex-1 text-xs break-all bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-sm px-2 py-1.5 font-mono">{commande}</code>
               <button onClick={copier} className="btn-secondary text-xs inline-flex items-center gap-1">{copie ? <Check size={14} /> : <Copy size={14} />} {copie ? a.copie : a.copier}</button>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">{a.autresClients.replace('{url}', urlMcp)}</p>

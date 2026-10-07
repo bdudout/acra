@@ -13,7 +13,7 @@ describe('DemoBanner', () => {
 
   it('garde les informations et actions centrées, même sur petit écran', () => {
     render(<DemoBanner />)
-    expect(screen.getByTestId('demo-banner')).toHaveClass('bg-gradient-to-r')
+    expect(screen.getByTestId('demo-banner')).toHaveClass('bg-linear-to-r')
     expect(screen.getByTestId('demo-banner-content')).toHaveClass('justify-center')
     expect(screen.getByTestId('demo-banner-actions')).toHaveClass('justify-center')
   })

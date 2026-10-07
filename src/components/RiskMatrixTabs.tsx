@@ -57,7 +57,7 @@ export default function RiskMatrixTabs({
             onClick={() => setTab(key)}
             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
               tab === key
-                ? 'bg-white shadow-sm text-ebios-700 dark:bg-gray-700 dark:text-ebios-300'
+                ? 'bg-white shadow-xs text-ebios-700 dark:bg-gray-700 dark:text-ebios-300'
                 : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
             }`}
           >

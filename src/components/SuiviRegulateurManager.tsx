@@ -103,24 +103,24 @@ export default function SuiviRegulateurManager() {
 
       {constats.length > 0 && (
         <div className="card p-3 flex flex-wrap items-end gap-3" role="search" aria-label={s.filtres.search}>
-          <label className="flex-1 min-w-[14rem] text-xs text-gray-500 dark:text-gray-400">{s.filtres.search}
-            <input type="search" value={f.q ?? ''} onChange={e => setF({ ...f, q: e.target.value })} className="mt-1 w-full px-2.5 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+          <label className="flex-1 min-w-56 text-xs text-gray-500 dark:text-gray-400">{s.filtres.search}
+            <input type="search" value={f.q ?? ''} onChange={e => setF({ ...f, q: e.target.value })} className="mt-1 w-full px-2.5 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
           </label>
           <label className="text-xs text-gray-500 dark:text-gray-400">{s.filtres.statut}
-            <select value={f.statut ?? ''} onChange={e => setF({ ...f, statut: e.target.value || undefined })} className="mt-1 block px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+            <select value={f.statut ?? ''} onChange={e => setF({ ...f, statut: e.target.value || undefined })} className="mt-1 block px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
               <option value="">{s.filtres.tous}</option>
               {(Object.keys(s.statutOpt) as (keyof typeof s.statutOpt)[]).map(k => <option key={k} value={k}>{s.statutOpt[k]}</option>)}
             </select>
           </label>
           <label className="text-xs text-gray-500 dark:text-gray-400">{s.filtres.criticite}
-            <select value={f.criticite ?? ''} onChange={e => setF({ ...f, criticite: e.target.value || undefined })} className="mt-1 block px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+            <select value={f.criticite ?? ''} onChange={e => setF({ ...f, criticite: e.target.value || undefined })} className="mt-1 block px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
               <option value="">{s.filtres.tous}</option>
               {[4, 3, 2, 1].map(n => <option key={n} value={String(n)}>{n}</option>)}
               <option value="NONE">{s.filtres.none}</option>
             </select>
           </label>
           <label className="text-xs text-gray-500 dark:text-gray-400">{s.filtres.echeance}
-            <select value={f.echeance ?? ''} onChange={e => setF({ ...f, echeance: (e.target.value || undefined) as FiltresSuiviRegulateur['echeance'] })} className="mt-1 block px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+            <select value={f.echeance ?? ''} onChange={e => setF({ ...f, echeance: (e.target.value || undefined) as FiltresSuiviRegulateur['echeance'] })} className="mt-1 block px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
               <option value="">{s.filtres.tous}</option>
               {(['ECHUE', 'SOUS_30J', 'A_VENIR', 'SANS'] as const).map(k => <option key={k} value={k}>{s.filtres.echeanceOpt[k]}</option>)}
             </select>

@@ -172,7 +172,7 @@ export default function AdminDashboardPage() {
                 <p className="text-sm text-gray-500 italic text-center py-4">{t.adminDashboard.noEvents}</p>
               ) : stats?.recentEvents.map(ev => (
                 <div key={ev.id} className="flex items-start gap-3 py-1.5 border-b border-gray-50 last:border-0">
-                  {(() => { const AI = ACTION_ICONS[ev.action] ?? Pin; return <span className="flex-shrink-0 text-gray-500"><AI size={16} aria-hidden="true" /></span> })()}
+                  {(() => { const AI = ACTION_ICONS[ev.action] ?? Pin; return <span className="shrink-0 text-gray-500"><AI size={16} aria-hidden="true" /></span> })()}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-mono font-semibold text-gray-700">{ev.action}</span>

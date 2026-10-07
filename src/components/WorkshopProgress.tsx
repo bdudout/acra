@@ -44,7 +44,7 @@ export default function WorkshopProgress({ analyseId, current, completed }: Prop
               : t.workshop.statusLocked
 
             return (
-              <li key={a.num} className="flex items-center gap-2 flex-shrink-0">
+              <li key={a.num} className="flex items-center gap-2 shrink-0">
                 {i > 0 && (
                   <div
                     aria-hidden="true"
@@ -59,7 +59,7 @@ export default function WorkshopProgress({ analyseId, current, completed }: Prop
                   tabIndex={!accessible ? -1 : undefined}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                     active
-                      ? 'bg-ebios-600 text-white shadow-sm'
+                      ? 'bg-ebios-600 text-white shadow-xs'
                       : done
                       ? 'bg-ebios-100 text-ebios-700 hover:bg-ebios-200'
                       : accessible

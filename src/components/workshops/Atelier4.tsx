@@ -241,7 +241,7 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode, e
     <div className="space-y-6">
       {flashMode && (
         <div className="bg-amber-50 border border-amber-300 rounded-xl px-5 py-3 flex items-start gap-3">
-          <span className="text-xl flex-shrink-0" aria-hidden="true"><Zap size={20} aria-hidden="true" /></span>
+          <span className="text-xl shrink-0" aria-hidden="true"><Zap size={20} aria-hidden="true" /></span>
           <p className="text-sm text-amber-800">{t.workshop.a4.flashHint}</p>
         </div>
       )}
@@ -277,7 +277,7 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode, e
                 </span>
                 <span className="text-xs text-gray-500">{ops.length} {t.workshop.a4.stratLinkedLabel}</span>
                 <button onClick={() => addScenario(ss)}
-                  className="text-xs px-3 py-1 bg-ebios-600 text-white rounded hover:bg-ebios-700">
+                  className="text-xs px-3 py-1 bg-ebios-600 text-white rounded-sm hover:bg-ebios-700">
                   {t.workshop.a4.stratCreateBtn}
                 </button>
               </div>
@@ -331,8 +331,8 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode, e
                     </div>
                   )}
                 </div>
-                <span className="text-xs text-gray-500 flex-shrink-0">{(s.actionsElementaires || []).length} {t.workshop.a4.scenAE}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium border flex-shrink-0 ${getNiveauRisqueColor(s.vraisemblance * s.gravite)}`}>
+                <span className="text-xs text-gray-500 shrink-0">{(s.actionsElementaires || []).length} {t.workshop.a4.scenAE}</span>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium border shrink-0 ${getNiveauRisqueColor(s.vraisemblance * s.gravite)}`}>
                   {s.vraisemblance * s.gravite}/16
                 </span>
                 <span className="text-gray-500" aria-hidden="true">{expanded === s.id ? '▲' : '▼'}</span>
@@ -404,9 +404,9 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode, e
                           {s.actionsElementaires.map((a: any, idx: number) => {
                             const type = TYPES_ACTION_ELEMENTAIRE.find(tae => tae.value === a.type)
                             return (
-                              <div key={a.id} className="flex items-center gap-1 flex-shrink-0">
+                              <div key={a.id} className="flex items-center gap-1 shrink-0">
                                 {idx > 0 && (
-                                  <span className="text-[10px] font-semibold text-indigo-600 px-1 rounded bg-indigo-50">
+                                  <span className="text-[10px] font-semibold text-indigo-600 px-1 rounded-sm bg-indigo-50">
                                     {normalizeOperateur(a.operateur)}
                                   </span>
                                 )}
@@ -423,13 +423,13 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode, e
                             const type = TYPES_ACTION_ELEMENTAIRE.find(tae => tae.value === a.type)
                             return (
                               <div key={a.id} className="flex gap-2 items-start p-3">
-                                <div className="flex flex-col items-center gap-1 flex-shrink-0 w-9">
+                                <div className="flex flex-col items-center gap-1 shrink-0 w-9">
                                   {/* Opérateur logique ET/OU avec l'étape précédente (EXI_M4_06) */}
                                   {idx > 0 && (
                                     <select value={normalizeOperateur(a.operateur)}
                                       aria-label={t.workshop.a4.aeOperateurLabel}
                                       onChange={e => updateAction(s.id, a.id, 'operateur', e.target.value)}
-                                      className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded px-0.5 py-0.5">
+                                      className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-sm px-0.5 py-0.5">
                                       {OPERATEURS_AE.map(op => <option key={op} value={op}>{op}</option>)}
                                     </select>
                                   )}

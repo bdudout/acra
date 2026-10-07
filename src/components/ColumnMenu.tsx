@@ -61,7 +61,7 @@ export default function ColumnMenu({
           <span className={`text-[9px] leading-none ${active ? 'opacity-100' : 'opacity-0 group-hover:opacity-40'}`}>{ind || '▲'}</span>
         </button>
         <button type="button" aria-label={tt.menu} title={tt.menu} onClick={() => setOpen(o => !o)}
-          className={`rounded px-0.5 text-[10px] leading-none ${isFiltered ? 'text-ebios-600 dark:text-ebios-300' : 'text-gray-300 hover:text-gray-600 dark:hover:text-gray-200'}`}>
+          className={`rounded-sm px-0.5 text-[10px] leading-none ${isFiltered ? 'text-ebios-600 dark:text-ebios-300' : 'text-gray-300 hover:text-gray-600 dark:hover:text-gray-200'}`}>
           {isFiltered ? '▼●' : '▾'}
         </button>
       </div>
@@ -69,15 +69,15 @@ export default function ColumnMenu({
       {open && (
         <div className="absolute z-20 left-0 top-full mt-1 w-56 rounded-md border border-gray-200 bg-white shadow-lg text-xs font-normal normal-case tracking-normal text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200">
           <div className="p-1 border-b border-gray-100 dark:border-gray-700">
-            <button type="button" onClick={() => { onSortDir(sortKey, 'asc'); setOpen(false) }} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-50 dark:hover:bg-gray-700">{tt.sortAsc}</button>
-            <button type="button" onClick={() => { onSortDir(sortKey, 'desc'); setOpen(false) }} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-50 dark:hover:bg-gray-700">{tt.sortDesc}</button>
-            {active && <button type="button" onClick={() => { onSortClear(); setOpen(false) }} className="block w-full text-left px-2 py-1 rounded text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">{tt.sortNone}</button>}
+            <button type="button" onClick={() => { onSortDir(sortKey, 'asc'); setOpen(false) }} className="block w-full text-left px-2 py-1 rounded-sm hover:bg-gray-50 dark:hover:bg-gray-700">{tt.sortAsc}</button>
+            <button type="button" onClick={() => { onSortDir(sortKey, 'desc'); setOpen(false) }} className="block w-full text-left px-2 py-1 rounded-sm hover:bg-gray-50 dark:hover:bg-gray-700">{tt.sortDesc}</button>
+            {active && <button type="button" onClick={() => { onSortClear(); setOpen(false) }} className="block w-full text-left px-2 py-1 rounded-sm text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">{tt.sortNone}</button>}
           </div>
           {filterable && (
             <div className="p-1">
               <div className="flex items-center gap-1 px-1 pb-1">
                 <input value={q} onChange={e => setQ(e.target.value)} placeholder={tt.search}
-                  className="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 rounded px-1.5 py-1 text-xs bg-white dark:bg-gray-900" />
+                  className="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 rounded-sm px-1.5 py-1 text-xs bg-white dark:bg-gray-900" />
               </div>
               <div className="flex items-center justify-between px-1 pb-1 text-[11px] text-ebios-600 dark:text-ebios-300">
                 <button type="button" onClick={() => onClearFilter?.(sortKey)} className="hover:underline">{tt.selectAll}</button>
@@ -86,7 +86,7 @@ export default function ColumnMenu({
               </div>
               <ul className="max-h-44 overflow-auto">
                 {shown.map(v => (
-                  <li key={v} className="group flex items-center gap-1.5 px-1 py-0.5 rounded hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <li key={v} className="group flex items-center gap-1.5 px-1 py-0.5 rounded-sm hover:bg-gray-50 dark:hover:bg-gray-700">
                     <input type="checkbox" checked={isAllowed(v)} onChange={() => onToggle?.(sortKey, v)} className="accent-ebios-600" />
                     <span className="flex-1 truncate">{v}</span>
                     <button type="button" onClick={() => onOnly?.(sortKey, v)} className="opacity-0 group-hover:opacity-100 text-[10px] text-ebios-600 dark:text-ebios-300 hover:underline">{tt.onlyThis}</button>

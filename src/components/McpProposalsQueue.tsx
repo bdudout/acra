@@ -95,9 +95,9 @@ export default function McpProposalsQueue() {
                 <p className="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center gap-1.5 mb-1">
                   <Bot size={14} aria-hidden="true" /> {kind} · {p.ancreNom ?? `${p.targetType} ${p.targetId.slice(0, 8)}`} · {jour(p.createdAt)}
                 </p>
-                <p className="font-medium text-gray-800 dark:text-gray-100 break-words">{label}</p>
+                <p className="font-medium text-gray-800 dark:text-gray-100 wrap-break-word">{label}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{detail}</p>
-                {p.payload.description && <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 break-words">{p.payload.description}</p>}
+                {p.payload.description && <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 wrap-break-word">{p.payload.description}</p>}
                 {erreurs[p.id] && <p role="alert" className="text-sm text-red-600 dark:text-red-400 mt-2">{erreurs[p.id]}</p>}
               </div>
               <div className="flex items-center gap-2 shrink-0">

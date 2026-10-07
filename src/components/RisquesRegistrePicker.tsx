@@ -31,9 +31,9 @@ export default function RisquesRegistrePicker({ risks, value, onChange }: { risk
         </div>
       )}
       <input type="search" aria-label={n.rechercherRisque} placeholder={n.rechercherRisque} value={q} onChange={e => setQ(e.target.value)}
-        className="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600" />
+        className="w-full rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600" />
       {visibles.length === 0 ? <p className="text-xs italic text-gray-400">{n.aucunRisqueTrouve}</p> : (
-        <ul className="max-h-48 overflow-y-auto rounded border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800">
+        <ul className="max-h-48 overflow-y-auto rounded-sm border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800">
           {visibles.map(r => (
             <li key={r.id}>
               <label className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 dark:text-gray-200">

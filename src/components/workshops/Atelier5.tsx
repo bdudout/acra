@@ -443,7 +443,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
           { id: 'synthese', label: <><BarChart3 size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" />{t.workshop.a5.tabPlan}</> },
         ].map(tabItem => (
           <button key={tabItem.id} onClick={() => setTab(tabItem.id as any)}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${tab === tabItem.id ? 'bg-white shadow-sm text-ebios-700' : 'text-gray-600'}`}>
+            className={`flex-1 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${tab === tabItem.id ? 'bg-white shadow-xs text-ebios-700' : 'text-gray-600'}`}>
             {tabItem.label}
           </button>
         ))}
@@ -482,7 +482,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
                         <span className="text-xs text-green-600 font-medium">{t.workshop.a5.soImported}</span>
                       ) : (
                         <button onClick={() => addRisque(so)}
-                          className="text-xs px-3 py-1 bg-ebios-600 text-white rounded hover:bg-ebios-700">
+                          className="text-xs px-3 py-1 bg-ebios-600 text-white rounded-sm hover:bg-ebios-700">
                           {t.workshop.a5.soImportBtn}
                         </button>
                       )}
@@ -613,7 +613,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
                               {t.workshop.a5.stratConseil[r.strategie as keyof typeof t.workshop.a5.stratConseil]}
                             </p>
                             {(r.strategie === 'ACCEPTER' || r.strategie === 'TRANSFERER' || r.strategie === 'REFUSER') && (
-                              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded p-2 mt-1.5">
+                              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-sm p-2 mt-1.5">
                                 <ClipboardList size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {(t.workshop.a5.stratPlanAction as Record<string, string>)[r.strategie]}
                               </p>
                             )}
@@ -794,16 +794,16 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
                     return (
                       <li key={nc.ref} className="flex items-start justify-between gap-2">
                         <span className="text-sm text-gray-700 flex gap-2">
-                          <span className={`mt-1.5 h-2 w-2 rounded-full flex-shrink-0 ${nc.statut === 'non_conforme' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                          <span className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${nc.statut === 'non_conforme' ? 'bg-red-500' : 'bg-amber-500'}`} />
                           <span>
                             <span className="text-gray-400 mr-1">{nc.ref}</span>{nc.nom}
                             <span className="ml-1 text-xs text-gray-400">({(t.conformite.statuts as Record<string, string>)[nc.statut] ?? nc.statut})</span>
                           </span>
                         </span>
                         {done ? (
-                          <span className="text-xs text-green-600 font-medium flex-shrink-0 mt-0.5">✓ {t.workshop.a5.ecartImported}</span>
+                          <span className="text-xs text-green-600 font-medium shrink-0 mt-0.5">✓ {t.workshop.a5.ecartImported}</span>
                         ) : (
-                          <button type="button" onClick={() => addMesureFromEcart(nc)} className="text-xs text-ebios-600 hover:text-ebios-800 font-medium flex-shrink-0 mt-0.5 whitespace-nowrap">
+                          <button type="button" onClick={() => addMesureFromEcart(nc)} className="text-xs text-ebios-600 hover:text-ebios-800 font-medium shrink-0 mt-0.5 whitespace-nowrap">
                             + {t.workshop.a5.ecartAddBtn}
                           </button>
                         )}
@@ -1025,7 +1025,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
                         </div>
                       </div>
                       <button aria-label="Supprimer" onClick={() => setPendingDelete({ msg: t.deleteDialog.mesure, action: () => setMesures(prev => prev.filter(x => x.id !== m.id)) })}
-                        className="text-gray-500 hover:text-red-500 flex-shrink-0"><span aria-hidden="true">✕</span></button>
+                        className="text-gray-500 hover:text-red-500 shrink-0"><span aria-hidden="true">✕</span></button>
                     </div>
                   </div>
                 )
@@ -1153,7 +1153,7 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
                           : '—'}
                       </td>
                       <td className="p-2">
-                        <span className={`text-xs px-2 py-0.5 rounded ${STATUTS_MESURE.find(s => s.value === m.statut)?.color || ''}`}>
+                        <span className={`text-xs px-2 py-0.5 rounded-sm ${STATUTS_MESURE.find(s => s.value === m.statut)?.color || ''}`}>
                           {STATUTS_MESURE.find(s => s.value === m.statut)?.label}
                         </span>
                       </td>

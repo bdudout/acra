@@ -145,7 +145,7 @@ export default function FrameworkControlsPanel({
                         }`}
                       >
                         <div className="flex items-start gap-2">
-                          <span className={`text-xs font-mono font-semibold flex-shrink-0 mt-0.5 min-w-[4rem] ${
+                          <span className={`text-xs font-mono font-semibold shrink-0 mt-0.5 min-w-16 ${
                             added ? 'text-green-700' : 'text-indigo-700'
                           }`}>
                             {c.ref}
@@ -161,8 +161,8 @@ export default function FrameworkControlsPanel({
                             </div>
                           </div>
                           {added
-                            ? <span className="text-xs text-green-600 font-semibold flex-shrink-0 ml-1">{t.workshop.addedLabel}</span>
-                            : <span className="text-xs text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-1">
+                            ? <span className="text-xs text-green-600 font-semibold shrink-0 ml-1">{t.workshop.addedLabel}</span>
+                            : <span className="text-xs text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1">
                                 + {actionLabel ?? t.workshop.addExample}
                               </span>
                           }

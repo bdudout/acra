@@ -126,7 +126,7 @@ export default function RevisionPanel({ analyseId, initialVersion, canRevise }: 
               <li key={r.id} className="text-sm border-l-2 border-indigo-200 pl-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-mono font-medium text-indigo-700">v{r.version}</span>
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${r.cycle === 'STRATEGIQUE' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'}`}>{tr.cycleLabels[r.cycle]}</span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-sm ${r.cycle === 'STRATEGIQUE' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'}`}>{tr.cycleLabels[r.cycle]}</span>
                   <span className="text-xs text-gray-400">{formatDate(r.createdAt, locale)}</span>
                   {r.ateliers?.length > 0 && (
                     <span className="text-xs text-gray-500">{tr.ateliers} : {r.ateliers.join(', ')}</span>

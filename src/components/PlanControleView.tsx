@@ -43,7 +43,7 @@ export default function PlanControleView() {
         </div>
         <div className="flex items-end gap-3">
           <label className="text-xs text-gray-500">{p.annee}
-            <select aria-label={p.annee} value={data.annee} onChange={e => setAnnee(Number(e.target.value))} className="block mt-1 px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+            <select aria-label={p.annee} value={data.annee} onChange={e => setAnnee(Number(e.target.value))} className="block mt-1 px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
               {annees.map(a => <option key={a} value={a}>{a}</option>)}
             </select>
           </label>

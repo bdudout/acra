@@ -160,7 +160,7 @@ export default function CampagnesManager({ canPilot, canCote }: { canPilot: bool
     reload()
   }
 
-  const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+  const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
   const coteSelect = (v: string, set: (s: string) => void) => (
     <select value={v} onChange={e => set(e.target.value)} className={inp}>
       <option value="">—</option>

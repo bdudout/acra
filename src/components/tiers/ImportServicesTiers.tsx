@@ -22,7 +22,7 @@ export default function ImportServicesTiers({ services, canManage, busy, onRatta
       {libres.length > 0 && (
         <ul className="mt-2 space-y-2">
           {libres.map(s => (
-            <li key={s.key} className="rounded border border-gray-200 p-2 text-sm dark:border-gray-700">
+            <li key={s.key} className="rounded-sm border border-gray-200 p-2 text-sm dark:border-gray-700">
               <p className="text-gray-900 dark:text-gray-100"><span className="font-medium">{s.nom}</span>
                 <span className="ml-2 text-xs text-gray-500">{c.occurrences.replace('{n}', String(s.aRattacher.length)).replace('{a}', String(s.analyses.length))}</span></p>
               {canManage && (

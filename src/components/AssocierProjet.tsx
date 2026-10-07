@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 
-const field = 'rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-800'
+const field = 'rounded-sm border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-800'
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
 export default function AssocierProjet({ analyseId }: { analyseId: string }) {
@@ -40,8 +40,8 @@ export default function AssocierProjet({ analyseId }: { analyseId: string }) {
       <details>
         <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-ebios-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800">{a.bouton}</summary>
         <div className="absolute left-0 z-20 mt-1 w-72 space-y-2 rounded-lg border border-gray-200 bg-white p-2 text-sm shadow-lg dark:border-gray-700 dark:bg-gray-900">
-          <Link href={`/projets/nouveau?analyse=${analyseId}`} className="block rounded px-2 py-1 text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800">{a.creer}</Link>
-          <button type="button" onClick={() => setLier(true)} className="block w-full rounded px-2 py-1 text-left text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800">{a.lier}</button>
+          <Link href={`/projets/nouveau?analyse=${analyseId}`} className="block rounded-sm px-2 py-1 text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800">{a.creer}</Link>
+          <button type="button" onClick={() => setLier(true)} className="block w-full rounded-sm px-2 py-1 text-left text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800">{a.lier}</button>
           {lier && (
             <div className="space-y-2 border-t border-gray-100 px-2 pt-2 dark:border-gray-800">
               <input aria-label={a.recherche} type="search" value={q} onChange={e => setQ(e.target.value)} className={`${field} w-full`} />

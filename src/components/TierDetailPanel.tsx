@@ -66,7 +66,7 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
 
   return (
     <div className="mt-2 space-y-4 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-      {error && <p role="alert" className="rounded border border-red-300 bg-red-50 p-2 text-sm text-red-900 dark:border-red-700 dark:bg-red-950/40 dark:text-red-100">{error}</p>}
+      {error && <p role="alert" className="rounded-sm border border-red-300 bg-red-50 p-2 text-sm text-red-900 dark:border-red-700 dark:bg-red-950/40 dark:text-red-100">{error}</p>}
       <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{c.offers}</h4>
       {detail.services.length === 0 && <p className="text-sm text-gray-600 dark:text-gray-300">{c.noOffers}</p>}
       <ul className="space-y-3">
@@ -75,7 +75,7 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
           const setForm = (patch: Partial<typeof form>) => setUsageForms(f => ({ ...f, [s.id]: { ...form, ...patch } }))
           const choices = detail.contractServices.filter(cs => cs.serviceId === s.id)
           return (
-            <li key={s.id} className="rounded border border-gray-100 p-2 text-sm dark:border-gray-800">
+            <li key={s.id} className="rounded-sm border border-gray-100 p-2 text-sm dark:border-gray-800">
               <p className="font-medium text-gray-900 dark:text-gray-100">{s.nom} <span className="ml-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal dark:bg-gray-800">{types[s.typeService] ?? s.typeService}</span>{!s.actif && <span className="ml-2 text-xs text-gray-500">({c.inactive})</span>}</p>
               <p className="text-xs text-gray-600 dark:text-gray-300">{s.coveredBy.length ? c.covered.replace('{refs}', s.coveredBy.map(x => x.reference).join(', ')) : c.uncovered}</p>
               {s.usages.length > 0 && (
@@ -138,7 +138,7 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
       )}
 
       {detail.canManage && activeOffers.length > 0 && ownContracts.map(k => (
-        <fieldset key={k.id} className="rounded border border-gray-200 p-2 dark:border-gray-700">
+        <fieldset key={k.id} className="rounded-sm border border-gray-200 p-2 dark:border-gray-700">
           <legend className="px-1 text-xs font-medium text-gray-700 dark:text-gray-200">{c.coverageTitle.replace('{ref}', k.reference)}</legend>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
             {activeOffers.map(s => (
@@ -163,7 +163,7 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
       ))}
 
       {detail.isAdmin && ownContracts.filter(k => (k.beneficiaries?.length ?? 0) > 0 || (k.proposable?.length ?? 0) > 0).map(k => (
-        <fieldset key={`ben-${k.id}`} className="rounded border border-gray-200 p-2 dark:border-gray-700">
+        <fieldset key={`ben-${k.id}`} className="rounded-sm border border-gray-200 p-2 dark:border-gray-700">
           <legend className="px-1 text-xs font-medium text-gray-700 dark:text-gray-200">{c.beneficiariesTitle.replace('{ref}', k.reference)}</legend>
           <ul className="space-y-1 text-xs text-gray-800 dark:text-gray-100">
             {(k.beneficiaries ?? []).map(b => <li key={b.organizationId}>{b.nom} — <span className="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-gray-800">{c.beneficiaryStatus[b.status]}</span></li>)}

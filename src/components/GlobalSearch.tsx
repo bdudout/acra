@@ -143,7 +143,7 @@ export default function GlobalSearch() {
           aria-autocomplete="list"
           aria-controls="global-search-results"
           className="w-full pl-8 pr-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg
-                     focus:outline-none focus:ring-2 focus:ring-ebios-300 focus:border-ebios-400
+                     focus:outline-hidden focus:ring-2 focus:ring-ebios-300 focus:border-ebios-400
                      transition-all duration-200 placeholder-gray-400"
         />
         {loading && (
@@ -187,7 +187,7 @@ export default function GlobalSearch() {
                           <div className="text-sm font-medium text-gray-800 truncate">{a.nom}</div>
                           {a.organisation && <div className="text-xs text-gray-500">{a.organisation}</div>}
                         </div>
-                        <span className={`text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 font-medium inline-flex items-center ${
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full shrink-0 font-medium inline-flex items-center ${
                           a.statut === 'TERMINE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
                         }`} aria-label={a.statut === 'TERMINE' ? 'Terminée' : 'En cours'}>
                           {a.statut === 'TERMINE' ? <CheckCircle2 size={13} aria-hidden="true" /> : <Loader size={13} aria-hidden="true" />}
@@ -219,7 +219,7 @@ export default function GlobalSearch() {
                           <div className="text-sm font-medium text-gray-800 truncate">{r.nom}</div>
                           <div className="text-xs text-gray-500 truncate">{r.analyse.nom}</div>
                         </div>
-                        <span className={`text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 font-medium ${n.cls}`}>
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full shrink-0 font-medium ${n.cls}`}>
                           {r.niveauRisque}/16
                         </span>
                       </button>
@@ -249,7 +249,7 @@ export default function GlobalSearch() {
                           <div className="text-sm font-medium text-gray-800 truncate">{m.nom}</div>
                           <div className="text-xs text-gray-500 truncate">{m.analyse.nom}</div>
                         </div>
-                        <span className={`text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 font-medium ${p.cls}`}>
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full shrink-0 font-medium ${p.cls}`}>
                           {p.label}
                         </span>
                       </button>

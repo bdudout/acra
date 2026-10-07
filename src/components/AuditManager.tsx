@@ -262,7 +262,7 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
     await fetch(`/api/audit/constats/${id}`, { method: 'DELETE' }); reload()
   }
 
-  const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+  const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
   const missionsAff = filtrerMissions(missions, mFiltre).filter(m => showArchived || !m.archiveLe)
   const nbArchivees = missions.filter(m => m.archiveLe).length
   const mFiltreActif = Boolean(mFiltre.q || mFiltre.statut || mFiltre.type)
@@ -594,7 +594,7 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
                               <div className="flex-1">
                                 <span className={`mr-2 ${critColor(cc.criticite)}`}>C{cc.criticite ?? '—'}</span>
                                 <span className="font-medium text-gray-800 dark:text-gray-100">{cc.intitule}</span>
-                                {cc.source === 'REGULATEUR' && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">{lbl(a.sources, 'REGULATEUR')}</span>}
+                                {cc.source === 'REGULATEUR' && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-sm bg-purple-100 text-purple-700">{lbl(a.sources, 'REGULATEUR')}</span>}
                                 {cc.recommandation && <span className="block text-xs text-gray-500 dark:text-gray-400">→ {cc.recommandation}</span>}
                                 <span className="block text-xs text-gray-400">
                                   {cc.responsableAction && `${cc.responsableAction} · `}{cc.echeance && jour(cc.echeance)}

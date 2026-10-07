@@ -17,7 +17,7 @@ export type SuiviAction =
   | { action: 'DECLARER_REALISE' } | { action: 'VERIFIER'; commentaire?: string } | { action: 'REOUVRIR'; commentaire: string }
   | { action: 'DEMANDER_REPORT'; nouvelleEcheance: string; motif: string } | { action: 'DECIDER_REPORT'; index: number; decision: 'APPROUVE' | 'REFUSE' }
 interface Report { nouvelle: string; motif: string; demandeLe: string; statut: string }
-const inp = 'px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs'
+const inp = 'px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs'
 
 export default function RecommandationSuivi({ constat, canAudit, canFollow, busy, onAction }: {
   constat: ConstatSuiviData; canAudit: boolean; canFollow: boolean; busy: boolean; onAction: (a: SuiviAction) => void

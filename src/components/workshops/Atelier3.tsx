@@ -566,7 +566,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode, e
           { id: 'mesures',   label: <><ShieldCheck size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" />{t.workshop.a3.ecoMeasLabel}</> },
         ].map(tabItem => (
           <button key={tabItem.id} onClick={() => setTab(tabItem.id as any)}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${tab === tabItem.id ? 'bg-white shadow-sm text-ebios-700' : 'text-gray-600 hover:text-gray-900'}`}>
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${tab === tabItem.id ? 'bg-white shadow-xs text-ebios-700' : 'text-gray-600 hover:text-gray-900'}`}>
             {tabItem.label}
           </button>
         ))}
@@ -697,7 +697,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode, e
                         ))}
                       </div>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-600 pt-1 border-t border-gray-100">
-                        {rang > 1 && <span className="rounded bg-ebios-100 text-ebios-700 px-1.5 py-0.5 font-medium">{t.workshop.a3.rangBadge} {rang}</span>}
+                        {rang > 1 && <span className="rounded-sm bg-ebios-100 text-ebios-700 px-1.5 py-0.5 font-medium">{t.workshop.a3.rangBadge} {rang}</span>}
                         <span>{t.workshop.a3.ppExpLabel} <span className="font-semibold text-gray-800">{d.exposition.toFixed(1)}</span></span>
                         <span>{t.workshop.a3.ppFiabLabel} <span className="font-semibold text-gray-800">{d.fiabilite.toFixed(1)}</span></span>
                         <span>{t.workshop.a3.ppMenaceLabel} <span className="font-semibold text-gray-800">{d.menace.toFixed(2)}</span></span>
@@ -1052,7 +1052,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode, e
                             {s.mesuresEcosysteme.map((m: any) => {
                               const ppKnown = parties.some((p: any) => p.nom === m.partiePrenante)
                               return (
-                              <div key={m.id} className="p-2 bg-white border border-gray-100 rounded space-y-1">
+                              <div key={m.id} className="p-2 bg-white border border-gray-100 rounded-sm space-y-1">
                                 <div className="flex gap-2 items-center">
                                   <div className="flex-1">
                                     <AutocompleteInput field="mesure" lang={locale} value={m.mesure}
@@ -1289,7 +1289,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode, e
                 <button
                   key={String(opt.id)}
                   onClick={() => setGroupByPP(opt.id)}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${groupByPP === opt.id ? 'bg-white shadow-sm text-ebios-700' : 'text-gray-600 hover:text-gray-900'}`}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${groupByPP === opt.id ? 'bg-white shadow-xs text-ebios-700' : 'text-gray-600 hover:text-gray-900'}`}
                 >
                   {opt.label}
                 </button>
@@ -1312,19 +1312,19 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode, e
               <ul className="space-y-1.5">
                 {g.measures.sort((a, b) => comparePriorite(a, b)).map((m: any) => (
                   <li key={m.id} className="flex items-start gap-2 text-sm">
-                    <span className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${isContractualMeasure(m) ? 'bg-purple-500' : 'bg-ebios-400'}`} />
+                    <span className={`mt-1 h-2 w-2 rounded-full shrink-0 ${isContractualMeasure(m) ? 'bg-purple-500' : 'bg-ebios-400'}`} />
                     <span className="flex-1">
                       <span className="text-gray-800">{m.mesure}</span>
-                      {isContractualMeasure(m) && <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-purple-100 text-purple-700 align-middle">{t.workshop.a3.measTypeContractuelle}</span>}
+                      {isContractualMeasure(m) && <span className="ml-1 text-[10px] px-1 py-0.5 rounded-sm bg-purple-100 text-purple-700 align-middle">{t.workshop.a3.measTypeContractuelle}</span>}
                       <span className="ml-1 text-xs text-gray-400">· {m._ownerNom}</span>
                       {m.description ? <span className="block text-xs text-gray-400">{m.description}</span> : null}
                     </span>
                     <select value={m.priorite || 'P2'} onChange={e => updateMesureEcoAny(m.id, 'priorite', e.target.value)}
-                      className="input text-xs py-1 w-auto min-w-[9.5rem] flex-shrink-0" title={t.workshop.a3.measPrioriteLabel}>
+                      className="input text-xs py-1 w-auto min-w-38 shrink-0" title={t.workshop.a3.measPrioriteLabel}>
                       {PRIORITES_MESURE.map(pr => <option key={pr} value={pr}>{t.workshop.a3.measPriorites[pr]}</option>)}
                     </select>
                     <select value={m.statut || 'A_FAIRE'} onChange={e => updateMesureEcoAny(m.id, 'statut', e.target.value)}
-                      className="input text-xs py-1 w-auto min-w-[6.5rem] flex-shrink-0">
+                      className="input text-xs py-1 w-auto min-w-26 shrink-0">
                       <option value="A_FAIRE">{t.workshop.a3.statutFaire}</option>
                       <option value="EN_COURS">{t.workshop.a3.statutEnCours}</option>
                       <option value="REALISE">{t.workshop.a3.statutRealise}</option>
@@ -1354,19 +1354,19 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode, e
                     <tr key={m.id} className="border-t border-gray-100">
                       <td className="p-2 text-gray-800">
                         {m.mesure}
-                        {m._mutualisee ? <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-ebios-100 text-ebios-700 align-middle">{t.workshop.a3.measMutualisee}</span> : null}
+                        {m._mutualisee ? <span className="ml-1 text-[10px] px-1 py-0.5 rounded-sm bg-ebios-100 text-ebios-700 align-middle">{t.workshop.a3.measMutualisee}</span> : null}
                         {m.description ? <span className="block text-xs text-gray-400">{m.description}</span> : null}
                       </td>
                       <td className="p-2 whitespace-nowrap">
                         <select value={m.priorite || 'P2'} onChange={e => updateMesureEcoAny(m.id, 'priorite', e.target.value)}
-                          className="input text-xs py-1 w-auto min-w-[9.5rem]" title={t.workshop.a3.measPrioriteLabel}>
+                          className="input text-xs py-1 w-auto min-w-38" title={t.workshop.a3.measPrioriteLabel}>
                           {PRIORITES_MESURE.map(pr => <option key={pr} value={pr}>{t.workshop.a3.measPriorites[pr]}</option>)}
                         </select>
                       </td>
                       <td className="p-2 text-gray-600">{m.partiePrenante || '—'}</td>
                       <td className="p-2 whitespace-nowrap">
                         <select value={m.statut || 'A_FAIRE'} onChange={e => updateMesureEcoAny(m.id, 'statut', e.target.value)}
-                          className="input text-xs py-1 w-auto min-w-[6.5rem]">
+                          className="input text-xs py-1 w-auto min-w-26">
                           <option value="A_FAIRE">{t.workshop.a3.statutFaire}</option>
                           <option value="EN_COURS">{t.workshop.a3.statutEnCours}</option>
                           <option value="REALISE">{t.workshop.a3.statutRealise}</option>
@@ -1401,7 +1401,7 @@ function PPZoneCard({ pp, getZoneLabel }: { pp: any; getZoneLabel: (z: Ecosystem
   const d = ppDerived(pp)
   const { color } = getZoneLabel(d.zone)
   return (
-    <div className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border border-gray-100 dark:border-gray-700 mb-1">
+    <div className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded-sm border border-gray-100 dark:border-gray-700 mb-1">
       <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{pp.nom}</span>
       <span className={`text-xs font-bold ${color}`}>{d.menace.toFixed(2)}</span>
     </div>

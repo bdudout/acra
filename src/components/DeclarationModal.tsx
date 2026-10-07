@@ -127,7 +127,7 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
                       {canQualify && incident.dora!.classe === 'MAJEUR' && (
                         <>
                           <label className="inline-flex items-center gap-1.5"><input type="checkbox" checked={done} disabled={busy} onChange={ev => void setDora(e.phase, ev.target.checked)} />{d.formalised}</label>
-                          {!done && <label className="inline-flex items-center gap-1">{d.formalisedOn}<input type="datetime-local" aria-label={`${d.formalisedOn} — ${stageName[st]}`} value={when[key] ?? toLocal(null)} onChange={ev => setWhen(w => ({ ...w, [key]: ev.target.value }))} className="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-xs" /></label>}
+                          {!done && <label className="inline-flex items-center gap-1">{d.formalisedOn}<input type="datetime-local" aria-label={`${d.formalisedOn} — ${stageName[st]}`} value={when[key] ?? toLocal(null)} onChange={ev => setWhen(w => ({ ...w, [key]: ev.target.value }))} className="px-1.5 py-0.5 rounded-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-xs" /></label>}
                         </>
                       )}
                       {canQualify && <button type="button" className="btn-secondary text-[11px]" aria-expanded={stage === st} onClick={() => setStage(s => (s === st ? null : st))}>{d.complete}</button>}
@@ -135,7 +135,7 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
                       {canQualify && <a className="btn-secondary text-[11px]" href={jsonHref(`regime=DORA&stage=${st}&format=xlsx&lang=${locale}`)} download>{d.exportXlsx} — {stageName[st]}</a>}
                     </div>
                     {stage === st && canQualify && (
-                      <div className="mt-2 rounded border border-gray-100 dark:border-gray-700 p-2">
+                      <div className="mt-2 rounded-sm border border-gray-100 dark:border-gray-700 p-2">
                         <p className="text-[11px] font-medium text-gray-600 dark:text-gray-300">{d.completeTitle}</p>
                         <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">{d.mandatoryHint}</p>
                         <div className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -156,7 +156,7 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{h.label ?? tr(h.labelKey, h.regime)}</h3>
             <RegimeInfoBlock code={h.regime} />
             {h.regime === 'RGPD_33' && canQualify && (
-              <div className="mt-2 rounded border border-gray-100 dark:border-gray-700 p-2">
+              <div className="mt-2 rounded-sm border border-gray-100 dark:border-gray-700 p-2">
                 <p className="text-[11px] font-medium text-gray-600 dark:text-gray-300">{d.rgpd.title}</p>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400">{d.rgpd.hint}</p>
                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -166,8 +166,8 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
                     return (
                       <label key={f.id} className={`text-[11px] text-gray-600 dark:text-gray-300 ${f.kind === 'text' && f.key !== 'nature' && f.key !== 'dpo' ? 'sm:col-span-2' : ''}`}>{label} <span className="text-gray-400">({f.art})</span>
                         {f.kind === 'integer'
-                          ? <input type="number" min={0} aria-label={label} value={String(val)} onChange={e => setField(f.id, e.target.value)} className="mt-1 block w-full px-2 py-1 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-xs" />
-                          : <textarea aria-label={label} rows={2} maxLength={2000} value={String(val)} onChange={e => setField(f.id, e.target.value)} className="mt-1 block w-full px-2 py-1 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-xs" />}
+                          ? <input type="number" min={0} aria-label={label} value={String(val)} onChange={e => setField(f.id, e.target.value)} className="mt-1 block w-full px-2 py-1 rounded-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-xs" />
+                          : <textarea aria-label={label} rows={2} maxLength={2000} value={String(val)} onChange={e => setField(f.id, e.target.value)} className="mt-1 block w-full px-2 py-1 rounded-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-xs" />}
                       </label>
                     )
                   })}
@@ -193,8 +193,8 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
                           <label className="inline-flex items-center gap-1.5"><input type="checkbox" checked={done} disabled={busy} aria-label={`${d.formalised} — ${p.label ?? tr(p.labelKey, p.code)}`} onChange={ev => void setNotif(h.regime, p.code, ev.target.checked)} />{d.formalised}</label>
                           {!done && (
                             <>
-                              <label className="inline-flex items-center gap-1">{d.formalisedOn}<input type="datetime-local" aria-label={`${d.formalisedOn} — ${p.label ?? tr(p.labelKey, p.code)}`} value={when[key] ?? toLocal(null)} onChange={ev => setWhen(w => ({ ...w, [key]: ev.target.value }))} className="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-xs" /></label>
-                              <input aria-label={d.reference} placeholder={d.reference} value={refs[key] ?? ''} maxLength={120} onChange={ev => setRefs(r => ({ ...r, [key]: ev.target.value }))} className="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-xs w-40" />
+                              <label className="inline-flex items-center gap-1">{d.formalisedOn}<input type="datetime-local" aria-label={`${d.formalisedOn} — ${p.label ?? tr(p.labelKey, p.code)}`} value={when[key] ?? toLocal(null)} onChange={ev => setWhen(w => ({ ...w, [key]: ev.target.value }))} className="px-1.5 py-0.5 rounded-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-xs" /></label>
+                              <input aria-label={d.reference} placeholder={d.reference} value={refs[key] ?? ''} maxLength={120} onChange={ev => setRefs(r => ({ ...r, [key]: ev.target.value }))} className="px-1.5 py-0.5 rounded-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-xs w-40" />
                             </>
                           )}
                         </>
@@ -227,7 +227,7 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
         {canQualify && addable.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
             <label className="text-xs text-gray-600 dark:text-gray-300">{d.addRegulator}
-              <select aria-label={d.addRegulator} value={add} onChange={e => setAdd(e.target.value)} className="ml-2 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-900 px-2 py-1 text-xs">
+              <select aria-label={d.addRegulator} value={add} onChange={e => setAdd(e.target.value)} className="ml-2 rounded-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-900 px-2 py-1 text-xs">
                 <option value="">{d.addPlaceholder}</option>
                 {addable.map(r => <option key={r.code} value={r.code}>{r.label ?? tr(r.labelKey, r.code)}</option>)}
               </select>
@@ -242,7 +242,7 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
 }
 
 type Labels = { yes: string; no: string; suggestedValue: string; conditionLabel: string }
-const inputCls = 'mt-0.5 block w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-900 px-1.5 py-1 text-xs'
+const inputCls = 'mt-0.5 block w-full rounded-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-900 px-1.5 py-1 text-xs'
 
 /** Champ du glossaire de l'ITS : saisie adaptée au type (liste de valeurs officielles, date-heure, durée JJ:HH:MM…). */
 function FieldInput({ field, stage, value, suggested, onChange, labels }: { field: DoraItsField; stage: DoraStage; value: DeclarationValue | ''; suggested?: DeclarationValue; onChange: (v: DeclarationValue | '') => void; labels: Labels }) {
@@ -268,7 +268,7 @@ function FieldInput({ field, stage, value, suggested, onChange, labels }: { fiel
         <fieldset className="text-[11px] text-gray-600 dark:text-gray-300 sm:col-span-2">
           <legend>{caption}</legend>
           {hint && <span className="block text-[10px] text-indigo-700 dark:text-indigo-300">{hint}</span>}
-          <div className="mt-1 max-h-44 overflow-y-auto rounded border border-gray-200 dark:border-gray-700 p-1.5 space-y-1">
+          <div className="mt-1 max-h-44 overflow-y-auto rounded-sm border border-gray-200 dark:border-gray-700 p-1.5 space-y-1">
             {groups.map(([g, opts]) => (
               <div key={g || 'all'}>
                 {g && <p className="font-medium text-gray-500 dark:text-gray-400">{g}</p>}

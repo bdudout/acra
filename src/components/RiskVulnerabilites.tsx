@@ -67,7 +67,7 @@ export default function RiskVulnerabilites({ analyseId, riskId, editable, initia
         <div className="flex flex-wrap items-end gap-2">
           <input value={desc} onChange={e => setDesc(e.target.value)} placeholder={m.vulnPlaceholder}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); ajouter() } }}
-            className="flex-1 min-w-[12rem] px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs" />
+            className="flex-1 min-w-48 px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs" />
           <button onClick={ajouter} disabled={busy || !desc.trim()} className="btn-primary text-xs inline-flex items-center gap-1 disabled:opacity-50">
             <Plus size={13} aria-hidden="true" />{m.add}
           </button>

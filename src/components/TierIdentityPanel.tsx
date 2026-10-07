@@ -135,10 +135,10 @@ export default function TierIdentityPanel({ sansTitre = false }: { sansTitre?: b
           <p className="text-sm text-gray-600 dark:text-gray-300">{c.hint}</p>
         </div>
       )}
-      {info && <p role="status" className="rounded border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100">{info}</p>}
-      {error && <p role="alert" className="rounded border border-red-300 bg-red-50 p-2 text-sm text-red-900 dark:border-red-700 dark:bg-red-950/40 dark:text-red-100">{error}</p>}
+      {info && <p role="status" className="rounded-sm border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100">{info}</p>}
+      {error && <p role="alert" className="rounded-sm border border-red-300 bg-red-50 p-2 text-sm text-red-900 dark:border-red-700 dark:bg-red-950/40 dark:text-red-100">{error}</p>}
       {duplicate && (
-        <div role="alert" className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-100">
+        <div role="alert" className="rounded-sm border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-100">
           <p className="font-medium">{c.duplicateTitle}</p>
           <ul className="mt-1 list-disc pl-5">{duplicate.candidates.map(x => <li key={x.tierId}>{x.nom} — {reasonLabel(x.reason)}</li>)}</ul>
           <div className="mt-2 flex gap-2">
@@ -149,7 +149,7 @@ export default function TierIdentityPanel({ sansTitre = false }: { sansTitre?: b
       )}
 
       {(data.proposals?.length ?? 0) > 0 && (
-        <div className="rounded border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/30">
+        <div className="rounded-sm border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/30">
           <h3 className="text-sm font-semibold text-blue-950 dark:text-blue-100">{c.proposalsTitle}</h3>
           <p className="text-xs text-blue-900 dark:text-blue-200">{c.proposalsHint}</p>
           <ul className="mt-2 space-y-2">
@@ -204,7 +204,7 @@ export default function TierIdentityPanel({ sansTitre = false }: { sansTitre?: b
                   </tr>
                   {mergeFrom === tier.id && (
                     <tr><td colSpan={6} className="px-2 pb-3">
-                      <div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+                      <div className="rounded-sm border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
                         <p>{c.mergeHint.replace('{name}', tier.nom)}</p>
                         <label className="mt-2 block text-xs font-medium">{c.mergeInto}
                           <select aria-label={c.mergeInto} className="input mt-1 block w-full text-sm sm:w-80" value={mergeTarget} onChange={e => void previewMerge(tier.id, e.target.value)}>
@@ -248,7 +248,7 @@ export default function TierIdentityPanel({ sansTitre = false }: { sansTitre?: b
           )}
           <ul className="mt-2 space-y-2">
             {data.unlinkedArrangements.map(a => (
-              <li key={a.id} className="rounded border border-gray-200 p-2 text-sm dark:border-gray-700">
+              <li key={a.id} className="rounded-sm border border-gray-200 p-2 text-sm dark:border-gray-700">
                 <p className="text-gray-900 dark:text-gray-100"><span className="font-medium">{a.reference}</span> — {a.prestataireNom}{a.lei && <span className="ml-2 font-mono text-xs text-gray-500">{a.lei}</span>}</p>
                 {canManage && (
                   <div className="mt-1 flex flex-wrap items-center gap-2">

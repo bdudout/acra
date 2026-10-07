@@ -300,25 +300,25 @@ export default async function DashboardPage() {
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className="font-medium text-gray-900 truncate" title={a.nom}>{a.nom}</span>
                             {consolidated && (a as any).organization?.nom && (
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium flex-shrink-0 inline-flex items-center gap-1" title={t.nav.organization}>
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium shrink-0 inline-flex items-center gap-1" title={t.nav.organization}>
                                 <Building2 size={11} aria-hidden="true" /> {(a as any).organization.nom}
                               </span>
                             )}
                             {(a as any).isSocle && (
-                              <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium flex-shrink-0" title="Analyse socle"><Landmark size={18} aria-hidden="true" /></span>
+                              <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium shrink-0" title="Analyse socle"><Landmark size={18} aria-hidden="true" /></span>
                             )}
-                            <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 font-medium ${
+                            <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 font-medium ${
                               a.statut === 'TERMINE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
                             }`}>
                               {a.statut === 'TERMINE' ? <><CheckCircle2 size={13} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" />{t.dashboard.doneStatus}</> : <><Settings size={13} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.dashboard.inProgStatus}</>}
                             </span>
                             {critiques > 0 && (
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium flex-shrink-0">
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium shrink-0">
                                 <AlertCircle size={15} className="inline align-[-0.15em] mr-1 text-red-600" aria-hidden="true" /> {critiques} {critiques === 1 ? t.dashboard.critBadgeSg : t.dashboard.critBadge}
                               </span>
                             )}
                             {mesuresP1 > 0 && (
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium flex-shrink-0">
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium shrink-0">
                                 <AlertTriangle size={15} className="inline align-[-0.15em] mr-1 text-amber-600" aria-hidden="true" /> {mesuresP1} {t.dashboard.p1Badge}
                               </span>
                             )}
@@ -333,7 +333,7 @@ export default async function DashboardPage() {
                               <div className="bg-ebios-500 h-1.5 rounded-full transition-all"
                                 style={{ width: a.statut === 'TERMINE' ? '100%' : `${Math.round(((a.atelierCourant - 1) / 5) * 100)}%` }} />
                             </div>
-                            <span className="text-xs text-gray-500 flex-shrink-0">
+                            <span className="text-xs text-gray-500 shrink-0">
                               {a.statut === 'TERMINE' ? <><CheckCircle2 size={13} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" />5/5</> : <>{(() => { const AtIcon = ATELIER_ICONS[_ai]; return AtIcon ? <AtIcon size={13} className="inline align-[-0.15em] mr-1" aria-hidden="true" /> : null })()}A{a.atelierCourant}/5</>}
                             </span>
                             <div className="flex gap-2 text-xs text-gray-500 hidden sm:flex">

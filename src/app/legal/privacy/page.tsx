@@ -116,7 +116,7 @@ export default function PrivacyPage() {
             <p>
               ACRA utilise uniquement des cookies strictement nécessaires au fonctionnement :
               un cookie de session pour l'authentification (JWT NextAuth) et un cookie de préférence de langue
-              (<code className="bg-gray-100 px-1 rounded">acra-locale</code>). Aucun cookie de tracking ou publicitaire n'est utilisé.
+              (<code className="bg-gray-100 px-1 rounded-sm">acra-locale</code>). Aucun cookie de tracking ou publicitaire n'est utilisé.
             </p>
           </section>
         </div>

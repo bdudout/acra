@@ -235,7 +235,7 @@ export default function ProfilePage() {
                 onClick={() => setLocale(l)}
                 className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
                   l === locale
-                    ? 'bg-ebios-50 border-ebios-300 text-ebios-700 shadow-sm'
+                    ? 'bg-ebios-50 border-ebios-300 text-ebios-700 shadow-xs'
                     : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -268,7 +268,7 @@ export default function ProfilePage() {
                   onClick={() => setTheme(value)}
                   className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl border text-sm font-medium transition-colors ${
                     value === theme
-                      ? 'bg-ebios-50 border-ebios-300 text-ebios-700 shadow-sm'
+                      ? 'bg-ebios-50 border-ebios-300 text-ebios-700 shadow-xs'
                       : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >

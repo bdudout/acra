@@ -91,7 +91,7 @@ export default function AnalysesChart({ analyses }: Props) {
                         {a.nom}
                       </div>
                       {a.isSocle && (
-                        <span className="text-xs flex-shrink-0" title="Analyse socle"><Landmark size={18} aria-hidden="true" /></span>
+                        <span className="text-xs shrink-0" title="Analyse socle"><Landmark size={18} aria-hidden="true" /></span>
                       )}
                     </div>
                     <div className={`text-xs mt-0.5 ${a.statut === 'TERMINE' ? 'text-green-600' : 'text-orange-500'}`}>
@@ -100,7 +100,7 @@ export default function AnalysesChart({ analyses }: Props) {
                   </td>
                   <td className="py-3 px-2">
                     <div className="flex items-center gap-2">
-                      <div className="w-16 bg-gray-100 rounded-full h-2 flex-shrink-0">
+                      <div className="w-16 bg-gray-100 rounded-full h-2 shrink-0">
                         <div
                           className={`h-2 rounded-full ${pct === 100 ? 'bg-green-500' : 'bg-ebios-500'}`}
                           style={{ width: `${pct}%` }}
@@ -118,7 +118,7 @@ export default function AnalysesChart({ analyses }: Props) {
                   <td className="py-3 px-2 text-center">
                     {/* Barre proportionnelle */}
                     <div className="flex items-center gap-1.5">
-                      <div className="w-16 bg-gray-100 rounded-full h-2 flex-shrink-0">
+                      <div className="w-16 bg-gray-100 rounded-full h-2 shrink-0">
                         <div
                           className="h-2 rounded-full bg-ebios-500"
                           style={{ width: `${(a._count.risques / maxRisques) * 100}%` }}
@@ -149,7 +149,7 @@ export default function AnalysesChart({ analyses }: Props) {
                           <div
                             key={i}
                             title={`${s.count} ${s.label}`}
-                            className="h-4 rounded-sm flex-shrink-0"
+                            className="h-4 rounded-xs shrink-0"
                             style={{
                               width: `${(s.count / a.risques.length) * 64}px`,
                               backgroundColor: s.color,
@@ -172,19 +172,19 @@ export default function AnalysesChart({ analyses }: Props) {
       {/* Légende */}
       <div className="flex flex-wrap gap-4 pt-2 border-t border-gray-100 text-xs text-gray-500">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-red-400" />
+          <div className="w-3 h-3 rounded-xs bg-red-400" />
           <span>{c.legendCritical}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-orange-400" />
+          <div className="w-3 h-3 rounded-xs bg-orange-400" />
           <span>{c.legendHigh}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-yellow-400" />
+          <div className="w-3 h-3 rounded-xs bg-yellow-400" />
           <span>{c.legendMedium}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-green-400" />
+          <div className="w-3 h-3 rounded-xs bg-green-400" />
           <span>{c.legendLow}</span>
         </div>
         <div className="ml-auto text-gray-500">{c.srLegend}</div>

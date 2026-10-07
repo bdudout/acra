@@ -61,7 +61,7 @@ export default function AuditModelePicker({ onApply }: { onApply: (choice: Audit
         {groups.map(g => <div key={g.key}>
           {g.title && <p className="text-xs font-semibold text-gray-700 dark:text-gray-200">{g.title}{!g.owned && <span className="ml-2 font-normal text-gray-500 dark:text-gray-400">({angle === 'PROCESSUS' ? m.processMissing : m.riskMissing})</span>}</p>}
           {g.items.map(x => (
-            <div key={x.key} data-key={x.key} className="flex items-start justify-between gap-2 rounded px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-800">
+            <div key={x.key} data-key={x.key} className="flex items-start justify-between gap-2 rounded-sm px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-800">
               <span className="min-w-0 text-sm text-gray-900 dark:text-gray-100">{x.title}<span className="block text-xs text-gray-500 dark:text-gray-400">{m.points.replace('{n}', String(x.points.length))}</span></span>
               <button type="button" className="btn-secondary shrink-0 px-2 py-1 text-xs" onClick={() => apply(x)}>{m.use}</button>
             </div>

@@ -81,7 +81,7 @@ export default function QuestionnaireEnvois() {
     } finally { setBusy(false) }
   }
 
-  const inp = 'mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100'
+  const inp = 'mt-1 w-full rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100'
   const lbl = 'block text-xs text-gray-600 dark:text-gray-300'
   const jour = (d: string | null) => (d ? new Date(d).toLocaleDateString(locale) : q.none)
   const valeur = (v: unknown) => (v === true ? q.oui : v === false ? q.non : v === null || v === undefined || v === '' ? q.none : String(v))
@@ -105,7 +105,7 @@ export default function QuestionnaireEnvois() {
       {detail.questions.map(qu => {
         const rep = r.reponses.find(x => x.questionId === qu.id)
         if (!rep) return null
-        return <div key={qu.id} className="rounded border border-gray-100 p-2 text-sm dark:border-gray-800">
+        return <div key={qu.id} className="rounded-sm border border-gray-100 p-2 text-sm dark:border-gray-800">
           <p className="text-gray-800 dark:text-gray-100">{qu.libelle}</p>
           <p className="text-gray-700 dark:text-gray-200"><strong>{valeur(rep.valeur)}</strong>{rep.commentaire ? ` — ${rep.commentaire}` : ''}</p>
           {rep.preuves.length > 0 && <p className="text-xs">{rep.preuves.map((p, k) => <a key={k} className="mr-3 text-ebios-700 underline dark:text-ebios-300" href={p.dataUrl} download={p.nom}>📎 {p.nom}</a>)}</p>}
@@ -115,7 +115,7 @@ export default function QuestionnaireEnvois() {
             <input aria-label={q.commentaire} placeholder={q.commentaire} className={inp} value={revues[qu.id]?.commentaire ?? ''} onChange={e => setRevues(v => ({ ...v, [qu.id]: { ...v[qu.id], commentaire: e.target.value } }))} />
           </div> : rep.revue && <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">{q.revueDu} : <strong>{q.revueStatuts[rep.revue.statut]}</strong>{rep.revue.commentaire ? ` — ${rep.revue.commentaire}` : ''}
             {rep.revue.statut === 'NON_CONFORME' && <button type="button" className="ml-2 underline" onClick={() => setPreco({ reponseId: r.id, questionId: qu.id, intitule: qu.libelle.slice(0, 200), recommandation: rep.revue?.commentaire ?? '', criticite: '', echeance: '' })}>{q.creerPreco}</button>}</p>}
-          {preco?.reponseId === r.id && preco.questionId === qu.id && <div className="mt-2 space-y-2 rounded border border-amber-200 p-2 dark:border-amber-500/30">
+          {preco?.reponseId === r.id && preco.questionId === qu.id && <div className="mt-2 space-y-2 rounded-sm border border-amber-200 p-2 dark:border-amber-500/30">
             <label className={lbl}>{q.intitule}<input className={inp} value={preco.intitule} onChange={e => setPreco({ ...preco, intitule: e.target.value })} /></label>
             <label className={lbl}>{q.recommandation}<textarea className={inp} rows={2} value={preco.recommandation} onChange={e => setPreco({ ...preco, recommandation: e.target.value })} /></label>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -143,7 +143,7 @@ export default function QuestionnaireEnvois() {
         <label className={lbl}>{q.echeance}<input type="date" className={inp} value={form.echeance} onChange={e => setForm({ ...form, echeance: e.target.value })} /></label>
       </div>
       <fieldset><legend className={lbl}>{q.repondants} ({form.repondantIds.length})</legend>
-        <div className="mt-1 max-h-48 overflow-y-auto rounded border border-gray-200 p-2 dark:border-gray-700">
+        <div className="mt-1 max-h-48 overflow-y-auto rounded-sm border border-gray-200 p-2 dark:border-gray-700">
           {liste.repondants.map(u => <label key={u.id} className="flex gap-2 py-0.5 text-sm"><input type="checkbox" checked={form.repondantIds.includes(u.id)}
             onChange={() => setForm(f => ({ ...f, repondantIds: f.repondantIds.includes(u.id) ? f.repondantIds.filter(x => x !== u.id) : [...f.repondantIds, u.id] }))} />{u.name ?? u.email}</label>)}
         </div></fieldset>

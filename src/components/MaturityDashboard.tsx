@@ -141,14 +141,14 @@ export default function MaturityDashboard({ canManage, scale, referentiels, prof
             <label className="text-xs text-gray-600 dark:text-gray-300">{m.referentiel}
               <select aria-label={m.referentiel} value={profile.referentiel}
                 onChange={e => router.push(`/maturite?referentiel=${encodeURIComponent(e.target.value)}`)}
-                className="mt-1 block rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600">
+                className="mt-1 block rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600">
                 {referentiels.map(r => <option key={r.code} value={r.code}>{r.nom}</option>)}
               </select>
             </label>
             <label className="text-xs text-gray-600 dark:text-gray-300">{m.globalTarget}
               <select aria-label={m.globalTarget} disabled={!canManage} value={cible ?? ''}
                 onChange={e => { setCible(e.target.value === '' ? null : Number(e.target.value)); setCibleDirty(true); setMsg(null) }}
-                className="mt-1 block rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600">
+                className="mt-1 block rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600">
                 <option value="">{m.noTarget}</option>
                 {MATURITY_LEVELS.map(n => <option key={n} value={n}>{level(n)}</option>)}
               </select>
@@ -256,14 +256,14 @@ export default function MaturityDashboard({ canManage, scale, referentiels, prof
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                       <label className="text-xs text-gray-600 dark:text-gray-300">{m.current}
                         <select aria-label={`${item.ref} ${m.current}`} disabled={!canManage} value={e.actuel ?? ''} onChange={ev => update(item.ref, 'actuel', ev.target.value)}
-                          className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600">
+                          className="mt-1 w-full rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600">
                           <option value="">{m.notAssessed}</option>
                           {scale.map(l => <option key={l.niveau} value={l.niveau} title={l.definition}>{level(l.niveau)}</option>)}
                         </select>
                       </label>
                       <label className="text-xs text-gray-600 dark:text-gray-300">{m.target}
                         <select aria-label={`${item.ref} ${m.target}`} disabled={!canManage} value={e.cible ?? ''} onChange={ev => update(item.ref, 'cible', ev.target.value)}
-                          className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600">
+                          className="mt-1 w-full rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600">
                           <option value="">{`${m.targetInherited} (${cible !== null ? level(cible) : m.noTarget})`}</option>
                           {scale.map(l => <option key={l.niveau} value={l.niveau} title={l.definition}>{level(l.niveau)}</option>)}
                         </select>
@@ -273,10 +273,10 @@ export default function MaturityDashboard({ canManage, scale, referentiels, prof
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
                         <input aria-label={`${item.ref} ${m.owner}`} value={e.responsable ?? ''} maxLength={120} placeholder={m.owner}
                           onChange={ev => update(item.ref, 'responsable', ev.target.value)}
-                          className="rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600" />
+                          className="rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600" />
                         <input aria-label={`${item.ref} ${m.justification}`} value={e.commentaire ?? ''} maxLength={2000} placeholder={m.justification}
                           onChange={ev => update(item.ref, 'commentaire', ev.target.value)}
-                          className="sm:col-span-2 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600" />
+                          className="sm:col-span-2 rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600" />
                       </div>
                     ) : (e.responsable || e.commentaire) && (
                       <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">{[e.responsable, e.commentaire].filter(Boolean).join(' — ')}</p>

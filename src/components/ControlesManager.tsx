@@ -238,7 +238,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
     await fetch(`/api/controles/${id}`, { method: 'DELETE' }); reload()
   }
 
-  const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+  const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
   // Suggestions d'autocomplétion à partir des contrôles déjà saisis (org courante).
   const intituleSug = suggestionsFromValues(controles.map(x => x.intitule))
   const responsableSug = suggestionsFromValues(controles.map(x => x.responsable))

@@ -19,7 +19,7 @@ const STATUT_BADGE: Record<string, string> = {
   EN_RETARD: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300',
   JAMAIS_AUDITE: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300',
 }
-const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
 
 export default function AuditPlanView() {
   const { t } = useTranslation()

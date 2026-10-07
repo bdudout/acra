@@ -23,7 +23,7 @@ export default function RiskFiltersBar({
   const r = t.registre
   const n = activeFilterCount(filters)
   const set = (patch: Partial<RiskFilters>) => onChange({ ...filters, ...patch })
-  const sel = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+  const sel = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
 
   return (
     <div className="card p-3 mb-5">

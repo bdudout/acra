@@ -13,7 +13,7 @@ export interface NouvelleAnalyseLabels { trigger: string; analyse: string; proje
 
 export default function NouvelleAnalyseMenu({ labels, projet360, onImport }: { labels: NouvelleAnalyseLabels; projet360: boolean; onImport?: () => void }) {
   const { open, close, rootRef, triggerProps, menuProps } = useDropdownMenu()
-  const item = 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-gray-800 hover:bg-ebios-50 focus:bg-ebios-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ebios-500 dark:text-gray-100 dark:hover:bg-gray-800 dark:focus:bg-gray-800'
+  const item = 'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-gray-800 hover:bg-ebios-50 focus:bg-ebios-50 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-ebios-500 dark:text-gray-100 dark:hover:bg-gray-800 dark:focus:bg-gray-800'
   return (
     <div className="relative" ref={rootRef}>
       <button type="button" className="btn-primary inline-flex w-full items-center justify-center gap-2 sm:w-auto" {...triggerProps}>

@@ -230,7 +230,7 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: TierRo
                         value={mergeTarget[sig] ?? defaultTarget(g)}
                         onChange={e => setMergeTarget(m => ({ ...m, [sig]: e.target.value }))}
                         disabled={busy}
-                        className="rounded border border-amber-300 bg-white px-1.5 py-0.5 text-[11px] text-amber-900"
+                        className="rounded-sm border border-amber-300 bg-white px-1.5 py-0.5 text-[11px] text-amber-900"
                       >
                         {g.map(x => <option key={x.key} value={x.nom}>{x.nom}</option>)}
                       </select>
@@ -238,7 +238,7 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: TierRo
                         type="button"
                         onClick={() => setConfirmSig(sig)}
                         disabled={busy}
-                        className="rounded bg-amber-500 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+                        className="rounded-sm bg-amber-500 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-amber-600 disabled:opacity-50"
                       >
                         {t.tiers.mergeBtn}
                       </button>
@@ -247,7 +247,7 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: TierRo
                   <button
                     type="button"
                     onClick={() => persistIgnored([...ignoredSigs, sig])}
-                    className="rounded border border-amber-300 bg-white px-2 py-0.5 text-[11px] font-medium text-amber-800 hover:bg-amber-100"
+                    className="rounded-sm border border-amber-300 bg-white px-2 py-0.5 text-[11px] font-medium text-amber-800 hover:bg-amber-100"
                   >
                     {t.tiers.dupIgnore}
                   </button>
@@ -336,7 +336,7 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: TierRo
           <p className="text-xs text-gray-400 italic mb-3">{t.workshop.a3.radar.multiLegend}</p>
           <div data-testid="tiers-mobile-list" className="space-y-2 sm:hidden">
             {shown.map(x => (
-              <div key={x.key} className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+              <div key={x.key} className="rounded-xl border border-gray-200 bg-white p-3 shadow-xs">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 font-medium text-gray-800">
                     {x.critique && <span className="mr-1 text-amber-500" title={t.workshop.a3.ppCritiqueLabel}>★</span>}{x.nom}
@@ -398,7 +398,7 @@ export default function TiersClient({ tiers, canMerge = false }: { tiers: TierRo
                             />
                             {a.analyseNom}
                             {a.entite && (
-                              <span className="ml-1 inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-px text-[10px] font-medium text-slate-600">
+                              <span className="ml-1 inline-flex items-center gap-1 rounded-sm bg-slate-100 px-1.5 py-px text-[10px] font-medium text-slate-600">
                                 <Building2 size={10} aria-hidden="true" /> {a.entite}
                               </span>
                             )}

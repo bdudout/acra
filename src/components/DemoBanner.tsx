@@ -35,7 +35,7 @@ export default function DemoBanner() {
   })
   const contactExternal = !pc.contactUrl.startsWith('/')
   return (
-    <div data-testid="demo-banner" className="w-full bg-gradient-to-r from-[#3730a3] via-[#4338ca] to-[#0369a1] text-white text-sm leading-snug shadow-sm">
+    <div data-testid="demo-banner" className="w-full bg-linear-to-r from-ebios-800 via-ebios-700 to-[#0369a1] text-white text-sm leading-snug shadow-xs">
       <div data-testid="demo-banner-content" className="max-w-7xl mx-auto flex flex-col items-center justify-center gap-2 px-4 py-2.5 text-center lg:flex-row lg:justify-between lg:text-left">
         {/* Info : badge démo + rappel RGPD + compte à rebours */}
         <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">

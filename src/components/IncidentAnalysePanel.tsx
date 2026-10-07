@@ -11,7 +11,7 @@ export interface AnalyseValue {
   causeRacine: string; causeDetail: string; leconsApprises: string
   chronologie: EvenementChronologie[]; impactsNonFinanciers: ImpactNonFinancier[]; allocations: Allocation[]
 }
-const inp = 'px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs'
+const inp = 'px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs'
 const maintenant = () => new Date().toISOString().slice(0, 16)
 
 export default function IncidentAnalysePanel({ value, onChange, readOnly = false }: { value: AnalyseValue; onChange: (v: AnalyseValue) => void; readOnly?: boolean }) {
@@ -47,7 +47,7 @@ export default function IncidentAnalysePanel({ value, onChange, readOnly = false
                 {TYPES_CHRONOLOGIE.map(x => <option key={x} value={x}>{chronoTypes[x]}</option>)}
               </select>
               <input type="datetime-local" aria-label={`${l.chronoDate} — événement ${i + 1}`} value={e.date.slice(0, 16)} onChange={ev => set({ chronologie: value.chronologie.map((x, k) => (k === i ? { ...x, date: ev.target.value } : x)) })} className={inp} />
-              <input aria-label={`${l.chronoTexte} — événement ${i + 1}`} value={e.texte} maxLength={500} onChange={ev => set({ chronologie: value.chronologie.map((x, k) => (k === i ? { ...x, texte: ev.target.value } : x)) })} className={`${inp} flex-1 min-w-[10rem]`} />
+              <input aria-label={`${l.chronoTexte} — événement ${i + 1}`} value={e.texte} maxLength={500} onChange={ev => set({ chronologie: value.chronologie.map((x, k) => (k === i ? { ...x, texte: ev.target.value } : x)) })} className={`${inp} flex-1 min-w-40`} />
               {!readOnly && <button type="button" aria-label={`${l.retirer} — événement ${i + 1}`} onClick={() => set({ chronologie: value.chronologie.filter((_, k) => k !== i) })} className="text-xs text-red-500 hover:underline">{l.retirer}</button>}
             </li>
           ))}

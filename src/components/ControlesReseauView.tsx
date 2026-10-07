@@ -62,7 +62,7 @@ export default function ControlesReseauView() {
     if (!c) return <span className="text-xs text-gray-400">{l.absent}</span>
     const cle = c.etat === 'EN_RETARD' || c.etat === 'JAMAIS' || c.etat === 'INACTIF' ? c.etat : c.dernierResultat ?? ''
     return (
-      <div className={`rounded px-2 py-1 text-xs ${COULEUR[cle] ?? ''}`}>
+      <div className={`rounded-sm px-2 py-1 text-xs ${COULEUR[cle] ?? ''}`}>
         {c.dernierResultat && <div className="font-medium">{l.resultats[c.dernierResultat as keyof typeof l.resultats] ?? c.dernierResultat}</div>}
         <div>{l.etat[c.etat]}</div>
         {c.derniereExecution && <div className="opacity-75">{formatDate(c.derniereExecution, locale)}</div>}

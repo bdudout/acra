@@ -93,7 +93,7 @@ function VerifyEmailForm() {
             type="text" inputMode="numeric" autoComplete="one-time-code" required
             value={code}
             onChange={e => setCode(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm tracking-widest text-center focus:outline-none focus:ring-2 focus:ring-ebios-500"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm tracking-widest text-center focus:outline-hidden focus:ring-2 focus:ring-ebios-500"
             placeholder="––––––"
           />
         </div>
@@ -127,7 +127,7 @@ function VerifyEmailForm() {
 
 export default function VerifyEmailPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-ebios-950 to-ebios-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-ebios-950 to-ebios-800 flex items-center justify-center p-4">
       <Suspense fallback={<div className="text-white">…</div>}>
         <VerifyEmailForm />
       </Suspense>

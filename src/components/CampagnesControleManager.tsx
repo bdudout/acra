@@ -277,7 +277,7 @@ export default function CampagnesControleManager({ canDefine }: { canDefine: boo
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden min-w-[3rem]">
+                        <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden min-w-12">
                           <div className={`h-full rounded-full ${a.enRetard && pct < 100 ? 'bg-red-500' : pct >= 100 ? 'bg-green-500' : 'bg-ebios-500'}`} style={{ width: `${pct}%` }} />
                         </div>
                         <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums w-16 text-right">{c.faits.replace('{faits}', String(a.avancement.faits)).replace('{total}', String(a.avancement.total))}</span>

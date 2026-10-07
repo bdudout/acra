@@ -18,7 +18,7 @@ const TON: Record<ProcessusFaits['statut'], string> = {
   BIENTOT: 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200',
   EN_RETARD: 'bg-red-50 text-red-800 dark:bg-red-500/10 dark:text-red-200',
 }
-const field = 'mt-1 block w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
+const field = 'mt-1 block w-full rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
 
 export default function ProcessusCartoView({ processus, faits, canEdit }: { processus: ProcessusCarto; faits: ProcessusFaits; canEdit: boolean }) {
   const { t, locale } = useTranslation()

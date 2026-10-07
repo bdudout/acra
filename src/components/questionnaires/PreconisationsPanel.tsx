@@ -47,7 +47,7 @@ export default function PreconisationsPanel({ conformiteActive, focusId }: { con
     }
   }
 
-  const inp = 'mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100'
+  const inp = 'mt-1 w-full rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100'
   const lbl = 'block text-xs text-gray-600 dark:text-gray-300'
   const jour = (d: string | null) => (d ? new Date(d).toLocaleDateString(locale) : q.none)
   const ouverte = (p: Preco) => p.statut === 'OUVERT' || p.statut === 'EN_COURS'
@@ -97,7 +97,7 @@ export default function PreconisationsPanel({ conformiteActive, focusId }: { con
               </>}
             </div>
           </div>
-          {action?.id === p.id && <div className="space-y-2 rounded border border-gray-200 p-2 dark:border-gray-700">
+          {action?.id === p.id && <div className="space-y-2 rounded-sm border border-gray-200 p-2 dark:border-gray-700">
             {action.type === 'plan' && <>
               <label className={lbl}>{q.intitule}<input className={inp} placeholder={p.intitule} value={champs.titre} onChange={e => setChamps({ ...champs, titre: e.target.value })} /></label>
               <label className={lbl}>{q.echeance}<input type="date" className={inp} value={champs.echeance} onChange={e => setChamps({ ...champs, echeance: e.target.value })} /></label>

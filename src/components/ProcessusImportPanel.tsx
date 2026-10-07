@@ -105,14 +105,14 @@ export default function ProcessusImportPanel({ onImported }: { onImported: () =>
         </label>
         <button type="button" className="btn-secondary text-sm" onClick={downloadTemplate}>{c.template}</button>
       </div>
-      {error && <p role="alert" className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-700 dark:bg-red-950/40 dark:text-red-100">{error}</p>}
-      {done !== null && <p role="status" className="rounded border border-green-300 bg-green-50 p-3 text-sm text-green-900 dark:border-green-700 dark:bg-green-950/40 dark:text-green-100">✓ {c.created.replace('{n}', String(done))}</p>}
+      {error && <p role="alert" className="rounded-sm border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-700 dark:bg-red-950/40 dark:text-red-100">{error}</p>}
+      {done !== null && <p role="status" className="rounded-sm border border-green-300 bg-green-50 p-3 text-sm text-green-900 dark:border-green-700 dark:bg-green-950/40 dark:text-green-100">✓ {c.created.replace('{n}', String(done))}</p>}
       {result && (
         <>
           <p data-testid="counts" className="text-sm text-gray-700 dark:text-gray-200">
             {c.counts.ready.replace('{n}', String(result.counts.ready))} · {c.counts.already.replace('{n}', String(result.counts.alreadyImported))} · {c.counts.duplicate.replace('{n}', String(result.counts.possibleDuplicate))} · {c.counts.rejected.replace('{n}', String(result.counts.rejected))}
           </p>
-          <div className="max-h-96 overflow-auto rounded border border-gray-200 dark:border-gray-700">
+          <div className="max-h-96 overflow-auto rounded-sm border border-gray-200 dark:border-gray-700">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-left text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300"><tr><th className="px-2 py-1">{c.colLine}</th><th className="px-2 py-1">{c.colName}</th><th className="px-2 py-1">{c.colStatus}</th></tr></thead>
               <tbody>

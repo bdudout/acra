@@ -20,7 +20,7 @@ export interface ProjetRow { id: string; nom: string; statut: string; risques: n
 
 const METEO_ICONE: Record<string, LucideIcon> = { SOLEIL: Sun, SOLEIL_NUAGE: CloudSun, NUAGE: Cloud, ORAGE: CloudLightning }
 const METEO_COULEUR: Record<string, string> = { SOLEIL: 'text-amber-500', SOLEIL_NUAGE: 'text-amber-400', NUAGE: 'text-gray-500', ORAGE: 'text-red-600' }
-const field = 'rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
+const field = 'rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
 
 export default function ProjetsManager({ projets, canCreate }: { projets: ProjetRow[]; canCreate: boolean }) {
   const { t, locale } = useTranslation()

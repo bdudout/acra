@@ -817,7 +817,7 @@ export default function ConfigurationPage() {
         {/* Bannière lecture seule pour non-ADMIN */}
         {!isAdmin && (
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-            <span className="text-amber-500 text-xl flex-shrink-0"><Lock size={20} aria-hidden="true" /></span>
+            <span className="text-amber-500 text-xl shrink-0"><Lock size={20} aria-hidden="true" /></span>
             <div>
               <p className="text-sm font-medium text-amber-800">{t.config.readOnlyTitle}</p>
               <p className="text-xs text-amber-700 mt-0.5">{t.config.readOnlyDesc}</p>
@@ -897,7 +897,7 @@ export default function ConfigurationPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={`min-w-0 py-2 rounded-lg text-xs font-medium transition-colors sm:flex-1 ${
-                activeTab === tab.id ? 'bg-white shadow-sm text-ebios-700' : 'text-gray-600 hover:text-gray-900'
+                activeTab === tab.id ? 'bg-white shadow-xs text-ebios-700' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               {tab.label}
@@ -917,7 +917,7 @@ export default function ConfigurationPage() {
             {config.echelleGravite.map((n, i) => (
               <div key={i} className="card p-4">
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 text-center w-12">
+                  <div className="shrink-0 text-center w-12">
                     <div
                       className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg mx-auto"
                       style={{ backgroundColor: n.couleur, color: readableTextColor(n.couleur) }}
@@ -953,7 +953,7 @@ export default function ConfigurationPage() {
                             type="color"
                             value={n.couleur}
                             onChange={e => updateGravite(i, 'couleur', e.target.value)}
-                            className="w-10 h-9 rounded border border-gray-200 cursor-pointer p-0.5"
+                            className="w-10 h-9 rounded-sm border border-gray-200 cursor-pointer p-0.5"
                           />
                           <input
                             value={n.couleur}
@@ -980,7 +980,7 @@ export default function ConfigurationPage() {
             {config.echelleVraisemblance.map((n, i) => (
               <div key={i} className="card p-4">
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 text-center w-12">
+                  <div className="shrink-0 text-center w-12">
                     <div
                       className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg mx-auto"
                       style={{ backgroundColor: n.couleur, color: readableTextColor(n.couleur) }}
@@ -1016,7 +1016,7 @@ export default function ConfigurationPage() {
                             type="color"
                             value={n.couleur}
                             onChange={e => updateVraisemblance(i, 'couleur', e.target.value)}
-                            className="w-10 h-9 rounded border border-gray-200 cursor-pointer p-0.5"
+                            className="w-10 h-9 rounded-sm border border-gray-200 cursor-pointer p-0.5"
                           />
                           <input
                             value={n.couleur}
@@ -1110,10 +1110,10 @@ export default function ConfigurationPage() {
                       type="color"
                       value={s.couleur}
                       onChange={e => updateSeuil(i, 'couleur', e.target.value)}
-                      className="w-9 h-9 rounded border border-gray-200 cursor-pointer p-0.5"
+                      className="w-9 h-9 rounded-sm border border-gray-200 cursor-pointer p-0.5"
                     />
                     <span
-                      className="text-xs px-2 py-1 rounded font-medium"
+                      className="text-xs px-2 py-1 rounded-sm font-medium"
                       style={{ backgroundColor: s.couleur, color: readableTextColor(s.couleur) }}
                     >
                       {s.label || '?'}
@@ -1200,7 +1200,7 @@ export default function ConfigurationPage() {
                       <span className="flex items-center gap-1.5 mt-1">
                         <input type="number" min={1} max={600} defaultValue={actionDelais[k]}
                           onBlur={e => saveActionDelai(k, Math.max(1, Math.min(600, Number(e.target.value) || actionDelais[k])))}
-                          className="px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm w-20" />
+                          className="px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm w-20" />
                         <span className="text-xs text-gray-400">{t.actionDelais.monthsUnit}</span>
                       </span>
                     </label>
@@ -1228,7 +1228,7 @@ export default function ConfigurationPage() {
                       <th key={v.niveau} className="w-24 h-12 text-center">
                         <div className="text-xs font-semibold text-gray-600">V{v.niveau}</div>
                         <div
-                          className="text-xs font-medium px-1 py-0.5 rounded mt-0.5"
+                          className="text-xs font-medium px-1 py-0.5 rounded-sm mt-0.5"
                           style={{ backgroundColor: v.couleur, color: readableTextColor(v.couleur) }}
                         >
                           {v.label}
@@ -1243,7 +1243,7 @@ export default function ConfigurationPage() {
                       <td className="pr-2 text-right">
                         <div className="text-xs font-semibold text-gray-600">G{g.niveau}</div>
                         <div
-                          className="text-xs font-medium px-1 py-0.5 rounded text-right"
+                          className="text-xs font-medium px-1 py-0.5 rounded-sm text-right"
                           style={{ backgroundColor: g.couleur, color: readableTextColor(g.couleur) }}
                         >
                           {g.label}
@@ -1266,7 +1266,7 @@ export default function ConfigurationPage() {
                                 {score}
                               </div>
                               <div
-                                className="text-xs font-medium px-1.5 py-0.5 rounded mt-0.5"
+                                className="text-xs font-medium px-1.5 py-0.5 rounded-sm mt-0.5"
                                 style={{ backgroundColor: color, color: readableTextColor(color) }}
                               >
                                 {label}
@@ -1287,7 +1287,7 @@ export default function ConfigurationPage() {
               <div className="grid grid-cols-2 gap-3">
                 {config.seuilsMatrice.map((s, i) => (
                   <div key={i} className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: s.couleur + '15' }}>
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold flex-shrink-0"
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold shrink-0"
                       style={{ backgroundColor: s.couleur, color: readableTextColor(s.couleur) }}>
                       {s.scoreMin}–{s.scoreMax}
                     </div>
@@ -1401,7 +1401,7 @@ export default function ConfigurationPage() {
                     aria-label={f.title}
                     disabled={savingFeatures || locked}
                     onClick={() => saveFeature(f.field, !f.value)}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${effValue ? 'bg-ebios-600' : 'bg-gray-500 dark:bg-gray-400'} ${(savingFeatures || locked) ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${effValue ? 'bg-ebios-600' : 'bg-gray-500 dark:bg-gray-400'} ${(savingFeatures || locked) ? 'opacity-60 cursor-not-allowed' : ''}`}
                   >
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${effValue ? 'translate-x-6' : 'translate-x-1'}`} />
                   </button>
@@ -1424,7 +1424,7 @@ export default function ConfigurationPage() {
                 type="button" role="switch" aria-checked={derogationsActive} aria-label={t.features.derogationsTitle}
                 disabled={savingFeatures}
                 onClick={() => saveFeature('derogationsActive', !derogationsActive)}
-                className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${derogationsActive ? 'bg-ebios-600' : 'bg-gray-500 dark:bg-gray-400'} ${savingFeatures ? 'opacity-60 cursor-not-allowed' : ''}`}
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${derogationsActive ? 'bg-ebios-600' : 'bg-gray-500 dark:bg-gray-400'} ${savingFeatures ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${derogationsActive ? 'translate-x-6' : 'translate-x-1'}`} />
               </button>
@@ -1471,7 +1471,7 @@ export default function ConfigurationPage() {
                       onChange={e => setDerogationDuree(Number(e.target.value))}
                       onBlur={e => saveDerogationInt('derogationDureeDefautJours', Math.max(1, Math.min(3650, Number(e.target.value) || 180)))}
                       disabled={savingFeatures}
-                      className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
+                      className="w-28 px-2 py-1 rounded-sm border border-gray-300 text-sm" />
                   </label>
                   <label className="text-sm text-gray-700">
                     <span className="block text-xs font-medium text-gray-600 mb-1">{t.features.derogationAlerteLabel}</span>
@@ -1479,7 +1479,7 @@ export default function ConfigurationPage() {
                       onChange={e => setDerogationAlerte(Number(e.target.value))}
                       onBlur={e => saveDerogationInt('derogationAlerteJours', Math.max(1, Math.min(365, Number(e.target.value) || 30)))}
                       disabled={savingFeatures}
-                      className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
+                      className="w-28 px-2 py-1 rounded-sm border border-gray-300 text-sm" />
                   </label>
                   <label className="text-sm text-gray-700">
                     <span className="block text-xs font-medium text-gray-600 mb-1">{t.features.derogationDureeMaxLabel}</span>
@@ -1487,7 +1487,7 @@ export default function ConfigurationPage() {
                       onChange={e => setDerogationDureeMax(Number(e.target.value))}
                       onBlur={e => saveDerogationInt('derogationDureeMaxJours', Math.max(1, Math.min(3650, Number(e.target.value) || 365)))}
                       disabled={savingFeatures}
-                      className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
+                      className="w-28 px-2 py-1 rounded-sm border border-gray-300 text-sm" />
                   </label>
                 </div>
               </div>
@@ -1506,7 +1506,7 @@ export default function ConfigurationPage() {
                 onChange={e => setArchivageAnnees(Number(e.target.value))}
                 onBlur={e => saveArchivageAnnees(Math.max(1, Math.min(30, Number(e.target.value) || 5)))}
                 disabled={savingFeatures}
-                className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
+                className="w-28 px-2 py-1 rounded-sm border border-gray-300 text-sm" />
             </label>
           </section>
         )}
@@ -1529,7 +1529,7 @@ export default function ConfigurationPage() {
                 onChange={e => setPatternsMax(Number(e.target.value))}
                 onBlur={e => savePatternsMax(Math.max(1, Math.min(24, Math.floor(Number(e.target.value)) || 12)))}
                 disabled={savingFeatures}
-                className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
+                className="w-28 px-2 py-1 rounded-sm border border-gray-300 text-sm" />
             </label>
             <fieldset className="mt-5">
               <legend className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.patternsArchi.hiddenLabel}</legend>
@@ -1735,10 +1735,10 @@ export default function ConfigurationPage() {
                   <button
                     type="button"
                     onClick={() => toggleRef(idx)}
-                    className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${r.actif ? 'bg-ebios-500' : 'bg-gray-500 dark:bg-gray-400'}`}
+                    className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${r.actif ? 'bg-ebios-500' : 'bg-gray-500 dark:bg-gray-400'}`}
                     aria-label={r.actif ? t.config.refsDisable : t.config.refsEnable}
                   >
-                    <span className={`absolute top-1 left-1 w-4 h-4 bg-[white] rounded-full shadow transition-transform ${r.actif ? 'translate-x-4' : 'translate-x-0'}`} />
+                    <span className={`absolute top-1 left-1 w-4 h-4 bg-[white] rounded-full shadow-sm transition-transform ${r.actif ? 'translate-x-4' : 'translate-x-0'}`} />
                   </button>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-gray-800">{r.nom}</div>

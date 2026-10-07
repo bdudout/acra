@@ -66,7 +66,7 @@ export default function WebhooksManager() {
     navigator.clipboard?.writeText(secret).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800) }).catch(() => {})
   }
 
-  const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+  const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
 
   return (
     <section className="mb-6 card p-6">
@@ -78,7 +78,7 @@ export default function WebhooksManager() {
         <div className="mb-4 rounded-lg border border-ebios-300 bg-ebios-50 dark:bg-ebios-500/10 dark:border-ebios-500/30 p-3">
           <p className="text-xs font-medium text-ebios-800 dark:text-ebios-200 mb-1.5">{w.secretOnce}</p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 text-xs break-all bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 font-mono">{secret}</code>
+            <code className="flex-1 text-xs break-all bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-sm px-2 py-1.5 font-mono">{secret}</code>
             <button onClick={copier} className="btn-secondary text-xs inline-flex items-center gap-1">{copied ? <Check size={14} /> : <Copy size={14} />} {copied ? w.copied : w.copy}</button>
           </div>
         </div>

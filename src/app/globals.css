@@ -1,6 +1,191 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-ebios-50: #f0f4ff;
+  --color-ebios-100: #e0e9ff;
+  --color-ebios-200: #c7d6fe;
+  --color-ebios-300: #a5b8fc;
+  --color-ebios-400: #8191f8;
+  --color-ebios-500: #6366f1;
+  --color-ebios-600: #4f46e5;
+  --color-ebios-700: #4338ca;
+  --color-ebios-800: #3730a3;
+  --color-ebios-900: #312e81;
+  --color-ebios-950: #1e1b4b;
+
+  --color-risk-critical: #dc2626;
+  --color-risk-high: #ea580c;
+  --color-risk-medium: #ca8a04;
+  --color-risk-low: #16a34a;
+  --color-risk-negligible: #6b7280;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility btn-primary {
+  /* ── Boutons ──────────────────────────────────────────────────────────────── */
+  @apply bg-ebios-600 hover:bg-ebios-700 text-white font-medium px-4 py-2 rounded-lg
+           transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+           focus-visible:ring-2 focus-visible:ring-ebios-600 focus-visible:ring-offset-2;
+  .dark & {
+    /* ebios-600 (et non 500) : blanc sur ebios-500 ≈ 4.47:1 (sous le seuil AA 4.5).
+     * ebios-600 monte à ≈ 6.3:1 tout en restant un indigo vif sur fond sombre. */
+    @apply bg-ebios-600 hover:bg-ebios-500 focus-visible:ring-offset-gray-900;
+  }
+}
+
+@utility dark {
+  & .btn-primary {
+    /* ebios-600 (et non 500) : blanc sur ebios-500 ≈ 4.47:1 (sous le seuil AA 4.5).
+     * ebios-600 monte à ≈ 6.3:1 tout en restant un indigo vif sur fond sombre. */
+    @apply bg-ebios-600 hover:bg-ebios-500 focus-visible:ring-offset-gray-900;
+  }
+  & .btn-secondary {
+    @apply bg-gray-800 hover:bg-gray-700 text-gray-200 border-gray-600
+           focus-visible:ring-offset-gray-900;
+  }
+  & .btn-danger {
+    @apply bg-red-700 hover:bg-red-600 focus-visible:ring-offset-gray-900;
+  }
+  & .card {
+    @apply bg-gray-800 border-gray-700 shadow-gray-900/40;
+  }
+  & .input {
+    @apply bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400
+           focus:ring-ebios-400;
+  }
+  & .label {
+    @apply text-gray-300;
+  }
+  & .text-muted {
+    @apply text-gray-400;
+  }
+
+  & .badge-risk-critique {
+    @apply bg-red-900/50    text-red-300;
+  }
+  & .badge-risk-eleve {
+    @apply bg-orange-900/50 text-orange-300;
+  }
+  & .badge-risk-modere {
+    @apply bg-yellow-900/50 text-yellow-300;
+  }
+  & .badge-risk-faible {
+    @apply bg-green-900/50  text-green-300;
+  }
+}
+
+@utility btn-secondary {
+  @apply bg-white hover:bg-gray-50 text-gray-700 font-medium px-4 py-2 rounded-lg
+           border border-gray-300 transition-colors
+           focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2;
+  .dark & {
+    @apply bg-gray-800 hover:bg-gray-700 text-gray-200 border-gray-600
+           focus-visible:ring-offset-gray-900;
+  }
+}
+
+@utility btn-danger {
+  @apply bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg
+           transition-colors
+           focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2;
+  .dark & {
+    @apply bg-red-700 hover:bg-red-600 focus-visible:ring-offset-gray-900;
+  }
+}
+
+@utility card {
+  /* ── Carte ────────────────────────────────────────────────────────────────── */
+  @apply bg-white rounded-xl border border-gray-200 shadow-xs;
+  .dark & {
+    @apply bg-gray-800 border-gray-700 shadow-gray-900/40;
+  }
+}
+
+@utility input {
+  /* ── Champ de saisie ──────────────────────────────────────────────────────── */
+  @apply w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm
+           focus:outline-hidden focus:ring-2 focus:ring-ebios-500 focus:border-transparent;
+  .dark & {
+    @apply bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400
+           focus:ring-ebios-400;
+  }
+}
+
+@utility label {
+  /* ── Label ────────────────────────────────────────────────────────────────── */
+  @apply block text-sm font-medium text-gray-700 mb-1;
+  .dark & {
+    @apply text-gray-300;
+  }
+}
+
+@utility text-muted {
+  /* ── Texte secondaire ─────────────────────────────────────────────────────── */
+  @apply text-gray-500 text-sm;
+  .dark & {
+    @apply text-gray-400;
+  }
+}
+
+@utility badge-risk-critique {
+  /* ── Badges de risque ──────────────────────────────────────────────────────── */
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100    text-red-800;
+
+  .dark & {
+    @apply bg-red-900/50    text-red-300;
+  }
+}
+
+@utility badge-risk-eleve {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800;
+  .dark & {
+    @apply bg-orange-900/50 text-orange-300;
+  }
+}
+
+@utility badge-risk-modere {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800;
+  .dark & {
+    @apply bg-yellow-900/50 text-yellow-300;
+  }
+}
+
+@utility badge-risk-faible {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100  text-green-800;
+  .dark & {
+    @apply bg-green-900/50  text-green-300;
+  }
+}
+
+@utility skip-link {
+  /* ── Lien d'évitement (skip to content) — RGAA 12.6 ──────────────────────── */
+  @apply absolute -top-full left-4 z-9999 px-4 py-2 bg-ebios-700 text-white text-sm font-medium
+           rounded-b-lg transition-all;
+  &:focus {
+    @apply top-0;
+    outline: 2px solid #fff;
+    outline-offset: -4px;
+  }
+}
 
 @layer base {
   /* color-scheme : aligne les CONTRÔLES NATIFS (barres de défilement, sélecteurs
@@ -50,95 +235,6 @@
   }
   .dark main a:not([class]):hover {
     @apply text-ebios-200;
-  }
-}
-
-@layer components {
-  /* ── Boutons ──────────────────────────────────────────────────────────────── */
-  .btn-primary {
-    @apply bg-ebios-600 hover:bg-ebios-700 text-white font-medium px-4 py-2 rounded-lg
-           transition-colors disabled:opacity-50 disabled:cursor-not-allowed
-           focus-visible:ring-2 focus-visible:ring-ebios-600 focus-visible:ring-offset-2;
-  }
-  .dark .btn-primary {
-    /* ebios-600 (et non 500) : blanc sur ebios-500 ≈ 4.47:1 (sous le seuil AA 4.5).
-     * ebios-600 monte à ≈ 6.3:1 tout en restant un indigo vif sur fond sombre. */
-    @apply bg-ebios-600 hover:bg-ebios-500 focus-visible:ring-offset-gray-900;
-  }
-
-  .btn-secondary {
-    @apply bg-white hover:bg-gray-50 text-gray-700 font-medium px-4 py-2 rounded-lg
-           border border-gray-300 transition-colors
-           focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2;
-  }
-  .dark .btn-secondary {
-    @apply bg-gray-800 hover:bg-gray-700 text-gray-200 border-gray-600
-           focus-visible:ring-offset-gray-900;
-  }
-
-  .btn-danger {
-    @apply bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg
-           transition-colors
-           focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2;
-  }
-  .dark .btn-danger {
-    @apply bg-red-700 hover:bg-red-600 focus-visible:ring-offset-gray-900;
-  }
-
-  /* ── Carte ────────────────────────────────────────────────────────────────── */
-  .card {
-    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
-  }
-  .dark .card {
-    @apply bg-gray-800 border-gray-700 shadow-gray-900/40;
-  }
-
-  /* ── Champ de saisie ──────────────────────────────────────────────────────── */
-  .input {
-    @apply w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm
-           focus:outline-none focus:ring-2 focus:ring-ebios-500 focus:border-transparent;
-  }
-  .dark .input {
-    @apply bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400
-           focus:ring-ebios-400;
-  }
-
-  /* ── Label ────────────────────────────────────────────────────────────────── */
-  .label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
-  }
-  .dark .label {
-    @apply text-gray-300;
-  }
-
-  /* ── Texte secondaire ─────────────────────────────────────────────────────── */
-  .text-muted {
-    @apply text-gray-500 text-sm;
-  }
-  .dark .text-muted {
-    @apply text-gray-400;
-  }
-
-  /* ── Badges de risque ──────────────────────────────────────────────────────── */
-  .badge-risk-critique  { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100    text-red-800; }
-  .badge-risk-eleve     { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800; }
-  .badge-risk-modere    { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800; }
-  .badge-risk-faible    { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100  text-green-800; }
-
-  .dark .badge-risk-critique  { @apply bg-red-900/50    text-red-300; }
-  .dark .badge-risk-eleve     { @apply bg-orange-900/50 text-orange-300; }
-  .dark .badge-risk-modere    { @apply bg-yellow-900/50 text-yellow-300; }
-  .dark .badge-risk-faible    { @apply bg-green-900/50  text-green-300; }
-
-  /* ── Lien d'évitement (skip to content) — RGAA 12.6 ──────────────────────── */
-  .skip-link {
-    @apply absolute -top-full left-4 z-[9999] px-4 py-2 bg-ebios-700 text-white text-sm font-medium
-           rounded-b-lg transition-all;
-  }
-  .skip-link:focus {
-    @apply top-0;
-    outline: 2px solid #fff;
-    outline-offset: -4px;
   }
 }
 

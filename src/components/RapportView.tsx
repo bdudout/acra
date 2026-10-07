@@ -98,7 +98,7 @@ export default function RapportView({ id }: { id: string }) {
             {e.statut === 'VALIDE' && (
               <div className="flex flex-wrap items-end gap-2">
                 <label className="text-xs text-gray-500">{r.destinataires}
-                  <input aria-label={r.destinataires} value={dest} onChange={ev => setDest(ev.target.value)} className="block mt-1 px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm w-80" />
+                  <input aria-label={r.destinataires} value={dest} onChange={ev => setDest(ev.target.value)} className="block mt-1 px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm w-80" />
                 </label>
                 <button type="button" disabled={busy} onClick={() => agir('DIFFUSE', { destinataires: dest.split(',').map(x => x.trim()).filter(Boolean) })} className="btn-primary text-xs disabled:opacity-50">{r.actions.diffuser}</button>
               </div>

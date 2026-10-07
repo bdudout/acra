@@ -291,7 +291,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false, projets3
                 key={f.value}
                 onClick={() => handleFilterChange(f.value as FilterValue)}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  filter === f.value ? 'bg-white shadow-sm text-ebios-700' : 'text-gray-600 hover:text-gray-900'
+                  filter === f.value ? 'bg-white shadow-xs text-ebios-700' : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 {f.label}
@@ -301,7 +301,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false, projets3
           <div className="ml-auto"><VueListeToggle mode={modeVue} onChange={setModeVue} /></div>
           {allTags.length > 0 && (
             <select value={tagFilter} onChange={e => setTagFilter(e.target.value)}
-              className="input max-w-[12rem] text-sm" aria-label={t.analyses.tagFilterLabel}>
+              className="input max-w-48 text-sm" aria-label={t.analyses.tagFilterLabel}>
               <option value="">{t.analyses.tagFilterAll}</option>
               {allTags.map(tg => <option key={tg} value={tg}>{tg}</option>)}
             </select>
@@ -455,7 +455,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false, projets3
                       </div>
                     </div>
 
-                    <div className="flex w-full gap-2 sm:w-auto sm:flex-shrink-0" onClick={e => e.stopPropagation()}>
+                    <div className="flex w-full gap-2 sm:w-auto sm:shrink-0" onClick={e => e.stopPropagation()}>
                       <Link href={`/analyses/${a.id}`} className="btn-secondary flex-1 text-center text-sm py-1.5 sm:flex-none">
                         {t.analyses.openBtn}
                       </Link>

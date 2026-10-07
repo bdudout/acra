@@ -164,23 +164,23 @@ export default function DerogationsPanel({
       </div>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{d.subtitle}</p>
 
-      {error && <div className="mb-3 p-2 rounded bg-red-50 border border-red-200 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</div>}
+      {error && <div className="mb-3 p-2 rounded-sm bg-red-50 border border-red-200 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</div>}
 
       {/* Formulaire de création */}
       {creating && canEdit && (
         <div className="mb-4 space-y-2 p-3 rounded-lg border border-gray-200 bg-gray-50 dark:bg-gray-800/40 dark:border-gray-700">
-          <select value={form.portee} onChange={e => setForm(f => ({ ...f, portee: e.target.value }))} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+          <select value={form.portee} onChange={e => setForm(f => ({ ...f, portee: e.target.value }))} className="w-full px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
             {(['CONTROLE', 'RISQUE'] as const).map(p => <option key={p} value={p}>{(d.portees as Record<string, string>)[p]}</option>)}
           </select>
           {form.portee === 'CONTROLE' && (
             // Référentiel existant de l'org (ISO/PSSI…) ; repli texte libre si aucun.
             refs.length > 0 ? (
-              <select value={form.referentiel} onChange={e => setForm(f => ({ ...f, referentiel: e.target.value, ref: '' }))} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+              <select value={form.referentiel} onChange={e => setForm(f => ({ ...f, referentiel: e.target.value, ref: '' }))} className="w-full px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
                 <option value="">{d.referentiel}…</option>
                 {refs.map(r => <option key={r.code} value={r.code}>{r.nom}</option>)}
               </select>
             ) : (
-              <input value={form.referentiel} onChange={e => setForm(f => ({ ...f, referentiel: e.target.value }))} placeholder={d.referentiel} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+              <input value={form.referentiel} onChange={e => setForm(f => ({ ...f, referentiel: e.target.value }))} placeholder={d.referentiel} className="w-full px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
             )
           )}
           {form.portee === 'CONTROLE' && (
@@ -188,16 +188,16 @@ export default function DerogationsPanel({
             exigences.length > 0 ? (
               <select value={form.ref}
                 onChange={e => { const ex = exigences.find(x => x.ref === e.target.value); setForm(f => ({ ...f, ref: e.target.value, intitule: f.intitule || (ex ? `[${ex.ref}] ${ex.nom}` : f.intitule) })) }}
-                className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+                className="w-full px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
                 <option value="">{d.controle}…</option>
                 {exigences.map(ex => <option key={ex.ref} value={ex.ref}>[{ex.ref}] {ex.nom}</option>)}
               </select>
             ) : (
-              <input value={form.ref} onChange={e => setForm(f => ({ ...f, ref: e.target.value }))} placeholder={d.controle} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+              <input value={form.ref} onChange={e => setForm(f => ({ ...f, ref: e.target.value }))} placeholder={d.controle} className="w-full px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
             )
           )}
           {form.portee === 'RISQUE' && (
-            <select value={form.risqueId} onChange={e => setForm(f => ({ ...f, risqueId: e.target.value }))} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+            <select value={form.risqueId} onChange={e => setForm(f => ({ ...f, risqueId: e.target.value }))} className="w-full px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
               <option value="">{d.risque}…</option>
               {risques.map(r => <option key={r.id} value={r.id}>{r.nom}</option>)}
             </select>
@@ -205,22 +205,22 @@ export default function DerogationsPanel({
           <label className="block text-xs text-gray-600 dark:text-gray-300">
             <span className="block mb-1 font-medium">{d.intitule}</span>
             <AutocompleteInput field="mesure" lang={locale} value={form.intitule} onChange={v => setForm(f => ({ ...f, intitule: v }))}
-              placeholder={d.intitulePlaceholder} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+              placeholder={d.intitulePlaceholder} className="w-full px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
           </label>
           <label className="block text-xs text-gray-600 dark:text-gray-300">
             <span className="block mb-1 font-medium">{d.motif}</span>
-            <textarea value={form.motif} onChange={e => setForm(f => ({ ...f, motif: e.target.value }))} placeholder={d.motifPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+            <textarea value={form.motif} onChange={e => setForm(f => ({ ...f, motif: e.target.value }))} placeholder={d.motifPlaceholder} rows={2} className="w-full px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
           </label>
           <label className="block text-xs text-gray-600 dark:text-gray-300">
             <span className="block mb-1 font-medium">{d.mesuresCompensatoires}</span>
-            <textarea value={form.mesures} onChange={e => setForm(f => ({ ...f, mesures: e.target.value }))} placeholder={d.mesuresPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+            <textarea value={form.mesures} onChange={e => setForm(f => ({ ...f, mesures: e.target.value }))} placeholder={d.mesuresPlaceholder} rows={2} className="w-full px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
           </label>
           {/* Date butoir = durée (jours), plafonnée au délai maximal configuré. */}
           <div className="flex items-center gap-2 flex-wrap text-xs text-gray-600 dark:text-gray-300">
             <span className="font-medium">{d.dureeLabel}</span>
             <input type="number" min={1} max={dureeMax} value={form.dureeJours}
               onChange={e => setForm(f => ({ ...f, dureeJours: e.target.value }))}
-              placeholder={String(dureeDefaut)} className="w-24 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+              placeholder={String(dureeDefaut)} className="w-24 px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
             <span className="text-gray-400">{d.dureeMaxHint?.replace('{max}', String(dureeMax))}</span>
             {dateFinCalc && <span className="ml-1">→ {d.dateFinLabel} : <strong className="text-gray-800 dark:text-gray-100">{dateFinCalc}</strong></span>}
           </div>
@@ -266,7 +266,7 @@ export default function DerogationsPanel({
                   </p>
                 )}
                 {x.avisRssiReserves && (
-                  <p className="mt-1 text-[11px] rounded bg-amber-50 dark:bg-amber-500/10 text-amber-900 dark:text-amber-200 px-2 py-1 whitespace-pre-wrap">
+                  <p className="mt-1 text-[11px] rounded-sm bg-amber-50 dark:bg-amber-500/10 text-amber-900 dark:text-amber-200 px-2 py-1 whitespace-pre-wrap">
                     <span className="font-semibold">{d.reserves} :</span> {x.avisRssiReserves}
                   </p>
                 )}
@@ -333,10 +333,10 @@ function ActionRow({ d, busy, show, doubleRegardActif, onAvis, onAvisReserves, o
   const [dt, setDt] = useState('')
   const [preuves, setPreuves] = useState<{ nom: string; mime: string; taille: number; dataUrl: string }[]>([])
   const s = d as Record<string, string>
-  const btn = 'text-xs px-2 py-1 rounded font-medium disabled:opacity-50'
+  const btn = 'text-xs px-2 py-1 rounded-sm font-medium disabled:opacity-50'
   return (
-    <div className="mt-2 space-y-2 p-2 rounded bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700">
-      <textarea value={c} onChange={e => setC(e.target.value)} placeholder={s.commentairePlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs" />
+    <div className="mt-2 space-y-2 p-2 rounded-sm bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700">
+      <textarea value={c} onChange={e => setC(e.target.value)} placeholder={s.commentairePlaceholder} rows={2} className="w-full px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs" />
       <div className="flex flex-wrap gap-2">
         {show.canAvis && <>
           {doubleRegardActif && <label className="text-xs flex items-center gap-1"><input type="checkbox" checked={dbl} onChange={e => setDbl(e.target.checked)} />{s.demanderDoubleRegard}</label>}
@@ -353,7 +353,7 @@ function ActionRow({ d, busy, show, doubleRegardActif, onAvis, onAvisReserves, o
           <button disabled={busy} onClick={() => onRejeter(c)} className={`${btn} bg-red-600 text-white`}>{s.rejeter}</button>
         </>}
         {show.canProlong && <>
-          <input type="date" value={dt} onChange={e => setDt(e.target.value)} className="text-xs px-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600" />
+          <input type="date" value={dt} onChange={e => setDt(e.target.value)} className="text-xs px-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600" />
           <button disabled={busy} onClick={() => onProlonger(dt, c)} className={`${btn} bg-blue-600 text-white`}>{s.prolonger}</button>
         </>}
         {show.canRev && <button disabled={busy} onClick={() => onRevoquer(c)} className={`${btn} bg-gray-600 text-white`}>{s.revoquer}</button>}
@@ -362,7 +362,7 @@ function ActionRow({ d, busy, show, doubleRegardActif, onAvis, onAvisReserves, o
       {show.canClo && (
         <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-gray-200 dark:border-gray-700">
           <input type="file" multiple onChange={async e => setPreuves(await readPreuves(e.target.files))}
-            className="text-xs text-gray-600 dark:text-gray-300 file:mr-2 file:text-xs file:rounded file:border-0 file:bg-gray-200 dark:file:bg-gray-700 file:px-2 file:py-1" />
+            className="text-xs text-gray-600 dark:text-gray-300 file:mr-2 file:text-xs file:rounded-sm file:border-0 file:bg-gray-200 dark:file:bg-gray-700 file:px-2 file:py-1" />
           <button disabled={busy || preuves.length === 0} onClick={() => onCloturer(preuves, c)} className={`${btn} bg-slate-700 text-white`}>{s.cloturer}</button>
           {preuves.length > 0 && <span className="text-[11px] text-gray-500">{preuves.length} ✓</span>}
         </div>

@@ -54,9 +54,9 @@ export default function SectorMeasuresPanel({ items, existingNames, onAdd }: {
                 {refs.length > 0 && <p className="text-xs text-gray-400">{a5.sectorMeasRefs} : {refs.join(' ; ')}</p>}
               </div>
               {done ? (
-                <span className="text-xs text-green-600 font-medium flex-shrink-0 mt-0.5">✓ {a5.sectorMeasAdded}</span>
+                <span className="text-xs text-green-600 font-medium shrink-0 mt-0.5">✓ {a5.sectorMeasAdded}</span>
               ) : (
-                <button type="button" onClick={() => onAdd(m)} className="text-xs text-ebios-600 hover:text-ebios-800 font-medium flex-shrink-0 mt-0.5 whitespace-nowrap">
+                <button type="button" onClick={() => onAdd(m)} className="text-xs text-ebios-600 hover:text-ebios-800 font-medium shrink-0 mt-0.5 whitespace-nowrap">
                   + {a5.sectorMeasAdd}
                 </button>
               )}

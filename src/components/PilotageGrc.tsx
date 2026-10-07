@@ -377,6 +377,6 @@ function Tile({ label, value, tone, href }: { label: string; value: number | str
   )
   // Tuile cliquable : mène à la vue filtrée correspondante.
   return href
-    ? <Link href={href} className="card p-3 block transition hover:ring-2 hover:ring-ebios-300 dark:hover:ring-ebios-500/40 hover:shadow-sm">{inner}</Link>
+    ? <Link href={href} className="card p-3 block transition hover:ring-2 hover:ring-ebios-300 dark:hover:ring-ebios-500/40 hover:shadow-xs">{inner}</Link>
     : <div className="card p-3">{inner}</div>
 }

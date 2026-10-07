@@ -49,10 +49,10 @@ export default function ProjetsSuivi({ synthese }: { synthese: ProjetsSynthese }
                   <td className="py-2 pr-3 text-xs">{(t.statusLabels as Record<string, string>)[pr.statut] ?? pr.statut}</td>
                   <td className="py-2 pr-3 tabular-nums">{pr.risques}</td>
                   <td className={`py-2 pr-3 tabular-nums ${pr.eleves > 0 ? 'font-semibold text-red-600 dark:text-red-400' : ''}`}>{pr.eleves}</td>
-                  <td className="py-2 pr-3"><span className={`inline-block rounded px-1.5 py-0.5 text-xs ${VALIDATION_STYLE[pr.validation]}`}>{p.validations[pr.validation]}</span></td>
+                  <td className="py-2 pr-3"><span className={`inline-block rounded-sm px-1.5 py-0.5 text-xs ${VALIDATION_STYLE[pr.validation]}`}>{p.validations[pr.validation]}</span></td>
                   <td className="py-2 text-xs">
                     {pr.dateEcheance ? new Date(pr.dateEcheance).toLocaleDateString(locale) : '—'}
-                    {pr.enRetard && <span className="ml-1.5 rounded bg-red-100 px-1.5 py-0.5 text-red-800 dark:bg-red-900/30 dark:text-red-300">{p.enRetard}</span>}
+                    {pr.enRetard && <span className="ml-1.5 rounded-sm bg-red-100 px-1.5 py-0.5 text-red-800 dark:bg-red-900/30 dark:text-red-300">{p.enRetard}</span>}
                   </td>
                 </tr>
               ))}

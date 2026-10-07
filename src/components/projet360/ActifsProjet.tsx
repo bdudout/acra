@@ -9,7 +9,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import { ACTIF_TYPES, CRITICITE_MAX, type ActifProjet } from '@/lib/actifs-projet'
 
-const field = 'rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:bg-gray-800 dark:border-gray-600'
+const field = 'rounded-sm border border-gray-300 bg-white px-2 py-1 text-sm dark:bg-gray-800 dark:border-gray-600'
 let n = 0
 const idLigne = () => `ap${Date.now().toString(36)}${(n++).toString(36)}`
 
@@ -66,7 +66,7 @@ export default function ActifsProjet({ analyseId, editable }: { analyseId: strin
             <tbody>
               {actifs.map(x => (
                 <tr key={x.id} className="border-b border-gray-100 dark:border-gray-800">
-                  <td className="py-1.5 pr-2"><input aria-label={a.nom} value={x.nom} disabled={!editable} maxLength={200} onChange={e => maj(x.id, { nom: e.target.value })} className={`${field} w-full min-w-[12rem]`} /></td>
+                  <td className="py-1.5 pr-2"><input aria-label={a.nom} value={x.nom} disabled={!editable} maxLength={200} onChange={e => maj(x.id, { nom: e.target.value })} className={`${field} w-full min-w-48`} /></td>
                   <td className="py-1.5 pr-2">
                     <select aria-label={a.nature} value={x.type} disabled={!editable} onChange={e => maj(x.id, { type: e.target.value as ActifProjet['type'] })} className={field}>
                       {ACTIF_TYPES.map(k => <option key={k} value={k}>{types[k]}</option>)}

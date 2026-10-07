@@ -758,7 +758,7 @@ ebios-rm/
 | Base de données | PostgreSQL | 16 |
 | ORM | Prisma | 5 |
 | Authentification | NextAuth.js (credentials + JWT) | 4 |
-| UI | Tailwind CSS | 3 |
+| UI | Tailwind CSS | 4 |
 | Export PDF | @react-pdf/renderer (server-side) | — |
 | Export Excel | ExcelJS | — |
 | Tests | Vitest + Testing Library | — |

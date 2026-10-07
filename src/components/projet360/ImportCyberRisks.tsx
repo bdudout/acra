@@ -13,7 +13,7 @@ interface SourceRisk { id: string; nom: string; niveauRisque: number; alreadyImp
 interface SourceRow { id: string; nom: string; methode: string; nbRisques: number; nbTiers: number }
 interface SourceDetail { id: string; nom: string; nbTiers: number; risques: SourceRisk[] }
 
-const field = 'mt-1 block w-full max-w-md rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
+const field = 'mt-1 block w-full max-w-md rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
 
 export default function ImportCyberRisks({ analyseId, onImported, onVoirRisques }: { analyseId: string; onImported?: () => void; onVoirRisques?: () => void }) {
   const { t } = useTranslation()

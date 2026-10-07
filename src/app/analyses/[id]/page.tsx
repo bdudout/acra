@@ -329,7 +329,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
                   href={accessible ? `/analyses/${analyse.id}/atelier/${a.num}` : '#'}
                   className={`p-3 rounded-xl text-center transition-colors ${
                     done    ? 'bg-ebios-100 text-ebios-700 hover:bg-ebios-200' :
-                    active  ? 'bg-ebios-600 text-white shadow-sm' :
+                    active  ? 'bg-ebios-600 text-white shadow-xs' :
                     'bg-gray-50 text-gray-500 cursor-not-allowed'
                   }`}
                 >
@@ -445,7 +445,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
                           className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                           title={t.analysis.editRiskTreatment}
                         >
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${niveau.bg} ${niveau.color}`}>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${niveau.bg} ${niveau.color}`}>
                             {niveau.label} ({r.niveauRisque})
                           </span>
                           <span className="text-sm text-gray-800 flex-1">{r.nom}</span>
@@ -479,7 +479,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
                         className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                         title={t.analysis.editMeasure}
                       >
-                        <span className={`text-xs font-bold w-6 flex-shrink-0 ${
+                        <span className={`text-xs font-bold w-6 shrink-0 ${
                           m.priorite === 1 ? 'text-red-600' :
                           m.priorite === 2 ? 'text-orange-600' :
                           m.priorite === 3 ? 'text-yellow-600' : 'text-gray-500'

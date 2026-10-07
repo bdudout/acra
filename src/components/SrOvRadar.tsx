@@ -83,7 +83,7 @@ function SrOvRadar({ sources, labels, pertinenceLabel, categoryLabels }: {
 
   return (
     <div className="flex flex-col sm:flex-row gap-4 items-start">
-      <div className="text-gray-300 dark:text-gray-600 w-full max-w-[380px] flex-shrink-0">
+      <div className="text-gray-300 dark:text-gray-600 w-full max-w-[380px] shrink-0">
         <svg viewBox={`0 0 ${VB} ${VB}`} className="w-full" role="img" aria-label={pertinenceLabel}>
           {/* Zone centrale prioritaire (pertinence forte) */}
           <circle cx={CX} cy={CY} r={rInner} className="fill-ebios-500/10 dark:fill-ebios-400/10" />
@@ -115,14 +115,14 @@ function SrOvRadar({ sources, labels, pertinenceLabel, categoryLabels }: {
             const isP1 = c.priorite === 'P1'
             const isActive = active?.c.id === c.id
             return (
-              <g key={c.id} tabIndex={0} role="button" className="cursor-default outline-none"
+              <g key={c.id} tabIndex={0} role="button" className="cursor-default outline-hidden"
                 aria-label={`${num}. ${c.sourceNom} → ${c.ovNom} — ${pertinenceLabel} ${c.pertinence}/4 — ${c.priorite}`}
                 onMouseEnter={() => setActive(item)} onMouseLeave={() => setActive(null)}
                 onFocus={() => setActive(item)} onBlur={() => setActive(null)}>
                 {(isP1 || isActive) && <circle cx={x} cy={y} r={isActive ? 12 : 10} fill={hexFor(c.categorie)} opacity={0.18} />}
                 <circle cx={x} cy={y} r={isActive ? 7.5 : isP1 ? 6.5 : 5} fill={hexFor(c.categorie)}
                   stroke={isP1 ? '#111827' : '#ffffff'} strokeWidth={isP1 ? 1.5 : 1}
-                  className={`transition-all ${isP1 ? 'dark:[stroke:#f9fafb]' : ''}`} />
+                  className={`transition-all ${isP1 ? 'dark:stroke-[#f9fafb]' : ''}`} />
                 <text x={x} y={y - (isP1 || isActive ? 9 : 8)} textAnchor="middle"
                   className="fill-gray-600 dark:fill-gray-300" fontSize={9} fontWeight={700}>{num}</text>
               </g>
@@ -142,7 +142,7 @@ function SrOvRadar({ sources, labels, pertinenceLabel, categoryLabels }: {
               <foreignObject x={tx} y={ty} width={tipW} height={tipH} pointerEvents="none" style={{ pointerEvents: 'none', overflow: 'visible' }}>
                 <div style={{ pointerEvents: 'none' }} className="inline-block rounded-md border border-gray-200 bg-white/95 p-2 text-[11px] leading-snug shadow-md dark:border-gray-700 dark:bg-gray-800/95">
                   <div className="flex items-center gap-1.5">
-                    <span className="rounded bg-gray-200 px-1 text-[10px] font-bold text-gray-700 dark:bg-gray-700 dark:text-gray-200">{active.num}</span>
+                    <span className="rounded-sm bg-gray-200 px-1 text-[10px] font-bold text-gray-700 dark:bg-gray-700 dark:text-gray-200">{active.num}</span>
                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: hexFor(active.c.categorie) }} aria-hidden />
                     <span className="text-gray-500 dark:text-gray-400">{categoryLabels[active.c.categorie] ?? active.c.categorie}</span>
                   </div>
@@ -169,16 +169,16 @@ function SrOvRadar({ sources, labels, pertinenceLabel, categoryLabels }: {
         <ol className="space-y-1">
           {ordered.map(c => (
             <li key={c.id}
-              className={`flex items-start gap-2 rounded px-1 -mx-1 cursor-default transition-colors ${active?.c.id === c.id ? 'bg-ebios-50 dark:bg-ebios-500/15' : ''}`}
+              className={`flex items-start gap-2 rounded-sm px-1 -mx-1 cursor-default transition-colors ${active?.c.id === c.id ? 'bg-ebios-50 dark:bg-ebios-500/15' : ''}`}
               onMouseEnter={() => { const p = placedById.get(c.id); if (p) setActive(p) }}
               onMouseLeave={() => setActive(null)}>
-              <span className="w-4 text-right tabular-nums text-gray-400 dark:text-gray-500 flex-shrink-0">{numById.get(c.id)}</span>
-              <span className="w-2.5 h-2.5 rounded-full mt-0.5 flex-shrink-0" style={{ backgroundColor: hexFor(c.categorie) }} aria-hidden />
+              <span className="w-4 text-right tabular-nums text-gray-400 dark:text-gray-500 shrink-0">{numById.get(c.id)}</span>
+              <span className="w-2.5 h-2.5 rounded-full mt-0.5 shrink-0" style={{ backgroundColor: hexFor(c.categorie) }} aria-hidden />
               <span className="text-gray-700 dark:text-gray-200">
                 <span className="text-gray-500 dark:text-gray-400">{c.sourceNom || (categoryLabels[c.categorie] ?? c.categorie)}</span>
                 {' → '}{c.ovNom}
                 {c.priorite === 'P1' && (
-                  <span className="ml-1.5 text-[10px] px-1 py-0.5 rounded bg-ebios-100 text-ebios-700 dark:bg-ebios-500/20 dark:text-ebios-300 font-medium">{labels.p1}</span>
+                  <span className="ml-1.5 text-[10px] px-1 py-0.5 rounded-sm bg-ebios-100 text-ebios-700 dark:bg-ebios-500/20 dark:text-ebios-300 font-medium">{labels.p1}</span>
                 )}
               </span>
             </li>

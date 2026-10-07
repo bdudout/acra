@@ -37,7 +37,7 @@ export default function TitreEditable({ analyseId, nom: initial, canEdit, labels
     <div className="flex flex-wrap items-center gap-2">
       <input aria-label={l.nom} value={edition} maxLength={200} autoFocus onChange={e => setEdition(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') enregistrer(); if (e.key === 'Escape') { setEdition(null); setErreur(false) } }}
-        className="min-w-[18rem] rounded border border-gray-300 bg-white px-2 py-1 text-xl font-bold dark:border-gray-600 dark:bg-gray-800" />
+        className="min-w-[18rem] rounded-sm border border-gray-300 bg-white px-2 py-1 text-xl font-bold dark:border-gray-600 dark:bg-gray-800" />
       <button type="button" aria-label={l.enregistrer} onClick={enregistrer} disabled={!edition.trim()} className="p-1 text-green-700 disabled:opacity-40"><Check size={18} aria-hidden="true" /></button>
       <button type="button" aria-label={l.annuler} onClick={() => { setEdition(null); setErreur(false) }} className="p-1 text-gray-400"><X size={18} aria-hidden="true" /></button>
       {erreur && <span role="alert" className="text-xs text-red-600">{l.erreur}</span>}

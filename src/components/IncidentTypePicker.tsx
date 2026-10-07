@@ -51,7 +51,7 @@ export default function IncidentTypePicker({ selectedKey, onPick, onClear, secto
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-2" role="group" aria-label={c.title}>
       <div className="flex flex-wrap items-center gap-2">
-        <input autoFocus aria-label={c.search} placeholder={c.search} value={q} onChange={e => setQ(e.target.value)} className="flex-1 min-w-[12rem] px-2.5 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+        <input autoFocus aria-label={c.search} placeholder={c.search} value={q} onChange={e => setQ(e.target.value)} className="flex-1 min-w-48 px-2.5 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
         {(['ALL', 'CYBER', 'OTHER'] as const).map(k => (
           <button key={k} type="button" aria-pressed={cat === k} onClick={() => setCat(k)} className={`text-xs rounded-full px-2.5 py-1 border ${cat === k ? 'bg-ebios-600 text-white border-ebios-600' : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200'}`}>{c.filters[k]}</button>
         ))}
