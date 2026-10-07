@@ -89,6 +89,7 @@ export interface RawOrgConfig {
   champsPersonnalises?: unknown
   auditConfig?: unknown
   rapportsConfig?: unknown
+  planificationConfig?: unknown
   relancesConfig?: unknown
   appetitRisque?: unknown
   actionDelaisMois?: unknown
@@ -171,6 +172,8 @@ export interface OrgConfigResolved {
   champsPersonnalises: Record<string, unknown>
   auditConfig: Record<string, unknown>
   rapportsConfig: Record<string, unknown>
+  /** Programme d'audit et de contrôle : mode par défaut, préparateurs / validateurs, double regard (lib/planification). */
+  planificationConfig: Record<string, unknown>
   /** Relances automatiques (questionnaires, préconisations, plans d'action) — cf. lib/relances. */
   relancesConfig: Record<string, unknown>
   appetitRisque: AppetitConfig
@@ -236,6 +239,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   champsPersonnalises: {},
   auditConfig: {},
   rapportsConfig: {},
+  planificationConfig: {},
   relancesConfig: {},
   appetitRisque: APPETIT_DEFAULT,
   actionDelaisMois: DEFAULT_ACTION_DELAIS_MOIS,
@@ -249,7 +253,7 @@ function isEmptyJson(v: unknown): boolean {
   return false
 }
 
-type JsonKey = 'secteursMasques' | 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig' | 'relancesConfig' | 'patternsArchiMasques' | 'risquesProjetDefaut'
+type JsonKey = 'secteursMasques' | 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig' | 'planificationConfig' | 'relancesConfig' | 'patternsArchiMasques' | 'risquesProjetDefaut'
 type BoolKey = 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive' | 'campagnesRcsaActive' | 'appetenceActive' | 'rapportsGrcActive' | 'projetSuppressionValidation'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees' | 'patternsArchiMax'
@@ -342,6 +346,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     champsPersonnalises: pickJson('champsPersonnalises', defaults.champsPersonnalises),
     auditConfig: pickJson('auditConfig', defaults.auditConfig),
     rapportsConfig: pickJson('rapportsConfig', defaults.rapportsConfig),
+    planificationConfig: pickJson('planificationConfig', defaults.planificationConfig),
     relancesConfig: pickJson('relancesConfig', defaults.relancesConfig),
     appetitRisque: pickJson('appetitRisque', defaults.appetitRisque),
     actionDelaisMois: cleanActionDelais(pickJson('actionDelaisMois', defaults.actionDelaisMois)),

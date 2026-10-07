@@ -4,6 +4,7 @@ import SecteursMasquesEditor from '@/components/SecteursMasquesEditor'
 import TierIdentityPanel from '@/components/TierIdentityPanel'
 import RisquesProjetDefautEditor from '@/components/RisquesProjetDefautEditor'
 import SectorSettings from '@/components/SectorSettings'
+import PlanificationSettings from '@/components/PlanificationSettings'
 import { resolveIsAdmin } from '@/lib/effective-admin'
 import { Lock, Palette, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
@@ -1434,6 +1435,15 @@ export default function ConfigurationPage() {
                 </div>
               ))}
             </div>
+          </section>
+        )}
+
+        {/* ── Planification de l'audit et du contrôle (ADMIN, avec l'un des deux modules) ── */}
+        {isAdmin && (auditInterneActive || controlePermanentActive) && (
+          <section className="mt-8 card p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-1">{t.planification.titre}</h2>
+            <p className="text-sm text-gray-500 mb-4">{t.planification.description}</p>
+            <PlanificationSettings />
           </section>
         )}
 

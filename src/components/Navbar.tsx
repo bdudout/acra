@@ -23,7 +23,7 @@ import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
   User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked,
   Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp, Landmark,
-  LayoutGrid, Radar, ScrollText, FileText, ListChecks, Bot, Menu, X, Gauge, Briefcase, type LucideIcon,
+  LayoutGrid, Radar, ScrollText, FileText, ListChecks, Bot, CalendarRange, Menu, X, Gauge, Briefcase, type LucideIcon,
   BadgeCheck, UserCheck, BrainCircuit,
 } from 'lucide-react'
 
@@ -182,6 +182,7 @@ export default function Navbar() {
     incidents:     { href: '/incidents',     Icon: Siren,           label: t.nav.incidents },
     controles:     { href: '/controles',     Icon: ClipboardCheck,  label: t.nav.controles },
     campagnesControle: { href: '/controles/campagnes', Icon: ClipboardList, label: t.nav.campagnesControle },
+    programme:     { href: '/plans', Icon: CalendarRange, label: t.nav.programme },
     questionnaires: { href: '/controles/questionnaires', Icon: ClipboardList, label: t.nav.questionnaires },
     audit:         { href: '/audit',         Icon: Search,          label: t.nav.audit },
     kri:           { href: '/kri',           Icon: TrendingUp,      label: t.nav.kri },
