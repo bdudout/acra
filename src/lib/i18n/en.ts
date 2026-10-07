@@ -1724,6 +1724,7 @@ export const en: Translations = {
       p360_reversibilite: { title: 'Provider lock-in (reversibility)', description: 'Inability to change provider or bring the activity back in-house.' },
     },
   },
+  orgContexte: { choisirTitre: "Choose an organisation", choisirMessage: "This page relates to a specific organisation. You are viewing “All organisations”: choose an organisation in the selector at the top of the page." },
   appetence: { historique: {"title": "History and trend", "hint": "Monthly snapshots of aggregates (no risk titles) frozen automatically each month; history starts at the first snapshot.", "capture": "Freeze this month’s snapshot", "export": "Export (Excel)", "empty": "No snapshot yet: freeze the first month.", "saved": "Snapshot saved.", "failed": "Could not save.", "periode": "Month", "globalLabel": "Overall level", "hors": "Beyond appetite", "kri": "KRIs in alert / critical", "maturite": "Requirements below target", "sensCol": "Trend", "sens": {"AMELIORATION": "Improving", "DEGRADATION": "Worsening", "STABLE": "Stable"}},
     guide: { what: 'Two complementary views: what governance accepts (RAS, appetite thresholds) and where the organisation stands against these limits (RAD).', how: 'Set thresholds per risk category and the target maturity per framework; the dashboard then compares the actual situation with these limits.', result: 'Clear indicators (within limits, to watch, outside appetite) and material to present to the risk committee.' },
     title: 'Risk appetite',
@@ -4398,6 +4399,12 @@ export const en: Translations = {
 
   // ─── Optional features (admin toggles) ───────────────────────────────────
   features: {
+    campagnesRcsaTitle: "RCSA campaigns",
+    campagnesRcsaDesc: "Risk and control self-assessment (RCSA) campaigns by business lines, on the risk register. Requires the risk register.",
+    appetenceTitle: "Risk appetite (RAS / RAD)",
+    appetenceDesc: "Risk appetite statement (RAS) and risk appetite dashboard (RAD), monthly snapshots and RAS document for the committee. Requires the risk register, KRIs or maturity. Appetite thresholds remain visible on the register heat map.",
+    rapportsGrcTitle: "GRC reports",
+    rapportsGrcDesc: "Frozen, validated editions of incident and loss, permanent control, internal audit and management summary reports.",
     sectionTitle:  'Optional features',
     sectionDesc:   "Enable additional steps inspired by the Club EBIOS method sheets. When disabled, they do not appear in analyses.",
     qualificationTitle: 'Qualification questionnaire at the start of an analysis',

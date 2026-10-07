@@ -10,6 +10,7 @@ import {
   transitionEvaluationAutorisee, peutValider, statutApresCotation, type EvaluationStatut,
 } from '@/lib/campagne'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { campagnesRcsaActives } from '@/lib/org-config'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,7 +51,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (!evaluation) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
 
   const cfg = await getOrgConfig(evaluation.organizationId)
-  if (!cfg.registreRisquesActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
+  if (!campagnesRcsaActives(cfg)) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
   // Hors campagne ouverte, rien ne bouge (brouillon pas encore lancé, clôturée figée).
   if (evaluation.campagne.statut !== 'OUVERTE') return NextResponse.json({ error: 'campagne_non_ouverte' }, { status: 400 })
 

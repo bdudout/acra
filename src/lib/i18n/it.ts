@@ -1724,6 +1724,7 @@ export const it: Translations = {
       p360_reversibilite: { title: 'Dipendenza dal fornitore (reversibilità)', description: 'Impossibilità di cambiare fornitore o di riportare l’attività internamente.' },
     },
   },
+  orgContexte: { choisirTitre: "Scegli un’organizzazione", choisirMessage: "Questa pagina riguarda un’organizzazione specifica. Sei nella vista «Tutte le organizzazioni»: scegli un’organizzazione nel selettore in alto nella pagina." },
   appetence: { historique: {"title": "Storico e tendenza", "hint": "Istantanee mensili di aggregati (nessun titolo di rischio) acquisite automaticamente ogni mese; lo storico inizia con la prima istantanea.", "capture": "Acquisisci l’istantanea del mese", "export": "Esporta (Excel)", "empty": "Nessuna istantanea: acquisisci il primo mese.", "saved": "Istantanea salvata.", "failed": "Salvataggio non riuscito.", "periode": "Mese", "globalLabel": "Livello globale", "hors": "Oltre l’appetito", "kri": "KRI in allerta / critici", "maturite": "Requisiti sotto l’obiettivo", "sensCol": "Tendenza", "sens": {"AMELIORATION": "Miglioramento", "DEGRADATION": "Peggioramento", "STABLE": "Stabile"}},
     guide: { what: 'Due viste complementari: ciò che la governance accetta (RAS, soglie di appetito) e dove si colloca l’organizzazione rispetto a tali limiti (RAD).', how: 'Fissate le soglie per categoria di rischio e la maturità obiettivo per quadro di riferimento; la dashboard confronta poi la situazione reale con questi limiti.', result: 'Indicatori chiari (entro i limiti, da monitorare, oltre l’appetito) e un supporto da presentare al comitato rischi.' },
     title: 'Propensione al rischio',
@@ -4398,6 +4399,12 @@ export const it: Translations = {
 
   // ─── Funzionalità opzionali (interruttori admin) ──────────────────────────
   features: {
+    campagnesRcsaTitle: "Campagne RCSA",
+    campagnesRcsaDesc: "Campagne di autovalutazione dei rischi e dei controlli (RCSA) da parte delle funzioni di business, sul registro dei rischi. Richiede il registro dei rischi.",
+    appetenceTitle: "Propensione al rischio (RAS / RAD)",
+    appetenceDesc: "Dichiarazione di propensione al rischio (RAS) e cruscotto della propensione (RAD), istantanee mensili e documento RAS per il comitato. Richiede il registro dei rischi, i KRI o la maturità. Le soglie di propensione restano visibili sulla mappa del registro.",
+    rapportsGrcTitle: "Report GRC",
+    rapportsGrcDesc: "Edizioni congelate e validate dei report su incidenti e perdite, controllo permanente, audit interno e sintesi per la direzione.",
     sectionTitle:  'Funzionalità opzionali',
     sectionDesc:   'Attiva passaggi aggiuntivi ispirati alle schede metodologiche del Club EBIOS. Disattivati, non compaiono nelle analisi.',
     qualificationTitle: "Questionario di qualificazione all'inizio di un'analisi",

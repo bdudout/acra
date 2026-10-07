@@ -57,6 +57,9 @@ export const CONFIG_SELECT = {
   projetSuppressionValidation: true,
   recertificationActive: true,
   registreIaActive: true,
+  campagnesRcsaActive: true,
+  appetenceActive: true,
+  rapportsGrcActive: true,
   mcpActive: true,
   echelleMaturite: true,
   processusCartographie: true,
@@ -118,6 +121,9 @@ async function applyInstancePolicy(cfg: OrgConfigResolved): Promise<OrgConfigRes
       homologationsActive: resolveModuleActivation(policy.homologations, cfg.homologationsActive),
       recertificationActive: resolveModuleActivation(policy.recertification, cfg.recertificationActive),
       registreIaActive: resolveModuleActivation(policy.registreIa, cfg.registreIaActive),
+      campagnesRcsaActive: resolveModuleActivation(policy.campagnesRcsa, cfg.campagnesRcsaActive),
+      appetenceActive: resolveModuleActivation(policy.appetence, cfg.appetenceActive),
+      rapportsGrcActive: resolveModuleActivation(policy.rapportsGrc, cfg.rapportsGrcActive),
     }
   } catch {
     return cfg

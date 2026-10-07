@@ -195,6 +195,9 @@ export default function ConfigurationPage() {
   const [homologationsActive, setHomologationsActive] = useState(false)
   const [recertificationActive, setRecertificationActive] = useState(false)
   const [registreIaActive, setRegistreIaActive] = useState(false)
+  const [campagnesRcsaActive, setCampagnesRcsaActive] = useState(false)
+  const [appetenceActive, setAppetenceActive] = useState(false)
+  const [rapportsGrcActive, setRapportsGrcActive] = useState(false)
   const [mcpActive, setMcpActive] = useState(false)
   // Politique d'instance (SUPER_ADMIN) : { <module>: 'PER_ORG'|'FORCE_ON'|'FORCE_OFF' }.
   const [modulesPolicy, setModulesPolicy] = useState<Record<string, string>>({})
@@ -267,6 +270,9 @@ export default function ConfigurationPage() {
         setHomologationsActive(data.homologationsActive === true)
         setRecertificationActive(data.recertificationActive === true)
         setRegistreIaActive(data.registreIaActive === true)
+        setCampagnesRcsaActive(data.campagnesRcsaActive === true)
+        setAppetenceActive(data.appetenceActive === true)
+        setRapportsGrcActive(data.rapportsGrcActive === true)
         setMcpActive(data.mcpActive === true)
         if (data.modulesPolicy && typeof data.modulesPolicy === 'object') setModulesPolicy(data.modulesPolicy)
         setTaxonomieRisques(sanitizeTaxonomie(data.taxonomieRisques))
@@ -323,9 +329,12 @@ export default function ConfigurationPage() {
     homologationsActive: setHomologationsActive,
     recertificationActive: setRecertificationActive,
     registreIaActive: setRegistreIaActive,
+    campagnesRcsaActive: setCampagnesRcsaActive,
+    appetenceActive: setAppetenceActive,
+    rapportsGrcActive: setRapportsGrcActive,
     mcpActive: setMcpActive,
   }
-  async function saveFeature(field: 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive', value: boolean) {
+  async function saveFeature(field: 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive' | 'campagnesRcsaActive' | 'appetenceActive' | 'rapportsGrcActive', value: boolean) {
     FEATURE_SETTERS[field]?.(value) // mise à jour optimiste
     setSavingFeatures(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -1366,6 +1375,7 @@ export default function ConfigurationPage() {
                 { field: 'interdireAutoApprobation' as const, value: interdireAutoApprobation, title: t.features.interdireAutoApprobationTitle, desc: t.features.interdireAutoApprobationDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
                 { field: 'petiteStructure' as const, value: petiteStructure, title: t.features.petiteStructureTitle, desc: t.features.petiteStructureDesc, href: '/configuration/entites', disabled: false, indent: false },
                 { field: 'registreRisquesActive' as const, value: registreRisquesActive, title: t.features.registreRisquesTitle, desc: t.features.registreRisquesDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.registreRisques === 'FORCE_ON' || modulesPolicy.registreRisques === 'FORCE_OFF', indent: false, forced: modulesPolicy.registreRisques },
+                { field: 'campagnesRcsaActive' as const, value: campagnesRcsaActive, title: t.features.campagnesRcsaTitle, desc: t.features.campagnesRcsaDesc, href: '/campagnes', disabled: modulesPolicy.campagnesRcsa === 'FORCE_ON' || modulesPolicy.campagnesRcsa === 'FORCE_OFF' || !registreRisquesActive, indent: true, forced: modulesPolicy.campagnesRcsa },
                 { field: 'incidentsActive' as const, value: incidentsActive, title: t.features.incidentsTitle, desc: t.features.incidentsDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.incidents === 'FORCE_ON' || modulesPolicy.incidents === 'FORCE_OFF', indent: false, forced: modulesPolicy.incidents },
                 { field: 'controlePermanentActive' as const, value: controlePermanentActive, title: t.features.controlePermanentTitle, desc: t.features.controlePermanentDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.controlePermanent === 'FORCE_ON' || modulesPolicy.controlePermanent === 'FORCE_OFF', indent: false, forced: modulesPolicy.controlePermanent },
                 { field: 'auditInterneActive' as const, value: auditInterneActive, title: t.features.auditInterneTitle, desc: t.features.auditInterneDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.auditInterne === 'FORCE_ON' || modulesPolicy.auditInterne === 'FORCE_OFF', indent: false, forced: modulesPolicy.auditInterne },
@@ -1373,6 +1383,8 @@ export default function ConfigurationPage() {
                 { field: 'reglementaireActive' as const, value: reglementaireActive, title: t.features.reglementaireTitle, desc: t.features.reglementaireDesc, href: 'https://www.eiopa.europa.eu/digital-operational-resilience-act-dora_en', disabled: modulesPolicy.reglementaire === 'FORCE_ON' || modulesPolicy.reglementaire === 'FORCE_OFF', indent: false, forced: modulesPolicy.reglementaire },
                 { field: 'secondeLigneActive' as const, value: secondeLigneActive, title: t.features.secondeLigneTitle, desc: t.features.secondeLigneDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.secondeLigne === 'FORCE_ON' || modulesPolicy.secondeLigne === 'FORCE_OFF', indent: false, forced: modulesPolicy.secondeLigne },
                 { field: 'profilsOperationnelsActive' as const, value: profilsOperationnelsActive, title: t.features.profilsOperationnelsTitle, desc: t.features.profilsOperationnelsDesc, href: '/maturite', disabled: modulesPolicy.profilsOperationnels === 'FORCE_ON' || modulesPolicy.profilsOperationnels === 'FORCE_OFF', indent: false, forced: modulesPolicy.profilsOperationnels },
+                { field: 'appetenceActive' as const, value: appetenceActive, title: t.features.appetenceTitle, desc: t.features.appetenceDesc, href: '/appetence', disabled: modulesPolicy.appetence === 'FORCE_ON' || modulesPolicy.appetence === 'FORCE_OFF' || !(registreRisquesActive || kriActive || profilsOperationnelsActive), indent: false, forced: modulesPolicy.appetence },
+                { field: 'rapportsGrcActive' as const, value: rapportsGrcActive, title: t.features.rapportsGrcTitle, desc: t.features.rapportsGrcDesc, href: '/rapports', disabled: modulesPolicy.rapportsGrc === 'FORCE_ON' || modulesPolicy.rapportsGrc === 'FORCE_OFF', indent: false, forced: modulesPolicy.rapportsGrc },
                 { field: 'projets360Active' as const, value: projets360Active, title: t.features.projets360Title, desc: t.features.projets360Desc, href: '/projets', disabled: modulesPolicy.projets360 === 'FORCE_ON' || modulesPolicy.projets360 === 'FORCE_OFF', indent: false, forced: modulesPolicy.projets360 },
                 { field: 'homologationsActive' as const, value: homologationsActive, title: t.features.homologationsTitle, desc: t.features.homologationsDesc, href: '/homologations', disabled: modulesPolicy.homologations === 'FORCE_ON' || modulesPolicy.homologations === 'FORCE_OFF', indent: false, forced: modulesPolicy.homologations },
                 { field: 'registreIaActive' as const, value: registreIaActive, title: t.features.registreIaTitle, desc: t.features.registreIaDesc, href: '/registre-ia', disabled: modulesPolicy.registreIa === 'FORCE_ON' || modulesPolicy.registreIa === 'FORCE_OFF', indent: false, forced: modulesPolicy.registreIa },

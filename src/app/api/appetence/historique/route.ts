@@ -11,6 +11,7 @@ import { buildHistoriqueXlsx } from '@/lib/appetit-historique-xlsx'
 import { capturerInstantane } from '@/lib/appetit-historique.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { rateLimit, rateLimitHeaders, LIMIT_EXPORT, LIMIT_API_WRITE } from '@/lib/rate-limit'
+import { getOrgConfig } from '@/lib/org-config.server'
 
 export const dynamic = 'force-dynamic'
 const MAX = 60 // 5 ans
@@ -22,6 +23,8 @@ async function contexte(): Promise<Ctx> {
   const userId = (session.user as { id: string }).id
   const scope = await getAnalyseScope(userId, ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole)
   if (!scope.activeOrgId || !hasGlobalReadDispositif(scope.role)) return { error: NextResponse.json({ error: 'Accès refusé' }, { status: 403 }) }
+  // Module « Appétence » coupé (ou forcé à l'arrêt par l'instance) : historique fermé.
+  if (!(await getOrgConfig(scope.activeOrgId)).appetenceActive) return { error: NextResponse.json({ error: 'module_inactif' }, { status: 404 }) }
   return { userId, orgId: scope.activeOrgId, role: scope.role as UserRole }
 }
 

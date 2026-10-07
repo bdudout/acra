@@ -6,9 +6,12 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { hasGlobalReadDispositif, type UserRole } from '@/lib/permissions'
 import { getServerT, getServerLocale } from '@/lib/i18n'
 import { loadRasRad } from '@/lib/ras-rad.server'
+import { appetenceDisponible } from '@/lib/org-config'
 import Navbar from '@/components/Navbar'
 import RasRadView from '@/components/RasRadView'
 import AppetenceHistorique from '@/components/AppetenceHistorique'
+import { superAdminSansOrganisation } from '@/lib/choisir-organisation'
+import ChoisirOrganisation from '@/components/ChoisirOrganisation'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -21,10 +24,12 @@ export default async function AppetencePage() {
   const userId = (session.user as { id: string }).id
   const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
   const scope = await getAnalyseScope(userId, instanceRole)
-  if (!scope.activeOrgId || !hasGlobalReadDispositif(scope.role)) notFound()
   const [t, locale] = await Promise.all([getServerT(), getServerLocale()])
+  // Super-administrateur en vue « toutes les organisations » : l'appétence se fixe et se lit par organisation.
+  if (superAdminSansOrganisation(instanceRole, scope.activeOrgId)) return <ChoisirOrganisation />
+  if (!scope.activeOrgId || !hasGlobalReadDispositif(scope.role)) notFound()
   const data = await loadRasRad(scope.activeOrgId, locale, t)
-  if (!data.modules.registre && !data.modules.kri && !data.modules.maturite) notFound()
+  if (!appetenceDisponible(data.modules)) notFound()
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />

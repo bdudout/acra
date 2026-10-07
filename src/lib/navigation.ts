@@ -34,6 +34,12 @@ export interface NavModules {
   recertification?: boolean
   /** Registre des algorithmes et systèmes d'IA. */
   registreIa?: boolean
+  /** Campagnes RCSA (avec le registre des risques). */
+  campagnesRcsa?: boolean
+  /** Appétence au risque (RAS / RAD). */
+  appetence?: boolean
+  /** Rapports GRC (éditions figées). */
+  rapportsGrc?: boolean
 }
 
 /** Clé d'un lien de navigation (dashboard, analyses, risques, actions…). */
@@ -117,7 +123,7 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
     const secondary: NavKey[] = [...gouvernance, ...(registreIa ? ['registreIa' as const] : [])]
     if (modules.incidents) secondary.push('incidents')
     // Sans mode GRC, les rapports d'incidents/pertes restent accessibles (module incidents actif).
-    if (modules.incidents && canPilotage) secondary.push('rapports')
+    if (modules.incidents && canPilotage && modules.rapportsGrc) secondary.push('rapports')
     const entries: NavEntry[] = [link('dashboard'), ...core(modules).map(link)]
     if (secondary.length > 0) {
       if (secondary.length <= SECONDARY_INLINE_MAX) entries.push(...secondary.map(link))
@@ -138,7 +144,7 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   // Le plan d'action unifié est un lien cœur (« actions ») → plus de doublon ici.
   if (canPilotage) pilotage.push('pilotage')
   // Appétence (RAS / RAD) : dès qu'une de ses sources existe (registre, KRI, maturité).
-  if (canPilotage && (modules.registre || modules.kri || modules.profilsOperationnels)) pilotage.push('appetence')
+  if (canPilotage && modules.appetence && (modules.registre || modules.kri || modules.profilsOperationnels)) pilotage.push('appetence')
   // Même parcours métier : les KRI alimentent le RAD. Le droit reste identique
   // à celui qu'ils avaient dans Contrôle & audit (module actif, hors 1ʳᵉ ligne).
   if (modules.kri && !firstLineOnly) pilotage.push('kri')
@@ -155,7 +161,7 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (!firstLineOnly && modules.registre) {
     // La cartographie des risques est une vue du registre (onglets Liste / Cartographie) : pas d'entrée propre.
     // Processus : visibles par tous ceux qui voient les registres (page en lecture ; modification réservée à l'ADMIN).
-    registres.push('registre', 'campagnes', 'processus')
+    registres.push('registre', ...(modules.campagnesRcsa ? ['campagnes' as const] : []), 'processus')
   }
   if (modules.incidents) registres.push('incidents')
   if (!firstLineOnly && modules.reglementaire) registres.push('registreTic')
@@ -181,7 +187,7 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   // Tests de résilience (DORA art. 24-26) : rôles à lecture globale du dispositif.
   // Suivi régulateur (constats du superviseur et plans de remédiation) : avec le réglementaire.
   if (modules.reglementaire && !firstLineOnly) reglementaire.push('reglementaire', 'suiviRegulateur', ...(canPilotage ? ['testsResilience' as const] : []))
-  if (canPilotage) reglementaire.push('rapports')
+  if (canPilotage && modules.rapportsGrc) reglementaire.push('rapports')
   if (reglementaire.length) entries.push(groupOrLink('reglementaire', reglementaire))
 
   return { mode: 'grc', entries }

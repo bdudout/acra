@@ -9,6 +9,8 @@ vi.mock('@/lib/appetit-historique.server', () => ({ capturerInstantane: m.captur
 vi.mock('@/lib/logger', () => ({ auditLog: (...a: unknown[]) => m.audit(...a), getClientIp: () => '' }))
 vi.mock('@/lib/rate-limit', () => ({ rateLimit: m.rl, rateLimitHeaders: () => ({}), LIMIT_EXPORT: { limit: 5, windowMs: 1 }, LIMIT_API_WRITE: { limit: 5, windowMs: 1 } }))
 vi.mock('@/lib/cron-auth', () => ({ assertCronAuth: m.cronAuth }))
+const appetence = vi.hoisted(() => ({ active: true }))
+vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => ({ appetenceActive: appetence.active })) }))
 import { GET, POST } from '@/app/api/appetence/historique/route'
 import { POST as CRON } from '@/app/api/cron/appetence-snapshots/route'
 
@@ -16,7 +18,7 @@ const req = (q = '') => ({ nextUrl: new URL(`http://x/api/appetence/historique${
 const resume = (hors: number) => ({ global: 'VERT', appetit: { evalues: 10, horsAppetit: hors, seuilGlobal: 8, voyant: 'VERT' }, maturite: [], kri: { total: 3, alerte: 0, critique: 0, voyant: 'VERT' } })
 
 beforeEach(() => {
-  Object.values(m).forEach(f => f.mockReset())
+  Object.values(m).forEach(f => f.mockReset()); appetence.active = true
   m.session.mockResolvedValue({ user: { id: 'u1', role: 'RSSI' } })
   m.scope.mockResolvedValue({ activeOrgId: 'o1', role: 'RSSI' })
   m.rl.mockResolvedValue({ allowed: true, remaining: 4, resetAt: 0 })
@@ -49,6 +51,12 @@ describe('/api/appetence/historique', () => {
     m.capture.mockResolvedValue(null); expect((await POST(req())).status).toBe(404)
     const x = await GET(req('?format=xlsx')); expect(x.headers.get('Content-Type')).toContain('spreadsheetml')
     expect(m.audit).toHaveBeenCalledWith('EXPORT', expect.objectContaining({ targetType: 'appetence-historique' }))
+  })
+  it('module « Appétence » coupé pour l’organisation : historique fermé (404), rien n’est lu ni figé', async () => {
+    appetence.active = false
+    expect((await GET(req())).status).toBe(404)
+    expect((await POST(req())).status).toBe(404)
+    expect(m.find).not.toHaveBeenCalled(); expect(m.capture).not.toHaveBeenCalled()
   })
 })
 

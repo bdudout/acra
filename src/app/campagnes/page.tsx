@@ -6,6 +6,7 @@ import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import CampagnesManager from '@/components/CampagnesManager'
+import { campagnesRcsaActives } from '@/lib/org-config'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -19,7 +20,7 @@ export default async function CampagnesPage() {
   const scope = await getAnalyseScope(userId, userRole)
   const orgConfig = await getOrgConfig(scope.activeOrgId)
   // Les campagnes portent sur le registre : elles suivent le même module.
-  if (!orgConfig.registreRisquesActive) redirect('/dashboard')
+  if (!campagnesRcsaActives(orgConfig)) redirect('/dashboard')
 
   // Piloter (ouvrir/valider/clôturer) = 2ᵉ ligne ; coter = 1ʳᵉ ligne.
   // Aligné sur le garde de l'API /api/campagnes (peutDefinir2eLigne).

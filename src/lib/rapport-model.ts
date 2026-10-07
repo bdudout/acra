@@ -32,7 +32,7 @@ export interface RapportContenu {
 
 // ─── Catalogue ───────────────────────────────────────────────────────────────
 
-export interface ModulesRapport { incidentsActive?: boolean; registreRisquesActive?: boolean; controlePermanentActive?: boolean; auditInterneActive?: boolean; kriActive?: boolean; reglementaireActive?: boolean; profilsOperationnelsActive?: boolean }
+export interface ModulesRapport { incidentsActive?: boolean; registreRisquesActive?: boolean; controlePermanentActive?: boolean; auditInterneActive?: boolean; kriActive?: boolean; reglementaireActive?: boolean; profilsOperationnelsActive?: boolean; rapportsGrcActive?: boolean }
 export interface RapportDef { code: RapportCode; module: 'incidents' | 'grc' | 'controle' | 'audit'; destinataires: string }
 
 export const RAPPORT_CATALOGUE: RapportDef[] = [
@@ -50,6 +50,8 @@ export const RAPPORT_CATALOGUE: RapportDef[] = [
 
 /** Rapports proposés selon les modules actifs (incidents pour R-INC/R-PER, un module GRC pour R-GRC). */
 export function rapportsDisponibles(m: ModulesRapport): RapportDef[] {
+  // Module « Rapports GRC » coupé : aucun rapport proposé, quels que soient les modules sources.
+  if (!m.rapportsGrcActive) return []
   const grc = !!(m.registreRisquesActive || m.controlePermanentActive || m.auditInterneActive || m.kriActive || m.reglementaireActive || m.profilsOperationnelsActive)
   return RAPPORT_CATALOGUE.filter(r => (r.module === 'incidents' ? !!m.incidentsActive : r.module === 'controle' ? !!m.controlePermanentActive : r.module === 'audit' ? !!m.auditInterneActive : grc))
 }

@@ -220,7 +220,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     active: true,
     orgCount: orgs.length,
-    modules: { projets: projets !== null, incidents: withIncidents, controles: withControles, audit: withAudit, appetit: appetitDefini, kri: withKri, reglementaire: withReglementaire },
+    modules: { projets: projets !== null, incidents: withIncidents, controles: withControles, audit: withAudit, appetit: appetitDefini, ras: appetitDefini && orgConfig.appetenceActive, kri: withKri, reglementaire: withReglementaire },
     consolide: {
       risques: { ...rollupRisks(risks), grid: buildHeatGrid(kept.map((r): CartoRisk => ({
         id: r.id, intitule: '', taxonomieCode: null, processusId: null, processusNom: null, entite: null,

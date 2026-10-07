@@ -4,6 +4,7 @@ import { loadRasRad } from './ras-rad.server'
 import { resumeDepuisRasRad, periodeCourante, type ResumeAppetence } from './appetit-historique'
 import { fr } from './i18n/fr'
 import type { Prisma } from '@prisma/client'
+import { appetenceDisponible } from './org-config'
 
 /**
  * Fige le résumé d'appétence du mois pour l'organisation. `ecraser: false` (cron) n'écrase jamais un instantané déjà pris
@@ -11,7 +12,7 @@ import type { Prisma } from '@prisma/client'
  */
 export async function capturerInstantane(orgId: string, o: { now: Date; userId: string | null; ecraser: boolean }): Promise<{ periode: string; cree: boolean } | null> {
   const data = await loadRasRad(orgId, 'fr', fr)
-  if (!data.modules.registre && !data.modules.kri && !data.modules.maturite) return null
+  if (!appetenceDisponible(data.modules)) return null
   const periode = periodeCourante(o.now)
   const resume = resumeDepuisRasRad(data as never) as ResumeAppetence
   const where = { organizationId_periode: { organizationId: orgId, periode } }

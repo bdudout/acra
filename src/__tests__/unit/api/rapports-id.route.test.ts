@@ -22,7 +22,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   m.session.mockResolvedValue({ user: { id: 'u2', role: 'ANALYSTE' } })
   m.scope.mockResolvedValue({ activeOrgId: 'o1', role: 'RSSI' })
-  m.config.mockResolvedValue({ incidentsActive: true, secondeLigneActive: true })
+  m.config.mockResolvedValue({ rapportsGrcActive: true, incidentsActive: true, secondeLigneActive: true })
   m.find.mockResolvedValue(edition())
   m.update.mockImplementation(async (a: { data: object }) => ({ ...edition(), ...a.data }))
   m.updateMany.mockResolvedValue({ count: 1 })
@@ -67,7 +67,7 @@ describe('PATCH — cycle de validation', () => {
     expect(m.diffuse).toHaveBeenCalledWith('o1', ['Comité des risques', ' Direction générale '], expect.objectContaining({ id: 'e1', code: 'R-INC-1' }))
   })
   it('mode ligne unique : validation directe permise', async () => {
-    m.config.mockResolvedValue({ incidentsActive: true, secondeLigneActive: false })
+    m.config.mockResolvedValue({ rapportsGrcActive: true, incidentsActive: true, secondeLigneActive: false })
     m.session.mockResolvedValue({ user: { id: 'u1', role: 'ANALYSTE' } })
     const res = await PATCH(patch({ action: 'VALIDE' }), params)
     expect(res.status).toBe(200)

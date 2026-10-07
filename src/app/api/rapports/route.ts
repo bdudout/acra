@@ -29,6 +29,7 @@ export async function GET(): Promise<NextResponse> {
   if ('error' in c) return c.error
   if (!peutLireRapports(c.role)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   const cfg = await getOrgConfig(c.orgId)
+  if (!cfg.rapportsGrcActive) return NextResponse.json({ error: 'module_inactif' }, { status: 404 })
   const editions = await prisma.rapportEdition.findMany({
     where: { organizationId: c.orgId }, orderBy: { createdAt: 'desc' }, take: 200,
     select: { id: true, code: true, statut: true, periodeDebut: true, periodeFin: true, langue: true, createdAt: true, createdById: true, valideLe: true, diffuseLe: true },

@@ -10,6 +10,7 @@ import {
   avancementCampagne, type CampagneStatut,
 } from '@/lib/campagne'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { campagnesRcsaActives } from '@/lib/org-config'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,7 +33,7 @@ async function loadInScope(session: { user: { id: string; role?: string } }, id:
   })
   if (!campagne) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
   const cfg = await getOrgConfig(campagne.organizationId)
-  if (!cfg.registreRisquesActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
+  if (!campagnesRcsaActives(cfg)) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
   return { userId, userRole, campagne, secondeLigneActive: cfg.secondeLigneActive }
 }
 

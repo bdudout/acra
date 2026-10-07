@@ -27,6 +27,7 @@ export async function GET(): Promise<NextResponse> {
   if ('error' in c) return c.error as NextResponse
   if (!peutLireRapports(c.role)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   const cfg = await getOrgConfig(c.orgId)
+  if (!cfg.rapportsGrcActive) return NextResponse.json({ error: 'module_inactif' }, { status: 404 })
   return NextResponse.json({ canEdit: isAdminRole(c.role), config: sanitizeRapportsConfig(cfg.rapportsConfig) })
 }
 

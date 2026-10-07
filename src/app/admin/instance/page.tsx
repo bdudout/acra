@@ -125,6 +125,9 @@ export default function AdminInstancePage() {
     { key: 'projets360', label: t.features.projets360Title },
     { key: 'homologations', label: t.features.homologationsTitle },
     { key: 'registreIa', label: t.features.registreIaTitle },
+    { key: 'campagnesRcsa', label: t.features.campagnesRcsaTitle },
+    { key: 'appetence', label: t.features.appetenceTitle },
+    { key: 'rapportsGrc', label: t.features.rapportsGrcTitle },
   ]
 
   if (status === 'loading' || !isAdmin) {

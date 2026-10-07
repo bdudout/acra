@@ -14,7 +14,7 @@ beforeEach(() => {
   process.env.CRON_SECRET = 's3cret-s3cret-s3cret'
   vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-02T05:00:00Z'))
   m.orgs.mockResolvedValue([{ id: 'o1', rapportsConfig: { planifies: [{ code: 'R-INC-1', frequence: 'MENSUEL' }] } }, { id: 'o2', rapportsConfig: {} }])
-  m.config.mockResolvedValue({ incidentsActive: true })
+  m.config.mockResolvedValue({ rapportsGrcActive: true, incidentsActive: true })
   m.editions.mockResolvedValue([])
   m.admin.mockResolvedValue({ userId: 'admin1' })
   m.gen.mockResolvedValue({ sections: [] })
@@ -31,9 +31,9 @@ describe('POST /api/cron/rapports-planifies', () => {
   it('idempotent : édition déjà présente, ou module inactif, ou sans ADMIN → rien', async () => {
     m.editions.mockResolvedValue([{ code: 'R-INC-1', periodeDebut: new Date('2026-09-01'), periodeFin: new Date('2026-09-30') }])
     expect((await (await POST(req())).json()).created).toBe(0)
-    m.editions.mockResolvedValue([]); m.config.mockResolvedValue({ incidentsActive: false })
+    m.editions.mockResolvedValue([]); m.config.mockResolvedValue({ rapportsGrcActive: true, incidentsActive: false })
     expect((await (await POST(req())).json()).created).toBe(0)
-    m.config.mockResolvedValue({ incidentsActive: true }); m.admin.mockResolvedValue(null)
+    m.config.mockResolvedValue({ rapportsGrcActive: true, incidentsActive: true }); m.admin.mockResolvedValue(null)
     expect((await (await POST(req())).json()).created).toBe(0)
     vi.useRealTimers()
     expect(m.create).not.toHaveBeenCalled()

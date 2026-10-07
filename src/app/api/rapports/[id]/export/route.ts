@@ -26,6 +26,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!scope.activeOrgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
   const role = scope.role as UserRole
   if (!peutLireRapports(role)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+  if (!(await getOrgConfig(scope.activeOrgId)).rapportsGrcActive) return NextResponse.json({ error: 'module_inactif' }, { status: 404 })
   const { id } = await params
   const edition = await prisma.rapportEdition.findFirst({ where: { id, organizationId: scope.activeOrgId } })
   if (!edition) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })

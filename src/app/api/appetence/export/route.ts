@@ -9,6 +9,7 @@ import { getServerLocale, getServerT } from '@/lib/i18n'
 import { loadRasRad } from '@/lib/ras-rad.server'
 import { loadPdfRuntime } from '@/lib/pdf-runtime'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { appetenceDisponible } from '@/lib/org-config'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest) {
   if (!scope.activeOrgId || !hasGlobalReadDispositif(scope.role)) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
   const [locale, t] = await Promise.all([getServerLocale(), getServerT()])
   const data = await loadRasRad(scope.activeOrgId, locale, t)
-  if (!data.modules.registre && !data.modules.kri && !data.modules.maturite) return NextResponse.json({ error: 'Module non activé' }, { status: 404 })
+  if (!appetenceDisponible(data.modules)) return NextResponse.json({ error: 'Module non activé' }, { status: 404 })
   try {
     const org = await prisma.organization.findUnique({ where: { id: scope.activeOrgId }, select: { nom: true } })
     const stamp = new Date().toISOString().slice(0, 10)

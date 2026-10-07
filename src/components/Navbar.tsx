@@ -91,6 +91,9 @@ export default function Navbar() {
           homologations: Boolean(d.homologationsActive),
           recertification: Boolean(d.recertificationActive),
           registreIa: Boolean(d.registreIaActive),
+          campagnesRcsa: Boolean(d.campagnesRcsaActive),
+          appetence: Boolean(d.appetenceActive),
+          rapportsGrc: Boolean(d.rapportsGrcActive),
         }
         setModules(next)
         setCachedNavModules(next)

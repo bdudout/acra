@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic'
 
 /** Piloter une campagne relève de la 2ᵉ ligne (risk manager / RSSI / admin). */
 import { peutPiloter } from '@/lib/permissions'
+import { campagnesRcsaActives } from '@/lib/org-config'
 
 async function ctx(session: { user: { id: string; role?: string } }) {
   const userId = session.user.id
@@ -30,7 +31,7 @@ export async function GET() {
   if (!orgId) return NextResponse.json({ campagnes: [], active: false })
   // Les campagnes portent sur le registre : elles suivent le module registre.
   const cfg = await getOrgConfig(orgId)
-  if (!cfg.registreRisquesActive) return NextResponse.json({ campagnes: [], active: false })
+  if (!campagnesRcsaActives(cfg)) return NextResponse.json({ campagnes: [], active: false })
 
   const rows = await prisma.campagne.findMany({
     where: { organizationId: orgId },
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
   if (!orgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
   const cfg = await getOrgConfig(orgId)
   if (!peutPiloter(userRole, { secondeLigneActive: cfg.secondeLigneActive })) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
-  if (!cfg.registreRisquesActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
+  if (!campagnesRcsaActives(cfg)) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
   const erreur = validateCampagneInput(body)
