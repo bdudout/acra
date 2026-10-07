@@ -24,6 +24,8 @@ export default async function globalSetup() {
       data: {
         id: E2E.orgId,
         derogationsActive: true,
+        // Rapports GRC (désactivés par défaut) : parcours rapports, audit interne et contrôle permanent.
+        rapportsGrcActive: true,
         conformiteActive: true,
         conformiteNiveau: 'ANALYSE',
         acceptationRisquesActive: true,
