@@ -10,7 +10,7 @@ vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.config }))
 vi.mock('@/lib/prisma', () => ({ prisma: {
   planProgramme: { findMany: m.plans }, organization: { findUnique: m.org, findMany: m.orgs }, tierOrganization: { findMany: m.tiers },
-  riskItem: { findMany: m.risques }, processus: { findMany: m.processus }, auditMission: { findMany: m.missions }, controle: { findMany: m.controles },
+  riskItem: { findMany: m.risques }, processus: { findMany: m.processus }, auditMission: { findMany: m.missions }, controle: { findMany: m.controles }, campagneControle: { findMany: async () => [] },
 } }))
 import { GET } from '@/app/api/plans/vue/route'
 
@@ -24,7 +24,7 @@ beforeEach(() => {
   m.tiers.mockResolvedValue([])
   m.plans.mockResolvedValue([
     { id: 'p1', nom: 'Audit SI', type: 'AUDIT', equipe: null, annees: [{ statut: 'VALIDE' }], lignes: [
-      { id: 'l1', annee: 2027, intitule: 'Accès', debut: new Date('2027-03-01'), fin: new Date('2027-03-31'), statutManuel: null, cibles: { organisations: ['f1'], risques: ['r2'] } },
+      { id: 'l1', annee: 2027, intitule: 'Accès', debut: new Date('2027-03-01'), fin: new Date('2027-03-31'), statutManuel: null, priorite: 1, realisations: [{ type: 'MISSION', id: 'm1' }], cibles: { organisations: ['f1'], risques: ['r2'] } },
     ] },
     { id: 'p2', nom: 'Contrôle N2', type: 'CONTROLE', equipe: null, annees: [{ statut: 'BROUILLON' }], lignes: [
       { id: 'l2', annee: 2027, intitule: 'Sauvegardes', debut: new Date('2027-03-15'), fin: new Date('2027-04-15'), statutManuel: null, cibles: { organisations: ['f1'] } },
@@ -35,7 +35,7 @@ beforeEach(() => {
     { id: 'r2', intitule: 'Panne', graviteInherente: 4, vraisemblanceInherente: 4, graviteResiduelle: null, vraisemblanceResiduelle: null },
   ])
   m.processus.mockResolvedValue([{ id: 'pr1', nom: 'Paie', criticite: 4, criticiteDora: null }, { id: 'pr2', nom: 'Achats', criticite: 4, criticiteDora: null }])
-  m.missions.mockResolvedValue([{ dateDebut: null, dateFin: new Date(Date.now() - 86400000 * 30), processusIds: ['pr2'] }])
+  m.missions.mockResolvedValue([{ id: 'm1', intitule: 'Audit accès', statut: 'CLOTUREE', dateDebut: null, dateFin: new Date(Date.now() - 86400000 * 30), processusIds: ['pr2'] }])
   m.controles.mockResolvedValue([{ riskItemId: 'r1', processusId: null, executions: [{ dateRealisation: new Date(Date.now() - 86400000 * 10) }] }])
 })
 
@@ -48,7 +48,8 @@ describe('GET /api/plans/vue', () => {
     expect(j.anglesMorts.risques).toEqual([{ id: 'r2', nom: 'Panne', niveau: 16, derniere: null, prevu: true }]) // r1 contrôlé récemment
     expect(j.anglesMorts.processus.map((p: { id: string }) => p.id)).toEqual(['pr1']) // pr2 audité récemment
     expect(j.sollicitations.organisations).toEqual([expect.objectContaining({ id: 'f1', nom: 'Filiale Nord', nombre: 2, simultanee: true })])
-    expect(j.plans[0]).toMatchObject({ id: 'p1', statut: 'VALIDE', lignes: 1 })
+    expect(j.plans[0]).toMatchObject({ id: 'p1', statut: 'VALIDE', lignes: 1, realisation: { actives: 1, realisees: 1, taux: 100 } })
+    expect(j.lignes[0].priorite).toBe(1)
   })
   it('rôle sans lecture globale → 403', async () => {
     m.scope.mockResolvedValue({ activeOrgId: 'o1', role: 'METIER' })

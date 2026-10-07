@@ -15,7 +15,7 @@ import { STATUT_STYLE } from './PlansManager'
 
 interface Vue {
   annee: number; seuilAnglesMortsAns: number
-  plans: { id: string; nom: string; type: 'AUDIT' | 'CONTROLE'; equipe: string | null; statut: StatutAnnee | null; lignes: number; annulees: number; reportees: number }[]
+  plans: { id: string; nom: string; type: 'AUDIT' | 'CONTROLE'; equipe: string | null; statut: StatutAnnee | null; lignes: number; annulees: number; reportees: number; realisation?: { actives: number; realisees: number; enRetard: number; taux: number | null } }[]
   lignes: LigneVue[]
   sollicitations: { organisations: Sollicitation[]; tiers: Sollicitation[] }
   anglesMorts: { risques: AngleMortRisque[]; processus: AngleMortProcessus[] }
@@ -79,7 +79,7 @@ export default function VueGlobale() {
           {d.plans.length === 0 ? <p className="text-sm italic text-gray-400">{p.aucun}</p> : (
             <table className="w-full text-sm">
               <thead><tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                <th className="px-3 py-2">{p.nom}</th><th className="px-3 py-2">{v.typeCol}</th><th className="px-3 py-2">{p.statutManuel}</th><th className="px-3 py-2">{v.lignesCol}</th><th className="px-3 py-2">{v.ecartsCol}</th>
+                <th className="px-3 py-2">{p.nom}</th><th className="px-3 py-2">{v.typeCol}</th><th className="px-3 py-2">{p.statutManuel}</th><th className="px-3 py-2">{v.lignesCol}</th><th className="px-3 py-2">{v.realisationCol}</th><th className="px-3 py-2">{v.ecartsCol}</th>
               </tr></thead>
               <tbody>
                 {d.plans.map(pl => (
@@ -88,6 +88,7 @@ export default function VueGlobale() {
                     <td className="px-3 py-2 text-xs">{pl.type === 'AUDIT' ? t.planification.planAudit : t.planification.planControle}</td>
                     <td className="px-3 py-2">{pl.statut ? <span className={`text-[11px] px-2 py-0.5 rounded-full ${STATUT_STYLE[pl.statut]}`}>{p.statuts[pl.statut]}</span> : <span className="text-xs text-gray-400">{v.horsHorizon}</span>}</td>
                     <td className="px-3 py-2 text-xs">{pl.lignes}</td>
+                    <td className="px-3 py-2 text-xs">{pl.realisation?.taux != null ? v.realisation.replace('{taux}', String(pl.realisation.taux)).replace('{r}', String(pl.realisation.enRetard)) : '—'}</td>
                     <td className="px-3 py-2 text-xs">{pl.reportees || pl.annulees ? v.ecarts.replace('{r}', String(pl.reportees)).replace('{a}', String(pl.annulees)) : '—'}</td>
                   </tr>
                 ))}

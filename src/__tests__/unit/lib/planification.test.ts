@@ -108,3 +108,38 @@ describe('graphique annuel (frise des 12 mois)', () => {
     expect(positionFrise('2028-12-31', '2028-12-31', 2028)!.gauche).toBeCloseTo(99.7, 1)
   })
 })
+
+describe('réalisations (lot P4)', () => {
+  it('rattachements : types connus, dédoublonnés, bornés', async () => {
+    const { cleanRealisations } = await import('@/lib/planification')
+    expect(cleanRealisations([{ type: 'MISSION', id: 'm1' }, { type: 'MISSION', id: 'm1' }, { type: 'X', id: 'y' }, { type: 'CONTROLE', id: '' }, 'z'])).toEqual([{ type: 'MISSION', id: 'm1' }])
+  })
+  it('statut d’une ligne : manuel d’abord, puis réalisations, puis période', async () => {
+    const { statutLigne } = await import('@/lib/planification')
+    const l = { debut: '2027-03-01', fin: '2027-03-31', statutManuel: null }
+    const jour = '2027-06-01'
+    expect(statutLigne({ ...l, statutManuel: 'ANNULEE' }, [{ statut: 'CLOTUREE' }], jour)).toBe('ANNULEE')
+    expect(statutLigne(l, [{ statut: 'CLOTUREE' }, { statut: 'EXECUTE' }], jour)).toBe('REALISEE')
+    expect(statutLigne(l, [{ statut: 'CLOTUREE' }, { statut: 'EN_COURS' }], jour)).toBe('EN_COURS')
+    expect(statutLigne(l, [{ statut: 'PLANIFIEE' }], jour)).toBe('EN_RETARD')
+    expect(statutLigne(l, [], '2027-03-10')).toBe('EN_COURS')
+    expect(statutLigne(l, [], '2027-01-10')).toBe('A_VENIR')
+    expect(statutLigne({ debut: null, fin: null, statutManuel: null }, [], jour)).toBe('A_VENIR')
+  })
+  it('rapprochements proposés : processus ou risques en commun, période dans l’année ; les plus proches d’abord', async () => {
+    const { suggererRealisations } = await import('@/lib/planification')
+    const ligne = { debut: '2027-03-01', fin: '2027-03-31', cibles: { processus: ['p1'], risques: ['r1'] } }
+    const s = suggererRealisations(ligne, 2027, [
+      { type: 'MISSION', id: 'm1', intitule: 'Audit paie', processus: ['p1'], risques: [], debut: '2027-03-10', fin: '2027-04-10' },
+      { type: 'CONTROLE', id: 'c1', intitule: 'Revue des accès', processus: [], risques: ['r1'], debut: '2027-08-01', fin: null },
+      { type: 'MISSION', id: 'm2', intitule: 'Audit achats', processus: ['p9'], risques: [], debut: '2027-03-01', fin: null },
+      { type: 'MISSION', id: 'm3', intitule: 'Audit paie 2025', processus: ['p1'], risques: [], debut: '2025-03-01', fin: '2025-04-01' },
+    ])
+    expect(s.map(x => x.id)).toEqual(['m1', 'c1'])
+  })
+  it('taux de réalisation : lignes actives (hors annulées et reportées)', async () => {
+    const { tauxRealisation } = await import('@/lib/planification')
+    expect(tauxRealisation(['REALISEE', 'REALISEE', 'EN_RETARD', 'A_VENIR', 'ANNULEE', 'REPORTEE'])).toEqual({ actives: 4, realisees: 2, enRetard: 1, taux: 50 })
+    expect(tauxRealisation([])).toEqual({ actives: 0, realisees: 0, enRetard: 0, taux: null })
+  })
+})

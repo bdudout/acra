@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import PlansManager from '@/components/plans/PlansManager'
 import PlanView from '@/components/plans/PlanView'
 import VueGlobale from '@/components/plans/VueGlobale'
+import RealisationsPanel from '@/components/plans/RealisationsPanel'
 
 vi.mock('@/lib/i18n/context', async () => {
   const { fr } = await import('@/lib/i18n/fr')
@@ -89,5 +90,28 @@ describe('VueGlobale', () => {
     expect(screen.getByText('Dernière couverture : jamais')).toBeTruthy()
     expect(screen.getByText('Prévu')).toBeTruthy()
     expect(screen.getByText('DORA : critique')).toBeTruthy()
+  })
+})
+
+describe('RealisationsPanel', () => {
+  it('propositions cochées si déjà rattachées, recherche parmi les autres, enregistrement des rattachements', async () => {
+    fetchMock.mockImplementation(async (_u: string, init?: { method?: string }) => init?.method === 'PUT' ? json({ ok: true }) : json({
+      peutModifier: true,
+      rattachees: [{ type: 'MISSION', id: 'm1' }],
+      propositions: [{ type: 'MISSION', id: 'm1', intitule: 'Audit paie', processus: ['p1'], risques: [], debut: '2027-03-05', fin: null }],
+      candidats: [
+        { type: 'MISSION', id: 'm1', intitule: 'Audit paie', processus: ['p1'], risques: [], debut: '2027-03-05', fin: null },
+        { type: 'CONTROLE', id: 'c1', intitule: 'Revue des accès', processus: [], risques: [], debut: '2027-01-01', fin: '2027-12-31' },
+      ],
+    }))
+    const fermer = vi.fn()
+    render(<RealisationsPanel planId="p1" ligneId="l1" onClose={fermer} />)
+    expect(await screen.findByRole('checkbox', { name: 'Mission d’audit : Audit paie' })).toBeChecked()
+    fireEvent.change(screen.getByPlaceholderText('Rechercher…'), { target: { value: 'accès' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Contrôle : Revue des accès' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    await waitFor(() => expect(fermer).toHaveBeenCalledWith(true))
+    const put = fetchMock.mock.calls.find(c => c[1]?.method === 'PUT')!
+    expect(JSON.parse(put[1].body).realisations).toEqual([{ type: 'MISSION', id: 'm1' }, { type: 'CONTROLE', id: 'c1' }])
   })
 })

@@ -9,15 +9,17 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
-import { peutModifierLignes, type ModePlan, type Prisme, type StatutAnnee, type TypePlan } from '@/lib/planification'
+import { peutModifierLignes, type ModePlan, type Prisme, type StatutAnnee, type StatutLigne, type TypePlan } from '@/lib/planification'
 import { STATUT_STYLE } from './PlansManager'
 import PlanFrise from './PlanFrise'
 import LigneForm, { ligneVide, type LigneSaisie, type Options } from './LigneForm'
+import RealisationsPanel from './RealisationsPanel'
 
 interface Cibles { organisations?: string[]; tiers?: string[]; risques?: string[]; processus?: string[]; referentiel?: { code: string; exigences: string[] } | null }
 interface Ligne {
   id: string; annee: number; intitule: string; prisme: Prisme; cibles: Cibles; echantillon: { methode: string; population: number | null; taille: number | null } | null
   debut: string | null; fin: string | null; charge: number | null; priorite: number | null; responsable: string | null; statutManuel: string | null
+  statutCalcule?: StatutLigne; realisations?: { type: string; id: string; statut: string | null; intitule: string | null }[]
 }
 interface Annee {
   annee: number; statut: StatutAnnee; preparePar: string | null; validePar: string | null; valideLe: string | null; commentaire: string | null
@@ -29,6 +31,14 @@ interface Donnees {
 }
 
 const jour = (d: string | null) => (d ? d.slice(0, 10) : null)
+const STATUT_LIGNE_STYLE: Record<StatutLigne, string> = {
+  REALISEE: 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300',
+  EN_COURS: 'bg-ebios-100 text-ebios-800 dark:bg-ebios-500/15 dark:text-ebios-200',
+  EN_RETARD: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
+  A_VENIR: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+  REPORTEE: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
+  ANNULEE: 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500',
+}
 
 export default function PlanView({ id }: { id: string }) {
   const { t, locale } = useTranslation()
@@ -39,6 +49,7 @@ export default function PlanView({ id }: { id: string }) {
   const [options, setOptions] = useState<Options | null>(null)
   const [edition, setEdition] = useState<null | { id: string | null; saisie: LigneSaisie }>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [rattachement, setRattachement] = useState<string | null>(null)
 
   const reload = useCallback(async () => {
     const r = await fetch(`/api/plans/${id}`).catch(() => null)
@@ -147,7 +158,7 @@ export default function PlanView({ id }: { id: string }) {
             <table className="w-full text-sm">
               <thead><tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                 <th className="px-3 py-2">{p.intitule}</th><th className="px-3 py-2">{p.prisme}</th><th className="px-3 py-2">{p.cibles}</th>
-                <th className="px-3 py-2">{p.periode}</th><th className="px-3 py-2">{p.charge}</th><th className="px-3 py-2">{p.responsable}</th><th className="px-3 py-2" />
+                <th className="px-3 py-2">{p.periode}</th><th className="px-3 py-2">{p.rattachement.colonne}</th><th className="px-3 py-2">{p.charge}</th><th className="px-3 py-2">{p.responsable}</th><th className="px-3 py-2" />
               </tr></thead>
               <tbody>
                 {lignes.map(l => (
@@ -156,6 +167,11 @@ export default function PlanView({ id }: { id: string }) {
                     <td className="px-3 py-2 text-xs">{p.prismes[l.prisme]}</td>
                     <td className="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{resumeCibles(l.cibles)}{l.echantillon ? <span className="block text-gray-400">{p.methodes[l.echantillon.methode as 'EXHAUSTIF']}{l.echantillon.taille ? ` · ${l.echantillon.taille}/${l.echantillon.population ?? '?'}` : ''}</span> : null}</td>
                     <td className="px-3 py-2 text-xs whitespace-nowrap">{l.debut ? `${date(l.debut)}${l.fin && l.fin !== l.debut ? ` → ${date(l.fin)}` : ''}` : '—'}</td>
+                    <td className="px-3 py-2 text-xs">
+                      {l.statutCalcule && <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${STATUT_LIGNE_STYLE[l.statutCalcule]}`}>{p.statutsLigne[l.statutCalcule]}</span>}
+                      {(l.realisations ?? []).filter(x => x.intitule).map(x => <span key={`${x.type}:${x.id}`} className="block text-gray-500 dark:text-gray-400 mt-0.5">{x.intitule}</span>)}
+                      {d.droits.preparer && <button type="button" onClick={() => setRattachement(rattachement === l.id ? null : l.id)} className="block text-ebios-600 hover:underline mt-0.5">{p.rattachement.rattacher}</button>}
+                    </td>
                     <td className="px-3 py-2 text-xs">{l.charge ?? '—'}</td>
                     <td className="px-3 py-2 text-xs">{l.responsable ?? '—'}</td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">
@@ -170,6 +186,7 @@ export default function PlanView({ id }: { id: string }) {
             </table>
           </div>
         )}
+        {rattachement && <RealisationsPanel key={rattachement} planId={id} ligneId={rattachement} onClose={modifie => { setRattachement(null); if (modifie) reload() }} />}
       </section>
 
       {courante.historique.length > 0 && (

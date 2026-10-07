@@ -5,8 +5,8 @@
 // (processus couverts) et exécutions des contrôles (risque et processus rattachés). Calculs : lib/planification-vue.
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { contextePlan } from '@/lib/planification.server'
-import { TYPES_PLAN } from '@/lib/planification'
+import { contextePlan, donneesRealisations, etatRealisation } from '@/lib/planification.server'
+import { TYPES_PLAN, cleanRealisations, statutLigne, tauxRealisation } from '@/lib/planification'
 import { anglesMorts, sollicitationsMultiples, type LigneVue } from '@/lib/planification-vue'
 
 export const dynamic = 'force-dynamic'
@@ -54,13 +54,20 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     noter(derniere.risques, ct.riskItemId, d); noter(derniere.processus, ct.processusId, d)
   }
 
+  // Statuts calculés des lignes de l'année (réalisations rattachées, période) → taux de réalisation par plan (lot P4).
+  const donnees = await donneesRealisations(c.orgId)
+  const statutDe = new Map(plans.flatMap(p => p.lignes.filter(l => l.annee === annee).map(l => [l.id, statutLigne(
+    { debut: jour(l.debut), fin: jour(l.fin), statutManuel: l.statutManuel },
+    cleanRealisations(l.realisations).flatMap(r => { const e = etatRealisation(r, annee, donnees); return e ? [{ statut: e.statut }] : [] }),
+    aujourdhui,
+  )] as const)))
   const noms = Object.fromEntries([...organisations.map(o => [o.id, o.nom]), ...tiers.map(t => [t.tier.id, t.tier.nom])])
   return NextResponse.json({
     annee,
     seuilAnglesMortsAns: c.cfg.seuilAnglesMortsAns,
     plans: plans.map(p => {
       const ls = lignes.filter(l => l.planId === p.id)
-      return { id: p.id, nom: p.nom, type: p.type, equipe: p.equipe, statut: p.annees[0]?.statut ?? null, lignes: ls.length, annulees: ls.filter(l => l.statutManuel === 'ANNULEE').length, reportees: ls.filter(l => l.statutManuel === 'REPORTEE').length }
+      return { id: p.id, nom: p.nom, type: p.type, equipe: p.equipe, statut: p.annees[0]?.statut ?? null, lignes: ls.length, annulees: ls.filter(l => l.statutManuel === 'ANNULEE').length, reportees: ls.filter(l => l.statutManuel === 'REPORTEE').length, realisation: tauxRealisation(ls.map(l => statutDe.get(l.ligneId) ?? 'A_VENIR')) }
     }),
     lignes,
     sollicitations: sollicitationsMultiples(lignes, noms),
