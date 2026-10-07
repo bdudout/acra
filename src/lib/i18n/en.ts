@@ -4399,6 +4399,7 @@ export const en: Translations = {
 
   // ─── Optional features (admin toggles) ───────────────────────────────────
   features: {
+    groupeGeneral: "General",
     campagnesRcsaTitle: "RCSA campaigns",
     campagnesRcsaDesc: "Risk and control self-assessment (RCSA) campaigns by business lines, on the risk register. Requires the risk register.",
     appetenceTitle: "Risk appetite (RAS / RAD)",

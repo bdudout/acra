@@ -4398,6 +4398,7 @@ export const de: Translations = {
 
   // ─── Optionale Funktionen (Admin-Schalter) ───────────────────────────────
   features: {
+    groupeGeneral: "Allgemein",
     campagnesRcsaTitle: "RCSA-Kampagnen",
     campagnesRcsaDesc: "Kampagnen zur Selbstbewertung von Risiken und Kontrollen (RCSA) durch die Fachbereiche, auf Basis des Risikoregisters. Erfordert das Risikoregister.",
     appetenceTitle: "Risikobereitschaft (RAS / RAD)",

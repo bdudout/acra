@@ -4448,6 +4448,7 @@ export const fr = {
   ],
   // ─── Fonctionnalités optionnelles (toggles admin) ────────────────────────
   features: {
+    groupeGeneral: "Général",
     campagnesRcsaTitle: "Campagnes RCSA",
     campagnesRcsaDesc: "Campagnes d’auto-évaluation des risques et des contrôles (RCSA) par les métiers, sur le registre des risques. Nécessite le registre des risques.",
     appetenceTitle: "Appétence au risque (RAS / RAD)",

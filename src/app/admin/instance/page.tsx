@@ -11,6 +11,8 @@ import { useTranslation } from '@/lib/i18n/context'
 import { isAdminRole } from '@/lib/permissions'
 import ApiKeysManager from '@/components/ApiKeysManager'
 import WebhooksManager from '@/components/WebhooksManager'
+import { grouperParMenu, menuDuModule, type MenuFonctionnalite } from '@/lib/fonctionnalites-menus'
+import type { GovernableModule } from '@/lib/module-policy'
 
 // Clé i18n du nom de chaque méthode d'analyse (t.methodes.*).
 const METHODE_I18N: Record<string, string> = {
@@ -113,6 +115,11 @@ export default function AdminInstancePage() {
     if (!res.ok) setModulesPolicy(prev)
   }
 
+  // Intitulés des groupes : ceux de la barre de navigation (cf. lib/fonctionnalites-menus).
+  const libelleMenu = (menu: MenuFonctionnalite): string => ({
+    pilotage: t.nav.grpPilotage, analyses: t.nav.grpAnalyses, registre: t.nav.grpRegistre, controleAudit: t.nav.grpControleAudit,
+    conformite: t.nav.grpConformite, reglementaire: t.nav.grpReglementaire, general: t.features.groupeGeneral,
+  })[menu]
   const modules = [
     { key: 'registreRisques', label: t.features.registreRisquesTitle },
     { key: 'incidents', label: t.features.incidentsTitle },
@@ -169,8 +176,12 @@ export default function AdminInstancePage() {
           <section className="card p-6">
             <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">{t.modulesPolicy.sectionTitle}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t.modulesPolicy.sectionDesc}</p>
-            <div className="space-y-3">
-              {modules.map(m => (
+            <div className="space-y-6">
+              {grouperParMenu(modules, m => menuDuModule(m.key as GovernableModule)).map(g => (
+                <div key={g.menu}>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">{libelleMenu(g.menu)}</h3>
+                  <div className="space-y-3">
+              {g.items.map(m => (
                 <div key={m.key} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                   <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{m.label}</span>
                   <select value={modulesPolicy[m.key] ?? 'PER_ORG'} onChange={e => saveModulesPolicy(m.key, e.target.value)}
@@ -179,6 +190,9 @@ export default function AdminInstancePage() {
                     <option value="FORCE_ON">{t.modulesPolicy.forceOn}</option>
                     <option value="FORCE_OFF">{t.modulesPolicy.forceOff}</option>
                   </select>
+                </div>
+              ))}
+                  </div>
                 </div>
               ))}
             </div>

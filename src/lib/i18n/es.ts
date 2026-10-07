@@ -4399,6 +4399,7 @@ export const es: Translations = {
 
   // ─── Funcionalidades opcionales (interruptores admin) ─────────────────────
   features: {
+    groupeGeneral: "General",
     campagnesRcsaTitle: "Campañas RCSA",
     campagnesRcsaDesc: "Campañas de autoevaluación de riesgos y controles (RCSA) por las áreas de negocio, sobre el registro de riesgos. Requiere el registro de riesgos.",
     appetenceTitle: "Apetito de riesgo (RAS / RAD)",

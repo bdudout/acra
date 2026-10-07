@@ -31,6 +31,7 @@ import QualificationQuestionnaireEditor from '@/components/QualificationQuestion
 import { QUALIFICATION_QUESTIONS, type QualificationConfig } from '@/lib/qualification'
 import Link from 'next/link'
 import { ARCHI_PATTERNS, normalizePatterns, PATTERNS_MAX_MAX, patternLabel } from '@/lib/patterns-archi'
+import { grouperParMenu, menuDuChamp, type MenuFonctionnalite } from '@/lib/fonctionnalites-menus'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -334,6 +335,11 @@ export default function ConfigurationPage() {
     rapportsGrcActive: setRapportsGrcActive,
     mcpActive: setMcpActive,
   }
+  // Intitulés des groupes d'activation : ceux de la barre de navigation (cf. lib/fonctionnalites-menus).
+  const libelleMenu = (menu: MenuFonctionnalite): string => ({
+    pilotage: t.nav.grpPilotage, analyses: t.nav.grpAnalyses, registre: t.nav.grpRegistre, controleAudit: t.nav.grpControleAudit,
+    conformite: t.nav.grpConformite, reglementaire: t.nav.grpReglementaire, general: t.features.groupeGeneral,
+  })[menu]
   async function saveFeature(field: 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive' | 'campagnesRcsaActive' | 'appetenceActive' | 'rapportsGrcActive', value: boolean) {
     FEATURE_SETTERS[field]?.(value) // mise à jour optimiste
     setSavingFeatures(true)
@@ -1364,8 +1370,8 @@ export default function ConfigurationPage() {
             <h2 className="text-base font-semibold text-gray-800 mb-1">{t.features.sectionTitle}</h2>
             <p className="text-sm text-gray-500 mb-4">{t.features.sectionDesc}</p>
             {isAdmin && <p className="mb-4"><a href="/configuration/personnalisation" className="text-sm text-ebios-700 hover:underline">{t.personnalisation.configLink} →</a></p>}
-            <div className="space-y-3">
-              {([
+            <div className="space-y-6">
+              {grouperParMenu([
                 { field: 'qualificationActive' as const, value: qualificationActive, title: t.features.qualificationTitle, desc: t.features.qualificationDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
                 { field: 'qualificationObligatoire' as const, value: qualificationObligatoire, title: t.features.qualificationObligTitle, desc: t.features.qualificationObligDesc, href: 'https://club-ebios.org/site/', disabled: !qualificationActive, indent: true },
                 { field: 'conformiteActive' as const, value: conformiteActive, title: t.features.conformiteTitle, desc: t.features.conformiteDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
@@ -1389,7 +1395,11 @@ export default function ConfigurationPage() {
                 { field: 'homologationsActive' as const, value: homologationsActive, title: t.features.homologationsTitle, desc: t.features.homologationsDesc, href: '/homologations', disabled: modulesPolicy.homologations === 'FORCE_ON' || modulesPolicy.homologations === 'FORCE_OFF', indent: false, forced: modulesPolicy.homologations },
                 { field: 'registreIaActive' as const, value: registreIaActive, title: t.features.registreIaTitle, desc: t.features.registreIaDesc, href: '/registre-ia', disabled: modulesPolicy.registreIa === 'FORCE_ON' || modulesPolicy.registreIa === 'FORCE_OFF', indent: false, forced: modulesPolicy.registreIa },
                 { field: 'mcpActive' as const, value: mcpActive, title: t.features.mcpTitle, desc: t.features.mcpDesc, href: '/mcp-activite', disabled: false },
-              ]).map(f => {
+              ], f => menuDuChamp(f.field)).map(g => (
+                <div key={g.menu}>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">{libelleMenu(g.menu)}</h3>
+                  <div className="space-y-3">
+              {g.items.map(f => {
                 const forced = (f as { forced?: string }).forced // 'FORCE_ON' | 'FORCE_OFF' | undefined
                 const isForced = forced === 'FORCE_ON' || forced === 'FORCE_OFF'
                 const off = f.disabled && !isForced // « off » = dépendance non satisfaite (hors forçage)
@@ -1420,6 +1430,9 @@ export default function ConfigurationPage() {
                 </div>
                 )
               })}
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
         )}
