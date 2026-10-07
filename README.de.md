@@ -174,6 +174,35 @@ Modul pro Organisation aktivierbar (standardmäßig aus), der Governance vorbeha
 - **Signierte ausgehende Webhooks** (HMAC): Benachrichtigung eines Drittsystems (SOAR/SIEM/ITSM) bei Ereignissen (Risiko erstellt, Vorfall gemeldet…), mit Wiederholungen und Anti-SSRF-Schutz
 - **OIDC-SSO + SCIM** (siehe *Sicherheit*) zur Anbindung von Authentifizierung und Bereitstellung an das Unternehmensverzeichnis
 
+### 🤖 KI-Assistenten (MCP-Server)
+
+Ein KI-Assistent (Claude, Codex, Mistral Vibe…) verbindet sich über das **Model Context Protocol** mit einem
+Organisationsschlüssel mit ACRA. Er **liest** den Kontext, ruft die **von ACRA berechneten Empfehlungen** ab (ohne
+externe KI) und **schlägt vor**; **nichts wird ohne menschliche Freigabe geschrieben** (Menü *MCP-Vorschläge*, mit
+den üblichen Rechten jeder Rolle). Standardmäßig deaktiviert: Schalter für die Instanz (Super-Administrator) und die
+Organisation (Administrator).
+
+- **Lesen**: Referenzrahmen und Anforderungen, Risikotaxonomie, Beispiele nach Sektor, Teilsektoren und
+  IS-Architekturmustern, Sektorkatalog, Risikolage, Analysen und 360-Projekte, Meldeverfahren für Vorfälle,
+  DORA-Felder, Resilienztests
+- **Empfehlen**: Risiken und Szenarien, Kontrollplan
+- **Vorschlagen**: 360-Projekt; **neue Analyse** auf Grundlage einer Bedarfsbeschreibung oder **Übernahme einer
+  bestehenden Analyse** (EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30); **IS-Leitlinie (PSSI)** als
+  Maßnahmen-Referenzrahmen, Bibliotheksdokument und Konformitätsverfolgung; Risiken (Brutto- / aktuelle /
+  Restbewertung, Maßnahmen und Pläne), Maßnahmen, Aktionspläne, Konformitätsbewertungen, Import in eine bestehende Analyse
+- **MCP-Aktivität** (Administrator): MCP-Schlüssel und ihr Status, Aufrufe und Fehler über 30 Tage, meistgenutzte
+  Werkzeuge, Vorschläge je Schlüssel, Erstellung eines Schlüssels nur mit `mcp`-Recht samt Verbindungsbefehl,
+  **sofortiger Widerruf**
+- Strikte Trennung nach Organisation, Protokollierung jedes Aufrufs (`MCP_TOOL_INVOKED`) und jeder Entscheidung,
+  120 Aufrufe pro Minute und Schlüssel
+
+```bash
+claude mcp add --transport http acra https://<instance>/api/mcp --header "Authorization: Bearer $ACRA_MCP_KEY"
+```
+
+Verbindungsleitfaden für einen Assistenten (Schlüssel, Transport, Werkzeuge, Fehler, auf Französisch):
+[`docs/mcp-clients.md`](docs/mcp-clients.md).
+
 ### 🌐 UX & Barrierefreiheit
 
 - Oberfläche in **5 Sprachen**: Français · English · Deutsch · Español · Italiano

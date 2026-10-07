@@ -51,7 +51,7 @@ export default function McpActivity() {
     setBusy(true); setSecret(null)
     const res = await fetch('/api/config/api-keys', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: nom || undefined, scopes: ['read', 'mcp'], expiresAt: expiration || undefined }),
+      body: JSON.stringify({ name: nom || undefined, scopes: ['mcp'], expiresAt: expiration || undefined }),
     }).catch(() => null)
     setBusy(false)
     if (!res?.ok) return

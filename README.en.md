@@ -173,6 +173,30 @@ Module enabled per organisation (off by default), restricted to governance roles
 - **Signed outbound webhooks** (HMAC): notify a third-party system (SOAR/SIEM/ITSM) on events (risk created, incident declared…), with retries and an anti-SSRF guard
 - **OIDC SSO + SCIM** (see *Security*) to plug authentication and provisioning into the corporate directory
 
+### 🤖 AI assistants (MCP server)
+
+An AI assistant (Claude, Codex, Mistral Vibe…) connects to ACRA through the **Model Context Protocol** with an
+organisation key. It **reads** the context, asks for **recommendations computed by ACRA** (no external AI) and
+**proposes**; **nothing is written without human validation** (*MCP proposals* menu, with each role's usual rights).
+Disabled by default: instance switch (super administrator) and organisation switch (administrator).
+
+- **Read**: frameworks and requirements, risk taxonomy, examples by sector, sub-sectors and IS architecture patterns,
+  sector catalogue, risk posture, analyses and 360 projects, incident notification regimes, DORA fields, resilience tests
+- **Recommend**: risks and scenarios, control plan
+- **Propose**: 360 project; **new analysis** drafted from a statement of needs or **taken over from an existing
+  analysis** (EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30); **ISSP** imported as a measures framework, a library
+  document and compliance tracking; risks (inherent / current / residual ratings, measures and plans), measures,
+  action plans, compliance assessments, import into an existing analysis
+- **MCP activity** (administrator): MCP keys and their status, calls and errors over 30 days, most used tools,
+  proposals per key, creation of an `mcp`-only key with its connection command, **immediate revocation**
+- Strict per-organisation isolation, every call (`MCP_TOOL_INVOKED`) and every decision logged, 120 calls per minute per key
+
+```bash
+claude mcp add --transport http acra https://<instance>/api/mcp --header "Authorization: Bearer $ACRA_MCP_KEY"
+```
+
+Connection guide for an assistant (key, transport, tools, errors, in French): [`docs/mcp-clients.md`](docs/mcp-clients.md).
+
 ### 🌐 UX & accessibility
 
 - Interface in **5 languages**: Français · English · Deutsch · Español · Italiano

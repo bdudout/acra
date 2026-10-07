@@ -6,6 +6,28 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-07 (84) — Claude : MCP nouvelle analyse, PSSI, activité MCP, guide de connexion
+
+- `b570c697` : `propose_nouvelle_analyse` (paquet de l'import historique, origine `EXPRESSION_BESOINS` /
+  `ANALYSE_HISTORIQUE`, type `analysis_create`, acceptation = `canCreateAnalyse` → `executeAnalysisImport` source MCP ;
+  import : secteur, sous-secteurs, cadrage hors EBIOS RM) et `propose_pssi` (type `pssi`, `lib/mcp/pssi-proposal.ts`
+  pur et idempotent, `lib/mcp/pssi-import.server.ts` : référentiel PSSI + document Markdown portée REFERENTIEL + suivi
+  de conformité en une transaction, fichier retiré si échec, 409 `code_existant` ; acceptation = administrateur,
+  conformité active). File de validation : motif de refus affiché (avant : échec silencieux).
+- `0d257c10` : page `/mcp-activite` (ADMIN de l'org) + `GET /api/mcp-activity` + `lib/mcp/activity.ts` (pur) ; création
+  de clé au seul droit `mcp`, révocation par `DELETE /api/config/api-keys/[id]` ; lien menu et configuration.
+- Documentation : `docs/mcp-clients.md` (guide pour un assistant : clé, transport, outils, erreurs), README
+  « Assistants IA (serveur MCP) », consignes `initialize` complétées, dossier de démo M7–M9.
+- **Vérifié** : `tsc` 0 · `npm test` 582 fichiers / 4540 tests · `i18n:check` · parcours réel : propositions déposées par
+  MCP, refus RSSI (403, conforme : création d'analyse = analyste / administrateur), acceptation analyste → analyse créée
+  (capture 17) ; `/mcp-activite` en RSSI → « réservé à l'administrateur ».
+- **Non vérifié en direct** : acceptation PSSI et vue administrateur de `/mcp-activite` (aucun compte administrateur de
+  recette ; la réinitialisation du mot de passe de `recette-claude` a été refusée) — couverts par les tests unitaires.
+  Deux propositions PSSI identiques restent EN_ATTENTE sur l'instance locale (la 2ᵉ sera refusée en 409).
+- **Proposé, non développé** : évolution des catalogues par défaut (secteurs, sous-secteurs, cas d'usage) par MCP.
+
+---
+
 ## 2026-10-07 (83) — Claude : MCP lots M1–M5 livrés, démo projet 360 réalisée
 
 - `8c282b6a` : `read_analyses`, `read_projet` (`lib/mcp/tools-projet.server.ts`), `propose_projet360` (ancre

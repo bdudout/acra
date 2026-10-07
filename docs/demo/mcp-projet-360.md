@@ -99,8 +99,8 @@ l'assistant ; conduite du changement auprès des conseillers.
 
 ## 4. Connexion des clients
 
-Clé d'API de l'organisation avec le **seul** droit `mcp` (Configuration › Clés d'API), expiration courte ; module MCP
-activé pour l'instance et pour l'organisation. Variable d'environnement : `ACRA_MCP_KEY`.
+Clé d'API de l'organisation avec le **seul** droit `mcp` (page *Activité MCP*, administrateur), expiration courte ; module MCP
+activé pour l'instance et pour l'organisation. Guide complet : [`../mcp-clients.md`](../mcp-clients.md). Variable d'environnement : `ACRA_MCP_KEY`.
 
 - **Claude Code** : `claude mcp add --transport http acra http://localhost:3005/api/mcp --header "Authorization: Bearer $ACRA_MCP_KEY"`
 - **Codex (CLI 0.160, livré avec l'application ChatGPT)** : `codex mcp add acra --url http://localhost:3005/api/mcp --bearer-token-env-var ACRA_MCP_KEY`,
@@ -131,6 +131,9 @@ activé pour l'instance et pour l'organisation. Variable d'environnement : `ACRA
 | M3 | `propose_projet360` : proposition de création d'un projet (nom, objectifs, périmètre, secteur, sous-secteurs, patterns, mise en service), validée par un humain | point de départ de la démo |
 | M4 | `propose_risk` enrichi : domaine 360, cotations brut / actuel / résiduel complètes, échelle de l'organisation (4 ou 5 niveaux) au lieu de 1 à 4 figé ; acceptation par le même garde que la saisie directe (analyse gelée, cohérence des cotations) | qualité et cohérence avec la page projet |
 | M5 | `recommend_risks_scenarios` pour un projet : catalogue complet des risques types (registre, sous-secteurs, architecture, secteur, communs) | recommandations aussi riches que l'import en phase d'identification |
+| M7 | `propose_nouvelle_analyse` : nouvelle analyse rédigée d'après une expression de besoins ou reprise d'une analyse existante (paquet de l'import historique, secteur, sous-secteurs, contenu des ateliers EBIOS RM) ; acceptée par un rôle qui crée des analyses | démarrer une analyse complète depuis un assistant |
+| M8 | `propose_pssi` : PSSI importée en référentiel de mesures de type PSSI, document Markdown de la bibliothèque et suivi de conformité ; acceptée par un administrateur | réutiliser la politique existante comme référentiel |
+| M9 | Page *Activité MCP* : clés, appels, erreurs, outils, propositions par clé, création d'une clé `mcp` et révocation ; guide [`mcp-clients.md`](../mcp-clients.md) | suivre et couper les assistants connectés |
 | M6 (plus tard) | OAuth 2.1 pour les interfaces web (claude.ai, Le Chat) ; transport en flux si un client l'exige | ouvrir aux interfaces grand public |
 
 ## 6. Points de vigilance
@@ -167,3 +170,16 @@ domaine 360). En mode développement, l'acceptation d'un projet prend une dizain
 
 **Rejouer** : `.acra-test-memory/mcp-demo.json` (clé `mcp`), puis `docs/demo/scripts/mcp.sh <outil> '<json>'` et
 `ACRA_EMAIL=… ACRA_PASSWORD=… node docs/demo/scripts/capture.cjs projet|risques|projet-page|export|rejet`.
+
+### Nouvelle analyse et PSSI (2026-10-07)
+
+| # | Étape | Outil / action | Capture |
+|---|---|---|---|
+| 9 | L'assistant propose la reprise d'une analyse de 2024 (ISO/IEC 27005:2022, 2 risques, 1 mesure, 1 plan lié) et l'import de la PSSI du groupe (6 exigences) | `propose_nouvelle_analyse`, `propose_pssi` | `captures/13-propositions-analyse-pssi.png` |
+| 10 | Le RSSI tente d'accepter : refus (la création d'analyse revient à l'analyste ou à l'administrateur, la PSSI à l'administrateur), motif affiché sur la carte | Accepter | — |
+| 11 | L'analyste accepte l'analyse : créée avec son secteur, sa méthode, ses risques positionnés R1 et R2 dans la matrice et sa mesure | Accepter | `captures/17-analyse-reprise.png` |
+| 12 | Une 2ᵉ proposition PSSI de même version : refusée à l'acceptation (`code_existant`, 409) après la première ; à rejeter | Rejeter | — |
+
+Acceptation de la PSSI par un administrateur : à rejouer par l'administrateur de l'instance de démonstration
+(aucun compte administrateur de recette).
+

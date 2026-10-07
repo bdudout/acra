@@ -176,6 +176,33 @@ Module activable par organisation (désactivé par défaut), réservé à la gou
 - **Webhooks sortants** signés (HMAC) : notification d'un SI tiers (SOAR/SIEM/ITSM) lors d'événements (risque créé, incident déclaré…), avec ré-essais et garde anti-SSRF
 - **SSO OIDC + SCIM** (voir *Sécurité*) pour brancher l'authentification et le provisioning sur l'annuaire de l'entreprise
 
+### 🤖 Assistants IA (serveur MCP)
+
+Un assistant IA (Claude, Codex, Mistral Vibe…) se connecte à ACRA par le **Model Context Protocol** avec une clé
+d'organisation. Il **lit** le contexte, demande les **recommandations calculées par ACRA** (sans IA externe) et
+**propose** ; **rien n'est écrit sans validation humaine** (menu *Propositions MCP*, avec les droits habituels de
+chaque rôle). Désactivé par défaut : interrupteur d'instance (super-administrateur) et d'organisation (administrateur).
+
+- **Lecture** : référentiels et exigences, taxonomie, exemples par secteur, sous-secteurs et patterns d'architecture,
+  catalogue sectoriel, posture de risque, analyses et projets 360, régimes de déclaration d'incidents, champs DORA,
+  tests de résilience
+- **Recommandations** : risques et scénarios, plan de contrôle
+- **Propositions** : projet 360 ; **nouvelle analyse** rédigée d'après une expression de besoins ou **reprise d'une
+  analyse existante** (EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30) ; **PSSI** importée en référentiel de
+  mesures, document de la bibliothèque et suivi de conformité ; risques (cotations brut / actuel / résiduel, mesures
+  et plans), mesures, plans d'action, évaluations de conformité, import dans une analyse existante
+- **Activité MCP** (administrateur) : clés MCP et leur état, appels et erreurs sur 30 jours, outils les plus appelés,
+  propositions par clé, création d'une clé au seul droit `mcp` avec la commande de connexion, **révocation immédiate**
+- Isolation stricte par organisation, journalisation de chaque appel (`MCP_TOOL_INVOKED`) et de chaque décision,
+  120 appels par minute et par clé
+
+```bash
+claude mcp add --transport http acra https://<votre-instance>/api/mcp --header "Authorization: Bearer $ACRA_MCP_KEY"
+```
+
+Guide de connexion pour un assistant (clé, transport, outils, erreurs) : [`docs/mcp-clients.md`](docs/mcp-clients.md) ·
+démonstration de bout en bout : [`docs/demo/mcp-projet-360.md`](docs/demo/mcp-projet-360.md).
+
 ### 🌐 UX & accessibilité
 
 - Interface en **5 langues** : Français · English · Deutsch · Español · Italiano

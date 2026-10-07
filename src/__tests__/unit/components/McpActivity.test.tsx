@@ -40,14 +40,14 @@ describe('McpActivity', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/config/api-keys/k1', { method: 'DELETE' }))
     expect(screen.queryByRole('button', { name: /Révoquer Ancienne clé/ })).toBeNull()
   })
-  it('créer une clé MCP : scopes read + mcp, secret montré une fois avec la commande de connexion', async () => {
+  it('créer une clé MCP : seul droit mcp (moindre privilège), secret montré une fois avec la commande de connexion', async () => {
     render(<McpActivity />)
     await screen.findByText('Claude Code — RSSI')
     fireEvent.change(screen.getByLabelText('Nom de la clé'), { target: { value: 'Codex — analyste' } })
     fireEvent.click(screen.getByRole('button', { name: 'Créer une clé MCP' }))
     await screen.findByText('acra_new_SECRET', { selector: 'code' })
     const post = fetchMock.mock.calls.find(c => c[1]?.method === 'POST')!
-    expect(JSON.parse(post[1].body)).toMatchObject({ name: 'Codex — analyste', scopes: ['read', 'mcp'] })
+    expect(JSON.parse(post[1].body)).toMatchObject({ name: 'Codex — analyste', scopes: ['mcp'] })
     expect(screen.getByText(/claude mcp add --transport http acra .*\/api\/mcp --header "Authorization: Bearer acra_new_SECRET"/)).toBeTruthy()
   })
 })
