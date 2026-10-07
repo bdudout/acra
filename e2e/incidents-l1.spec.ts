@@ -32,6 +32,8 @@ test.describe('Incidents — régimes de notification et pertes', () => {
       await page.locator('div.fixed button[aria-label="Annuler"]').click()
 
       // Pertes par composantes : 6 000 € de perte directe => « Grande perte » (seuil 5 000).
+      // Tableau compact : « Qualifier » est dans le menu « Actions » de la ligne.
+      await ligne.getByText('Actions', { exact: true }).click()
       await ligne.getByRole('button', { name: 'Qualifier' }).click()
       await page.getByLabel('Catégorie').selectOption({ index: 1 })
       await page.getByRole('button', { name: 'Ajouter une perte' }).click()
