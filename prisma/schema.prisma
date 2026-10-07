@@ -213,6 +213,7 @@ model Organization {
   questionnaireEnvois  QuestionnaireEnvoi[]
   preconisations       Preconisation[]
   appetenceSnapshots AppetenceSnapshot[]
+  plansProgramme     PlanProgramme[]
 }
 
 // Programme de tests de résilience opérationnelle numérique (DORA, Règlement (UE)
@@ -2220,6 +2221,8 @@ model OrganizationConfig {
   auditConfig                Json          @default("{}")
   // Lot L2 (suite) — gabarits de rapports surchargeables, planification des brouillons.
   rapportsConfig             Json          @default("{}")
+  // Programme pluriannuel d'audit et de contrôle : mode par défaut, préparateurs / validateurs, double regard (lib/planification).
+  planificationConfig        Json          @default("{}")
   // Relances automatiques (questionnaires, préconisations, plans d'action) : { actives, joursAvant, periodiciteJours } — cf. lib/relances.
   relancesConfig             Json          @default("{}")
   // Appétit au risque : { seuilGlobal: number|null, parCategorie: { <codeTaxo>: number } }
@@ -2742,3 +2745,77 @@ model IncidentRisque {
   @@id([incidentId, riskItemId])
   @@index([riskItemId])
 }
+
+// ─── Programme pluriannuel d'audit et de contrôle (docs/specs/programme-audit-controle.md) ───
+// Un plan par équipe ou spécialité (AUDIT | CONTROLE), horizon pluriannuel ; chaque année a son cycle de validation
+// (BROUILLON → SOUMIS → VALIDE → REVISION) et, une fois validée, son contenu figé. Mode FIGE (client final) ou
+// DYNAMIQUE (cabinet d'audit). Logique pure : lib/planification.
+model PlanProgramme {
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  type            String // AUDIT | CONTROLE
+  nom             String
+  equipe          String? // équipe ou spécialité
+  prismePrincipal String  @default("PROCESSUS") // PERIMETRE | RISQUE | PROCESSUS | REFERENTIEL
+  mode            String  @default("FIGE") // FIGE | DYNAMIQUE
+  anneeDebut      Int
+  anneeFin        Int
+  description     String? @db.Text
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  annees PlanAnnee[]
+  lignes PlanLigne[]
+
+  @@index([organizationId, type])
+}
+
+model PlanAnnee {
+  id            String        @id @default(cuid())
+  planId        String
+  plan          PlanProgramme @relation(fields: [planId], references: [id], onDelete: Cascade)
+  annee         Int
+  statut        String        @default("BROUILLON") // BROUILLON | SOUMIS | VALIDE | REVISION
+  preparePar    String?
+  prepareLe     DateTime?
+  validePar     String?
+  valideLe      DateTime?
+  commentaire   String?       @db.Text
+  // Lignes de l'année au moment de la validation (lib/planification.figerLignes).
+  contenu       Json          @default("[]")
+  revision      Int           @default(0)
+  motifRevision String?       @db.Text
+  // Journal des transitions : [{ action, statut, par, le, commentaire? }].
+  historique    Json          @default("[]")
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([planId, annee])
+}
+
+model PlanLigne {
+  id           String        @id @default(cuid())
+  planId       String
+  plan         PlanProgramme @relation(fields: [planId], references: [id], onDelete: Cascade)
+  annee        Int
+  intitule     String
+  prisme       String // PERIMETRE | RISQUE | PROCESSUS | REFERENTIEL
+  // { organisations[], tiers[], risques[], processus[], referentiel: { code, exigences[] } | null }
+  cibles       Json          @default("{}")
+  // { methode: EXHAUSTIF | ALEATOIRE | RISQUE | EXPERT, population?, taille? }
+  echantillon  Json?
+  debut        DateTime?     @db.Date
+  fin          DateTime?     @db.Date
+  charge       Float? // jours estimés
+  priorite     Int? // 1 (haute) … 4
+  responsable  String?
+  statutManuel String? // REPORTEE | ANNULEE (les autres statuts sont calculés, lot P4)
+  // Réalisations rattachées (lot P4) : [{ type: MISSION | CONTROLE | CAMPAGNE, id }].
+  realisations Json          @default("[]")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([planId, annee])
+}
+
