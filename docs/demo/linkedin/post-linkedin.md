@@ -1,6 +1,8 @@
 # Post LinkedIn — dernières évolutions d'ACRA
 
-Vidéo : `acra-linkedin.mp4` (44 s, 1080 × 1350, sans son) · régénérer : `node docs/demo/linkedin/build-video.cjs`
+Vidéos (44 s, sans son) : **`acra-linkedin-carre.mp4` (1080 × 1080, 1:1) — à utiliser sur LinkedIn**, affichée sans bandes
+ni recadrage sur ordinateur comme sur téléphone ; `acra-linkedin.mp4` (1080 × 1350, 4:5) pour les autres réseaux.
+Régénérer : `node docs/demo/linkedin/build-video.cjs carre` (ou `portrait`).
 
 ---
 
