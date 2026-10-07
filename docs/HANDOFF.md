@@ -6,6 +6,24 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-07 (83) — Claude : MCP lots M1–M5 livrés, démo projet 360 réalisée
+
+- `8c282b6a` : `read_analyses`, `read_projet` (`lib/mcp/tools-projet.server.ts`), `propose_projet360` (ancre
+  `ORGANISATION` = organisation de la clé, `lib/mcp/projet360-proposal.ts`, création par `lib/projet360-creation.server.ts`
+  à l'acceptation), `propose_risk` enrichi (domaine, cotations brut / actuel / résiduel cohérentes, échelle 4/5,
+  mesures et plans créés dans la transaction d'acceptation, plans `RISQUE_ANALYSE`), `projectRiskTypes` dans
+  `recommend_risks_scenarios` ; acceptation conformité alignée sur `peutGererConformite`. Matrice d'isolation :
+  type `PROPOSITION_ORGANISATION` (aucun identifiant d'ancre accepté).
+- `ba26353f` : démo réalisée (`docs/demo/mcp-projet-360.md` § 7, `docs/demo/captures/`, scripts `docs/demo/scripts/`).
+- **Vérifié** : `tsc` 0 · `npm test` 577 fichiers / 4512 tests (avant le dernier correctif d'affichage, test du
+  composant vert) · parcours réel via MCP + validation Playwright · contrôles de sécurité rejoués.
+- **Environnement** : les conteneurs Docker avaient disparu (volumes intacts) → `docker-compose up -d` ; Codex : quota
+  épuisé (reprise possible plus tard) ; Claude Code CLI fourni avec l'application : non connecté.
+- **À décider / à faire** : domaine 360 des risques types d'architecture classés « Fraude » (catégorie bâloise
+  « fraude externe ») ; rejouer le parcours avec Codex et Mistral Vibe ; build non relancé depuis M1–M5.
+
+---
+
 ## 2026-10-08 (82) — Claude : MCP prêt pour les clients, dossier de démo projet 360
 
 - **Bloquant corrigé** `c1152c63` : `/api/mcp` était redirigé vers la connexion par le middleware de session
