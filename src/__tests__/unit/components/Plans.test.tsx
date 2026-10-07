@@ -4,6 +4,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import PlansManager from '@/components/plans/PlansManager'
 import PlanView from '@/components/plans/PlanView'
+import VueGlobale from '@/components/plans/VueGlobale'
 
 vi.mock('@/lib/i18n/context', async () => {
   const { fr } = await import('@/lib/i18n/fr')
@@ -66,5 +67,27 @@ describe('PlanView', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Valider' }))
     expect(screen.getByRole('button', { name: 'Renvoyer au préparateur' })).toBeTruthy()
     expect(await screen.findByRole('alert')).toHaveTextContent('Double regard')
+  })
+})
+
+describe('VueGlobale', () => {
+  it('synthèse, sollicitations multiples (en même temps signalé), angles morts avec dernière couverture et « prévu »', async () => {
+    fetchMock.mockResolvedValue(json({
+      annee: 2027, seuilAnglesMortsAns: 3,
+      plans: [{ id: 'p1', nom: 'Audit SI', type: 'AUDIT', equipe: null, statut: 'VALIDE', lignes: 2, annulees: 0, reportees: 1 }],
+      lignes: [{ ligneId: 'l1', planId: 'p1', planNom: 'Audit SI', type: 'AUDIT', intitule: 'Accès', debut: '2027-03-01', fin: '2027-03-31', statutManuel: null, cibles: {} }],
+      sollicitations: { organisations: [{ id: 'f1', nom: 'Filiale Nord', nombre: 2, plans: 2, simultanee: true, lignes: [{ ligneId: 'l1', planNom: 'Audit SI', intitule: 'Accès', debut: '2027-03-01', fin: '2027-03-31' }] }], tiers: [] },
+      anglesMorts: { risques: [{ id: 'r1', nom: 'Fraude au virement', niveau: 12, derniere: null, prevu: true }], processus: [{ id: 'pr1', nom: 'Paie', criticite: 4, criticiteDora: 'CRITIQUE', derniere: '2022-05-01', prevu: false }] },
+    }))
+    render(<VueGlobale />)
+    expect(await screen.findByRole('link', { name: 'Audit SI' })).toBeTruthy()
+    expect(screen.getByText('1 reportée(s), 0 annulée(s)')).toBeTruthy()
+    expect(screen.getByText(/Filiale Nord/)).toBeTruthy()
+    expect(screen.getByText('En même temps')).toBeTruthy()
+    expect(screen.getByText(/Angles morts : non audités ni contrôlés depuis 3 ans/)).toBeTruthy()
+    expect(screen.getByText('Fraude au virement')).toBeTruthy()
+    expect(screen.getByText('Dernière couverture : jamais')).toBeTruthy()
+    expect(screen.getByText('Prévu')).toBeTruthy()
+    expect(screen.getByText('DORA : critique')).toBeTruthy()
   })
 })

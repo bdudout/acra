@@ -96,8 +96,19 @@ interrupteurs existants (audit interne, contrôle permanent) ; pas d'interrupteu
 | P2 ✅ | Écran d'un plan : lignes multi-prismes (périmètres échantillonnés, risques, processus, référentiel et exigences), cycle de validation, historique |
 | P3 ✅ | Graphique annuel (frise 12 mois) sur un plan ; export |
 | P4 | Rattachement des réalisations (missions, contrôles, campagnes) et statut calculé ; reprise de l'univers d'audit et du plan annuel de contrôle comme point de départ d'un plan |
-| P5 | Vue globale : agrégation de tous les plans, frise commune, indicateurs (doublons et chevauchements de sollicitation, angles morts ≥ 3 ans) |
+| P5 ✅ | Vue globale : agrégation de tous les plans, frise commune, indicateurs (doublons et chevauchements de sollicitation, angles morts ≥ 3 ans) |
 | P6 | Exports (Excel, PDF pour le comité), i18n ×5, recette par rôle |
+
+## 8 bis. Définitions retenues pour les indicateurs (lot P5)
+
+- **Risque critique ou majeur** : palier « élevé » ou « critique » (gravité × vraisemblance ≥ 8, `getRiskTier`) de la
+  cotation inhérente du registre, à défaut de la cotation résiduelle.
+- **Processus critique ou important** : criticité 3 ou 4, ou fonction critique / importante au sens de DORA.
+- **Dernière couverture** : fin (à défaut début) d'une mission d'audit qui couvre le processus ; dernière exécution d'un
+  contrôle rattaché au risque ou au processus. Un élément inscrit dans une ligne active de l'année affichée ou suivante
+  est signalé « prévu ».
+- **Sollicitation multiple** : au moins deux lignes actives de l'année (tous plans) visent la même entité, filiale ou
+  tiers ; « en même temps » si deux périodes se chevauchent (bornes incluses).
 
 ## 8. Décisions complémentaires (2026-10-07)
 
