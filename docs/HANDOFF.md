@@ -6,6 +6,22 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-07 (86) — Claude : Tailwind 4, licence, modules spécifiques activables, vue super-admin
+
+- #228 / #229 : postcss-selector-parser 7.1.6 ; **Tailwind CSS 4** (migration officielle en worktree isolé, fichiers de
+  données exclus car l'outil réécrivait « ring » en « ring-3 » dans des libellés) ; plugin ESLint de Next : fast-glob →
+  tinyglobby (override). `braces` (GHSA-vfj7-8cjw-p6xm, sans correctif) hors de l'arbre ; audit complet à 0.
+- #230 : LICENSE = MIT standard (détecté par GitHub), mention ANSSI dans NOTICE ; `"license": "MIT"`.
+- `c442764e` : campagnes RCSA, appétence (RAS / RAD), rapports GRC activables séparément (3 niveaux), **désactivés par
+  défaut** ; migration `20261008110000_modules_specifiques` avec reprise des organisations utilisatrices sur la ligne de
+  configuration héritée (vérifiée par transaction annulée : parent / fille sans ligne / organisation isolée).
+  Super-administrateur sans organisation active : `ChoisirOrganisation` sur 10 pages au lieu de 404 / redirection.
+- Vidéo LinkedIn carrée (`build-video.cjs carre`) ; post programmé par l'utilisateur.
+- **À traiter** : `PUT /api/rapports/config` crée une ligne `OrganizationConfig` (upsert) pour une organisation qui n'en
+  avait pas, ce qui fige ses autres réglages au lieu de les hériter (même risque pour d'autres upserts de configuration).
+
+---
+
 ## 2026-10-07 (85) — Claude : v1.0.5 publiée et déployée sur la démo
 
 - PR #215 fusionnée (squash `727c8dd1`) après CI verte sur le commit exact ; correctifs en route : overrides sharp 0.35.5 et
