@@ -48,7 +48,7 @@ export type NavKey =
   | 'conformite' | 'referentiels' | 'documents' | 'derogations'
   | 'registre' | 'campagnes' | 'cartographie' | 'pilotage' | 'processus'
   | 'incidents' | 'controles' | 'campagnesControle' | 'questionnaires' | 'audit' | 'kri'
-  | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels' | 'appetence' | 'testsResilience' | 'projets' | 'rapports'
+  | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels' | 'appetence' | 'testsResilience' | 'projets' | 'rapports' | 'programme'
   | 'homologations' | 'recertification' | 'registreIa'
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
@@ -176,6 +176,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   // Questionnaires de contrôle : les métiers (1ʳᵉ ligne) y répondent, la 2ᵉ ligne les gère.
   if (modules.controles && role !== 'LECTEUR') controleAudit.push('questionnaires')
   if (modules.audit && !firstLineOnly) controleAudit.push('audit')
+  // Programme pluriannuel et plans annuels d'audit et de contrôle : rôles à lecture globale du dispositif.
+  if ((modules.audit || modules.controles) && canPilotage) controleAudit.push('programme')
   if (controleAudit.length) entries.push(groupOrLink('controleAudit', controleAudit))
 
   // 5. Conformité (gouvernance) : conformité, référentiels, documents, profils, dérogations, homologations.

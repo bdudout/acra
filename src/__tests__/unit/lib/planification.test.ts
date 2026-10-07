@@ -95,3 +95,16 @@ describe('cycle de validation du plan annuel', () => {
     expect(f).toEqual([{ id: 'l1', intitule: 'A', prisme: 'RISQUE', cibles: { risques: ['r1'] }, echantillon: null, debut: '2027-03-01', fin: null, charge: 5, priorite: 1, responsable: 'X', statutManuel: null }])
   })
 })
+
+describe('graphique annuel (frise des 12 mois)', () => {
+  it('période → position et largeur en % de l’année ; sans date de début : pas de barre ; sans fin : un jour, largeur minimale', async () => {
+    const { positionFrise } = await import('@/lib/planification')
+    expect(positionFrise('2027-01-01', '2027-12-31', 2027)).toEqual({ gauche: 0, largeur: 100 })
+    const juillet = positionFrise('2027-07-01', '2027-07-31', 2027)!
+    expect(juillet.gauche).toBeCloseTo(49.6, 1); expect(juillet.largeur).toBeCloseTo(8.5, 1)
+    expect(positionFrise(null, '2027-03-01', 2027)).toBeNull()
+    expect(positionFrise('2027-03-01', null, 2027)!.largeur).toBeGreaterThanOrEqual(1)
+    // Année bissextile : 366 jours.
+    expect(positionFrise('2028-12-31', '2028-12-31', 2028)!.gauche).toBeCloseTo(99.7, 1)
+  })
+})

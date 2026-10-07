@@ -93,8 +93,8 @@ interrupteurs existants (audit interne, contrôle permanent) ; pas d'interrupteu
 | Lot | Contenu |
 |---|---|
 | P1 ✅ | Modèle (plan, année, ligne), migration additive, API, configuration « Planification » ; lib pure (cycle de validation, figé / dynamique, révisions) testée |
-| P2 | Écran d'un plan : lignes multi-prismes (périmètres échantillonnés, risques, processus, référentiel et exigences), cycle de validation, historique |
-| P3 | Graphique annuel (frise 12 mois) sur un plan ; export |
+| P2 ✅ | Écran d'un plan : lignes multi-prismes (périmètres échantillonnés, risques, processus, référentiel et exigences), cycle de validation, historique |
+| P3 ✅ | Graphique annuel (frise 12 mois) sur un plan ; export |
 | P4 | Rattachement des réalisations (missions, contrôles, campagnes) et statut calculé ; reprise de l'univers d'audit et du plan annuel de contrôle comme point de départ d'un plan |
 | P5 | Vue globale : agrégation de tous les plans, frise commune, indicateurs (doublons et chevauchements de sollicitation, angles morts ≥ 3 ans) |
 | P6 | Exports (Excel, PDF pour le comité), i18n ×5, recette par rôle |

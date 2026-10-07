@@ -196,3 +196,17 @@ const jour = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null)
 export function figerLignes(lignes: LigneFigeable[]) {
   return lignes.map(l => ({ id: l.id, intitule: l.intitule, prisme: l.prisme, cibles: l.cibles, echantillon: l.echantillon, debut: jour(l.debut), fin: jour(l.fin), charge: l.charge, priorite: l.priorite, responsable: l.responsable, statutManuel: l.statutManuel }))
 }
+
+// ─── Graphique annuel ────────────────────────────────────────────────────────
+
+const JOUR_MS = 86_400_000
+/** Position d'une période sur la frise de l'année (en % de l'année) ; sans date de début, aucune barre. */
+export function positionFrise(debut: string | null, fin: string | null, annee: number): { gauche: number; largeur: number } | null {
+  if (!debut) return null
+  const t0 = Date.UTC(annee, 0, 1), total = (Date.UTC(annee + 1, 0, 1) - t0) / JOUR_MS
+  const d = (Date.parse(`${debut}T00:00:00Z`) - t0) / JOUR_MS
+  const f = (Date.parse(`${fin ?? debut}T00:00:00Z`) - t0) / JOUR_MS + 1
+  const gauche = Math.max(0, Math.min(100, (d / total) * 100))
+  const largeur = Math.max(1, Math.min(100 - gauche, ((f - d) / total) * 100))
+  return { gauche: Math.round(gauche * 10) / 10, largeur: Math.round(largeur * 10) / 10 }
+}

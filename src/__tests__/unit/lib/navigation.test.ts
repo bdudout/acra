@@ -298,3 +298,17 @@ describe('questionnaires de contrôle', () => {
     expect(allKeys(buildNav('ANALYSTE', ALL_ON))).not.toContain('referentiels')
   })
 })
+
+describe('buildNav — programme d’audit et de contrôle', () => {
+  const groupe = (role: Parameters<typeof buildNav>[0], m: NavModules) => {
+    const g = buildNav(role, m).entries.find(e => e.kind === 'group' && e.id === 'controleAudit')
+    return g && g.kind === 'group' ? g.items : []
+  }
+  const base: NavModules = { registre: true, incidents: false, controles: false, audit: false, kri: false, reglementaire: false, profilsOperationnels: false }
+  it('dans « Contrôle & audit » dès que l’audit interne ou le contrôle permanent est actif, pour la lecture globale du dispositif', () => {
+    expect(groupe('AUDITEUR', { ...base, audit: true })).toContain('programme')
+    expect(groupe('RSSI', { ...base, controles: true })).toContain('programme')
+    expect(groupe('RSSI', base)).not.toContain('programme')
+    expect(groupe('METIER', { ...base, controles: true })).not.toContain('programme')
+  })
+})
