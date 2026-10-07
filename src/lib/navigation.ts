@@ -15,7 +15,7 @@
  * ⚠️ Règle d'or : le GATING (qui voit quoi) reste identique au comportement
  * historique — on ne change que la DISPOSITION selon le mode, jamais les droits.
  */
-import { isAdminRole, hasGlobalReadDispositif, canManageRopa, type UserRole } from './permissions'
+import { isAdminRole, hasGlobalReadDispositif, canManageRopa, peutLireConformite, peutLireRegistreIa, type UserRole } from './permissions'
 
 /** État effectif des modules GRC optionnels (renvoyé par /api/modules). */
 export interface NavModules {
@@ -28,6 +28,12 @@ export interface NavModules {
   profilsOperationnels: boolean
   /** Module « Projets 360 » (onglet Projets). */
   projets?: boolean
+  /** Homologation de sécurité des systèmes d'information. */
+  homologations?: boolean
+  /** Revues d'habilitations (recertification). */
+  recertification?: boolean
+  /** Registre des algorithmes et systèmes d'IA. */
+  registreIa?: boolean
 }
 
 /** Clé d'un lien de navigation (dashboard, analyses, risques, actions…). */
@@ -37,10 +43,11 @@ export type NavKey =
   | 'registre' | 'campagnes' | 'cartographie' | 'pilotage' | 'processus'
   | 'incidents' | 'controles' | 'campagnesControle' | 'questionnaires' | 'audit' | 'kri'
   | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels' | 'appetence' | 'testsResilience' | 'projets' | 'rapports'
+  | 'homologations' | 'recertification' | 'registreIa'
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
 export type NavGroupId = 'grc' | 'cyber' | 'controle' | 'registre' | 'reglementaire' | 'gouvernance'
-  | 'analyses' | 'controleAudit' | 'conformiteReglementaire' | 'pilotage'
+  | 'analyses' | 'controleAudit' | 'conformiteReglementaire' | 'conformite' | 'pilotage'
 
 /** Une entrée de barre : soit un lien direct, soit un groupe déroulant. */
 export type NavEntry =
@@ -76,17 +83,24 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   const firstLineOnly = role === 'LECTEUR' || role === 'METIER'
   const canGovern = isAdmin || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'
   const canDerog = canGovern || role === 'DIRECTION_METIER'
-  // Processus (données de cartographie) = gouvernance.
-  const canGererProcessus = canGovern || role === 'DIRECTION_METIER'
   // Pilotage (cockpit de lecture consolidée) : tous les rôles à lecture globale du
   // dispositif — dont CONTROLEUR et AUDITEUR, que l'API /grc/rollup sert déjà (#126).
   const canPilotage = hasGlobalReadDispositif(role)
 
   // Gouvernance (disponible dans les deux modes).
   const gouvernance: NavKey[] = []
-  if (canGovern) gouvernance.push('conformite', 'referentiels', 'documents')
+  // Conformité : gouvernance et analyste (lecture du tableau de bord) ; référentiels et documents : gouvernance.
+  if (peutLireConformite(role)) gouvernance.push('conformite')
+  if (canGovern) gouvernance.push('referentiels', 'documents')
   if (modules.profilsOperationnels && canGovern) gouvernance.push('profilsOperationnels')
   if (canDerog) gouvernance.push('derogations')
+  // Homologation : préparée par la gouvernance, décidée par l'autorité (direction métier).
+  if (modules.homologations && (canGovern || role === 'DIRECTION_METIER')) gouvernance.push('homologations')
+  // Registre IA : dans « Gouvernance » en mode cyber, dans « Registres » en mode GRC.
+  // Lecture aussi pour le contrôle permanent et l'audit interne (peutLireRegistreIa).
+  const registreIa = !!modules.registreIa && peutLireRegistreIa(role)
+  // Recertification : chaque responsable revoit les droits qui lui sont confiés (tous rôles sauf lecture seule).
+  // Revues d'habilitations (recertification) : masquées tant que le module n'a pas d'écran (lot P5 non livré).
   // Registre RoPA (RGPD art. 30) — réservé au DPO (+ ADMIN).
   if (canManageRopa(role)) gouvernance.push('ropa')
 
@@ -100,7 +114,7 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   // nombreux (≤ SECONDARY_INLINE_MAX), sinon REGROUPÉS dans le menu « GRC ». Un seul
   // item ne fait donc jamais un menu déroulant pour rien.
   if (!grcMode) {
-    const secondary: NavKey[] = [...gouvernance]
+    const secondary: NavKey[] = [...gouvernance, ...(registreIa ? ['registreIa' as const] : [])]
     if (modules.incidents) secondary.push('incidents')
     // Sans mode GRC, les rapports d'incidents/pertes restent accessibles (module incidents actif).
     if (modules.incidents && canPilotage) secondary.push('rapports')
@@ -130,46 +144,62 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   if (modules.kri && !firstLineOnly) pilotage.push('kri')
   entries.push(groupOrLink('pilotage', pilotage))
 
-  // 2. Analyse cyber (cœur EBIOS) : analyses, risques, tiers, actions + cartographie.
+  // 2. Analyse cyber (cœur EBIOS) : analyses, risques, tiers, actions.
   const analyses: NavKey[] = [...core(modules)]
-  if (modules.registre && !firstLineOnly) analyses.push('cartographie')
   entries.push(groupOrLink('analyses', analyses))
 
-  // 3. Registres : risques et arrangements TIC restent des objets distincts,
-  // rapprochés seulement dans la navigation. Le module réglementaire peut être
-  // actif seul : son lien doit rester atteignable sans registre de risques.
-  if (!firstLineOnly && (modules.registre || modules.reglementaire)) {
-    const registres: NavKey[] = []
-    if (modules.registre) {
-      registres.push('registre', 'campagnes')
-      if (canGererProcessus) registres.push('processus')
-    }
-    if (modules.reglementaire) registres.push('registreTic')
-    entries.push(groupOrLink('registre', registres))
+  // 3. Registres : risques, incidents, arrangements TIC et systèmes d'IA restent des objets distincts, rapprochés seulement
+  // dans la navigation. Le module réglementaire peut être actif seul : son lien doit rester atteignable sans registre de
+  // risques. Les incidents restent ouverts à tous (déclaration par la 1ʳᵉ ligne : lien direct s'il est seul).
+  const registres: NavKey[] = []
+  if (!firstLineOnly && modules.registre) {
+    // La cartographie des risques est une vue du registre (onglets Liste / Cartographie) : pas d'entrée propre.
+    // Processus : visibles par tous ceux qui voient les registres (page en lecture ; modification réservée à l'ADMIN).
+    registres.push('registre', 'campagnes', 'processus')
   }
+  if (modules.incidents) registres.push('incidents')
+  if (!firstLineOnly && modules.reglementaire) registres.push('registreTic')
+  // Registre des traitements (RGPD art. 30) : DPO et ADMIN.
+  if (gouvernance.includes('ropa')) registres.push('ropa')
+  if (registreIa) registres.push('registreIa')
+  if (registres.length) entries.push(groupOrLink('registre', registres))
 
-  // 4. Contrôle & audit (les 3 lignes de défense) : incidents (1ʳᵉ ligne, ouvert à
-  //    tous), contrôle permanent + campagnes (2ᵉ ligne), audit interne (3ᵉ ligne).
+  // 4. Contrôle & audit (les 3 lignes de défense) : contrôle permanent + campagnes (2ᵉ ligne), audit interne (3ᵉ ligne).
   const controleAudit: NavKey[] = []
-  if (modules.incidents) controleAudit.push('incidents')
   if (modules.controles && !firstLineOnly) controleAudit.push('controles', 'campagnesControle')
   // Questionnaires de contrôle : les métiers (1ʳᵉ ligne) y répondent, la 2ᵉ ligne les gère.
   if (modules.controles && role !== 'LECTEUR') controleAudit.push('questionnaires')
   if (modules.audit && !firstLineOnly) controleAudit.push('audit')
-  // Suivi régulateur (plans d'action régulateurs) : rattaché au contrôle & audit
-  // (constats du superviseur + remédiation), aux côtés des 3 lignes de défense.
-  if (modules.reglementaire && !firstLineOnly) controleAudit.push('suiviRegulateur')
   if (controleAudit.length) entries.push(groupOrLink('controleAudit', controleAudit))
 
-  // 5. Conformité & réglementaire : conformité, référentiels, documents,
-  //    dérogations, RGPD et reporting DORA ; le registre TIC est dans Registres.
-  const confReg: NavKey[] = [...gouvernance]
-  // Reporting réglementaire et rapports de gestion (éditions figées, lot L2) : rattaché à la
-  // conformité / au réglementaire, mêmes rôles que le cockpit.
-  if (canPilotage) confReg.push('rapports')
+  // 5. Conformité (gouvernance) : conformité, référentiels, documents, profils, dérogations, homologations.
+  // 6. Réglementaire : DORA, tests de résilience et reporting (éditions figées, lot L2 ; mêmes rôles que le cockpit).
+  //    Les registres TIC et RGPD sont dans Registres.
+  const conformite: NavKey[] = gouvernance.filter(k => k !== 'ropa')
+  if (conformite.length) entries.push(groupOrLink('conformite', conformite))
+  const reglementaire: NavKey[] = []
   // Tests de résilience (DORA art. 24-26) : rôles à lecture globale du dispositif.
-  if (modules.reglementaire && !firstLineOnly) confReg.push('reglementaire', ...(canPilotage ? ['testsResilience' as const] : []))
-  if (confReg.length) entries.push(groupOrLink('conformiteReglementaire', confReg))
+  // Suivi régulateur (constats du superviseur et plans de remédiation) : avec le réglementaire.
+  if (modules.reglementaire && !firstLineOnly) reglementaire.push('reglementaire', 'suiviRegulateur', ...(canPilotage ? ['testsResilience' as const] : []))
+  if (canPilotage) reglementaire.push('rapports')
+  if (reglementaire.length) entries.push(groupOrLink('reglementaire', reglementaire))
 
   return { mode: 'grc', entries }
+}
+
+/**
+ * Lien actif = la correspondance la PLUS précise (la plus longue) parmi les liens affichés : « /reglementaire/suivi-regulateur »
+ * n'active pas aussi « /reglementaire » (sinon deux menus sont en surbrillance). null si aucun lien ne correspond.
+ */
+export function activeNavHref(pathname: string, hrefs: readonly string[]): string | null {
+  let best: string | null = null
+  for (const href of hrefs) {
+    if ((pathname === href || pathname.startsWith(href + '/')) && (best === null || href.length > best.length)) best = href
+  }
+  return best
+}
+
+/** Chemin servant à allumer l'entrée de menu : la cartographie est une vue du registre des risques. */
+export function navPathFor(pathname: string): string {
+  return pathname === '/cartographie' ? '/registre' : pathname
 }

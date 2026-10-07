@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { accesResultats } from '@/lib/acces-resultats.server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -34,12 +35,12 @@ async function ctx(session: { user: { id: string; role?: string } }) {
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { orgId, userRole: roleLecture } = await ctx(session as unknown as { user: { id: string; role?: string } })
+  const { userId, orgId, userRole: roleLecture } = await ctx(session as unknown as { user: { id: string; role?: string } })
   if (!orgId) return NextResponse.json({ controles: [], active: false })
   const cfg = await getOrgConfig(orgId)
   if (!cfg.controlePermanentActive) return NextResponse.json({ controles: [], active: false })
 
-  const rows = await prisma.controle.findMany({
+  const tousLesControles = await prisma.controle.findMany({
     where: { organizationId: orgId },
     orderBy: [{ actif: 'desc' }, { createdAt: 'desc' }],
     include: {
@@ -48,6 +49,10 @@ export async function GET() {
       executions: { orderBy: { dateRealisation: 'desc' }, select: { id: true, resultat: true, dateRealisation: true, constat: true, preuves: true, checklistResultats: true, independant: true, tailleTestee: true, anomaliesTrouvees: true } },
     },
   })
+
+  // Résultats réservés aux interlocuteurs concernés : 1re ligne et lecture seule ne voient que leurs contrôles.
+  const acces = await accesResultats(userId, roleLecture as UserRole)
+  const rows = acces.tout ? tousLesControles : tousLesControles.filter(c => acces.concerne(c.responsable))
 
   const [tiers, projets] = await Promise.all([
     prisma.arrangementTic.findMany({ where: { organizationId: orgId }, select: { id: true, prestataireNom: true }, take: 2000 }),

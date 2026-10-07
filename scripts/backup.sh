@@ -12,19 +12,25 @@
 #   POSTGRES_DB        nom de la base
 #   POSTGRES_HOST      hôte (default: db)
 #   BACKUP_DIR         répertoire de destination (default: /backups)
-#   BACKUP_RETENTION   nombre de jours à conserver (default: 7)
+#   BACKUP_KEEP        nombre de dumps à conserver (default: 7) — prioritaire
+#   BACKUP_RETENTION   ancienne règle (jours) : utilisée seulement si BACKUP_KEEP n'est pas défini
 #
 # Sortie :
 #   /backups/ebios_YYYY-MM-DD_HH-MM-SS.sql.gz  → dump compressé
-#   Les fichiers de plus de BACKUP_RETENTION jours sont supprimés automatiquement.
+#   Seuls les BACKUP_KEEP dumps les plus récents sont conservés (ou, à défaut, ceux de moins de BACKUP_RETENTION jours).
 # =============================================================================
-set -euo pipefail
+set -eu
+# pipefail n'existe pas dans tous les sh (dash) : activé seulement s'il est supporté.
+(set -o pipefail) 2>/dev/null && set -o pipefail
 
 # --- Configuration -----------------------------------------------------------
 POSTGRES_HOST="${POSTGRES_HOST:-db}"
 POSTGRES_PORT="${POSTGRES_PORT:-5432}"
 BACKUP_DIR="${BACKUP_DIR:-/backups}"
-BACKUP_RETENTION="${BACKUP_RETENTION:-7}"
+# Rétention par NOMBRE (défaut 7). L'ancienne règle par âge ne s'applique que si BACKUP_RETENTION est défini SANS BACKUP_KEEP valide.
+BACKUP_RETENTION="${BACKUP_RETENTION:-}"
+BACKUP_KEEP="${BACKUP_KEEP:-}"
+case "${BACKUP_KEEP}" in 0|*[!0-9]*) BACKUP_KEEP="" ;; esac
 TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%S)"
 FILENAME="${BACKUP_DIR}/ebios_${TIMESTAMP}.sql.gz"
 
@@ -70,10 +76,18 @@ PGPASSWORD="${POSTGRES_PASSWORD}" pg_dump \
 SIZE="$(du -sh "${FILENAME}" | cut -f1)"
 echo "[backup] Backup terminé — taille : ${SIZE}"
 
-# --- Rotation : suppression des fichiers plus anciens que BACKUP_RETENTION ---
-echo "[backup] Rotation : suppression des backups de plus de ${BACKUP_RETENTION} jours"
-find "${BACKUP_DIR}" -maxdepth 1 -name "ebios_*.sql.gz" \
-  -mtime "+${BACKUP_RETENTION}" -print -delete
+# --- Rotation ----------------------------------------------------------------
+if [ -z "${BACKUP_KEEP}" ] && [ -n "${BACKUP_RETENTION}" ]; then
+  echo "[backup] Rotation (ancienne règle) : suppression des backups de plus de ${BACKUP_RETENTION} jours"
+  find "${BACKUP_DIR}" -maxdepth 1 -name "ebios_*.sql.gz" \
+    -mtime "+${BACKUP_RETENTION}" -print -delete
+else
+  KEEP="${BACKUP_KEEP:-7}"
+  echo "[backup] Rotation : conservation des ${KEEP} backups les plus récents"
+  ls -1 "${BACKUP_DIR}" | grep '^ebios_.*\.sql\.gz$' | sort -r | tail -n "+$((KEEP + 1))" | while read -r old; do
+    rm -f "${BACKUP_DIR}/${old}" && echo "${BACKUP_DIR}/${old}"
+  done
+fi
 
 REMAINING="$(find "${BACKUP_DIR}" -maxdepth 1 -name "ebios_*.sql.gz" | wc -l | tr -d ' ')"
 echo "[backup] Backups conservés : ${REMAINING}"

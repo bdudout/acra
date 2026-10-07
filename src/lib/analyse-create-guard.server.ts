@@ -20,9 +20,13 @@ export async function checkAnalyseCreation(userId: string, instanceRole: UserRol
   const scope = await getAnalyseScope(userId, instanceRole)
   if (!canCreateAnalyse({ id: userId, role: scope.role }, await optionsStructure(scope.activeOrgId))) return { ok: false, reason: 'ROLE' }
   if (!scope.activeOrgId) return { ok: false, reason: 'NO_ORG' }
-  if (await isDemoInstance()) {
-    const count = await prisma.analyse.count({ where: { organizationId: scope.activeOrgId } })
-    if (analysisCapReached(count, await getDemoConfig())) return { ok: false, reason: 'DEMO_CAP' }
-  }
+  if (await plafondDemoAtteint(scope.activeOrgId)) return { ok: false, reason: 'DEMO_CAP' }
   return { ok: true, organizationId: scope.activeOrgId, scope }
+}
+
+/** Instance de démonstration : l'organisation a-t-elle atteint son plafond d'analyses ? (aussi pour les créations validées hors formulaire, ex. MCP) */
+export async function plafondDemoAtteint(organizationId: string): Promise<boolean> {
+  if (!(await isDemoInstance())) return false
+  const count = await prisma.analyse.count({ where: { organizationId } })
+  return analysisCapReached(count, await getDemoConfig())
 }

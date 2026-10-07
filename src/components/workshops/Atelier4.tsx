@@ -32,6 +32,10 @@ import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
+import { sousSecteursOf } from '@/lib/sous-secteurs'
+import { patternsOf } from '@/lib/patterns-archi'
+import { withSectorExemples } from '@/lib/exemples-sectoriels'
+import { pertinenceText } from '@/components/workshops/PertinenceBadge'
 import { rankExemples, keywordsFromAnswers } from '@/lib/exemples-context'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 import { OPERATEURS_AE, normalizeOperateur } from '@/lib/operateur-ae'
@@ -67,7 +71,12 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode, e
       if (d?.exemplesAteliers && typeof d.exemplesAteliers === 'object' && !Array.isArray(d.exemplesAteliers)) setExOverride(d.exemplesAteliers)
     }).catch(() => {})
   }, [])
-  const aeExamples = useMemo(() => resolveExemples(exOverride.actionsElementaires, defaultExemplesFor('actionsElementaires', t as unknown as ExemplesTranslations, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
+  const aeExamplesBase = useMemo(() => resolveExemples(exOverride.actionsElementaires, defaultExemplesFor('actionsElementaires', t as unknown as ExemplesTranslations, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Modes opératoires propres au secteur / sous-secteur (ex. bourrage d'identifiants sur un portail patient) en tête
+  const aeExamples = useMemo(
+    () => withSectorExemples(aeExamplesBase, analyse?.secteur, 'actionsElementaires', locale, sousSecteursOf(analyse), patternsOf(analyse)) as any[],
+    [aeExamplesBase, analyse?.secteur, analyse?.sousSecteur, analyse?.sousSecteurs, locale],
+  )
   const [saving, setSaving] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ msg: string; action: () => void } | null>(null)
   // Reconstruire scenarioStrategiqueNom depuis scenarioStrategiqueId au chargement depuis DB
@@ -379,7 +388,7 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode, e
                           const type = TYPES_ACTION_ELEMENTAIRE.find(tae => tae.value === a.type)
                           return (
                             <button key={i} onClick={() => addAction(s.id, a)}
-                              title={a.pertinent ? t.workshop.relevantLabel : undefined}
+                              title={pertinenceText(a, t.workshop, locale) ?? undefined}
                               className={`text-xs px-2 py-1 rounded-full font-medium ${type?.color} hover:opacity-80 transition-opacity ${a.pertinent ? 'ring-1 ring-ebios-400' : ''}`}>
                               {a.pertinent && <span aria-hidden><Star size={18} aria-hidden="true" /></span>}+ {a.nom}
                             </button>

@@ -16,9 +16,9 @@ describe('PartyTierLink — identité du tiers d’une partie prenante', () => {
   it('sélection de l’identité : seul tierId change (nom, scores et criticité restent ceux de l’analyse)', () => {
     const onChange = vi.fn()
     render(<PartyTierLink name="Fournisseur X" tierId={null} tiers={tiers} onChange={onChange} />)
-    fireEvent.change(screen.getByLabelText('Identité du tiers'), { target: { value: 't2' } })
+    fireEvent.change(screen.getByLabelText('Entité du tiers'), { target: { value: 't2' } })
     expect(onChange).toHaveBeenCalledWith('t2')
-    fireEvent.change(screen.getByLabelText('Identité du tiers'), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('Entité du tiers'), { target: { value: '' } })
     expect(onChange).toHaveBeenLastCalledWith(null)
   })
   it('propose un rapprochement quand le nom correspond (nom identique ou alias), jamais appliqué sans clic', () => {
@@ -35,11 +35,11 @@ describe('PartyTierLink — identité du tiers d’une partie prenante', () => {
     rerender(<PartyTierLink name="Acme SAS" tierId={null} tiers={[]} onChange={vi.fn()} />)
     expect(container).toBeEmptyDOMElement()
     rerender(<PartyTierLink name="X" tierId="t1" tiers={tiers} disabled onChange={vi.fn()} />)
-    expect(screen.getByLabelText('Identité du tiers')).toBeDisabled()
+    expect(screen.getByLabelText('Entité du tiers')).toBeDisabled()
   })
   it('identité retirée de la liste (accès révoqué) : le lien existant reste affiché comme tel, sans casser la saisie', () => {
     render(<PartyTierLink name="X" tierId="tDisparu" tiers={tiers} onChange={vi.fn()} />)
-    expect((screen.getByLabelText('Identité du tiers') as HTMLSelectElement).value).toBe('tDisparu')
-    expect(screen.getByRole('option', { name: 'Identité non accessible' })).toBeInTheDocument()
+    expect((screen.getByLabelText('Entité du tiers') as HTMLSelectElement).value).toBe('tDisparu')
+    expect(screen.getByRole('option', { name: 'Entité non accessible' })).toBeInTheDocument()
   })
 })

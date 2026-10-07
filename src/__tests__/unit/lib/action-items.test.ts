@@ -8,6 +8,7 @@ import {
   normalizeIncident,
   normalizeConformiteTraitement,
   normalizeOrphanPlanAction,
+  normalizeLinkedPlanAction,
   mapMesurePriorite,
   mapCriticitePriorite,
   filterActionItems,
@@ -238,8 +239,16 @@ describe('ACTION_SOURCES', () => {
 })
 
 describe('typologie d\'origine', () => {
-  it('ACTION_ORIGINES = 6 facettes métier + orpheline', () => {
-    expect(ACTION_ORIGINES).toEqual(['risque', 'conformite', 'controle', 'audit', 'regulateur', 'incident', 'orpheline'])
+  it('ACTION_ORIGINES = facettes métier + résilience + préconisation + orpheline', () => {
+    expect(ACTION_ORIGINES).toEqual(['risque', 'conformite', 'controle', 'audit', 'regulateur', 'incident', 'resilience', 'preconisation', 'orpheline'])
+  })
+  it('plan d\'action lié à un test de résilience / une préconisation → origine dédiée, lien profond conservé', () => {
+    const r = normalizeLinkedPlanAction({ id: 'p9', titre: 'Corriger le constat', statut: 'EN_COURS', priorite: 'CRITIQUE' }, 'resilience', { lien: '/reglementaire/tests-resilience?test=t1' })
+    expect(r.source).toBe('PLAN_ACTION')
+    expect(r.origine).toBe('resilience')
+    expect(r.lien).toBe('/reglementaire/tests-resilience?test=t1')
+    expect(r.statut).toBe('EN_COURS')
+    expect(normalizeLinkedPlanAction({ id: 'p10', titre: 'x' }, 'preconisation').origine).toBe('preconisation')
   })
   it('mesure et action de registre → origine « risque »', () => {
     expect(normalizeMesure({ id: 'm', nom: 'x' }).origine).toBe('risque')

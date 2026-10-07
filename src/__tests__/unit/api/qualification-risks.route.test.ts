@@ -42,7 +42,7 @@ import { GET, POST } from '@/app/api/analyses/[id]/qualification-risks/route'
 const ISO = {
   id: 'an1', userId: 'u1', organizationId: 'orgA', methode: 'ISO_27005', deletedAt: null,
   risquesResiduelsStatut: 'EN_ATTENTE', accesUtilisateurs: [],
-  qualification: { donneesPersonnelles: true, expositionInternet: true }, risques: [] as { qualificationRuleId: string | null }[],
+  qualification: { donneesPersonnelles: true, expositionInternet: true }, risques: [] as { nom: string; qualificationRuleId: string | null }[],
 }
 const req = (body?: unknown) => ({ json: async () => body ?? {} }) as never
 const P = { params: Promise.resolve({ id: 'an1' }) }
@@ -56,7 +56,7 @@ beforeEach(() => {
 
 describe('GET qualification-risks', () => {
   it('renvoie les propositions traduites, le caractère imposé et l’état « déjà créé »', async () => {
-    analyseFindFirst.mockResolvedValue({ ...ISO, risques: [{ qualificationRuleId: 'expo' }] })
+    analyseFindFirst.mockResolvedValue({ ...ISO, risques: [{ nom: 'Risque existant', qualificationRuleId: 'expo' }] })
     const res = await GET(req(), P)
     const body = await res.json()
     expect(body.channel).toBe('DIRECT')
@@ -75,7 +75,7 @@ describe('GET qualification-risks', () => {
 
 describe('POST qualification-risks', () => {
   it('crée la sélection + les risques imposés, avec la règle d’origine, sans doublon', async () => {
-    analyseFindFirst.mockResolvedValue({ ...ISO, risques: [{ qualificationRuleId: 'expo' }] })
+    analyseFindFirst.mockResolvedValue({ ...ISO, risques: [{ nom: 'Risque existant', qualificationRuleId: 'expo' }] })
     const res = await POST(req({ ruleIds: ['cyber-personal-data', 'expo'] }), P)
     expect(res.status).toBe(201)
     const data = (createMany.mock.calls[0][0] as { data: Record<string, unknown>[]; skipDuplicates: boolean })

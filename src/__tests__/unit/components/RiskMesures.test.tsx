@@ -49,6 +49,20 @@ describe('RiskMesures', () => {
     expect(del?.[0]).toBe('/api/analyses/an1/risques/r1/mesures/m1')
   })
 
+  it('projet 360 (withEfficacite=false) : ni saisie ni affichage d’efficacité, rien n’est envoyé', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ mesures: [{ id: 'm1', nom: 'MFA', type: 'PREVENTIVE', statut: 'REALISE', efficacite: 3 }] }))
+    render(<RiskMesures analyseId="an1" riskId="r1" editable withEfficacite={false} />)
+    await screen.findByText('MFA')
+    expect(screen.queryByText(/Efficacité/)).toBeNull()
+    fireEvent.change(screen.getByPlaceholderText('Intitulé de la mesure'), { target: { value: 'Sauvegardes' } })
+    fetchMock.mockReturnValueOnce(jsonOk({ mesure: { id: 'm2' } }))
+    fetchMock.mockReturnValueOnce(jsonOk({ mesures: [] }))
+    fireEvent.click(screen.getByText('Ajouter'))
+    await waitFor(() => expect(fetchMock.mock.calls.some(c => c[1]?.method === 'POST')).toBe(true))
+    const post = fetchMock.mock.calls.find(c => c[1]?.method === 'POST')
+    expect(JSON.parse(post![1].body)).not.toHaveProperty('efficacite')
+  })
+
   it('lecture seule : pas de formulaire d’ajout', async () => {
     fetchMock.mockReturnValueOnce(jsonOk({ mesures: [] }))
     render(<RiskMesures analyseId="an1" riskId="r1" editable={false} />)

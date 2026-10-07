@@ -1,4 +1,4 @@
-import { Handshake, Radar } from 'lucide-react'
+import { Building2, Handshake, Radar } from 'lucide-react'
 import Link from 'next/link'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -14,7 +14,6 @@ import { joinTiersToTic } from '@/lib/tiers-tic-link'
 import { getOrgConfig } from '@/lib/org-config.server'
 import type { ArrangementTic } from '@/lib/registre-tic'
 import TiersClient, { type TiersRow } from '@/components/TiersClient'
-import TierIdentityPanel from '@/components/TierIdentityPanel'
 
 // Toujours afficher des données fraîches
 export const dynamic = 'force-dynamic'
@@ -86,12 +85,21 @@ export default async function TiersPage() {
             <h1 className="text-2xl font-bold text-gray-900"><Handshake size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.tiers.title}</h1>
             <p className="text-gray-500 text-sm mt-0.5">{t.tiers.subtitle}</p>
           </div>
+          {/* Même style que le lien vers la cartographie de l'écosystème. */}
+          <Link href="/tiers/entites" className="btn-secondary text-sm inline-flex items-center gap-1.5 shrink-0" title={t.tiers.explication.bouton}>
+            <Building2 size={16} aria-hidden="true" /> {t.tiers.explication.bouton}
+          </Link>
           <Link href="/ecosysteme" className="btn-secondary text-sm inline-flex items-center gap-1.5 shrink-0" title={t.tiers.cartoLink}>
             <Radar size={16} aria-hidden="true" /> {t.tiers.cartoLink}
           </Link>
         </div>
 
-        <TierIdentityPanel />
+        {/* Service tiers (relation étudiée dans une analyse) ou entité de tiers (personne morale) : la différence en clair. */}
+        <section aria-label={t.tiers.explication.titre} className="mb-5 rounded-lg border border-ebios-100 bg-ebios-50/60 p-4 text-sm text-gray-700 dark:border-ebios-900/50 dark:bg-ebios-900/10 dark:text-gray-200">
+          <h2 className="mb-1 font-semibold text-gray-900 dark:text-gray-100">{t.tiers.explication.titre}</h2>
+          <p><Handshake size={14} className="mr-1 inline align-[-0.1em]" aria-hidden="true" />{t.tiers.explication.service}</p>
+          <p className="mt-1"><Building2 size={14} className="mr-1 inline align-[-0.1em]" aria-hidden="true" />{t.tiers.explication.entite}</p>
+        </section>
 
         <TiersClient tiers={await withTicFlags(consolidateTiers(tiers), __org.activeOrgId)} canMerge={userRole !== 'LECTEUR'} />
       </main>

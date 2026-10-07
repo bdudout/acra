@@ -4,9 +4,9 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n/context'
-import { Home, Users, Shield, ClipboardList, Mail, Trash2, Building2, FlaskConical, Share2, Server } from 'lucide-react'
+import { Home, Users, Shield, ClipboardList, Mail, Trash2, Building2, FlaskConical, Share2, Server, HardDrive } from 'lucide-react'
 
-type AdminTab = 'dashboard' | 'users' | 'security' | 'smtp' | 'journalisation' | 'audit' | 'recovery' | 'organizations' | 'instance' | 'demo'
+type AdminTab = 'dashboard' | 'users' | 'security' | 'smtp' | 'journalisation' | 'audit' | 'recovery' | 'organizations' | 'instance' | 'storage' | 'demo'
 
 /**
  * Navigation interne de l'espace d'administration (composant partagé).
@@ -29,6 +29,7 @@ export default function AdminNav({ active }: { active: AdminTab }) {
     ...(isSuperAdmin ? [{ key: 'organizations', href: '/admin/organizations', Icon: Building2, label: t.admin.navOrganizations }] : []),
     // Paramètres d'instance (identité, activation des modules, clés d'API, webhooks) — super-admin.
     ...(isSuperAdmin ? [{ key: 'instance', href: '/admin/instance', Icon: Server, label: t.admin.navInstance }] : []),
+    { key: 'storage', href: '/admin/storage', Icon: HardDrive, label: t.admin.navStorage },
     // Sécurité (politique mdp, SMTP, SSO) et SMTP = réglages d'INSTANCE → super-admin uniquement.
     ...(isSuperAdmin ? [{ key: 'security', href: '/admin/security', Icon: Shield, label: t.admin.navSecurity }] : []),
     ...(isSuperAdmin ? [{ key: 'smtp',     href: '/admin/smtp',     Icon: Mail,   label: t.admin.navSmtp }] : []),

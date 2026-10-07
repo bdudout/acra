@@ -16,6 +16,7 @@ import {
   normalizeConformiteTraitement,
   normalizeEcosystemeMesure,
   normalizeOrphanPlanAction,
+  normalizeLinkedPlanAction,
   type ActionItem,
 } from './action-items'
 import { uid } from './uid'
@@ -49,7 +50,7 @@ export async function gatherActionItems(
   })
   const analyseIds = accessibleAnalyses.map(a => a.id)
 
-  const [mesureRows, ecoAnalyses, riskActionRows, analyseRiskPlanRows, conformiteData, constatRows, execRows, incidentRows, orphanRows] = await Promise.all([
+  const [mesureRows, ecoAnalyses, riskActionRows, analyseRiskPlanRows, conformiteData, constatRows, execRows, incidentRows, orphanRows, linkedRows] = await Promise.all([
     // Mesures rattachées aux analyses de l'organisation active.
     prisma.mesure.findMany({
       where: { analyseId: { in: analyseIds } },
@@ -137,6 +138,14 @@ export async function gatherActionItems(
       where: { ...orgFilter, liens: { none: {} } },
       select: { id: true, titre: true, description: true, porteur: true, entite: true, echeance: true, statut: true, priorite: true },
     }),
+    // Actions issues d'un test de résilience ou d'une préconisation (pas de liste propre).
+    prisma.planAction.findMany({
+      where: { ...orgFilter, liens: { some: { type: { in: ['TEST_RESILIENCE', 'PRECONISATION'] } } } },
+      select: {
+        id: true, titre: true, description: true, porteur: true, entite: true, echeance: true, statut: true, priorite: true,
+        liens: { where: { type: { in: ['TEST_RESILIENCE', 'PRECONISATION'] } }, select: { type: true, targetId: true }, take: 1 },
+      },
+    }),
   ])
 
   const items: ActionItem[] = []
@@ -212,6 +221,15 @@ export async function gatherActionItems(
   }
   for (const o of orphanRows) {
     items.push(normalizeOrphanPlanAction(o))
+  }
+
+  for (const l of linkedRows) {
+    const lien = l.liens[0]
+    if (!lien) continue
+    const isTest = lien.type === 'TEST_RESILIENCE'
+    items.push(normalizeLinkedPlanAction(l, isTest ? 'resilience' : 'preconisation', {
+      lien: isTest ? `/reglementaire/tests-resilience?test=${lien.targetId}` : `/controles/questionnaires?preconisation=${lien.targetId}`,
+    }))
   }
 
   return items

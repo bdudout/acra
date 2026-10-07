@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'
 import Navbar from '@/components/Navbar'
 import { getServerT, getServerLocale } from '@/lib/i18n'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { peutGererConformite, peutLireConformite, type UserRole } from '@/lib/permissions'
 import { sanitizeConformite, conformiteStats } from '@/lib/conformite'
 import { getExigencesFor, listReferentiels } from '@/lib/referentiel.server'
 import { rollupConformiteTree, type RollupConfInput } from '@/lib/conformite-rollup'
@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 /** Dashboard GLOBAL de conformité (Palier 3) : heatmap orgs × référentiels avec
- *  roll-up sur l'arbre d'organisations. Réservé aux rôles de gouvernance. */
+ *  roll-up sur l'arbre d'organisations. Gestion : gouvernance (dont CONFORMITE et DPO) ; l'analyste consulte. */
 export default async function ConformiteGlobalPage() {
   const session = await getServerSession(authOptions)
   if (!session?.user) redirect('/auth/signin')
@@ -28,7 +28,9 @@ export default async function ConformiteGlobalPage() {
   const scope = await getAnalyseScope(userId, userRole)
   // Rôle EFFECTIF dans l'organisation active (même règle que l'API de conformité).
   const role = scope.role ?? userRole
-  if (!(isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER')) redirect('/dashboard')
+  if (!peutLireConformite(role)) redirect('/dashboard')
+  // L'analyste consulte : pas de lien vers l'éditeur du socle (réservé à la gestion).
+  const peutGerer = peutGererConformite(role)
 
   const t = await getServerT()
   const locale = await getServerLocale()
@@ -147,7 +149,7 @@ export default async function ConformiteGlobalPage() {
             <h1 className="text-2xl font-bold text-gray-900"><ShieldCheck size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.conformiteGlobal.title}</h1>
             <p className="text-gray-500 text-sm mt-0.5">{t.conformiteGlobal.subtitle}</p>
           </div>
-          <a href="/conformite/socle" className="btn-primary text-sm shrink-0">{t.conformiteGlobal.editSocle}</a>
+          {peutGerer && <a href="/conformite/socle" className="btn-primary text-sm shrink-0">{t.conformiteGlobal.editSocle}</a>}
         </div>
 
         {rows.length > 0 && (
@@ -177,9 +179,9 @@ export default async function ConformiteGlobalPage() {
             refs={refs}
             orgCol={t.conformiteGlobal.orgCol}
             emptyLabel={t.conformiteGlobal.emptyNew}
-            emptyHref="/conformite/socle"
+            emptyHref={peutGerer ? '/conformite/socle' : undefined}
             emptyCta={t.conformiteGlobal.editSocle}
-            viewHrefFor={(_orgId, refId) => `/conformite/socle?ref=${encodeURIComponent(refId)}`}
+            viewHrefFor={peutGerer ? (_orgId, refId) => `/conformite/socle?ref=${encodeURIComponent(refId)}` : undefined}
             cellTitleFor={(c) => t.conformiteGlobal.cellTip.replace('{evalues}', String(c.evalues)).replace('{total}', String(c.total))}
             hrefFor={(orgId, refId) => `/api/organizations/${orgId}/conformite/soa?referentiel=${encodeURIComponent(refId)}`}
             pdfHrefFor={(orgId, refId) => `/api/organizations/${orgId}/conformite/soa?referentiel=${encodeURIComponent(refId)}&format=pdf`}

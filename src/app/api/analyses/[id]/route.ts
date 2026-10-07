@@ -1,4 +1,6 @@
 import { sanitizeAnswers360 } from '@/lib/projet360'
+import { dateSaisie } from '@/lib/date-saisie'
+import { sanitizeMeteo } from '@/lib/projet-meteo'
 import { analyseGelee } from '@/lib/gel-analyse'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
@@ -9,7 +11,9 @@ import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.se
 import { getOrgConfig } from '@/lib/org-config.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { sanitizeQualification } from '@/lib/qualification'
-import { isSousSecteurOfSecteur } from '@/lib/sous-secteurs'
+import { resolveSousSecteursUpdate } from '@/lib/sous-secteurs'
+import { normalizePatterns } from '@/lib/patterns-archi'
+import { mergePrefill, prefillFromPatterns } from '@/lib/projet360'
 import { normalizeMentionProtection } from '@/lib/mention-protection'
 import { normalizeMethode } from '@/lib/vraisemblance-methode'
 
@@ -95,6 +99,18 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   for (const key of allowed) {
     if (key in body) data[key] = body[key]
   }
+  // Météo d'un projet 360 (chef de projet) : valeur connue ou effacement ; horodatée.
+  if ('meteoProjet' in body) {
+    const m = sanitizeMeteo(body.meteoProjet)
+    if (m === undefined) return NextResponse.json({ error: 'meteo_inconnue' }, { status: 400 })
+    data.meteoProjet = m
+    data.meteoProjetLe = m ? new Date() : null
+  }
+  // Date d'échéance (mise en service d'un projet 360) : champ date normalisé, valeur illisible ignorée.
+  if ('dateEcheance' in data) {
+    const d = dateSaisie(data.dateEcheance)
+    if (d === undefined) delete data.dateEcheance; else data.dateEcheance = d
+  }
   // Mention de protection (label EBIOS RM §3.2) — normalisée vers un niveau connu.
   if ('mentionProtection' in body) {
     data.mentionProtection = normalizeMentionProtection(body.mentionProtection)
@@ -108,12 +124,20 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if ('methodeVraisemblance' in body) {
     data.methodeVraisemblance = normalizeMethode(body.methodeVraisemblance)
   }
-  // Cohérence secteur ↔ sous-secteur (issue #25) : on retient le sous-secteur
-  // seulement s'il appartient bien au secteur effectif (nouveau ou existant).
-  if ('sousSecteur' in data || 'secteur' in data) {
+  // Cohérence secteur ↔ sous-secteurs (issue #25) : on ne retient que les sous-secteurs cohérents avec le secteur
+  // effectif (nouveau ou existant) ; la liste prime sur l'ancien champ unique ; le premier devient le principal.
+  if ('sousSecteurs' in body || 'sousSecteur' in data || 'secteur' in data) {
     const secteurEff = ('secteur' in data ? data.secteur : existing.secteur) as string | null
-    const ssEff = ('sousSecteur' in data ? data.sousSecteur : existing.sousSecteur) as string | null
-    data.sousSecteur = isSousSecteurOfSecteur(secteurEff, ssEff) ? ssEff : null
+    const input = 'sousSecteurs' in body ? { sousSecteurs: body.sousSecteurs } : 'sousSecteur' in data ? { sousSecteur: data.sousSecteur } : {}
+    Object.assign(data, resolveSousSecteursUpdate({ secteur: secteurEff, input, existing }))
+  }
+  // Patterns d'architecture (vision technique, indépendante du secteur) : codes connus, sans doublon, plafond de
+  // l'organisation (défaut 12) ; une liste plus longue est refusée.
+  if ('patternsArchi' in body) {
+    const orgId = (existing as { organizationId?: string | null }).organizationId
+    const cfg = orgId ? await getOrgConfig(orgId) : null
+    try { data.patternsArchi = normalizePatterns(body.patternsArchi, { max: cfg?.patternsArchiMax, strict: true }) }
+    catch { return NextResponse.json({ error: 'patterns_too_many' }, { status: 400 }) }
   }
   // statut seulement si EN_COURS→TERMINE (pas les statuts d'approbation qui passent par /approbation)
   if (body.statut === 'TERMINE' || body.statut === 'EN_COURS' || body.statut === 'ARCHIVE') {
@@ -133,6 +157,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       : null
     // Les réponses du questionnaire 360 (`p360.*`, route dédiée) sont conservées.
     data.qualification = { ...sanitizeAnswers360(existing.qualification), ...sanitizeQualification(body.qualification, qCfg?.qualificationQuestionnaire) }
+  }
+
+  // Projet 360 : les patterns cochés pré-remplissent les réponses correspondantes du questionnaire, SANS écraser une réponse donnée.
+  if (Array.isArray(data.patternsArchi) && (existing as { methode?: string }).methode === 'PROJET_360') {
+    const base = (data.qualification ?? (existing as { qualification?: unknown }).qualification) as Record<string, unknown> | null
+    const current = base && typeof base === 'object' && !Array.isArray(base) ? base : {}
+    const merged = mergePrefill(current, prefillFromPatterns(data.patternsArchi as string[]))
+    if (Object.keys(merged.sources).length) {
+      const prev = (current['p360._sources'] && typeof current['p360._sources'] === 'object' ? current['p360._sources'] : {}) as Record<string, unknown>
+      data.qualification = { ...merged.answers, 'p360._sources': { ...prev, ...merged.sources } }
+    }
   }
 
   const updated = await prisma.analyse.update({ where: { id }, data })

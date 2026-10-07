@@ -28,6 +28,8 @@ interface Props {
   config?: QualificationConfig | null
   /** Méthode de l'analyse (conservée pour compatibilité ; le serveur filtre les règles). */
   methode?: string | null
+  /** Questions pré-remplies d'après la qualification 360 du projet de l'analyse (à vérifier puis enregistrer). */
+  reprisesProjet?: string[]
 }
 
 /**
@@ -35,7 +37,7 @@ interface Props {
  * Affiché en début d'analyse uniquement si la fonctionnalité est activée
  * (OrganizationConfig.qualificationActive). Sauvegarde via PATCH /api/analyses/[id].
  */
-export default function QualificationPanel({ analyseId, initial, canEdit = true, defaultOpen = false, secteur = null, config = null }: Props) {
+export default function QualificationPanel({ analyseId, initial, canEdit = true, defaultOpen = false, secteur = null, config = null, reprisesProjet = [] }: Props) {
   const isFinance = /banqu|financ|bancaire|assur|fintech/i.test(secteur ?? '')
   const { t } = useTranslation()
   const [answers, setAnswers] = useState<QualificationAnswers>(initial ?? {})
@@ -50,7 +52,8 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true,
   useEffect(() => { if (hasInitialAnswers) void reload() }, [hasInitialAnswers, reload])
   // Replié par défaut (vue synthétique) ; déplié si `defaultOpen` (mise en avant
   // tant que la qualification est incomplète).
-  const [collapsed, setCollapsed] = useState<boolean>(!defaultOpen)
+  // Déplié aussi quand des réponses viennent d'être reprises du projet 360 (à vérifier).
+  const [collapsed, setCollapsed] = useState<boolean>(!defaultOpen && !(canEdit && reprisesProjet.length > 0))
 
   const cfg = config ?? EMPTY_QUALIFICATION_CONFIG
   const customById = useMemo(() => new Map(cfg.custom.map(c => [c.id, c])), [cfg])
@@ -169,6 +172,7 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true,
         <h2 className="text-base font-semibold text-gray-800">{t.qualification.title}</h2>
       </div>
       <p className="text-sm text-gray-500 mb-5">{t.qualification.intro}</p>
+      {canEdit && reprisesProjet.length > 0 && <p className="mb-4 rounded-md bg-ebios-50 px-3 py-2 text-xs text-ebios-800 dark:bg-ebios-900/20 dark:text-ebios-200">{t.qualification.reprisesProjet.replace('{n}', String(reprisesProjet.length))}</p>}
 
       <div className="space-y-4">
         {effQuestions.map(q => (

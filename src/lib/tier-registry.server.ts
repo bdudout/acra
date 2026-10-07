@@ -4,10 +4,12 @@ import { NextResponse } from 'next/server'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { isAdminRole, peutGererRegistreTic, type UserRole } from '@/lib/permissions'
+import { analyseWhereClause, isAdminRole, peutGererRegistreTic, type OrgScopeContext, type UserRole } from '@/lib/permissions'
+import { getOrgConfig } from '@/lib/org-config.server'
+import { analyseGelee } from '@/lib/gel-analyse'
 import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 
-export interface TierCtx { userId: string; orgId: string; role: UserRole; canManage: boolean; isAdmin: boolean }
+export interface TierCtx { userId: string; orgId: string; role: UserRole; canManage: boolean; isAdmin: boolean; scope: OrgScopeContext }
 
 /** Session + organisation active + rôle effectif ; `write` ajoute le contrôle de droits (2ᵉ ligne ou ADMIN) et le débit. */
 export async function tierContext(opts: { write?: 'manage' | 'admin' } = {}): Promise<{ ctx: TierCtx } | { error: NextResponse }> {
@@ -16,7 +18,7 @@ export async function tierContext(opts: { write?: 'manage' | 'admin' } = {}): Pr
   const userId = (session.user as { id: string }).id
   const scope = await getAnalyseScope(userId, ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole)
   if (!scope.activeOrgId) return { error: NextResponse.json({ error: 'organization_required' }, { status: 400 }) }
-  const ctx: TierCtx = { userId, orgId: scope.activeOrgId, role: scope.role, canManage: peutGererRegistreTic(scope.role), isAdmin: isAdminRole(scope.role) }
+  const ctx: TierCtx = { userId, orgId: scope.activeOrgId, role: scope.role, canManage: peutGererRegistreTic(scope.role), isAdmin: isAdminRole(scope.role), scope: scope.scope }
   if (opts.write) {
     if (opts.write === 'admin' ? !ctx.isAdmin : !ctx.canManage) return { error: NextResponse.json({ error: 'forbidden' }, { status: 403 }) }
     const rl = await rateLimit(`tier-registry:${userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
@@ -53,4 +55,22 @@ export async function sanitizeTierLinks<T extends { tierId?: string | null }>(ro
   let dropped = 0
   const out = rows.map(r => { if (r.tierId && !granted.has(r.tierId)) { dropped += 1; return { ...r, tierId: null } } return r })
   return { rows: out, dropped }
+}
+
+/** Filtre d'accès aux parties prenantes (services tiers) de l'organisation active, dans les analyses visibles et non supprimées. */
+export function partiesDeLOrganisation(ctx: TierCtx) {
+  return { analyse: { AND: [analyseWhereClause(ctx.userId, ctx.role, ctx.scope), { organizationId: ctx.orgId }] } }
+}
+
+/**
+ * Parties prenantes qu'on peut rattacher à une entité (ou détacher) : de l'organisation active, visibles, dans une analyse non
+ * gelée (acceptation des résiduels). Les autres identifiants sont ignorés — jamais d'écriture hors périmètre.
+ */
+export async function partiesRattachables(ctx: TierCtx, ids: readonly string[]): Promise<string[]> {
+  if (!ids.length) return []
+  const [rows, cfg] = await Promise.all([
+    prisma.partiePrenante.findMany({ where: { id: { in: [...ids] }, ...partiesDeLOrganisation(ctx) }, select: { id: true, analyse: { select: { risquesResiduelsStatut: true } } } }),
+    getOrgConfig(ctx.orgId),
+  ])
+  return rows.filter(r => !analyseGelee(r.analyse.risquesResiduelsStatut, cfg.gelApresAcceptationActive)).map(r => r.id)
 }

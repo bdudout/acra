@@ -54,6 +54,18 @@ describe('read_sector_examples', () => {
     expect(out.exemples.valeursMetier.length).toBeGreaterThan(0)
   })
 
+  it('expose les ateliers 3 à 5 (actions élémentaires, mesures) et les sous-secteurs de la famille (sans catégorie technique : remplacée par les patterns)', async () => {
+    const all = parse(await readSectorExamplesTool.handler({}, ctx))
+    expect(all.categories).toEqual(expect.arrayContaining(['actionsElementaires', 'mesuresEcosysteme', 'mesures']))
+    expect(all.famillesDisponibles.some((f: { key: string }) => f.key === 'technique')).toBe(false)
+    const out = parse(await readSectorExamplesTool.handler({ patterns: ['EXTERNALISATION_DONNEES'] }, ctx))
+    // Plafonné pour ne pas surcharger (MAX_EXEMPLES_PAR_PATTERN), mais jamais vide.
+    expect(out.exemples.mesures.length).toBeGreaterThan(0)
+    expect(out.exemples.mesures.length).toBeLessThanOrEqual(4)
+    const sante = parse(await readSectorExamplesTool.handler({ secteur: 'santé' }, ctx))
+    expect(sante.sousSecteursDisponibles).toContain('sante-portail')
+  })
+
   it('filtre par catégorie unique', async () => {
     const out = parse(await readSectorExamplesTool.handler({ secteur: 'santé', category: 'biensSupports' }, ctx))
     expect(Object.keys(out.exemples)).toEqual(['biensSupports'])
@@ -96,5 +108,25 @@ describe('read_risk_posture', () => {
     expect(out.risques.parNiveauInitial).toEqual({ faible: 1, modere: 0, eleve: 1, critique: 1 })
     expect(out.risques.parNiveauResiduel).toEqual({ faible: 1, modere: 2, eleve: 0, critique: 0 })
     expect(out.plansAction).toEqual({ total: 5, parStatut: { A_FAIRE: 5 } })
+  })
+})
+
+describe('read_sector_examples — patterns d’architecture (lot A5)', () => {
+  it('sans secteur ni pattern : les familles ET les patterns disponibles sont listés', async () => {
+    const out = parse(await readSectorExamplesTool.handler({}, ctx))
+    expect(out.patternsDisponibles).toHaveLength(25)
+    expect(out.patternsDisponibles[0]).toMatchObject({ code: 'EXPOSITION_INTERNET', famille: 'exposition' })
+  })
+  it('les patterns apportent leurs exemples, avec ou sans secteur ; codes inconnus ignorés', async () => {
+    const seul = parse(await readSectorExamplesTool.handler({ patterns: ['EXPOSITION_INTERNET', 'PIRATE'], category: 'biensSupports' }, ctx))
+    expect(seul.patterns).toEqual(['EXPOSITION_INTERNET'])
+    expect(seul.exemples.biensSupports.length).toBeGreaterThan(0)
+    const base = parse(await readSectorExamplesTool.handler({ secteur: 'santé', category: 'biensSupports' }, ctx))
+    const comb = parse(await readSectorExamplesTool.handler({ secteur: 'santé', patterns: ['EXPOSITION_INTERNET'], category: 'biensSupports' }, ctx))
+    expect(comb.exemples.biensSupports.length).toBeGreaterThan(base.exemples.biensSupports.length)
+  })
+  it('les consignes distinguent la vision métier de la vision technique', async () => {
+    const out = parse(await readSectorExamplesTool.handler({ secteur: 'santé' }, ctx))
+    expect(out.consignes).toMatch(/MÉTIER/); expect(out.consignes).toMatch(/TECHNIQUE/); expect(out.consignes).toMatch(/patterns d’architecture/)
   })
 })

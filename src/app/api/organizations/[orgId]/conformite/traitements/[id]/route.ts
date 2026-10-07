@@ -8,15 +8,14 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { isAdminRole, type UserRole, peutGererConformite } from '@/lib/permissions'
 import { sanitizeRefs, TRAITEMENT_STATUTS } from '@/lib/conformite-traitement'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ orgId: string; id: string }> }
 
-function canManage(role: UserRole): boolean {
-  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER'
-}
+/** Gestion de la conformité : gouvernance, dont CONFORMITE et DPO (lib/permissions). */
+const canManage = (role: UserRole): boolean => peutGererConformite(role)
 
 async function guard(orgId: string, id: string) {
   const session = await getServerSession(authOptions)

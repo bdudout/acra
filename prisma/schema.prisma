@@ -178,6 +178,7 @@ model Organization {
   config            OrganizationConfig?
   conformites       Conformite[]
   derogations       Derogation[]
+  homologations     Homologation[]
   processus         Processus[]
   riskItems         RiskItem[]
   incidents         Incident[]
@@ -196,6 +197,7 @@ model Organization {
   apiKeys           ApiKey[]
   webhooks          Webhook[]
   traitements       Traitement[]
+  systemesIa        SystemeIA[]
   traitementsConformite ConformiteTraitement[]
   plansAction       PlanAction[]
   analysisImports   AnalysisImport[]
@@ -210,6 +212,7 @@ model Organization {
   questionnaireModeles QuestionnaireModele[]
   questionnaireEnvois  QuestionnaireEnvoi[]
   preconisations       Preconisation[]
+  appetenceSnapshots AppetenceSnapshot[]
 }
 
 // Programme de tests de résilience opérationnelle numérique (DORA, Règlement (UE)
@@ -364,6 +367,37 @@ model Traitement {
   @@index([organizationId])
 }
 
+// Registre des algorithmes et systèmes d'IA (lib/registre-ia) : classement indicatif au regard du règlement (UE)
+// 2024/1689, revue des biais et de la dérive, lien analyse / AIPD. Provenance catalogue : import idempotent.
+model SystemeIA {
+  id                      String       @id @default(cuid())
+  organizationId          String
+  organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  nom                     String
+  finalite                String       @db.Text
+  fournisseur             String?
+  donnees                 Json         @default("[]")
+  categoriesParticulieres Boolean      @default(false)
+  typeDecision            String       @default("AIDE") // AIDE | AUTOMATISEE
+  interventionHumaine     String?      @db.Text
+  usage                   String       @default("AUTRE") // cf. USAGES_IA
+  controlesBiais          String?      @db.Text
+  derniereRevue           DateTime?
+  analyseId               String?
+  analyse                 Analyse?     @relation(fields: [analyseId], references: [id], onDelete: SetNull)
+  aipdReference           String?
+  statut                  String       @default("EN_PROJET") // EN_PROJET | EN_SERVICE | RETIRE
+  catalogueKey            String?
+  catalogueVersion        String?
+  createdBy               String?
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+
+  @@unique([organizationId, catalogueKey])
+  @@index([organizationId])
+  @@index([analyseId])
+}
+
 // Webhook sortant : notifie un SI tiers (URL https) lors d'événements de l'org.
 // `secret` sert à signer chaque envoi (HMAC-SHA256). `events` = liste d'événements
 // abonnés (ou ["*"] pour tous).
@@ -476,6 +510,7 @@ model RiskItem {
 
   // Plan d'action : PlanAction porteur d'un lien RISQUE (targetId = id de ce risque).
   incidents     Incident[]
+  incidentsLies IncidentRisque[]
   controles     Controle[]
   evaluations   CampagneEvaluation[]
   auditConstats AuditConstat[]
@@ -632,10 +667,17 @@ model Controle {
   arrangementTicId String?
   projetId         String?
 
+  // Maîtrise des risques en réseau (P3) : contrôle « de référence » de la mère, décliné dans les entités
+  // descendantes ; une déclinaison pointe vers sa référence (lien logique, une seule par entité).
+  estReference Boolean @default(false)
+  referenceId  String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([organizationId])
+  @@index([referenceId])
+  @@unique([organizationId, referenceId])
   @@index([riskItemId])
   @@index([processusId])
   @@index([actif])
@@ -712,6 +754,8 @@ model Incident {
   // Rattachement au registre canonique (boucle incident → risque).
   riskItemId String?
   riskItem   RiskItem? @relation(fields: [riskItemId], references: [id], onDelete: SetNull)
+  // Risques du registre associés (plusieurs) ; riskItemId = le premier (risque principal).
+  risquesLies IncidentRisque[]
 
   // Cycle de vie : DECLARE → QUALIFIE → CLOTURE (ou REJETE).
   statut             String    @default("DECLARE")
@@ -859,6 +903,9 @@ model Document {
   portee          String  @default("ORG")
   referentielCode String? // code du référentiel (builtin ou custom) si portée REFERENTIEL
   risqueId        String? // identifiant de risque si portée RISQUE
+  // Fichier d'un projet 360 (schéma, document d'architecture, document projet) : rattaché à l'analyse projet,
+  // visible des seules personnes qui y accèdent, exclu de la bibliothèque documentaire (cf. lib/fichiers-projet).
+  analyseId       String?
 
   version      String?
   description  String?   @db.Text
@@ -884,6 +931,7 @@ model Document {
   @@index([organizationId])
   @@index([organizationId, portee])
   @@index([referentielCode])
+  @@index([analyseId])
 }
 
 // ─── Registre d'information des prestataires tiers TIC (DORA art. 28) ─────────
@@ -1366,6 +1414,32 @@ model ConformiteSnapshot {
   @@index([conformiteId])
 }
 
+// Instantané mensuel d'appétence (RAS / RAD) : RÉSUMÉ d'agrégats figé pour un mois (aucun intitulé de risque ni de KRI).
+// Un par organisation et par mois (AAAA-MM, UTC) ; l'historique commence au premier instantané capturé.
+// Événements du cycle de vie de l'instance (mise à jour, retour arrière, restauration) lus dans
+// .acra-update/events.log : la clé unique (la ligne) évite de les journaliser deux fois. Après une
+// restauration la table revient à l'état du point : l'événement de restauration y est donc absent
+// et sera bien écrit.
+model InstanceEvent {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  kind      String
+  createdAt DateTime @default(now())
+}
+
+model AppetenceSnapshot {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  periode        String // AAAA-MM
+  resume         Json
+  createdById    String? // null = capture automatique (cron)
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, periode])
+  @@index([organizationId])
+}
+
 // Dérogation : acceptation TEMPORAIRE d'une non-conformité au socle (voir
 // docs/derogations-spec.md). Rattachée à un contrôle d'un référentiel, à un
 // risque, ou (plus tard) au socle d'une organisation. Cycle de vie séparé du
@@ -1506,10 +1580,17 @@ model Analyse {
   organisation         String?
   secteur              String?
   sousSecteur          String? // Sous-secteur (taxonomie sectorielle, id stable) — issue #25
+  // Plusieurs sous-secteurs (ids stables, le premier = principal, recopié dans sousSecteur) : string[]
+  sousSecteurs         Json          @default("[]")
+  // Patterns d'architecture de SI cochés (codes stables, cf. lib/patterns-archi) : vision technique, indépendante du secteur.
+  patternsArchi        Json          @default("[]")
   // Tags / programme (regroupement libre pour les grandes organisations) : string[]
   tags                 Json          @default("[]")
   dateDebut            DateTime      @default(now())
   dateEcheance         DateTime?
+  // Météo d'un projet 360, réglée à la main par le chef de projet (lib/projet-meteo) et date du dernier réglage.
+  meteoProjet          String?
+  meteoProjetLe        DateTime?
   statut               StatutAnalyse @default(EN_COURS)
   atelierCourant       Int           @default(1)
   referentielMesures   String?       @default("ISO27001") // ISO27001 | NIST_CSF | NIST_800_53 | CIS_V8 | ANSSI_HYG | HDS | PCI_DSS | DORA | IEC_62443 | CUSTOM
@@ -1598,6 +1679,7 @@ model Analyse {
   accesUtilisateurs AnalyseAcces[]
   revisions         RevisionAnalyse[]
   derogations       Derogation[]
+  homologations     Homologation[]
 
   @@index([userId])
   @@index([statut])
@@ -1605,6 +1687,7 @@ model Analyse {
   @@index([projetSourceId])
   @@index([deletedAt])
   @@index([organizationId])
+  systemesIa SystemeIA[]
 }
 
 // Révision d'une analyse (label EBIOS RM §3.4) — trace le suivi des versions x.y.
@@ -1907,6 +1990,11 @@ model Risque {
   // idempotente par risque source dans une même analyse).
   sourceRisqueId  String?
   sourceAnalyseId String?
+  // Projet 360 : suppression demandée, en attente de validation (RM, ou RSSI si risque cyber).
+  suppressionDemandeePar String?
+  suppressionDemandeeLe  DateTime?
+  // Anti-doublon de la relance du validateur (e-mail de synthèse).
+  suppressionRappelLe    DateTime?
 
   derogations Derogation[]
 
@@ -2066,6 +2154,14 @@ model OrganizationConfig {
   // Durée de conservation avant archivage des missions de contrôle/audit closes,
   // en années (défaut 5 ; les missions closes plus anciennes deviennent archivables).
   archivageMissionsAnnees    Int           @default(5)
+  // Plafond de patterns d'architecture cochés par analyse (null = hérité ; défaut 12, borné 1–24).
+  patternsArchiMax           Int?
+  // Patterns non pertinents masqués à la saisie pour cette organisation ([] = hérite / aucun au défaut).
+  patternsArchiMasques       Json          @default("[]")
+  // Secteurs d'activité masqués à la saisie (libellés français canoniques ; [] = hérite / aucun au défaut).
+  secteursMasques            Json          @default("[]")
+  // Risques présents par défaut dans tout projet 360 : { desactives: codes[], ajoutes: [...] } (null = hérité).
+  risquesProjetDefaut        Json?
   // Niveau de workflow : "AUTONOME" (startup, active immédiatement), "RSSI"
   // (validation RSSI, défaut), "RSSI_METIER" (RSSI puis Direction métier).
   derogationWorkflow         String        @default("RSSI")
@@ -2096,6 +2192,13 @@ model OrganizationConfig {
   // Module « Projets 360 » (analyses projet 360 du risque opérationnel, onglet Projets).
   // Activé par défaut ; lancé depuis /projets (méthode PROJET_360).
   projets360Active           Boolean       @default(true)
+  homologationsActive        Boolean       @default(false)
+  // Projet 360 : retirer un risque exige la validation du gestionnaire des risques (RSSI si risque cyber).
+  projetSuppressionValidation Boolean      @default(true)
+  recertificationActive      Boolean       @default(false)
+  registreIaActive           Boolean       @default(false)
+  // Serveur MCP (agents/LLM) pour cette organisation : désactivé par défaut ; exige aussi l'interrupteur d'instance `mcpEnabled`.
+  mcpActive                  Boolean       @default(false)
   // Personnalisation de l'échelle de maturité CMMI (niveaux 0–5) :
   // [{ niveau, libelle, definition }]. Vide ⇒ hérité, sinon libellés par défaut (i18n).
   echelleMaturite            Json          @default("[]")
@@ -2353,6 +2456,18 @@ model Configuration {
   //    SOUVERAIN). OFF ⇒ MCP indisponible. Cf. docs/mcp-cadrage.md.
   apiEnabled Boolean @default(false)
   mcpEnabled Boolean @default(false)
+
+  // Nettoyage du cache « sans impact » (docs/specs/stockage-supervision-nettoyage.md, lot B) : niveau INSTANCE uniquement
+  // (ressources partagées, pas de bascule par organisation). Catégories B1–B8 ; null ⇒ défaut (lib/cache-cleanup.ts).
+  autoCleanup        Boolean   @default(true)
+  cleanupCategories  Json?
+  lastCleanupAt      DateTime?
+  lastCleanupCounts  Json?
+  // Bail d'exécution (une seule exécution à la fois, expire seul) — un verrou consultatif de session fuirait avec le pool de connexions.
+  cleanupLockUntil   DateTime?
+  // Seuils d'alerte de stockage (%, niveau instance) — lot A.
+  storageWarnPercent     Int @default(80)
+  storageCriticalPercent Int @default(90)
   // Méthodes d'analyse activées au niveau instance (SUPER_ADMIN). Défaut : EBIOS RM
   // seul ; les autres méthodes câblées se débloquent ici. Cf. lib/methodes.ts et
   // docs/methodes-analyse-cadrage.md.
@@ -2551,4 +2666,75 @@ model EnvoiPeriodique {
   bilan     Json     @default("{}")
 
   @@unique([tache, periode])
+}
+
+// Homologation de sécurité d'un système d'information (décision d'une autorité, durée limitée) — spec P2.
+model Homologation {
+  id                  String       @id @default(cuid())
+  organizationId      String
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  analyseId           String?
+  analyse             Analyse?     @relation(fields: [analyseId], references: [id], onDelete: SetNull)
+  systeme             String
+  perimetre           String?      @db.Text
+  // PREPARATION | COMMISSION | HOMOLOGUE | HOMOLOGUE_RESERVES | REFUSE
+  statut              String       @default("PREPARATION")
+  preparePar          String
+  autoriteId          String?
+  dureeMois           Int          @default(36)
+  dateDecision        DateTime?
+  dateFin             DateTime?
+  decidePar           String?
+  commentaireDecision String?      @db.Text
+  reserves            Json         @default("[]")
+  pieces              Json         @default("[]")
+  rappelLe            DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@index([organizationId, statut])
+  @@index([analyseId])
+  @@index([dateFin])
+}
+
+// Mesure quotidienne du stockage (docs/specs/stockage-supervision-nettoyage.md, lot A) : tendance et projection « plein dans N jours ».
+// Octets en Float (double, exact jusqu'à 2^53). Une ligne par jour, écrite par le cron de nettoyage ; purgée au-delà de 400 jours.
+model StorageSnapshot {
+  id                   String   @id @default(cuid())
+  mesureLe             DateTime @default(now())
+  dbBytes              Float
+  documentsBytes       Float
+  backupsBytes         Float
+  freeBytes            Float?
+  hostReclaimableBytes Float?
+
+  @@index([mesureLe])
+}
+
+// Corbeille des éléments supprimés (incidents) : instantané JSON restaurable par un administrateur pendant la
+// rétention (lib/corbeille, lib/recovery) ; purgé au-delà. Pas de FK vers l'objet (il n'existe plus).
+model ElementSupprime {
+  id             String   @id @default(cuid())
+  organizationId String
+  type           String // INCIDENT
+  objetId        String
+  intitule       String
+  donnees        Json
+  supprimeParId  String?
+  supprimeLe     DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([supprimeLe])
+}
+
+// Association incident ↔ risque du registre (plusieurs risques par incident).
+model IncidentRisque {
+  incidentId String
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  riskItemId String
+  riskItem   RiskItem @relation(fields: [riskItemId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@id([incidentId, riskItemId])
+  @@index([riskItemId])
 }

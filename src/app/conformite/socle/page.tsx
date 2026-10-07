@@ -7,7 +7,7 @@ import Navbar from '@/components/Navbar'
 import { getServerT, getServerLocale } from '@/lib/i18n'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { isAdminRole, peutGererConformite, type UserRole } from '@/lib/permissions'
 import { usesConformiteEntity, isEntiteLevelConformite } from '@/lib/conformite-config'
 import { listReferentiels } from '@/lib/referentiel.server'
 import OrgConformiteEditor from '@/components/OrgConformiteEditor'
@@ -29,7 +29,7 @@ export default async function ConformiteSoclePage({ searchParams }: {
   if (!orgId) redirect('/dashboard')
   // Rôle EFFECTIF dans l'organisation active (même règle que l'API de conformité).
   const role = scope.role ?? instanceRole
-  if (!(isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER')) redirect('/conformite')
+  if (!peutGererConformite(role)) redirect('/conformite')
   const cfg = await getOrgConfig(orgId)
   const t = await getServerT()
   const locale = await getServerLocale()

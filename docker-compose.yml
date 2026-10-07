@@ -13,11 +13,26 @@
 x-buildkit: &buildkit
   DOCKER_BUILDKIT: "1"
 
+# Journaux plafonnés à 30 Mo par service (sans cela, json-file grossit sans limite).
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
+
+# Construction déclarée UNE fois : app et migrator partagent la même image (même tag, mêmes arguments).
+x-app-build: &app-build
+  context: .
+  dockerfile: Dockerfile
+  # Identité servie par /api/health (la mise à jour vérifie la révision cible).
+  args:
+    ACRA_VERSION: ${ACRA_VERSION:-development}
+    ACRA_REVISION: ${ACRA_REVISION:-unknown}
+
 services:
   db:
     image: postgres:16-alpine
     container_name: ebios_db
     restart: unless-stopped
+    logging: *logging
     environment:
       # Ces variables sont lues depuis le fichier .env
       # Générez .env avec : ./scripts/setup.sh
@@ -40,13 +55,15 @@ services:
   # Cela élimine la race condition migrate/startup du service app.
   # ---------------------------------------------------------------------------
   migrator:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: acra-app:${ACRA_VERSION:-dev}
+    build: *app-build
     container_name: ebios_migrator
     restart: "no"
+    logging: *logging
     environment:
       DATABASE_URL: ${DATABASE_URL}
+      # 0 pendant une mise à jour (scripts/update.sh) : jamais de « migrate resolve » automatique.
+      ACRA_MIGRATE_AUTO_RESOLVE: ${ACRA_MIGRATE_AUTO_RESOLVE:-1}
     depends_on:
       db:
         condition: service_healthy
@@ -58,11 +75,11 @@ services:
       sh -c "sh scripts/migrate-recover.sh"
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: acra-app:${ACRA_VERSION:-dev}
+    build: *app-build
     container_name: ebios_app
     restart: unless-stopped
+    logging: *logging
     environment:
       # Connexion à la base — doit correspondre aux variables du service "db" ci-dessus
       DATABASE_URL: ${DATABASE_URL}
@@ -94,6 +111,9 @@ services:
     # affiche simplement les commandes de mise à jour.
     volumes:
       - ./.acra-update:/app/.acra-update
+      # Documents téléversés : volume nommé (sans lui ils vivent dans la couche du conteneur
+      # et sont perdus à chaque recréation, donc à chaque mise à jour).
+      - documents_data:/app/.data/documents
     command: ["node", "server.js"]
 
   # ---------------------------------------------------------------------------
@@ -111,6 +131,7 @@ services:
     image: curlimages/curl:8.11.1
     container_name: ebios_scheduler
     restart: unless-stopped
+    logging: *logging
     environment:
       CRON_SECRET: ${CRON_SECRET:-}
       SCHEDULER_TICK: ${SCHEDULER_TICK:-900}
@@ -134,12 +155,15 @@ services:
     image: postgres:16-alpine
     container_name: ebios_backup
     restart: unless-stopped
+    logging: *logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_HOST: db
-      BACKUP_RETENTION: ${BACKUP_RETENTION:-7}
+      # Rétention par nombre de dumps (défaut 7). BACKUP_RETENTION (jours) : ancienne règle, seulement si BACKUP_KEEP est absent.
+      BACKUP_KEEP: ${BACKUP_KEEP:-}
+      BACKUP_RETENTION: ${BACKUP_RETENTION:-}
       BACKUP_HOUR: ${BACKUP_HOUR:-02}
       # Copie hors-site (optionnelle) : commande recevant le chemin du dump en argument.
       BACKUP_OFFSITE_CMD: ${BACKUP_OFFSITE_CMD:-}
@@ -154,6 +178,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  documents_data:
     driver: local
   backup_data:
     driver: local

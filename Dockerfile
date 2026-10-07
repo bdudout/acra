@@ -56,9 +56,9 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 # CLI Prisma et ses dépendances à part ; le lien garde le chemin historique
 # node_modules/prisma/build/index.js (service migrator, scripts/migrate-recover.sh).
@@ -78,7 +78,7 @@ EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
-# Health check — vérifie que l'app répond et que la DB est joignable
+# Health check — vérifie l'app, la DB et les migrations livrées
 # Démarre après 30s (temps de migration Prisma), puis toutes les 30s
 # 127.0.0.1 (et non localhost) : dans le conteneur, localhost résout en IPv6 ::1,
 # sur lequel le serveur Next standalone n'écoute pas → connection refused.

@@ -1,3 +1,5 @@
+import { risquesDepuisCorps } from '@/lib/incident-risques'
+import { instantaneIncident } from '@/lib/corbeille'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -70,6 +72,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const r = await prisma.riskItem.findFirst({ where: { id: data.riskItemId, organizationId: orgId }, select: { id: true } })
     if (!r) return NextResponse.json({ error: 'risque_invalide' }, { status: 400 })
   }
+  // Risques du registre associés (plusieurs, même organisation) : remplacent les liaisons ; le premier = principal.
+  const risques = risquesDepuisCorps(body)
+  if (risques && risques.length) {
+    const n = await prisma.riskItem.count({ where: { id: { in: risques }, organizationId: orgId } })
+    if (n !== risques.length) return NextResponse.json({ error: 'risque_invalide' }, { status: 400 })
+  }
 
   // PATCH = mise à jour PARTIELLE : on n'écrit que les champs réellement présents
   // dans le corps. Sans ce filtre, un PATCH de qualification écraserait à null les
@@ -88,9 +96,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     ...champsJson,
   }
   const now = new Date()
-  const updated = await prisma.incident.update({
+  const majIncident = prisma.incident.update({
     where: { id },
     data: {
+      ...(risques ? { riskItemId: risques[0] ?? null } : {}),
       ...partielScalaires,
       ...json,
       // Horodatages posés à la transition, jamais réécrits ensuite.
@@ -99,6 +108,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       ...(typeof body.clotureCommentaire === 'string' ? { clotureCommentaire: body.clotureCommentaire.trim() || null } : {}),
     },
   })
+  const updated = risques
+    ? (await prisma.$transaction([
+      majIncident,
+      prisma.incidentRisque.deleteMany({ where: { incidentId: id } }),
+      ...(risques.length ? [prisma.incidentRisque.createMany({ data: risques.map(riskItemId => ({ incidentId: id, riskItemId })) })] : []),
+    ]))[0] as Awaited<typeof majIncident>
+    : await majIncident
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, organizationId: orgId, ip: getClientIp(req),
     details: { scope: 'incident', action: changeEtat ? `transition:${depuis}->${vers}` : 'update', id },
@@ -117,10 +133,25 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const { userId, userRole, incident } = c
   if (!peutQualifier(userRole, c.secondeLigneActive)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
-  await prisma.incident.delete({ where: { id } })
-  await auditLog('ORGANIZATION_CONFIG_UPDATED', {
-    userId, userRole, organizationId: incident.organizationId, ip: getClientIp(req),
-    details: { scope: 'incident', action: 'delete', id },
+  // Suppression récupérable : instantané (fiche + risques associés) en corbeille, puis suppression, en une transaction.
+  const corbeille = await prisma.$transaction(async tx => {
+    const complet = await tx.incident.findUnique({ where: { id } })
+    if (!complet) return null
+    const liens = await tx.incidentRisque.findMany({ where: { incidentId: id }, select: { riskItemId: true } })
+    const c = await tx.elementSupprime.create({
+      data: {
+        organizationId: incident.organizationId, type: 'INCIDENT', objetId: id, intitule: incident.intitule, supprimeParId: userId,
+        donnees: instantaneIncident(complet, liens.map(l => l.riskItemId)) as unknown as Prisma.InputJsonValue,
+      },
+      select: { id: true },
+    })
+    await tx.incident.delete({ where: { id } })
+    return c
   })
-  return NextResponse.json({ ok: true })
+  if (!corbeille) return NextResponse.json({ error: 'Incident introuvable' }, { status: 404 })
+  await auditLog('INCIDENT_DELETED', {
+    userId, userRole, organizationId: incident.organizationId, targetId: id, targetType: 'incident', ip: getClientIp(req),
+    details: { intitule: incident.intitule, corbeilleId: corbeille.id },
+  })
+  return NextResponse.json({ ok: true, corbeilleId: corbeille.id })
 }

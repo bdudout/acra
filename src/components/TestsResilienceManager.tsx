@@ -39,7 +39,7 @@ export default function TestsResilienceManager() {
   const statuts = r.statuts as Record<string, string>
   const testeurs = r.testeurs as Record<string, string>
   const [annee, setAnnee] = useState<number | null>(null)
-  const [data, setData] = useState<{ annee: number; annees: number[]; canWrite: boolean; tests: TestRow[]; stats: Stats } | null>(null)
+  const [data, setData] = useState<{ annee: number; annees: number[]; canWrite: boolean; tests: TestRow[]; stats: Stats; actionsParConstat?: Record<string, Record<number, { ouvertes: number; faites: number }>> } | null>(null)
   const [risks, setRisks] = useState<{ id: string; intitule: string }[]>([])
   const [form, setForm] = useState<Form | null>(null)
   const [busy, setBusy] = useState(false)
@@ -85,6 +85,14 @@ export default function TestsResilienceManager() {
     await load(annee)
   }
 
+  async function closeFinding(testId: string, constatIndex: number) {
+    const key = `${testId}:${constatIndex}`
+    setActionBusy(key)
+    const res = await fetch(`/api/tests-resilience/${testId}/actions`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ constatIndex, corrige: true }) }).catch(() => null)
+    setActionBusy(null)
+    if (res?.ok) await load(data?.annee ?? null)
+  }
+
   async function promoteFinding(testId: string, constatIndex: number) {
     const key = `${testId}:${constatIndex}`
     setActionBusy(key); setActionMsg(prev => ({ ...prev, [key]: '' }))
@@ -95,6 +103,10 @@ export default function TestsResilienceManager() {
     } catch { setActionMsg(prev => ({ ...prev, [key]: r.actionError.replace('{error}', '—') })) }
     finally { setActionBusy(null) }
   }
+
+  // Lien profond depuis le plan d'action unifié (?test=<id>) : la ligne du test est mise en évidence.
+  const focusId = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('test') : null
+  useEffect(() => { if (data && focusId) document.getElementById(`test-${focusId}`)?.scrollIntoView?.({ block: 'center' }) }, [data, focusId])
 
   if (!data) return <p className="text-sm text-gray-400">…</p>
   const s = data.stats
@@ -120,7 +132,6 @@ export default function TestsResilienceManager() {
           </select>
         </label>
         <div className="flex gap-2">
-          <a href={`/api/tests-resilience/rapport?annee=${data.annee}`} className="btn-secondary text-sm">{r.exportRapport}</a>
           {data.canWrite && <button type="button" onClick={() => { setMsg(null); setForm({ ...EMPTY }) }} className="btn-primary text-sm">{r.add}</button>}
         </div>
       </div>
@@ -214,14 +225,14 @@ export default function TestsResilienceManager() {
               {data.tests.map(row => {
                 const cs = asConstats(row.constats)
                 return (
-                  <tr key={row.id} className="border-b border-gray-100 dark:border-gray-800">
+                  <tr key={row.id} id={`test-${row.id}`} className={`border-b border-gray-100 dark:border-gray-800 ${focusId === row.id ? 'bg-amber-50 dark:bg-amber-500/10' : ''}`}>
                     <td className="px-3 py-2 font-medium">{row.intitule}{row.fonctionCritique && <span className="ml-2 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] text-indigo-700" title={r.fonctionCritique}>FCI</span>}</td>
                     <td className="px-3 py-2 text-xs">{types[row.type] ?? row.type}</td>
                     <td className="px-3 py-2 text-xs">{statuts[row.statut] ?? row.statut}</td>
                     <td className="px-3 py-2 text-xs tabular-nums">{row.dateRealisation ? fmt(row.dateRealisation) : '—'}</td>
                     <td className="px-3 py-2 text-xs">{cs.length === 0 ? '—' : <ul className="space-y-1">{cs.map((c, index) => {
                       const key = `${row.id}:${index}`
-                      return <li key={key}><span className={c.corrige ? 'text-green-700' : 'text-amber-700'}>{c.corrige ? '✓' : `S${c.severite}`} · {c.description}</span>{data.canWrite && !c.corrige && <><button type="button" disabled={actionBusy === key} onClick={() => promoteFinding(row.id, index)} className="ml-2 text-ebios-700 hover:underline disabled:opacity-50">{r.createAction}</button>{actionMsg[key] && <span role="status" className="ml-2 text-gray-500">{actionMsg[key]}</span>}</>}</li>
+                      return <li key={key}><span className={c.corrige ? 'text-green-700' : 'text-amber-700'}>{c.corrige ? '✓' : `S${c.severite}`} · {c.description}</span>{(() => { const a = data.actionsParConstat?.[row.id]?.[index]; if (!a || c.corrige) return null; return a.ouvertes > 0 ? <span className="ml-2 text-gray-500">{r.actionsOpen.replace('{n}', String(a.ouvertes))}</span> : <>{<span className="ml-2 text-green-700">{r.actionsDone}</span>}{data.canWrite && <button type="button" disabled={actionBusy === key} onClick={() => closeFinding(row.id, index)} className="ml-2 text-ebios-700 hover:underline disabled:opacity-50">{r.proposeClose}</button>}</> })()}{data.canWrite && !c.corrige && <><button type="button" disabled={actionBusy === key} onClick={() => promoteFinding(row.id, index)} className="ml-2 text-ebios-700 hover:underline disabled:opacity-50">{r.createAction}</button>{actionMsg[key] && <span role="status" className="ml-2 text-gray-500">{actionMsg[key]}</span>}</>}</li>
                     })}</ul>}</td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">
                       {data.canWrite && <>

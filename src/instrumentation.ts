@@ -9,5 +9,8 @@ export async function register() {
     // Amorçage multi-organisation : garantir au moins un super-administrateur.
     const { ensureSuperAdmin } = await import('./lib/org-bootstrap')
     await ensureSuperAdmin()
+    // Journal d'audit des événements de cycle de vie de l'instance (mise à jour, retour arrière, restauration).
+    const { recordInstanceEvents } = await import('./lib/instance-events.server')
+    void recordInstanceEvents()
   }
 }

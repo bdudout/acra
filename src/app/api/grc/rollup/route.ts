@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { voitTousLesResultats } from '@/lib/acces-resultats'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -45,8 +46,10 @@ export async function GET(req: NextRequest) {
   // Modules actifs pour l'organisation focalisée : on ne consolide que ce qui est
   // activé (les toggles se résolvent par organisation au point unique getOrgConfig).
   const withIncidents = orgConfig.incidentsActive
-  const withControles = orgConfig.controlePermanentActive
-  const withAudit = orgConfig.auditInterneActive
+  // Résultats de contrôle et d'audit : lecture globale du dispositif seulement (lib/acces-resultats).
+  const voitResultats = voitTousLesResultats(scope.role as UserRole)
+  const withControles = orgConfig.controlePermanentActive && voitResultats
+  const withAudit = orgConfig.auditInterneActive && voitResultats
   const withKri = orgConfig.kriActive
   const withReglementaire = orgConfig.reglementaireActive
 

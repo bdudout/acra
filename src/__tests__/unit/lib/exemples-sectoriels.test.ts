@@ -148,7 +148,8 @@ describe('i18n des packs sectoriels', () => {
     const missing: string[] = []
     for (const fam of SECTOR_FAMILIES) {
       for (const cat of CATEGORIES) {
-        const items = sectorExemplesFor(fam.match[0], cat, 'fr')
+        // Éléments de base (dictionnaires indexés) ; l'extension porte ses traductions dans la donnée (exemples-sante-interco.test.ts).
+        const items = (fam.exemples[cat] ?? []) as Record<string, unknown>[]
         items.forEach((item, idx) => {
           const prefix = `${fam.key}.${cat}.${idx}`
           for (const f of TEXT_FIELDS) {

@@ -114,4 +114,19 @@ describe('DeclarationModal', () => {
     render(<DeclarationModal {...props()} />)
     expect(screen.queryByRole('region', { name: 'Obligations à examiner pour ce type d’incident' })).not.toBeInTheDocument()
   })
+
+  it('régime RGPD art. 33 : formulaire des rubriques du § 3, enregistré avec les compléments ; absent pour un autre régime', async () => {
+    const rgpd: DeclarationIncidentView = { ...incident, dora: null, horloges: [{ regime: 'RGPD_33', label: 'RGPD — notification à la CNIL', phases: [{ code: 'NOTIFICATION', label: 'Notification (72 h)', echeance: '2026-10-08T07:00:00.000Z', statut: 'A_FAIRE' as const, soumisLe: null, tardive: false }] }] }
+    render(<DeclarationModal {...props({ incident: rgpd })} />)
+    const sec = screen.getByRole('region', { name: /RGPD — notification à la CNIL/ })
+    fireEvent.change(within(sec).getByLabelText(/Nature de la violation/), { target: { value: 'Envoi à un mauvais destinataire' } })
+    fireEvent.change(within(sec).getByLabelText(/Nombre approximatif de personnes/), { target: { value: '40' } })
+    fireEvent.click(within(sec).getByRole('button', { name: 'Enregistrer les compléments' }))
+    await waitFor(() => expect(calls('PUT')).toHaveLength(1))
+    expect(JSON.parse(String(calls('PUT')[0][1]!.body)).declaration).toMatchObject({ 'rgpd.nature': 'Envoi à un mauvais destinataire', 'rgpd.nbPersonnes': '40' })
+  })
+  it('pas de formulaire RGPD pour un régime autre que RGPD_33', () => {
+    render(<DeclarationModal {...props()} />)
+    expect(screen.queryByLabelText(/Nature de la violation/)).toBeNull()
+  })
 })

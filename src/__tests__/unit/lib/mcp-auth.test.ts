@@ -7,6 +7,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mcpEnabled = vi.fn()
 vi.mock('@/lib/interfaces-config.server', () => ({ isMcpEnabled: () => mcpEnabled() }))
 
+const orgMcp = vi.fn()
+vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: async (orgId: string) => ({ mcpActive: await orgMcp(orgId) }) }))
+
 const findUnique = vi.fn()
 const update = vi.fn().mockResolvedValue({})
 vi.mock('@/lib/prisma', () => ({
@@ -33,7 +36,7 @@ const keyRow = (scopes: string[]) => ({
 })
 
 describe('authenticateMcpRequest', () => {
-  beforeEach(() => { mcpEnabled.mockReset(); findUnique.mockReset(); verifyApiKey.mockReset(); update.mockClear() })
+  beforeEach(() => { orgMcp.mockReset(); orgMcp.mockResolvedValue(true); mcpEnabled.mockReset(); findUnique.mockReset(); verifyApiKey.mockReset(); update.mockClear() })
 
   it('MCP désactivé → 503 sans toucher la clé', async () => {
     mcpEnabled.mockResolvedValue(false)
@@ -73,6 +76,17 @@ describe('authenticateMcpRequest', () => {
     const r = await authenticateMcpRequest(reqWith('Bearer acra_abc123_secret'))
     expect(r).toEqual({ ok: true, organizationId: 'orgZ', keyId: 'k1', scopes: ['mcp'] })
     expect(update).toHaveBeenCalledWith({ where: { id: 'k1' }, data: { lastUsedAt: expect.any(Date) } })
+  })
+
+  it('MCP non activé pour l’organisation de la clé → 403 mcp_org_disabled (interrupteur par organisation, défaut désactivé)', async () => {
+    mcpEnabled.mockResolvedValue(true)
+    findUnique.mockResolvedValue(keyRow(['mcp']))
+    verifyApiKey.mockResolvedValue(true)
+    orgMcp.mockResolvedValue(false)
+    const r = await authenticateMcpRequest(reqWith('Bearer acra_abc123_secret'))
+    expect(r).toEqual({ ok: false, status: 403, error: 'mcp_org_disabled' })
+    expect(orgMcp).toHaveBeenCalledWith('orgZ')
+    expect(update).not.toHaveBeenCalled()
   })
 
   it('clé révoquée → 401 (avant vérification de scope)', async () => {

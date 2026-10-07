@@ -41,10 +41,12 @@ export async function GET() {
       })
     : []
   const nomById = new Map(analyses.map(a => [a.id, a.nom]))
+  // Proposition de projet 360 : l'ancre est l'organisation de la clé (celle de la file).
+  const orgNom = rows.some(r => r.targetType === 'ORGANISATION') ? (await prisma.organization.findUnique({ where: { id: orgId }, select: { nom: true } }))?.nom ?? null : null
 
   const proposals = rows.map(r => ({
     id: r.id, type: r.type, targetType: r.targetType, targetId: r.targetId,
-    ancreNom: r.targetType === 'ANALYSE' ? (nomById.get(r.targetId) ?? null) : null,
+    ancreNom: r.targetType === 'ANALYSE' ? (nomById.get(r.targetId) ?? null) : r.targetType === 'ORGANISATION' && r.targetId === orgId ? orgNom : null,
     payload: r.payload, createdAt: r.createdAt,
   }))
   return NextResponse.json({ proposals })

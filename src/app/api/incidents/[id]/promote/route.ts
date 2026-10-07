@@ -61,6 +61,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       data: { ...data, organizationId: incident.organizationId },
     })
     await tx.incident.update({ where: { id }, data: { riskItemId: created.id } })
+    await tx.incidentRisque.create({ data: { incidentId: id, riskItemId: created.id } })
     return created
   })
 

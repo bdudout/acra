@@ -8,6 +8,9 @@ mkdir -p "$state_dir"
 exec 9>"$state_dir/deploy.lock"
 flock -n 9 || { echo 'Un déploiement est déjà en cours.' >&2; exit 1; }
 compose=(docker compose --env-file .env -f docker-compose.yml -f docker-compose.demo.yml -f docker-compose.release.yml)
+# Points de restauration (scripts/acra-snapshot.sh, docs/specs/sauvegarde-rollback-spec.md) : mêmes fichiers compose.
+snapshot() { ACRA_COMPOSE_FILES="--env-file .env -f docker-compose.yml -f docker-compose.demo.yml -f docker-compose.release.yml" ACRA_BACKUP_DIR="$state_dir/backups" ACRA_RUN_OWNER=1 bash scripts/acra-snapshot.sh "$@"; }
+SNAP_RE='^[0-9]{8}T[0-9]{6}Z-pre-update-[0-9A-Za-z.+-]{1,40}$'
 load_state() {
   local file="$1"
   # Fichiers générés par ce script exclusivement, sans valeur saisie librement.
@@ -30,11 +33,23 @@ check_health() {
 }
 rollback() {
   [[ -f "$state_dir/previous" && -f "$state_dir/pending" ]] || { "${compose[@]}" stop app; echo 'Aucune version précédente qualifiée ; application arrêtée, intervention requise.' >&2; return 1; }
-  [[ "$(sed -n '4p' "$state_dir/previous")" == "$(sed -n '4p' "$state_dir/pending")" ]] || {
-    echo 'Migrations différentes : restauration manuelle qualifiée requise, application arrêtée.' >&2
-    "${compose[@]}" stop app
-    return 1
-  }
+  if [[ "$(sed -n '4p' "$state_dir/previous")" != "$(sed -n '4p' "$state_dir/pending")" ]]; then
+    # Les migrations ont changé : l'ancienne image ne lit plus la base migrée. On restaure le point de restauration
+    # (base + documents) créé avant la migration, puis on relance l'image précédente.
+    local snap_id=""
+    [[ -f "$state_dir/snapshot" ]] && snap_id="$(head -c 100 "$state_dir/snapshot" | tr -d '\r\n')"
+    if [[ ! "$snap_id" =~ $SNAP_RE ]]; then
+      echo 'Migrations différentes et aucun point de restauration valide : restauration manuelle requise, application arrêtée.' >&2
+      "${compose[@]}" stop app
+      return 1
+    fi
+    "${compose[@]}" stop app scheduler cron || true
+    snapshot restore "$snap_id" --yes || {
+      echo 'Restauration du point en échec : application arrêtée, procédure manuelle (docs/runbook-exploitation.md § 6).' >&2
+      "${compose[@]}" stop app
+      return 1
+    }
+  fi
   load_state "$state_dir/previous"
   validate
   "${compose[@]}" up -d --no-build --no-deps --wait app
@@ -56,6 +71,7 @@ case "$mode" in
     check_health
     "${compose[@]}" up -d --no-build --no-deps scheduler cron
     mv "$state_dir/pending" "$state_dir/current"
+    snapshot prune >/dev/null 2>&1 || true
     echo 'Release confirmée après recette publique.'
     exit 0
     ;;
@@ -79,14 +95,13 @@ printf '%s\n' "$ACRA_IMAGE" "$VERSION" "$REVISION" "$MIGRATIONS_HASH" > "$state_
 trap 'echo "Échec du déploiement." >&2; rollback || true; exit 1' ERR
 "${compose[@]}" up -d --wait db
 "${compose[@]}" stop app scheduler cron
-backup_dir="$state_dir/backups/$(date -u +%Y%m%dT%H%M%SZ)"
-mkdir -p "$backup_dir"
-# Les variables sont développées dans le conteneur PostgreSQL, jamais sur l’hôte.
-# shellcheck disable=SC2016
-"${compose[@]}" exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' | gzip > "$backup_dir/database.sql.gz"
-gzip -t "$backup_dir/database.sql.gz"
-"${compose[@]}" run --rm --no-deps --entrypoint tar app -C /app/.data -czf - documents > "$backup_dir/documents.tar.gz"
-gzip -t "$backup_dir/documents.tar.gz"
+# Point de restauration vérifié (base au format custom + documents + clone), application déjà arrêtée.
+prev_version="unknown"
+[[ -f "$state_dir/previous" ]] && prev_version="$(sed -n '2p' "$state_dir/previous" | sed 's/^v//')"
+snap_out="$(snapshot create --reason pre-update --from-version "$prev_version" --to-version "${VERSION#v}")"
+snap_id="$(printf '%s\n' "$snap_out" | tail -1)"
+[[ "$snap_id" =~ $SNAP_RE ]] || { echo 'Identifiant de point de restauration illisible.' >&2; false; }
+printf '%s\n' "$snap_id" > "$state_dir/snapshot"
 # Migration explicite : aucun marquage automatique d'une migration en échec.
 "${compose[@]}" run --rm --no-deps migrator
 "${compose[@]}" up -d --no-build --no-deps --wait app

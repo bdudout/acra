@@ -25,6 +25,7 @@ describe('plan-action — liens polymorphes', () => {
   })
 
   it('produit des liens profonds par type', () => {
+    expect(lienHref({ type: 'TEST_RESILIENCE', targetId: 't1' })).toBe('/reglementaire/tests-resilience?test=t1')
     expect(lienHref({ type: 'ANALYSE', targetId: 'a1' })).toBe('/analyses/a1')
     expect(lienHref({ type: 'RISQUE', targetId: 'r1' })).toBe('/registre?item=r1')
     expect(lienHref({ type: 'CONFORMITE', targetId: 'ISO27001' })).toBe('/conformite/socle?ref=ISO27001')
@@ -74,5 +75,31 @@ describe('plan-action — absorption RiskAction', () => {
       id: 'p1', intitule: 'Corriger', description: 'd', responsable: 'Alice',
       echeance: null, statut: 'EN_COURS', priorite: 'CRITIQUE',
     })
+  })
+})
+
+// Cliquet : tout type de lien écrit par une route doit être déclaré (sinon sanitizeLiens le rejette
+// et la vue unifiée ne sait pas l'afficher — cas TEST_RESILIENCE).
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { join } from 'node:path'
+import { PLAN_ACTION_LIEN_TYPES } from '@/lib/plan-action'
+function walk(dir: string, out: string[] = []): string[] {
+  for (const f of readdirSync(dir)) {
+    const p = join(dir, f)
+    if (statSync(p).isDirectory()) walk(p, out)
+    else if (p.endsWith('route.ts')) out.push(p)
+  }
+  return out
+}
+describe('cliquet : types de lien écrits par les routes', () => {
+  it('chaque { type: X, targetId } de liens est dans PLAN_ACTION_LIEN_TYPES', () => {
+    const bad: string[] = []
+    for (const f of walk(join(process.cwd(), 'src/app/api'))) {
+      const src = readFileSync(f, 'utf8')
+      for (const m of src.matchAll(/type:\s*'([A-Z_]+)',\s*targetId/g)) {
+        if (!(PLAN_ACTION_LIEN_TYPES as readonly string[]).includes(m[1])) bad.push(`${f}:${m[1]}`)
+      }
+    }
+    expect(bad).toEqual([])
   })
 })

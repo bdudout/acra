@@ -13,7 +13,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useRef, useState, useEffect } from 'react'
 import { ROLE_LABELS, ROLE_COLORS, isAdminRole, type UserRole } from '@/lib/permissions'
-import { buildNav, type NavKey, type NavGroupId, type NavModules } from '@/lib/navigation'
+import { buildNav, activeNavHref, navPathFor, type NavKey, type NavGroupId, type NavModules } from '@/lib/navigation'
 import { peekNavModules, loadNavModules, setCachedNavModules } from '@/lib/nav-modules-cache'
 import { useTranslation } from '@/lib/i18n/context'
 import { useBranding } from '@/components/BrandingProvider'
@@ -23,7 +23,8 @@ import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
   User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked,
   Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp, Landmark,
-  LayoutGrid, Radar, ScrollText, FileText, ListChecks, Menu, X, Gauge, Briefcase, type LucideIcon,
+  LayoutGrid, Radar, ScrollText, FileText, ListChecks, Bot, Menu, X, Gauge, Briefcase, type LucideIcon,
+  BadgeCheck, UserCheck, BrainCircuit,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -87,6 +88,9 @@ export default function Navbar() {
           reglementaire: Boolean(d.reglementaireActive),
           profilsOperationnels: Boolean(d.profilsOperationnelsActive),
           projets: Boolean(d.projets360Active),
+          homologations: Boolean(d.homologationsActive),
+          recertification: Boolean(d.recertificationActive),
+          registreIa: Boolean(d.registreIaActive),
         }
         setModules(next)
         setCachedNavModules(next)
@@ -149,7 +153,10 @@ export default function Navbar() {
   }
 
   // Une route est active si elle est exacte ou parente de la route courante.
-  const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
+  // Hrefs réellement affichés (liens + éléments de menus) : la correspondance la plus précise l'emporte.
+  const shownKeys = entries.flatMap(e => (e.kind === 'link' ? [e.key] : e.items))
+  // Seul le lien le plus précis est actif (évite que « Réglementaire » reste allumé sur « Suivi régulateur »).
+  const isActive = (href: string) => href === currentHref
 
   // Métadonnées d'affichage (icône + libellé i18n) de chaque lien. Défini DANS le
   // composant car les libellés sont traduits (règle i18n du projet).
@@ -184,7 +191,12 @@ export default function Navbar() {
     appetence:     { href: '/appetence',     Icon: Gauge,           label: t.nav.appetence },
     rapports:      { href: '/rapports',      Icon: FileText,        label: t.nav.rapports },
     testsResilience: { href: '/reglementaire/tests-resilience', Icon: ClipboardCheck, label: t.nav.testsResilience },
+    homologations: { href: '/homologations', Icon: BadgeCheck, label: t.nav.homologations },
+    recertification: { href: '/recertification', Icon: UserCheck, label: t.nav.recertification },
+    registreIa:    { href: '/registre-ia',   Icon: BrainCircuit,    label: t.nav.registreIa },
   }
+
+  const currentHref = activeNavHref(navPathFor(pathname), shownKeys.map(k => NAV_META[k].href))
 
   // Métadonnées des groupes déroulants (icône + libellé de domaine).
   const NAV_GROUP_META: Record<NavGroupId, { Icon: LucideIcon; label: string }> = {
@@ -198,6 +210,7 @@ export default function Navbar() {
     analyses:    { Icon: Radar,          label: t.nav.grpAnalyses },
     controleAudit: { Icon: ClipboardCheck, label: t.nav.grpControleAudit },
     conformiteReglementaire: { Icon: ShieldCheck, label: t.nav.grpConformiteReglementaire },
+    conformite:  { Icon: ShieldCheck,    label: t.nav.grpConformite },
   }
 
   const badge = (n: number, label: string) => (
@@ -337,6 +350,23 @@ export default function Navbar() {
                   >
                     <ListChecks size={16} aria-hidden="true" />
                     {t.nav.mcpProposals}
+                  </Link>
+                )}
+
+                {/* Activité MCP : assistants connectés, clés MCP (création, révocation). Administrateur de l'organisation. */}
+                {isAdmin && (
+                  <Link
+                    href="/mcp-activite"
+                    role="menuitem"
+                    className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg ${
+                      pathname === '/mcp-activite'
+                        ? 'bg-ebios-50 text-ebios-700 font-medium'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <Bot size={16} aria-hidden="true" />
+                    {t.nav.mcpActivite}
                   </Link>
                 )}
 

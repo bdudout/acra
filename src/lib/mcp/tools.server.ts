@@ -5,10 +5,13 @@
 // (lecture, contexte) ; les `propose_*` (écritures validées) viendront en phases
 // ultérieures (cf. docs/mcp-cadrage.md §10).
 
+import { buildProjetTools } from './tools-projet.server'
 import { prisma } from '@/lib/prisma'
 import { toolText, type McpTool, type McpToolResult } from './protocol'
 import { buildContextTools } from './tools-context.server'
 import { buildProposeTools } from './tools-propose.server'
+import { recommendRisksScenariosTool, recommendControlPlanTool } from './tools-recommend.server'
+import { buildKnowledgeTools } from './tools-knowledge.server'
 
 /** Contexte serveur injecté aux outils : périmètre organisationnel + clé d'API émettrice. */
 export interface McpContext { organizationId: string; keyId: string }
@@ -79,5 +82,28 @@ export const readReferentielsTool: McpTool<McpContext> = {
  * (cf. `tools-context.server.ts`).
  */
 export function buildMcpTools(): McpTool<McpContext>[] {
-  return [readReferentielsTool, ...buildContextTools(), ...buildProposeTools()]
+  return [readReferentielsTool, ...buildContextTools(), ...buildProjetTools(), recommendRisksScenariosTool, recommendControlPlanTool, ...buildKnowledgeTools(), ...buildProposeTools()].map(annoter)
+}
+
+/** Titres lisibles affichés par les clients MCP (Claude, Codex, Mistral Vibe…). */
+const TITRES: Record<string, string> = {
+  read_referentiels: 'Référentiels et exigences', read_taxonomie: 'Taxonomie des risques', read_sector_examples: 'Exemples par secteur et architecture',
+  read_risk_posture: 'Posture de risque', read_analyses: 'Analyses et projets', read_projet: 'Contexte d’un projet 360', propose_projet360: 'Proposer un projet 360', propose_nouvelle_analyse: 'Proposer une nouvelle analyse', propose_pssi: 'Proposer l’import d’une PSSI', recommend_risks_scenarios: 'Risques et scénarios recommandés', recommend_control_plan: 'Plan de contrôle recommandé',
+  read_notification_regimes: 'Régimes de déclaration', read_incident_types: 'Incidents types', read_dora_fields: 'Champs de déclaration DORA',
+  read_catalogue: 'Catalogue sectoriel', read_resilience_tests: 'Tests de résilience', propose_risk: 'Proposer un risque', propose_measure: 'Proposer une mesure',
+  propose_plan_action: 'Proposer un plan d’action', propose_conformite: 'Proposer une évaluation de conformité',
+  analyse_import_preview: 'Aperçu d’import d’analyse', propose_analysis_import: 'Proposer l’import d’une analyse',
+}
+
+/**
+ * Annotations MCP : lectures, recommandations (calculées par ACRA) et aperçus en lecture seule ; propositions non
+ * destructives (elles créent une proposition en attente de validation humaine, jamais d'écriture directe). Aucun outil
+ * n'accède au monde extérieur.
+ */
+function annoter(t: McpTool<McpContext>): McpTool<McpContext> {
+  const lecture = /^(read_|recommend_)|_preview$/.test(t.name)
+  return {
+    ...t, title: t.title ?? TITRES[t.name] ?? t.name,
+    annotations: { ...(lecture ? { readOnlyHint: true } : { readOnlyHint: false, destructiveHint: false, idempotentHint: false }), openWorldHint: false, ...t.annotations },
+  }
 }

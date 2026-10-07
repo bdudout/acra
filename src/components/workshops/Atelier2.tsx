@@ -34,7 +34,11 @@ import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { useAutoSave } from '@/lib/useAutoSave'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { rankExemples } from '@/lib/exemples-context'
+import { sousSecteursOf } from '@/lib/sous-secteurs'
+import { patternsOf } from '@/lib/patterns-archi'
 import { withSectorExemples } from '@/lib/exemples-sectoriels'
+import PertinenceBadge from '@/components/workshops/PertinenceBadge'
+import { nouvelObjectifVise, majObjectifVise } from '@/lib/objectifs-vises'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { defaultExemplesFor, type ExemplesTranslations } from '@/lib/exemples-defaults'
 import SrOvRadar from '@/components/SrOvRadar'
@@ -105,7 +109,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode, e
   const ovExamples = useMemo(() => resolveExemples(exOverride.objectifsVises, defaultExemplesFor('objectifsVises', tEx, locale)) as any[], [t, exOverride]) // eslint-disable-line react-hooks/exhaustive-deps
   // Exemples contextuels : sources de risque remontées selon le secteur de l'analyse
   const srExamplesRanked = useMemo(
-    () => rankExemples(withSectorExemples(srExamples, analyse?.secteur, 'sourcesRisque', locale, analyse?.sousSecteur), { secteur: analyse?.secteur, sousSecteur: sousSecteurLabel }),
+    () => rankExemples(withSectorExemples(srExamples, analyse?.secteur, 'sourcesRisque', locale, sousSecteursOf(analyse), patternsOf(analyse)), { secteur: analyse?.secteur, sousSecteur: sousSecteurLabel }),
     [srExamples, analyse?.secteur, sousSecteurLabel, locale]
   )
 
@@ -205,7 +209,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode, e
         ...s,
         objectifsVises: [
           ...(s.objectifsVises || []),
-          { id: uid(), nom: ov?.nom || '', description: ov?.desc || '', priorite: 'P2', pertinenceOV: 3 },
+          nouvelObjectifVise(uid(), ov),
         ],
       }
     }))
@@ -214,7 +218,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode, e
   function updateOV(sourceId: string, ovId: string, field: string, value: any) {
     setSources(prev => prev.map(s => {
       if (s.id !== sourceId) return s
-      return { ...s, objectifsVises: s.objectifsVises.map((o: any) => o.id === ovId ? { ...o, [field]: value } : o) }
+      return { ...s, objectifsVises: s.objectifsVises.map((o: any) => o.id === ovId ? majObjectifVise(o, field, value, ovExamples) : o) }
     }))
   }
 
@@ -343,7 +347,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode, e
                       }`}
                     >
                       {added && <div className="text-xs text-green-600 dark:text-green-300 font-semibold mb-1">{t.workshop.addedLabel}</div>}
-                      {!added && s.pertinent && <div className="text-xs text-ebios-700 dark:text-ebios-300 font-semibold mb-1"><Star size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.workshop.relevantLabel}</div>}
+                      {!added && <PertinenceBadge ex={s} className="text-xs mb-1" />}
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cat?.color}`}>{cat?.label}</span>
                         <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{s.nom}</span>

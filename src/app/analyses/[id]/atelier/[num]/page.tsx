@@ -1,11 +1,15 @@
 import { sanitizeAnswers360, sanitizeSources360, domaineFromTaxonomie } from '@/lib/projet360'
+import { analysesCyberDuProjet, projetLieAccessible } from '@/lib/projet360-sources.server'
+import VueAnalyseProjet from '@/components/VueAnalyseProjet'
+import AssocierProjet from '@/components/AssocierProjet'
+import { sousSecteursOf } from '@/lib/sous-secteurs'
 import { Lightbulb, ShieldCheck, Zap } from 'lucide-react'
 import { ATELIER_ICONS } from '@/lib/atelier-icons'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere } from '@/lib/org-context.server'
+import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import WorkshopProgress from '@/components/WorkshopProgress'
@@ -22,6 +26,7 @@ import PhasedRiskWorkshop from '@/components/PhasedRiskWorkshop'
 import ExportButtons from '@/components/ExportButtons'
 import { isRiskMethod, methodSteps } from '@/lib/methodes'
 import { suggestRisqueExemples } from '@/lib/risque-exemples'
+import { patternsOf } from '@/lib/patterns-archi'
 import { canViewAnalyse, canEditAnalyse, type UserRole } from '@/lib/permissions'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { getOrgConfig } from '@/lib/org-config.server'
@@ -79,6 +84,10 @@ export default async function AtelierPage({
   const sessionUser = { id: userId, role: userRole }
   if (!canViewAnalyse(sessionUser, ownership)) notFound()
   const editable = canEditAnalyse(sessionUser, ownership)
+  // Analyse cyber rattachée à un projet 360 accessible : bascule de vue vers le projet.
+  const projetLie = await projetLieAccessible(userId, userRole, analyse.projetSourceId)
+  // « Associer un projet » proposé sur une analyse cyber sans projet, si le module Projets 360 est actif.
+  const projets360Actif = !analyse.projetSourceId && (await getOrgConfig(analyse.organizationId)).projets360Active
 
   // ── Méthodes à parcours PAR PHASES (ISO 31000 / ISO 27005 / NIST 800-30) : un
   // composant générique piloté par le registre (lib/methodes.ts), distinct des
@@ -128,7 +137,7 @@ export default async function AtelierPage({
     }))
     // R3 — suggestions de risques sectoriels (pré-remplissent le formulaire).
     const risqueSuggestions = editable
-      ? suggestRisqueExemples({ secteur: analyse.secteur, sousSecteur: analyse.sousSecteur, locale, base: t.risquesDirects.risquesTransverses })
+      ? suggestRisqueExemples({ secteur: analyse.secteur, sousSecteur: sousSecteursOf(analyse), patterns: patternsOf(analyse), locale, base: t.risquesDirects.risquesTransverses })
       : []
     // Projet 360 : les risques DÉJÀ au registre de l'organisation sont proposés en tête
     // (domaine déduit de la taxonomie de Bâle) — réutiliser plutôt que ressaisir ; un
@@ -153,16 +162,25 @@ export default async function AtelierPage({
     const directOrgId = (analyse as { organizationId?: string | null }).organizationId ?? null
     const directOrgConfig = await getOrgConfig(directOrgId)
     const directAppetit = directOrgConfig.appetitRisque
+    // Rôle EFFECTIF dans l'organisation de l'analyse (validation des demandes de suppression d'un projet 360).
+    const suppressionRole = directOrgId ? ((await getEffectiveRoleForOrg(userId, userRole, directOrgId)) ?? userRole) : userRole
     // Propriétaires suggérés (P3) : NOMS des membres de l'organisation (pas les e-mails) + entités.
     const directMembers = directOrgId
       ? await prisma.orgMembership.findMany({ where: { organizationId: directOrgId }, select: { user: { select: { name: true } } }, take: 500 })
       : []
     const directOwnerSuggestions = ownerSuggestions(directMembers.map(mb => mb.user.name), directOrgConfig.entitesMesures)
+    // Projet 360 : bascule vers la vue projet / ses analyses cyber (celles que l'utilisateur peut ouvrir).
+    const analysesProjet = methode === 'PROJET_360' ? await analysesCyberDuProjet(userId, userRole, { id: analyse.id, organizationId: directOrgId }) : []
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
         {/* Méthodes à saisie directe : largeur étendue (tableau brut / actuel / résiduel). */}
         <main id="main-content" className="max-w-6xl mx-auto px-4 py-8">
+          {methode === 'PROJET_360'
+            ? <VueAnalyseProjet active="projet" projet={{ id: analyse.id, nom: analyse.nom }} analyses={analysesProjet} />
+            : projetLie
+              ? <VueAnalyseProjet active="analyse" projet={projetLie} analyses={[{ id: analyse.id, nom: analyse.nom }]} />
+              : !analyse.projetSourceId && editable && directOrgConfig.projets360Active && <div className="mb-4"><AssocierProjet analyseId={analyse.id} /></div>}
           <header className="mb-6">
             <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-sm text-gray-500 mb-2">
               <Link href={`/analyses/${analyse.id}`} className="hover:text-gray-600">
@@ -190,13 +208,19 @@ export default async function AtelierPage({
             withVulnerabilites={methode === 'ISO_27005'}
             scale={directScale} appetit={directAppetit} ownerSuggestions={directOwnerSuggestions}
             contexteSave={t.contexteEditor.save} contexteSaved={t.contexteEditor.saved}
-            perimetrePlaceholder={t.contexteEditor.perimetrePlaceholder} objectifsPlaceholder={t.contexteEditor.objectifsPlaceholder}
+            perimetrePlaceholder={t.contexteEditor.perimetrePlaceholder} objectifsPlaceholder={methode === 'PROJET_360' ? t.projet360.objectifsPlaceholder : t.contexteEditor.objectifsPlaceholder}
             initialPhaseKey={typeof resolvedSearchParams.phase === 'string' ? resolvedSearchParams.phase : undefined}
             projet360={methode === 'PROJET_360' ? {
               answers: sanitizeAnswers360((analyse as { qualification?: unknown }).qualification) as Record<string, boolean>,
               sources: sanitizeSources360((analyse as { qualification?: unknown }).qualification),
               appetitSeuil: directAppetit.seuilGlobal ?? null,
               tiers: analyse.partiesPrenantes.map(p => ({ id: p.id, nom: p.nom, type: p.type })),
+              suppression: { role: suppressionRole, validationActive: directOrgConfig.projetSuppressionValidation, petiteStructure: directOrgConfig.petiteStructure },
+              miseEnService: analyse.dateEcheance ? analyse.dateEcheance.toISOString().slice(0, 10) : null,
+              contexte: {
+                nom: analyse.nom, organisation: analyse.organisation ?? null, secteur: analyse.secteur ?? null, sousSecteur: analyse.sousSecteur ?? null,
+                sousSecteurs: sousSecteursOf(analyse), patternsArchi: patternsOf(analyse),
+              },
             } : undefined}
           />
         </main>
@@ -325,6 +349,8 @@ export default async function AtelierPage({
       />
 
       <main id="main-content" className={`${conseilsActive ? 'max-w-6xl' : 'max-w-4xl'} mx-auto px-4 py-8`}>
+        <VueAnalyseProjet active="analyse" projet={projetLie} analyses={[{ id: analyse.id, nom: analyse.nom }]} />
+        {!projetLie && !analyse.projetSourceId && editable && projets360Actif && <div className="mb-4"><AssocierProjet analyseId={analyse.id} /></div>}
         {/* Header atelier */}
         <header className="mb-8">
           <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-sm text-gray-500 mb-2">

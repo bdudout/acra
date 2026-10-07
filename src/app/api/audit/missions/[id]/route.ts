@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { accesResultats } from '@/lib/acces-resultats.server'
+import { visibiliteMission } from '@/lib/acces-resultats'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -56,8 +58,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
     },
   })
   if (!mission) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+  // Résultats réservés aux interlocuteurs concernés (lib/acces-resultats) : sinon introuvable, ou ses seuls constats.
+  const vue = visibiliteMission(mission, mission.constats, await accesResultats(c.userId, c.userRole as UserRole))
+  if (!vue.visible) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
   const now = new Date()
-  const { constats, ...entete } = mission
+  const { constats: _tous, ...enteteComplet } = mission
+  void _tous
+  const constats = vue.constats
+  const entete = vue.complete ? enteteComplet : { ...enteteComplet, rapports: [] }
   return NextResponse.json({
     mission: { ...entete, champs: valeursVisibles(sanitizeChampsConfig(c.champsPersonnalises).mission ?? [], entete.champs, c.userRole) },
     constats: constats.map(({ riskItem, ...c2 }) => ({

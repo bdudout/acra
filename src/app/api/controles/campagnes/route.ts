@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { accesResultats } from '@/lib/acces-resultats.server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -24,17 +25,23 @@ async function ctx(session: { user: { id: string; role?: string } }) {
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
   if (!orgId) return NextResponse.json({ active: false, campagnes: [], controles: [] })
   const cfg = await getOrgConfig(orgId)
   if (!cfg.controlePermanentActive) return NextResponse.json({ active: false, campagnes: [], controles: [] })
 
-  const [rows, controles, execs] = await Promise.all([
+  const [toutesCampagnes, tousControles, execs] = await Promise.all([
     prisma.campagneControle.findMany({ where: { organizationId: orgId }, orderBy: [{ createdAt: 'desc' }] }),
-    prisma.controle.findMany({ where: { organizationId: orgId }, select: { id: true, intitule: true, niveau: true, actif: true }, orderBy: [{ intitule: 'asc' }] }),
+    prisma.controle.findMany({ where: { organizationId: orgId }, select: { id: true, intitule: true, niveau: true, actif: true, responsable: true }, orderBy: [{ intitule: 'asc' }] }),
     prisma.controleExecution.findMany({ where: { organizationId: orgId }, select: { controleId: true, dateRealisation: true, resultat: true } }),
   ])
-  const executions: ExecutionControleLite[] = execs.map(e => ({ controleId: e.controleId, dateRealisation: e.dateRealisation, resultat: e.resultat }))
+  // Résultats réservés aux interlocuteurs concernés : campagnes qui portent au moins un de leurs contrôles, et ces seuls contrôles.
+  const acces = await accesResultats(userId, userRole as UserRole)
+  const controles = (acces.tout ? tousControles : tousControles.filter(c => acces.concerne(c.responsable))).map(({ responsable: _r, ...c }) => { void _r; return c })
+  const miens = new Set(controles.map(c => c.id))
+  const ids = (v: unknown) => (Array.isArray(v) ? (v as string[]) : [])
+  const rows = acces.tout ? toutesCampagnes : toutesCampagnes.filter(c => ids(c.controleIds).some(id => miens.has(id))).map(c => ({ ...c, controleIds: ids(c.controleIds).filter(id => miens.has(id)), rapports: [] }))
+  const executions: ExecutionControleLite[] = execs.filter(e => acces.tout || miens.has(e.controleId)).map(e => ({ controleId: e.controleId, dateRealisation: e.dateRealisation, resultat: e.resultat }))
   const now = new Date()
 
   const dureeAnnees = cleanArchivageDuree(cfg.archivageMissionsAnnees)

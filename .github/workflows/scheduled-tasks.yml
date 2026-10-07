@@ -28,6 +28,7 @@ on:
     - cron: '0 2 * * *'   # quotidien 02:00 — snapshots de conformité (mode AUTO)
     - cron: '0 5 * * *'   # quotidien 05:00 — brouillons de rapports planifiés
     - cron: '0 6 * * *'   # quotidien 06:00 — relances : un e-mail de synthèse par personne
+    - cron: '0 3 1 * *'   # le 1er du mois 03:00 — instantané mensuel d'appétence (RAS / RAD)
     - cron: '0 8 1 * *'   # le 1er du mois 08:00 — tableau de bord mensuel (RSSI, gestionnaires des risques)
   workflow_dispatch:
     inputs:
@@ -41,6 +42,7 @@ on:
           - alertes-dora
           - rapports-planifies
           - tableau-bord-mensuel
+          - appetence-snapshots
 
 # Le workflow n'écrit rien dans le dépôt : aucun privilège nécessaire.
 permissions: {}
@@ -68,6 +70,7 @@ jobs:
             '0 2 * * *')  TASK=conformite-snapshots ;;
             '0 5 * * *')  TASK=rapports-planifies ;;
             '0 6 * * *')  TASK=relances ;;
+            '0 3 1 * *')  TASK=appetence-snapshots ;;
             '0 8 1 * *')  TASK=tableau-bord-mensuel ;;
             *)            TASK="${MANUAL:-}" ;;
           esac

@@ -6,6 +6,8 @@
 // vers les données de création Prisma. Testable sans DB.
 
 import { cleanRisque, cleanMesure } from '@/lib/import-sanitize'
+import { sanitizeDirectRisque } from '@/lib/risque-direct'
+import { computeRiskScore } from '@/lib/risk-scale'
 import { cleanPlanActionInput, type PlanActionInput, type CleanPlanAction } from '@/lib/plan-action'
 import { CONFORMITE_STATUTS, type ConformiteStatut } from '@/lib/conformite'
 
@@ -14,7 +16,7 @@ export const PROPOSAL_STATUS = ['EN_ATTENTE', 'ACCEPTEE', 'REJETEE'] as const
 export type ProposalStatus = (typeof PROPOSAL_STATUS)[number]
 
 /** Types de propositions supportés (extensible aux phases suivantes). */
-export const PROPOSAL_TYPES = ['risk', 'measure', 'plan_action', 'conformite'] as const
+export const PROPOSAL_TYPES = ['risk', 'measure', 'plan_action', 'conformite', 'projet360', 'analysis_import', 'analysis_create', 'pssi'] as const
 export type ProposalType = (typeof PROPOSAL_TYPES)[number]
 
 /**
@@ -22,46 +24,76 @@ export type ProposalType = (typeof PROPOSAL_TYPES)[number]
  * proposition se rattache (mêmes origines que le plan d'action unifié /
  * `PlanActionLien`). Une proposition « ne tombe pas du ciel ».
  */
-export const PROPOSAL_TARGET_TYPES = ['ANALYSE', 'RISQUE', 'CONFORMITE', 'CONTROLE', 'AUDIT', 'INCIDENT'] as const
+export const PROPOSAL_TARGET_TYPES = ['ANALYSE', 'RISQUE', 'CONFORMITE', 'CONTROLE', 'AUDIT', 'INCIDENT', 'ORGANISATION'] as const
 export type ProposalTargetType = (typeof PROPOSAL_TARGET_TYPES)[number]
 
 /** Stratégies de traitement valides (enum Prisma StrategieTraitement). */
 export const STRATEGIES = ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER'] as const
 export type Strategie = (typeof STRATEGIES)[number]
 
-/** Payload assaini d'une proposition de risque (atelier 5). */
+/** Mesure et plan d'action portés par une proposition de risque (créés avec le risque à l'acceptation). */
+export interface RiskProposalMesure { nom: string; type: MeasureType }
+export interface RiskProposalPlan { titre: string; porteur?: string; echeance: string | null; priorite: 'CRITIQUE' | 'MAJEUR' | 'MODERE' }
+
+/** Payload assaini d'une proposition de risque (analyse à saisie directe, projet 360 compris). */
 export interface RiskProposalPayload {
   nom: string
   gravite: number
   vraisemblance: number
   niveauRisque: number
+  graviteActuelle: number
+  vraisemblanceActuelle: number
+  niveauActuel: number
+  graviteResiduelle: number
+  vraisemblanceResiduelle: number
+  niveauResiduel: number
   strategie: Strategie
   description?: string
-  niveauResiduel?: number
+  /** Domaine projet 360 (CYBER, IT, PROJECT, BUSINESS, FRAUD, OUTSOURCING). */
+  domaine?: string
+  mesures?: RiskProposalMesure[]
+  plans?: RiskProposalPlan[]
 }
 
+const MAX_ENFANTS = 10
+const PRIORITES_PLAN = ['CRITIQUE', 'MAJEUR', 'MODERE'] as const
+const texte = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '')
+
 /**
- * Assainit une proposition de risque fournie par l'agent : réutilise `cleanRisque`
- * (troncature/clamp), normalise la stratégie vers l'enum (défaut REDUIRE) et
- * **recalcule** `niveauRisque = gravite × vraisemblance` (source de vérité, jamais
- * la valeur fournie). Ne fait jamais confiance aux entrées.
+ * Assainit une proposition de risque fournie par l'agent, comme une saisie directe (`sanitizeDirectRisque`) :
+ * cotations bornées à l'échelle de l'organisation (`maxNiveau` : 4 ou 5), actuel ← brut et résiduel ← actuel par
+ * défaut, puis **cohérence imposée** (actuel ≤ brut, résiduel ≤ actuel) et niveaux **recalculés** (jamais les valeurs
+ * fournies). Domaine 360 connu seulement ; mesures et plans nettoyés et bornés. Ne fait jamais confiance aux entrées.
  */
-export function sanitizeRiskProposal(input: unknown): RiskProposalPayload {
+export function sanitizeRiskProposal(input: unknown, maxNiveau = 4): RiskProposalPayload {
   const obj = (input && typeof input === 'object') ? (input as Record<string, unknown>) : {}
-  const c = cleanRisque(obj)
-  const gravite = c.gravite as number
-  const vraisemblance = c.vraisemblance as number
-  const strategie: Strategie = STRATEGIES.includes(String(c.strategie) as Strategie)
-    ? (String(c.strategie) as Strategie)
-    : 'REDUIRE'
+  const d = sanitizeDirectRisque({ ...obj, nom: cleanRisque(obj).nom }, maxNiveau)
+  const gA = Math.min(d.graviteActuelle, d.gravite), vA = Math.min(d.vraisemblanceActuelle, d.vraisemblance)
+  const gR = Math.min(d.graviteResiduelle, gA), vR = Math.min(d.vraisemblanceResiduelle, vA)
+  const mesures = (Array.isArray(obj.mesures) ? obj.mesures : []).flatMap(m => {
+    const o = (m && typeof m === 'object') ? m as Record<string, unknown> : {}
+    const nom = texte(o.nom, 255)
+    return nom ? [{ nom, type: (MEASURE_TYPES as readonly string[]).includes(String(o.type)) ? o.type as MeasureType : 'PREVENTIVE' as const }] : []
+  }).slice(0, MAX_ENFANTS)
+  const plans = (Array.isArray(obj.plans) ? obj.plans : []).flatMap(pl => {
+    const o = (pl && typeof pl === 'object') ? pl as Record<string, unknown> : {}
+    const titre = texte(o.titre, 255)
+    if (!titre) return []
+    const porteur = texte(o.porteur, 120)
+    const echeance = typeof o.echeance === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(o.echeance) && !Number.isNaN(Date.parse(o.echeance)) ? o.echeance : null
+    const priorite = (PRIORITES_PLAN as readonly string[]).includes(String(o.priorite)) ? o.priorite as RiskProposalPlan['priorite'] : 'MAJEUR'
+    return [{ titre, ...(porteur ? { porteur } : {}), echeance, priorite }]
+  }).slice(0, MAX_ENFANTS)
   return {
-    nom: c.nom as string,
-    gravite,
-    vraisemblance,
-    niveauRisque: gravite * vraisemblance, // autorité : jamais la valeur fournie
-    strategie,
-    ...(c.description != null ? { description: c.description as string } : {}),
-    ...(c.niveauResiduel != null ? { niveauResiduel: c.niveauResiduel as number } : {}),
+    nom: d.nom,
+    gravite: d.gravite, vraisemblance: d.vraisemblance, niveauRisque: computeRiskScore(d.gravite, d.vraisemblance),
+    graviteActuelle: gA, vraisemblanceActuelle: vA, niveauActuel: computeRiskScore(gA, vA),
+    graviteResiduelle: gR, vraisemblanceResiduelle: vR, niveauResiduel: computeRiskScore(gR, vR),
+    strategie: d.strategie,
+    ...(d.description != null ? { description: d.description } : {}),
+    ...(d.domaine ? { domaine: d.domaine } : {}),
+    ...(mesures.length ? { mesures } : {}),
+    ...(plans.length ? { plans } : {}),
   }
 }
 
@@ -75,16 +107,9 @@ export function isRiskProposalValid(p: RiskProposalPayload): boolean {
  * Prisma `Risque` (rattaché à l'analyse cible). N'inclut que des champs sûrs.
  */
 export function riskProposalToCreate(payload: RiskProposalPayload, analyseId: string) {
-  return {
-    analyseId,
-    nom: payload.nom,
-    gravite: payload.gravite,
-    vraisemblance: payload.vraisemblance,
-    niveauRisque: payload.niveauRisque,
-    strategie: payload.strategie,
-    ...(payload.description != null ? { description: payload.description } : {}),
-    ...(payload.niveauResiduel != null ? { niveauResiduel: payload.niveauResiduel } : {}),
-  }
+  const { mesures: _m, plans: _p, ...risque } = payload
+  void _m; void _p
+  return { analyseId, ...risque }
 }
 
 // ── Propositions de MESURE (atelier 5 — traitement) ──────────────────────────

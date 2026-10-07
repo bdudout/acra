@@ -15,7 +15,10 @@ import { resolveAuditConfig, type AuditConfig } from './audit-config'
 import { calculerRappels } from './audit-rappels'
 import { prochaineEcheance, etatEcheance, type Periodicite } from './controle'
 import { needsExpiryAlert, joursAvantExpiration, type DerogationStatut } from './derogation'
+import { cheminRelance } from '@/lib/relances-chemins'
 import { sanitizeApprobations } from './projet360'
+import { relanceHomologation } from './homologation'
+import { validateurSuppression } from './projet360-suppression'
 import { peutDefinir2eLigne, type UserRole } from './permissions'
 import { sendEmail } from './email'
 import { relancesEmail, type RelanceItem } from './email-i18n'
@@ -27,15 +30,6 @@ import { auditLog } from './logger'
 const GOUVERNANCE = ['RSSI', 'ADMIN', 'RISK_MANAGER']
 // Recommandations d'audit : l'audité (gouvernance) pour l'échéance, l'audit pour la vérification.
 const AUDIT_ROLES = { AUDITE: GOUVERNANCE, AUDIT: ['AUDITEUR', 'ADMIN'] }
-// Page ouverte par le lien de l'e-mail : celle du premier élément listé.
-const CHEMINS: Record<RelanceItem['categorie'], string> = {
-  QUESTIONNAIRE: '/controles/questionnaires', PRECONISATION: '/controles/questionnaires', PRECONISATION_A_VERIFIER: '/controles/questionnaires',
-  PLAN_ACTION: '/plans-actions', ANALYSE_A_APPROUVER: '/analyses', PROJET360_A_APPROUVER: '/projets',
-  DEROGATION_AVIS: '/derogations', DEROGATION_DOUBLE_REGARD: '/derogations', DEROGATION_VALIDATION: '/derogations', DEROGATION_EXPIRATION: '/derogations',
-  CONSTAT_AUDIT: '/audit', CONSTAT_A_VERIFIER: '/audit', CONTROLE_A_EXECUTER: '/controles',
-  CONTRAT_TIC: '/registre-tic', TEST_RESILIENCE: '/reglementaire/tests-resilience', KRI_MESURE: '/kri', DOCUMENT_A_REVOIR: '/documents',
-  CAMPAGNE_CONTROLE: '/controles/campagnes', MISSION_AUDIT: '/audit', ANALYSE_ECHEANCE: '/analyses', INVITATION: '/configuration/entites', ACCEPTATION_RISQUES: '/analyses',
-}
 // Ordre de l'e-mail : le plus urgent d'abord.
 const URGENCE: Record<RelanceItem['type'], number> = { EN_RETARD: 0, EN_ATTENTE: 1, ECHEANCE_PROCHE: 2, PERIODIQUE: 3 }
 
@@ -43,7 +37,7 @@ type Destinataire = { email: string; locale: string | null }
 type Membre = { role: string; user: { id: string; email: string; name: string | null; isActive: boolean; locale: string | null } }
 type Config = {
   relances: RelancesConfig; controle: boolean; audit: boolean; auditConfig: AuditConfig; derogations: boolean; derogationAlerteJours: number; secondeLigne: boolean
-  reglementaire: boolean; kri: boolean; conformite: boolean; acceptationRisques: boolean; petiteStructure: boolean
+  reglementaire: boolean; kri: boolean; homologations: boolean; conformite: boolean; acceptationRisques: boolean; petiteStructure: boolean
 }
 
 export interface ResultatRelances {
@@ -105,7 +99,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     }),
   ])
   // Sources « à échéance » et décisions complémentaires.
-  const [contrats, tests, kris, documents, campagnes, missions, analysesEcheance, acceptations, invitations] = await Promise.all([
+  const [contrats, tests, kris, documents, campagnes, missions, analysesEcheance, acceptations, invitations, homologations, suppressions] = await Promise.all([
     prisma.arrangementTic.findMany({ where: { dateFin: { not: null } }, select: { id: true, organizationId: true, reference: true, prestataireNom: true, dateFin: true, createdAt: true, rappelLe: true }, take: 10000 }),
     prisma.testResilience.findMany({ where: { statut: { in: ['PLANIFIE', 'EN_COURS'] }, datePrevue: { not: null } }, select: { id: true, organizationId: true, intitule: true, datePrevue: true, createdAt: true, rappelLe: true }, take: 10000 }),
     prisma.kri.findMany({ where: { actif: true }, select: { id: true, organizationId: true, intitule: true, frequence: true, responsable: true, createdAt: true, rappelLe: true, mesures: { orderBy: { dateMesure: 'desc' }, take: 1, select: { dateMesure: true } } }, take: 10000 }),
@@ -115,6 +109,8 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     prisma.analyse.findMany({ where: { statut: { in: ['EN_COURS', 'REJETE'] }, dateEcheance: { not: null } }, select: { id: true, organizationId: true, nom: true, userId: true, dateEcheance: true, createdAt: true, rappelEcheanceLe: true }, take: 10000 }),
     prisma.analyse.findMany({ where: { statut: 'APPROUVE', risquesResiduelsStatut: 'EN_ATTENTE' }, select: { id: true, organizationId: true, nom: true, userId: true, approuveLe: true, updatedAt: true, rappelLe: true }, take: 10000 }),
     prisma.orgInvitation.findMany({ where: { acceptedAt: null }, select: { id: true, organizationId: true, email: true, invitedById: true, expiresAt: true, createdAt: true, rappelLe: true }, take: 10000 }),
+    prisma.homologation.findMany({ where: { statut: { in: ['HOMOLOGUE', 'HOMOLOGUE_RESERVES'] } }, select: { id: true, organizationId: true, systeme: true, statut: true, dateFin: true, rappelLe: true, preparePar: true, autoriteId: true }, take: 10000 }),
+    prisma.risque.findMany({ where: { suppressionDemandeeLe: { not: null }, analyse: { methode: 'PROJET_360', deletedAt: null } }, select: { id: true, nom: true, domaine: true, analyseId: true, suppressionDemandeeLe: true, suppressionRappelLe: true, analyse: { select: { organizationId: true, nom: true } } }, take: 10000 }),
   ])
   // Versions remplacées d'un document : seule la version en vigueur est à revoir.
   const remplaces = new Set((documents.length ? await prisma.document.findMany({ where: { remplaceId: { in: documents.map(d => d.id) } }, select: { remplaceId: true } }) : []).map(d => d.remplaceId))
@@ -130,7 +126,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
         relances: sanitizeRelancesConfig(c.relancesConfig), controle: c.controlePermanentActive,
         audit: c.auditInterneActive, auditConfig: resolveAuditConfig(c.auditConfig),
         derogations: c.derogationsActive, derogationAlerteJours: c.derogationAlerteJours ?? 30, secondeLigne: c.secondeLigneActive,
-        reglementaire: !!c.reglementaireActive, kri: !!c.kriActive, conformite: c.conformiteActive, acceptationRisques: c.acceptationRisquesActive, petiteStructure: c.petiteStructure,
+        reglementaire: !!c.reglementaireActive, kri: !!c.kriActive, homologations: !!c.homologationsActive, conformite: c.conformiteActive, acceptationRisques: c.acceptationRisquesActive, petiteStructure: c.petiteStructure,
       })
     }
     return cfgCache.get(orgId)!
@@ -179,7 +175,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     questionnaires: [] as string[], preconisations: [] as string[], plansAction: [] as string[], preconisationsAVerifier: [] as string[],
     analyses: [] as string[], derogations: [] as string[], constatsAudit: [] as string[], controles: [] as string[], derogationsExpiration: [] as string[],
     contratsTic: [] as string[], testsResilience: [] as string[], kri: [] as string[], documents: [] as string[], campagnes: [] as string[],
-    missionsAudit: [] as string[], analysesEcheance: [] as string[], acceptationsRisques: [] as string[], invitations: [] as string[],
+    missionsAudit: [] as string[], analysesEcheance: [] as string[], acceptationsRisques: [] as string[], invitations: [] as string[], homologations: [] as string[], suppressions: [] as string[],
   }
 
   // ─── Éléments à traiter ───
@@ -251,6 +247,17 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     await auditLog('DEROGATION_EXPIRING', { organizationId: d.organizationId, details: { derogationId: d.id, jours, recipients: new Set(dests.map(x => x.email.toLowerCase())).size } })
   }
 
+  // Homologations à renouveler ou expirées : à la gouvernance, au préparateur et à l'autorité (module actif).
+  for (const h of homologations) {
+    const cfg = await cfgOf(h.organizationId)
+    const type = cfg.homologations ? relanceHomologation(h, now) : null
+    if (!type) continue
+    const dests = [...await parRoles(h.organizationId, GOUVERNANCE), ...await destsParIds(h.organizationId, [h.preparePar, h.autoriteId].filter((v): v is string => !!v))]
+    ajouter(h.organizationId, dests, { categorie: 'HOMOLOGATION_RENOUVELLEMENT', intitule: h.systeme, type, echeance: jour(h.dateFin) })
+    marques.homologations.push(h.id)
+    await auditLog('HOMOLOGATION_EXPIRING', { organizationId: h.organizationId, targetId: h.id, targetType: 'homologation', details: { type } })
+  }
+
   // ─── Décisions en attente ───
   for (const p of aVerifier) {
     const cfg = await cfgOf(p.organizationId)
@@ -270,7 +277,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     const ids = approbateursAnalyse((await decideurs(a.organizationId)).map(m => ({ role: m.role, userId: m.user.id })), {
       auteurId: a.userId, projet360, rolesDejaApprouves: sanitizeApprobations(a.approbations).map(x => x.role), acces: a.accesUtilisateurs,
     }, { petiteStructure: cfg.petiteStructure })
-    ajouter(a.organizationId, await destsParIds(a.organizationId, ids), { categorie: projet360 ? 'PROJET360_A_APPROUVER' : 'ANALYSE_A_APPROUVER', intitule: a.nom, type: 'EN_ATTENTE', echeance: jour(depuis) })
+    ajouter(a.organizationId, await destsParIds(a.organizationId, ids), { categorie: projet360 ? 'PROJET360_A_APPROUVER' : 'ANALYSE_A_APPROUVER', intitule: a.nom, type: 'EN_ATTENTE', echeance: jour(depuis), chemin: projet360 ? `/projets/${a.id}` : `/analyses/${a.id}` })
     marques.analyses.push(a.id)
   }
   for (const d of derogationsRevue) {
@@ -365,13 +372,26 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     marques.acceptationsRisques.push(a.id)
   }
 
+  // Projet 360 : demandes de suppression d'un risque en attente — au validateur (RM, ou RSSI si risque cyber),
+  // aux administrateurs à défaut.
+  for (const r of suppressions) {
+    const orgId = r.analyse.organizationId
+    if (!orgId || !r.suppressionDemandeeLe) continue
+    const cfg = await cfgOf(orgId)
+    if (!relanceAttenteDue({ depuis: r.suppressionDemandeeLe, rappelLe: r.suppressionRappelLe }, cfg.relances, now)) continue
+    const roles = cfg.petiteStructure ? ['RSSI', 'RISK_MANAGER'] : [validateurSuppression(r.domaine)]
+    const dests = await parRoles(orgId, roles)
+    ajouter(orgId, dests.length ? dests : await parRoles(orgId, ['ADMIN']), { categorie: 'SUPPRESSION_RISQUE', intitule: `${r.nom} (${r.analyse.nom})`, type: 'EN_ATTENTE', echeance: jour(r.suppressionDemandeeLe), chemin: `/analyses/${r.analyseId}/atelier/1?phase=appreciation` })
+    marques.suppressions.push(r.id)
+  }
+
   // ─── Envoi : un e-mail de synthèse par personne ───
   const orgIds = [...new Set([...boite.values()].flatMap(e => e.items.map(i => i.orgId)))]
   const orgs = new Map((orgIds.length ? await prisma.organization.findMany({ where: { id: { in: orgIds } }, select: { id: true, nom: true } }) : []).map(o => [o.id, o.nom]))
   let emailsSent = 0, emailsSkipped = 0
   for (const { email, locale, items } of boite.values()) {
     const tries = [...items].sort((a, b) => URGENCE[a.type] - URGENCE[b.type] || (orgs.get(a.orgId) ?? '').localeCompare(orgs.get(b.orgId) ?? ''))
-    const mail = relancesEmail(locale, { items: tries.map(({ orgId, ...i }) => ({ ...i, organisation: orgs.get(orgId) ?? '' })), url: appUrl(CHEMINS[tries[0].categorie]) })
+    const mail = relancesEmail(locale, { items: tries.map(({ orgId, ...i }) => ({ ...i, organisation: orgs.get(orgId) ?? '' })), url: appUrl(cheminRelance(tries[0])) })
     const res = await sendEmail({ to: email, subject: mail.subject, text: mail.text, html: mail.html })
     if (res.ok) emailsSent++; else emailsSkipped++
   }
@@ -395,11 +415,13 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     maj(marques.constatsAudit, ids => prisma.auditConstat.updateMany({ where: { id: { in: ids } }, data: { rappelLe: now } })),
     maj(marques.controles, ids => prisma.controle.updateMany({ where: { id: { in: ids } }, data: { alerteeLe: now } })),
     maj(marques.derogationsExpiration, ids => prisma.derogation.updateMany({ where: { id: { in: ids } }, data: { alerteeLe: now } })),
+    maj(marques.homologations, ids => prisma.homologation.updateMany({ where: { id: { in: ids } }, data: { rappelLe: now } })),
+    maj(marques.suppressions, ids => prisma.risque.updateMany({ where: { id: { in: ids } }, data: { suppressionRappelLe: now } })),
   ])
 
   return {
     checked: reponses.length + preconisations.length + plans.length + aVerifier.length + analyses.length + derogationsRevue.length + constats.length + controles.length + derogationsActives.length
-      + contrats.length + tests.length + kris.length + documents.length + campagnes.length + missions.length + analysesEcheance.length + acceptations.length + invitations.length,
+      + contrats.length + tests.length + kris.length + documents.length + campagnes.length + missions.length + analysesEcheance.length + acceptations.length + invitations.length + homologations.length + suppressions.length,
     reminded: Object.fromEntries(Object.entries(marques).map(([k, v]) => [k, v.length])),
     emailsSent, emailsSkipped,
   }

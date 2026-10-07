@@ -90,7 +90,7 @@ El **método de análisis** se configura a nivel de **instancia** (SUPER_ADMIN) 
 - **Mención de protección** del documento de análisis (no protegida → confidencial), en la portada y las exportaciones
 - **Versionado x.y** de los análisis e **historial de revisiones** (ciclo operativo/estratégico)
 - **Cartografía de amenaza del ecosistema** (Taller 3, ficha de método 5 de ANSSI): peligrosidad de las partes interesadas calculada con 4 subcriterios, radar polar de 3 zonas, escalas configurables, marcado de terceros críticos — [ver detalle](#️-cartografía-de-amenaza-del-ecosistema-taller-3)
-- Vista transversal de **Terceros**: gestión de terceros (*third-party management*) a escala de la organización, agregada sobre todos los análisis, filtrable por zona y criticidad
+- **Servicios y actores terceros**: partes interesadas (*third-party management*) agregadas sobre todos los análisis, filtrables por zona y criticidad — [ver el detalle](#-terceros-servicios-entidades-y-contratos)
 
 ### 🔐 Seguridad y marcos
 
@@ -126,6 +126,19 @@ Módulo activable por organización (desactivado por defecto). La madurez es una
 
 Riesgo operacional completo de un proyecto, enfoque **ISO 31000:2018**: cuestionario de cualificación sobre **seis dominios** (ciber, TI — arquitectura y mantenimiento —, proyecto, negocio, fraude, externalización) que propone los riesgos que estudiar; riesgos clasificados por dominio; **importación de los riesgos de un análisis ciber existente** (EBIOS RM, ISO/IEC 27005, NIST SP 800-30); **cuadro de mando por dominio**; aprobación por el **RSSI y el Risk Manager** (dos dictámenes distintos). Los proyectos se lanzan desde la pestaña **Proyectos** (módulo «Proyectos 360», activo por defecto, ajustable en Configuración → Funcionalidades); el cuestionario se **rellena previamente con los datos existentes** (análisis ciber, registro TIC, procesos, registro RGPD, DORA) y se proponen los riesgos del registro, sin crear duplicados. Un proyecto puede además **servir de punto de partida de un análisis cibernético** (botón en la pestaña Proyectos o selector al crear), y el **cuadro de mando GRC** sigue el avance, los plazos, la validación CISO + Risk Manager y los riesgos altos de todos los proyectos.
 
+- **Creación estructurada**: nombre, objetivos, fecha de puesta en servicio, sector, **subsectores** y **patrones de arquitectura del SI**; riesgos y planes de acción presentes por defecto en cada proyecto (configurables por la organización).
+- **Riesgos tipo para importar** en la fase de identificación: catálogo completo agrupado por origen (registro de la organización, subsectores, arquitectura, sector, riesgos comunes a todos), contexto modificable en el sitio, casillas e importación agrupada.
+- **Página del proyecto**: meteorología fijada por el jefe de proyecto, indicadores, matriz **bruto / actual / residual** filtrable por categoría, riesgos numerados **R1, R2…** de forma estable (matriz, planes de acción, exportación), planes de acción por prioridad editables (responsable, plazo, estado, prioridad en color), curva de los planes pendientes frente a la puesta en servicio, validación y aceptación de los residuales en la página.
+- **Exportación PowerPoint** de la revisión del proyecto: portada, síntesis ejecutiva, cartografías actual y residual, avance de los planes.
+- **Proyectos y análisis cyber vinculados** en ambos sentidos («Asociar un análisis cyber», «Asociar un proyecto»), con cambio de vista; listas de análisis y de proyectos en **vista detallada o lista simple**.
+
+### 🤝 Terceros: servicios, entidades y contratos
+
+- **Servicios y actores terceros**: cada parte interesada estudiada en un análisis (servicio prestado, dependencia, actor del ecosistema), consolidada en todos los análisis, con su amenaza y su zona.
+- **Entidades de terceros**: la persona jurídica (LEI, país, alias) que presta estos servicios; vincula los servicios de terceros de los análisis con los **contratos del registro TIC** y con sus ofertas y usos. Creación sin duplicados, fusión con vista previa, coincidencias propuestas (LEI, nombre, alias) pero nunca aplicadas sin un clic.
+- **Importación de entidades desde los servicios de terceros**, **grafo de vínculos** de una entidad (servicios de terceros ↔ entidad ↔ contratos), vinculación y desvinculación de servicios de terceros y contratos.
+- **Registro de información sobre TIC** (DORA, art. 28, apartado 3): importación guiada de contratos (CSV / Excel), contratos de grupo propuestos a las filiales y confirmados por ellas, cobertura de las ofertas por contrato.
+
 ### 🧭 Gobernanza del riesgo
 
 - **Apetito de riesgo (RAS / RAD)**: declaración de apetito (umbrales por categoría, madurez objetivo) y cuadro de mando (riesgos por encima del apetito, brechas de madurez, KRI en alerta) con indicadores de estado
@@ -144,6 +157,15 @@ Riesgo operacional completo de un proyecto, enfoque **ISO 31000:2018**: cuestion
 
 - **Registro de actividades de tratamiento (RAT — RGPD art. 30)**: registro por organización reservado al **DPD**, con **control de exhaustividad** (finalidad, categorías de personas/datos, destinatarios, plazo de conservación, medidas de seguridad, garantías de transferencia fuera de la UE)
 - **Ayuda a la decisión EIPD (art. 35)**: detección automática de tratamientos que requieren una evaluación de impacto (datos de categorías especiales art. 9, observación sistemática a gran escala)
+- **Tratamientos tipo para importar** línea por línea (registro modelo simplificado, 5 idiomas)
+
+### 🤖 Registro de IA — algoritmos y sistemas de inteligencia artificial
+
+Módulo activable por organización (desactivado por defecto), reservado a la gobernanza (ADMIN, RSSI, Risk Manager, Cumplimiento, DPD).
+
+- Ficha por sistema: finalidad, proveedor, datos utilizados (incluidas categorías especiales), ayuda a la decisión o decisión automatizada, supervisión humana, controles de sesgos y deriva, **revisión anual** (retraso señalado), vínculo con el análisis de riesgos y la EIPD.
+- **Clasificación indicativa** con arreglo al **Reglamento (UE) 2024/1689** (Reglamento de Inteligencia Artificial) — probable alto riesgo (anexo III), obligaciones de transparencia (art. 50) o por calificar — siempre presentada como **por verificar** por el asesor jurídico o el DPD.
+- **Sistemas tipo para importar** (asistente de IA generativa, agente conversacional, preselección de candidaturas, detección de fraude, evaluación de la solvencia…), 5 idiomas.
 
 ### 🔌 Interoperabilidad y API
 
@@ -151,6 +173,33 @@ Riesgo operacional completo de un proyecto, enfoque **ISO 31000:2018**: cuestion
 - **Importación masiva** por API (registro de riesgos, controles), con notificación de errores por línea
 - **Webhooks salientes firmados** (HMAC): notificación a un sistema externo (SOAR/SIEM/ITSM) ante eventos (riesgo creado, incidente declarado…), con reintentos y protección anti-SSRF
 - **SSO OIDC + SCIM** (véase *Seguridad*) para conectar la autenticación y el aprovisionamiento al directorio de la empresa
+
+### 🤖 Asistentes de IA (servidor MCP)
+
+Un asistente de IA (Claude, Codex, Mistral Vibe…) se conecta a ACRA mediante el **Model Context Protocol** con una
+clave de organización. **Lee** el contexto, solicita las **recomendaciones calculadas por ACRA** (sin IA externa) y
+**propone**; **nada se escribe sin validación humana** (menú *Propuestas MCP*, con los derechos habituales de cada
+rol). Desactivado por defecto: interruptor de instancia (superadministrador) y de organización (administrador).
+
+- **Lectura**: marcos de referencia y requisitos, taxonomía de riesgos, ejemplos por sector, subsectores y patrones
+  de arquitectura de SI, catálogo sectorial, postura de riesgo, análisis y proyectos 360, regímenes de notificación
+  de incidentes, campos DORA, pruebas de resiliencia
+- **Recomendaciones**: riesgos y escenarios, plan de control
+- **Propuestas**: proyecto 360; **nuevo análisis** redactado a partir de una expresión de necesidades o **recuperación
+  de un análisis existente** (EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30); **PSSI** importada como marco de
+  medidas, documento de la biblioteca y seguimiento de conformidad; riesgos (valoraciones bruta / actual / residual,
+  medidas y planes), medidas, planes de acción, evaluaciones de conformidad, importación en un análisis existente
+- **Actividad MCP** (administrador): claves MCP y su estado, llamadas y errores en 30 días, herramientas más usadas,
+  propuestas por clave, creación de una clave con el único derecho `mcp` y su comando de conexión, **revocación inmediata**
+- Aislamiento estricto por organización, registro de cada llamada (`MCP_TOOL_INVOKED`) y de cada decisión,
+  120 llamadas por minuto y por clave
+
+```bash
+claude mcp add --transport http acra https://<instance>/api/mcp --header "Authorization: Bearer $ACRA_MCP_KEY"
+```
+
+Guía de conexión para un asistente (clave, transporte, herramientas, errores, en francés):
+[`docs/mcp-clients.md`](docs/mcp-clients.md).
 
 ### 🌐 UX y accesibilidad
 
@@ -188,6 +237,15 @@ Riesgo operacional completo de un proyecto, enfoque **ISO 31000:2018**: cuestion
 
 Más allá del análisis de riesgos (EBIOS RM, ISO/IEC 27005, ISO 31000, NIST SP 800-30), ACRA incorpora una **base GRC completa** estructurada según el modelo de las **tres líneas de defensa**, pensada para entidades reguladas (banca, seguros, salud) y alineada con **DORA**, **NIS2** e **ISO/IEC 27001/27002**. Cada módulo se activa por organización; la navegación cambia automáticamente al «modo GRC» en cuanto un módulo de 2.ª/3.ª línea está activo.
 
+Seis menús: **Pilotaje**, **Gestión de riesgos**, **Registros** (riesgos, campañas, procesos, incidentes, TIC, RGPD, IA),
+**Control y auditoría**, **Cumplimiento** y **Regulatorio** (DORA, seguimiento del regulador, pruebas de resiliencia, informes).
+
+**Contenido sectorial**: catálogos de procesos, riesgos, controles tipo, KRI y misiones de auditoría por sector (banca,
+seguros, mutualidades, sanidad, protección social, sector público, industria, defensa, educación, agricultura,
+inmobiliario, medios, turismo, asociaciones…) y por **patrón de arquitectura del SI** (24 patrones: exposición, zonas,
+interconexiones, administración, puestos), importables línea por línea con su procedencia. El administrador puede
+**reducir la lista de sectores propuestos** a su organización.
+
 > Las capturas siguientes proceden del **conjunto de demostración realista** (sector bancario), anclado en amenazas públicas (ENISA Threat Landscape). Cargable y purgable: `npm run db:seed:demo` / `npm run db:seed:demo:purge`.
 
 ### 📊 Pilotaje GRC — cuadro de mando consolidado
@@ -209,6 +267,10 @@ La **cobertura derivada** de un marco: el estado de cada requisito (conforme / p
 ### 🚨 Incidentes y pérdidas — reporting DORA (art. 19)
 
 Declaración en 1.ª línea, calificación en 2.ª línea, pérdidas en lógica **LDC** (bruto, recuperaciones, neto). Cada incidente se **clasifica automáticamente según DORA** (menor / significativo / mayor); para los incidentes mayores, los **plazos de notificación del art. 19** (inicial / intermedio / final) se calculan y se siguen, y el **registro ITS** es exportable.
+
+- **Notificaciones**: una pantalla única para DORA (campos y listas de valores del glosario oficial, complementos del anexo I del Reglamento de Ejecución (UE) 2025/302, exportación Excel y JSON) y los demás regímenes activados — NIS2, RGPD art. 33 (rúbricas, exportación), CRA art. 14, SEC 8-K, NYDFS 500.17, HIPAA, reguladores bancarios estadounidenses (36 h), FTC — con plazos en días o días hábiles, ficha informativa por régimen y recordatorios; la herramienta no transmite nada a la autoridad.
+- **Incidentes tipo** (catálogo de 28 incidentes cyber y no cyber, adaptado a los sectores de la organización) para rellenar una notificación; un incidente puede afectar a **varios riesgos** del registro.
+- **Eliminación recuperable**: un incidente eliminado puede ser restaurado tal cual por un administrador durante 30 días (trazas de auditoría y SIEM).
 
 <img src="docs/screenshots/grc-incidents-light.png" width="49%"> <img src="docs/screenshots/grc-incidents-dark.png" width="49%">
 
@@ -414,11 +476,17 @@ scripts/update-agent.sh --install                      # opcional: activa el bot
 docker compose up -d --build
 ```
 
+**Punto de restauración y reversión automática.** Antes de cambiar nada, la actualización detiene la aplicación y crea un **punto de restauración verificado** (`scripts/acra-snapshot.sh`: volcado de la base en formato custom, documentos, sumas de verificación, clon de la base para una restauración rápida). Si falla la migración, el arranque o el control de salud, la **reversión es automática** (código, base, documentos) y el resultado aparece en Administración → Versión, que también lista los puntos y ofrece **«Volver a este punto»** (hay que escribir la versión para confirmar). Variables: `ACRA_BACKUP_DIR`, `ACRA_SNAPSHOT_KEEP`, `ACRA_BACKUP_AGE_RECIPIENT` (cifrado `age`), `ACRA_FAILED_DB_RETENTION_DAYS`. Espacio en disco necesario: aproximadamente 2 × la base + los documentos. Procedimiento manual: `docs/runbook-exploitation.md` § 6.
+
 ---
 
 ### Copia de seguridad y restauración
 
-Las copias de PostgreSQL están automatizadas en `docker-compose.yml` (rotación de 7 días):
+Las copias de PostgreSQL están automatizadas en `docker-compose.yml` (número de copias conservadas: `BACKUP_KEEP`, 7 por defecto).
+**Administración → Versión** programa **copias diarias, semanales y mensuales** (3 copias por defecto, estimación del espacio
+necesario), ofrece «Hacer copia ahora» y supervisa la **copia externa** de los puntos de restauración (directorio, comando o
+almacenamiento compatible S3); **Administración → Almacenamiento** sigue el espacio ocupado y libera la caché sin impacto.
+Procedimientos: `docs/runbook-exploitation.md`.
 
 ```bash
 # Copia manual
@@ -673,6 +741,51 @@ El radar, las estrellas de criticidad y la tabla de partes interesadas (4 subcri
 
 ACRA trata datos sensibles (análisis de riesgos, cartografía del ecosistema). El despliegue debe seguir los principios de la **guía de higiene informática de ANSSI**: segmentación, defensa en profundidad, mínimo privilegio, autenticación fuerte, registro.
 
+### Visión de conjunto — arquitectura de despliegue completa
+
+El esquema siguiente reúne los componentes de un despliegue de producción: acceso de usuarios y de **asistentes de IA (MCP)**, identidad federada, **registro centralizado** hacia el SIEM y **copia de seguridad externa** verificada. Los casos 1 y 2 detallan después la exposición de red.
+
+```mermaid
+flowchart LR
+  subgraph EXT["Usuarios y herramientas"]
+    U["Usuarios<br/>(navegador)"]
+    IA["Asistentes de IA<br/>locales o soberanos<br/>(Claude, Codex, Mistral…)"]
+    IDP["IdP corporativo<br/>SSO OIDC + MFA"]
+  end
+  subgraph ZONE["Zona ACRA aislada"]
+    RP["Proxy inverso TLS<br/>WAF, HSTS"]
+    APP["ACRA (Next.js)<br/>RBAC 12 roles,<br/>pista de auditoría"]
+    MCP["Servidor MCP<br/>/api/mcp"]
+    API["API v1 + webhooks"]
+    DB[("PostgreSQL<br/>red privada")]
+    DOC[("Documentos<br/>disco o S3")]
+    AG["Agente del host<br/>copias planificadas,<br/>actualizaciones"]
+    BK[("Puntos de restauración<br/>cifrados (age)")]
+  end
+  subgraph SOC["Explotación y seguridad"]
+    SIEM["SIEM<br/>Splunk HEC, Elastic,<br/>syslog-HTTP…"]
+    OFF[("Copia externa<br/>carpeta montada, comando<br/>o almacenamiento S3")]
+    SOAR["SOAR / ITSM"]
+  end
+  U -->|HTTPS| RP --> APP
+  IA -->|"HTTPS + clave «mcp»"| RP --> MCP
+  IDP -.->|"OIDC · SCIM"| APP
+  APP --- MCP
+  APP --- API
+  APP --> DB
+  APP --> DOC
+  APP -->|"eventos de auditoría JSON<br/>por categoría"| SIEM
+  API -->|"webhooks firmados HMAC"| SOAR
+  AG -->|"diaria / semanal / mensual"| BK
+  BK -->|"copia verificada"| OFF
+```
+
+**Asistentes de IA (MCP)** — ACRA no incorpora ninguna IA. Un asistente se conecta a `/api/mcp` con una clave de organización limitada al derecho `mcp`, creada y **revocable** por el administrador (página *Actividad MCP*). Lee, se apoya en las recomendaciones calculadas por ACRA y **propone**: nada se escribe sin validación humana. Preferir un modelo **local o soberano** para los datos sensibles: las respuestas de las herramientas se envían al proveedor del asistente. Guía (en francés): [`docs/mcp-clients.md`](docs/mcp-clients.md).
+
+**Registro centralizado** — cada acción sensible (conexiones, cuentas, configuración, exportaciones, llamadas a herramientas MCP, decisiones sobre propuestas) alimenta la **pista de auditoría** y puede transferirse al **SIEM** en JSON (Splunk HEC, Elastic, syslog-HTTP, webhook de ingesta), **registro por registro** (autenticación, cuentas, configuración, datos, gobernanza). Destinos limitados por lista blanca (`SIEM_ALLOWED_HOSTS`); registros de la aplicación estructurados en la salida estándar para el colector del host.
+
+**Copia de seguridad externa** — el agente del host crea **puntos de restauración** (base de datos + documentos), **cifrados** (`ACRA_BACKUP_AGE_RECIPIENT`), con planificación diaria, semanal y mensual y antes de cada actualización (vuelta atrás automática en caso de fallo). Cada punto se copia **fuera del servidor** (`ACRA_OFFSITE_DRIVER`: `fs` carpeta montada, `command` software de copia corporativo, `s3` almacenamiento compatible S3 mediante rclone), **se relee y se verifica**; un punto no cifrado nunca sale del servidor sin consentimiento explícito. El estado (último envío, retraso, fallo) aparece en *Administración › Versión*. Probar la restauración cada trimestre (`scripts/acra-offsite.sh fetch`).
+
 ### Caso 1 — Alojamiento interno *on-premises* (recomendado)
 
 Alojamiento **en su centro de datos**, detrás de un cortafuegos, sin exposición directa a Internet. Escenario preferente para los datos más sensibles.
@@ -726,8 +839,11 @@ flowchart LR
 |---|---|
 | Autenticación fuerte | **MFA** OTP correo/SMS, ámbito `ALL` o `ADMIN_ONLY` |
 | Identidad federada | **SSO** SAML 2.0 / OIDC con aprovisionamiento automático |
-| Mínimo privilegio | **RBAC** 5 roles + compartición por análisis |
+| Mínimo privilegio | **RBAC** 12 roles (3 líneas de defensa) + compartición por análisis |
 | Trazabilidad | **Pista de auditoría** completa, exportable a CSV |
+| Registro centralizado | Transferencia al **SIEM** registro por registro, lista blanca de destinos |
+| Copia externa | Puntos de restauración **cifrados**, copia externa **verificada** (carpeta, comando, S3) |
+| IA controlada | Ninguna IA incorporada; **MCP**: clave dedicada revocable, validación humana, llamadas registradas |
 | Confidencialidad en tránsito | HTTPS forzado + **cabeceras de seguridad** (CSP, HSTS, X-Frame-Options…) |
 | Protección de secretos | Secretos cifrados (`SECRETS_ENCRYPTION_KEY`), bcrypt (coste 12) |
 | Reversibilidad / tolerancia a errores | **Papelera de 30 días** (soft delete + recuperación admin) |
@@ -821,6 +937,17 @@ Para añadir un idioma, copia `src/lib/i18n/fr.ts`, traduce todas las claves y g
 Los accesos también pueden concederse **análisis por análisis** (compartición puntual con cualquier usuario).
 
 ---
+
+## 💾 Espacio en disco (Docker)
+
+```bash
+make docker-usage   # desglose del espacio usado por Docker (docker system df -v)
+make docker-clean   # tras confirmación: contenedores detenidos del proyecto, imágenes huérfanas, caché de compilación por encima de 5 GB
+make rebuild        # reconstrucción sin caché (make build usa la caché)
+```
+
+`make docker-clean` **nunca** elimina un volumen (base de datos, documentos, copias de seguridad). Los registros de los
+contenedores se limitan a 3 × 10 MB por servicio, y una actualización correcta elimina las imágenes de ACRA anteriores a la versión previa (conservada para un retroceso rápido).
 
 ## 🛠️ Resolución de problemas
 

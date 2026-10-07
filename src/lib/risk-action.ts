@@ -145,3 +145,10 @@ export function summarizeActions(actions: ActionLike[], now: Date): ActionsSumma
   s.tauxAvancement = s.total ? Math.round((s.faits / s.total) * 100) : 0
   return s
 }
+
+/** Pastille colorée d'une priorité de plan d'action (critique rouge, majeur ambre, modéré bleu). */
+export const ACTION_PRIORITE_BADGE: Record<string, string> = {
+  CRITIQUE: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
+  MAJEUR: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
+  MODERE: 'bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300',
+}

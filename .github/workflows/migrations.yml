@@ -1,0 +1,27 @@
+name: Migrations Prisma
+
+# Lot 5 de docs/specs/sauvegarde-rollback-spec.md : une migration nouvelle destructive exige l'en-tête
+# `-- acra:destructive <raison>` ; une migration déjà publiée ne se modifie ni ne se supprime jamais.
+on:
+  pull_request:
+    paths: ['prisma/migrations/**', 'src/lib/migration-policy.ts', 'src/lib/migration-check.ts', 'scripts/check-migrations.ts']
+
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    name: Politique de migrations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0 (runtime Node 24)
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Vérifier les migrations contre la branche de base
+        run: npx tsx scripts/check-migrations.ts --ci --base "origin/${{ github.base_ref }}"

@@ -159,8 +159,17 @@ outils org-scopés à venir (`propose_plan_action`, `propose_conformite_treatmen
   l'acceptation, crée un `PlanAction` + son **lien polymorphe** sous le RBAC de
   gouvernance (`ADMIN/RSSI/RISK_MANAGER/DIRECTION_METIER`), comme `/plans-actions`.
   Vérification d'ancre centralisée (`lib/mcp/anchors.server.ts`).
-- ⬜ `propose_conformite_treatment` + `recommend_risks_scenarios` + intake assisté
-  (phase 5) + tests IDOR MCP étendus.
+- ✅ **(Phase 5, 2026-10)** `recommend_risks_scenarios` — recommandations **calculées par ACRA** (catalogue
+  sectoriel des secteurs de l'organisation + exemples du secteur / sous-secteur de l'analyse), **lecture seule,
+  sans LLM**, hors éléments déjà au registre / dans l'analyse (`lib/mcp/tools-recommend.server.ts`).
+- ✅ **(Phase 5)** Traitement de conformité : couvert par `propose_plan_action` (ancre `CONFORMITE`) et
+  `propose_conformite` (statut) ; une **dérogation** ou une **acceptation de risque** n'est volontairement pas
+  proposable par un agent (décisions de gouvernance à workflow formel).
+- ✅ **(Phase 5)** Interrupteur **par organisation** `mcpActive` (ADMIN, `/configuration` › Fonctionnalités, défaut
+  désactivé) en plus de l'interrupteur d'instance : `403 mcp_org_disabled` sinon (`lib/mcp/auth.server.ts`).
+- ✅ **(Phase 5)** Matrice d'isolation (cliquet) `mcp-isolation-matrix.test.ts` : tout outil exposé est déclaré
+  avec son test de preuve ; aucun outil n'accepte d'`organizationId`.
+- ⬜ Intake assisté depuis un document (PSSI, présentation de projet) : à arbitrer (cf. spec § B.2.3).
 
 ## 10. Phasage proposé
 

@@ -1,4 +1,8 @@
-import { sanitizeApprobations } from '@/lib/projet360'
+import { sanitizeApprobations, completerQualification, qualificationDepuisProjet } from '@/lib/projet360'
+import VueAnalyseProjet from '@/components/VueAnalyseProjet'
+import TitreEditable from '@/components/TitreEditable'
+import AssocierProjet from '@/components/AssocierProjet'
+import { projetLieAccessible } from '@/lib/projet360-sources.server'
 import { AlertTriangle, BarChart3, BookOpen, CheckCircle2, Compass, FileJson, Landmark, Link2, Lock, Map as MapIcon, Settings, ShieldCheck, User, VenetianMask } from 'lucide-react'
 import { ATELIER_ICONS } from '@/lib/atelier-icons'
 import { getServerSession } from 'next-auth'
@@ -22,11 +26,13 @@ import AccessPanel from '@/components/AccessPanel'
 import PDFExportButton from '@/components/PDFExportButton'
 import PptxExportButton from '@/components/PptxExportButton'
 import DocxExportButton from '@/components/DocxExportButton'
+import { sousSecteursOf } from '@/lib/sous-secteurs'
+import { patternsOf } from '@/lib/patterns-archi'
 import AnalyseMetaEditor from '@/components/AnalyseMetaEditor'
 import SocleToggle from '@/components/SocleToggle'
 import QualificationPanel from '@/components/QualificationPanel'
 import ConformitePie from '@/components/ConformitePie'
-import { isQualificationComplete, sanitizeQualification } from '@/lib/qualification'
+import { isQualificationComplete, sanitizeQualification, type QualificationAnswers } from '@/lib/qualification'
 import { sanitizeConformite, conformiteStats, marquerDerogations } from '@/lib/conformite'
 import { getConformiteContext } from '@/lib/conformite.server'
 import { derogRefsActives } from '@/lib/derogation.server'
@@ -148,6 +154,14 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
   const locked = (analyse.statut === 'APPROUVE' && userRole !== 'ADMIN') || gelee
   const isOwner = analyse.userId === userId
 
+  // Projet 360 de rattachement (s'il reste accessible) : bascule de vue analyse ⇄ projet, et qualification complétée
+  // par les réponses équivalentes de la qualification 360 (jamais à la place d'une réponse saisie).
+  const projet = await projetLieAccessible(userId, userRole, analyse.projetSourceId, { qualification: true })
+  const qualificationSaisie = (analyse.qualification && typeof analyse.qualification === 'object' && !Array.isArray(analyse.qualification) ? analyse.qualification : {}) as QualificationAnswers
+  const qualif = projet && editable && !locked
+    ? completerQualification(qualificationSaisie, qualificationDepuisProjet(projet.qualification))
+    : { answers: qualificationSaisie, reprises: [] as string[] }
+
   // Mettre la qualification en avant (avant les ateliers) tant qu'elle est incomplète.
   const qualificationPrompt = qualificationActive && editable && !locked && !qualificationComplete
 
@@ -162,13 +176,16 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
       <Navbar />
 
       <main id="main-content" className="max-w-5xl mx-auto px-4 py-8">
+        <VueAnalyseProjet active="analyse" projet={projet && { id: projet.id, nom: projet.nom }} analyses={[{ id: analyse.id, nom: analyse.nom }]} />
+        {/* Analyse cyber sans projet : créer un projet lié ou lier un projet existant. */}
+        {!analyse.projetSourceId && editable && !locked && orgConfig.projets360Active && analyse.methode !== 'PROJET_360' && <div className="mb-4"><AssocierProjet analyseId={analyse.id} /></div>}
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Link href="/analyses" className="text-gray-500 hover:text-gray-600 text-sm">{t.analysis.backToList}</Link>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">{analyse.nom}</h1>
+            <TitreEditable analyseId={analyse.id} nom={analyse.nom} canEdit={editable && !locked} labels={t.titreAnalyse} className="text-2xl font-bold text-gray-900" />
             <p className="text-gray-500 mt-1 flex items-center gap-1.5">
               <span>{[analyse.organisation, analyse.secteur].filter(Boolean).join(' · ') || t.analysis.metaMissing}</span>
               <AnalyseMetaEditor
@@ -177,6 +194,8 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
                 organisation={analyse.organisation}
                 secteur={analyse.secteur}
                 sousSecteur={(analyse as any).sousSecteur ?? null}
+                sousSecteurs={sousSecteursOf(analyse as { sousSecteurs?: unknown; sousSecteur?: string | null })}
+                patternsArchi={patternsOf(analyse as { patternsArchi?: unknown })}
                 canEdit={isOwner && !locked}
               />
             </p>
@@ -279,7 +298,8 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
             </div>
             <QualificationPanel
               analyseId={analyse.id}
-              initial={(analyse as any).qualification ?? null}
+              initial={qualif.answers}
+              reprisesProjet={qualif.reprises}
               canEdit={editable && !locked}
               secteur={analyse.secteur}
               methode={analyse.methode}
@@ -329,7 +349,8 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
           <div className="mb-6">
             <QualificationPanel
               analyseId={analyse.id}
-              initial={(analyse as any).qualification ?? null}
+              initial={qualif.answers}
+              reprisesProjet={qualif.reprises}
               canEdit={editable && !locked}
               secteur={analyse.secteur}
               methode={analyse.methode}

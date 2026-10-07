@@ -55,6 +55,10 @@ import AutocompleteInput from '@/components/AutocompleteInput'
 import QualificationRisksAtelier5 from '@/components/QualificationRisksAtelier5'
 import { qualificationRiskToAtelier5Risk } from '@/lib/qualification-risks'
 import type { ProposedRisk } from '@/components/QualificationRiskProposal'
+import { sousSecteursOf } from '@/lib/sous-secteurs'
+import { patternsOf } from '@/lib/patterns-archi'
+import SectorMeasuresPanel, { type SectorMeasure } from '@/components/workshops/SectorMeasuresPanel'
+import { sectorExemplesFor } from '@/lib/exemples-sectoriels'
 
 interface Props {
   analyseId: string
@@ -187,6 +191,15 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
     })
   })
   const [mesures, setMesures] = useState<any[]>(initialData?.mesures || [])
+  // Mesures proposées pour le secteur / sous-secteur de l'analyse (packs sectoriels)
+  const sectorMeasures = useMemo(
+    () => sectorExemplesFor(analyse?.secteur, 'mesures', locale, sousSecteursOf(analyse), patternsOf(analyse)) as SectorMeasure[],
+    [analyse?.secteur, analyse?.sousSecteur, analyse?.sousSecteurs, locale],
+  )
+  function addSectorMeasure(m: SectorMeasure) {
+    const refs = Array.isArray(m.references) && m.references.length ? ` — ${t.workshop.a5.sectorMeasRefs} : ${(m.references as string[]).join(' ; ')}` : ''
+    addMesure({ ...m, description: `${String(m.description ?? '')}${refs}` })
+  }
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   // ── Entités responsables (liste configurable depuis l'admin) ──────────────
@@ -765,6 +778,8 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
               </a>
             </div>
           )}
+
+          {editable && <SectorMeasuresPanel items={sectorMeasures} existingNames={mesures.map((m: any) => String(m.nom ?? ''))} onAdd={addSectorMeasure} />}
 
           {/* Écarts du socle (non-conformités A1) à traiter — importables comme mesures (issue #3) */}
           {nonConformites.length > 0 && (() => {

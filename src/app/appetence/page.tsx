@@ -8,6 +8,7 @@ import { getServerT, getServerLocale } from '@/lib/i18n'
 import { loadRasRad } from '@/lib/ras-rad.server'
 import Navbar from '@/components/Navbar'
 import RasRadView from '@/components/RasRadView'
+import AppetenceHistorique from '@/components/AppetenceHistorique'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -33,6 +34,7 @@ export default async function AppetencePage() {
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t.appetence.subtitle}</p>
         </header>
         <RasRadView data={data} />
+        <div className="mt-6"><AppetenceHistorique /></div>
       </main>
     </div>
   )

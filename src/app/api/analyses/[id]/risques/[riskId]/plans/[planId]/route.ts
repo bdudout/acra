@@ -22,8 +22,9 @@ function auth(session: unknown): { userId: string; role: UserRole } | null {
   return { userId: u.id, role: (u.role ?? 'ANALYSTE') as UserRole }
 }
 
-/** Vrai si le plan appartient à l'org ET porte un lien RISQUE_ANALYSE vers le risque. */
-async function planOfRisk(planId: string, riskId: string, organizationId: string): Promise<boolean> {
+/** Vrai si le risque appartient à l'analyse éditée ET le plan (de l'org) porte un lien RISQUE_ANALYSE vers lui. */
+async function planOfRisk(planId: string, riskId: string, analyseId: string, organizationId: string): Promise<boolean> {
+  if ((await prisma.risque.count({ where: { id: riskId, analyseId } })) === 0) return false
   return (await prisma.planAction.count({
     where: { id: planId, organizationId, liens: { some: { type: 'RISQUE_ANALYSE', targetId: riskId } } },
   })) > 0
@@ -34,7 +35,10 @@ function sanitizePlanPatch(body: Record<string, unknown>): Record<string, unknow
   const out: Record<string, unknown> = {}
   if (typeof body.titre === 'string' && body.titre.trim()) out.titre = body.titre.trim().slice(0, 200)
   if ('porteur' in body) out.porteur = typeof body.porteur === 'string' && body.porteur.trim() ? body.porteur.trim().slice(0, 120) : null
-  if ('echeance' in body) out.echeance = typeof body.echeance === 'string' && body.echeance ? new Date(body.echeance) : null
+  if ('echeance' in body) {
+    const d = typeof body.echeance === 'string' && body.echeance ? new Date(body.echeance) : null
+    if (d === null || !Number.isNaN(d.getTime())) out.echeance = d // date illisible : ignorée
+  }
   if ('priorite' in body) out.priorite = cleanPriorite(body.priorite)
   if ('statut' in body && (RISK_ACTION_STATUTS as readonly string[]).includes(String(body.statut))) out.statut = String(body.statut)
   return out
@@ -49,7 +53,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (!g.ok) return NextResponse.json({ error: g.error }, { status: g.status })
   const organizationId = g.analyse.organizationId
   if (!organizationId) return NextResponse.json({ error: 'org_requise' }, { status: 400 })
-  if (!(await planOfRisk(planId, riskId, organizationId))) return NextResponse.json({ error: 'Plan introuvable' }, { status: 404 })
+  if (!(await planOfRisk(planId, riskId, g.analyse.id, organizationId))) return NextResponse.json({ error: 'Plan introuvable' }, { status: 404 })
 
   const data = sanitizePlanPatch(await req.json().catch(() => ({})))
   if (Object.keys(data).length === 0) return NextResponse.json({ error: 'aucun_champ' }, { status: 400 })
@@ -74,7 +78,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   if (!g.ok) return NextResponse.json({ error: g.error }, { status: g.status })
   const organizationId = g.analyse.organizationId
   if (!organizationId) return NextResponse.json({ error: 'org_requise' }, { status: 400 })
-  if (!(await planOfRisk(planId, riskId, organizationId))) return NextResponse.json({ error: 'Plan introuvable' }, { status: 404 })
+  if (!(await planOfRisk(planId, riskId, g.analyse.id, organizationId))) return NextResponse.json({ error: 'Plan introuvable' }, { status: 404 })
 
   await prisma.planAction.delete({ where: { id: planId } })
   await auditLog('WORKSHOP_SAVED', {

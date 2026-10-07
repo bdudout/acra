@@ -29,6 +29,7 @@ import DeclarationModal from '@/components/DeclarationModal'
 import IncidentTypePicker from '@/components/IncidentTypePicker'
 import { incidentTypeByKey } from '@/lib/incident-types-catalogue'
 import PertesEditor from '@/components/PertesEditor'
+import RisquesRegistrePicker from '@/components/RisquesRegistrePicker'
 import IncidentsConfigEditor from '@/components/IncidentsConfigEditor'
 import type { IncidentsConfig, IncidentsConfigRaw } from '@/lib/incidents-config'
 import type { LignePerte, LigneRecuperation } from '@/lib/pertes'
@@ -41,6 +42,8 @@ interface Incident {
   montantBrut: number | null; recuperations: number | null; perteNette: number | null
   delaiDetection: number | null
   riskItemId: string | null; riskItemIntitule: string | null
+  /** Risques du registre associés (plusieurs). */
+  risques?: { id: string; intitule: string }[]
   statut: string; createdAt: string
   doraReporting?: DoraReporting
   doublons?: { id: string; intitule: string; statut: string; score: number }[]
@@ -77,11 +80,11 @@ function emptyDecl(): DeclForm {
 
 // Formulaire de QUALIFICATION (2ᵉ ligne) : taxonomie, pertes, rattachement.
 type QualForm = {
-  taxonomieCode: string; riskItemId: string; statut: string; clotureCommentaire: string
+  taxonomieCode: string; riskItemIds: string[]; statut: string; clotureCommentaire: string
   typeEvenement: string; quasiIncident: boolean; significatif: boolean; donneesPersonnelles: boolean; contractuel: boolean; dateReglement: string
   champs: ChampsValeurs
 }
-const EMPTY_QUAL: QualForm = { taxonomieCode: '', riskItemId: '', statut: 'QUALIFIE', clotureCommentaire: '', typeEvenement: '', quasiIncident: false, significatif: false, donneesPersonnelles: false, contractuel: false, dateReglement: '', champs: {} }
+const EMPTY_QUAL: QualForm = { taxonomieCode: '', riskItemIds: [], statut: 'QUALIFIE', clotureCommentaire: '', typeEvenement: '', quasiIncident: false, significatif: false, donneesPersonnelles: false, contractuel: false, dateReglement: '', champs: {} }
 
 const STATUT_BADGE: Record<string, string> = {
   DECLARE: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
@@ -109,6 +112,11 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
   const [decl, setDecl] = useState<DeclForm>(emptyDecl)
   const [showDecl, setShowDecl] = useState(false)
   const [qualId, setQualId] = useState<string | null>(null)
+  // Association d'un incident à des risques du registre (action dédiée, sans requalifier).
+  const [assocId, setAssocId] = useState<string | null>(null)
+  const [assocIds, setAssocIds] = useState<string[]>([])
+  // À l'ouverture seulement, le panneau d'association est amené à l'écran (il s'affiche sous le tableau).
+  useEffect(() => { if (assocId) document.getElementById('incident-association')?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' }) }, [assocId])
   const [qual, setQual] = useState<QualForm>(EMPTY_QUAL)
   const [qualPertes, setQualPertes] = useState<{ pertes: LignePerte[]; recups: LigneRecuperation[] }>({ pertes: [], recups: [] })
   const [cfg, setCfg] = useState<IncidentsConfig | null>(null)
@@ -217,7 +225,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
     setQualId(i.id); setError(null)
     const a = i.attributs ?? {}
     setQual({
-      taxonomieCode: i.taxonomieCode ?? '', riskItemId: i.riskItemId ?? '',
+      taxonomieCode: i.taxonomieCode ?? '', riskItemIds: (i.risques ?? []).map(r => r.id),
       statut: i.statut === 'DECLARE' ? 'QUALIFIE' : i.statut, clotureCommentaire: '',
       typeEvenement: i.typeEvenement ?? '', quasiIncident: !!i.quasiIncident,
       significatif: !!a.significatif, donneesPersonnelles: !!a.donneesPersonnelles, contractuel: !!a.contractuel,
@@ -245,7 +253,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
         causeRacine: analyse.causeRacine || null, causeDetail: analyse.causeDetail || null, leconsApprises: analyse.leconsApprises || null,
         chronologie: analyse.chronologie.map(e => ({ ...e, date: e.date.length === 16 ? `${e.date}:00Z` : e.date })), impactsNonFinanciers: analyse.impactsNonFinanciers, allocations: analyse.allocations.filter(a => a.entite.trim()),
         attributs: { significatif: qual.significatif, donneesPersonnelles: qual.donneesPersonnelles, contractuel: qual.contractuel },
-        riskItemId: qual.riskItemId || null, statut: qual.statut,
+        riskItemIds: qual.riskItemIds, statut: qual.statut,
         clotureCommentaire: qual.clotureCommentaire || null,
       }),
     })
@@ -339,6 +347,16 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
   }
 
   // Promotion d'un incident orphelin en risque du registre (2ᵉ ligne).
+  async function associer() {
+    if (!assocId) return
+    setBusy(true); setError(null)
+    const res = await fetch(`/api/incidents/${assocId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ riskItemIds: assocIds }) }).catch(() => null)
+    const data = await res?.json().catch(() => ({}))
+    setBusy(false)
+    if (!res || !res.ok) { setError(err(data?.error ?? 'erreur')); return }
+    setAssocId(null); reload()
+  }
+
   async function promouvoir(id: string) {
     setBusy(true); setError(null)
     const res = await fetch(`/api/incidents/${id}/promote`, { method: 'POST' })
@@ -360,7 +378,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
       case 'category': return taxoLabel(i.taxonomieCode)
       case 'process': return i.processusNom
       case 'perte': return i.perteNette
-      case 'risque': return i.riskItemIntitule
+      case 'risque': return (i.risques ?? []).map(r => r.intitule).join(' · ')
       case 'statut': return INC_STATUT_RANK[i.statut] ?? 99
       default: return ''
     }
@@ -369,7 +387,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
     switch (key) {
       case 'category': return taxoLabel(i.taxonomieCode)
       case 'process': return i.processusNom ?? ''
-      case 'risque': return i.riskItemIntitule ?? ''
+      case 'risque': return (i.risques ?? []).map(r => r.intitule).join(' · ')
       case 'statut': return (n.statuts as Record<string, string>)[i.statut] ?? i.statut
       default: return ''
     }
@@ -502,17 +520,17 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
           <thead>
             <tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
               <ColumnMenu label={n.colIncident} sortKey="incident" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3" />
-              <ColumnMenu label={n.colCategory} sortKey="category" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3"
+              <ColumnMenu label={n.colCategory} sortKey="category" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="hidden px-3 py-3 2xl:table-cell"
                 values={distinctInc('category')} allowed={colFilters.category} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
-              <ColumnMenu label={n.colProcess} sortKey="process" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3"
+              <ColumnMenu label={n.colProcess} sortKey="process" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="hidden px-3 py-3 2xl:table-cell"
                 values={distinctInc('process')} allowed={colFilters.process} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
               <ColumnMenu label={n.colPerte} sortKey="perte" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} align="right" className="px-4 py-3" />
               <ColumnMenu label={n.colRisque} sortKey="risque" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3"
                 values={distinctInc('risque')} allowed={colFilters.risque} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
               <ColumnMenu label={n.colStatut} sortKey="statut" sort={sort} onSortCycle={onSort} onSortDir={onSortDir} onSortClear={() => setSort(null)} className="px-4 py-3"
                 values={distinctInc('statut')} allowed={colFilters.statut} onToggle={onColToggle} onOnly={onColOnly} onClearFilter={onColClear} />
-              <th className="px-4 py-3">{n.colDora}</th>
-              <th className="px-4 py-3">{n.colNotifs}</th>
+              <th className="hidden px-3 py-3 lg:table-cell">{n.colDora}</th>
+              <th className="hidden px-3 py-3 lg:table-cell">{n.colNotifs}</th>
               {canQualify && <th className="px-4 py-3" />}
             </tr>
           </thead>
@@ -521,7 +539,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
               : visibleIncidents.length === 0 ? <tr><td colSpan={9} className="px-4 py-6 text-center text-gray-400 italic">{n.empty}</td></tr>
               : visibleIncidents.map(i => (
                 <tr key={i.id} className="border-b border-gray-100 dark:border-gray-800 align-top">
-                  <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
+                  <td className="min-w-[14rem] max-w-[24rem] px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
                     {i.intitule}
                     {i.doublons && i.doublons.length > 0 && (
                       <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 px-1.5 py-px text-[10px] font-medium align-middle"
@@ -537,18 +555,27 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
                       {i.delaiDetection != null && ` · ${n.detectedIn.replace('{n}', String(i.delaiDetection))}`}
                       {i.entite && ` · ${i.entite}`}
                     </span>
+                    {/* Catégorie et processus sous l'intitulé tant que leurs colonnes sont masquées (écrans < 2xl). */}
+                    {(i.taxonomieCode || i.processusNom) && <span className="block text-xs text-gray-400 2xl:hidden">{[i.taxonomieCode ? taxoLabel(i.taxonomieCode) : null, i.processusNom].filter(Boolean).join(' · ')}</span>}
                   </td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{taxoLabel(i.taxonomieCode)}</td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{i.processusNom ?? '—'}</td>
+                  <td className="hidden px-3 py-3 text-gray-500 dark:text-gray-400 2xl:table-cell">{taxoLabel(i.taxonomieCode)}</td>
+                  <td className="hidden px-3 py-3 text-gray-500 dark:text-gray-400 2xl:table-cell">{i.processusNom ?? '—'}</td>
                   <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-200 whitespace-nowrap">{euros(i.perteNette)}</td>
-                  <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{i.riskItemIntitule ?? '—'}</td>
+                  <td className="min-w-[10rem] px-3 py-3 text-xs text-gray-500 dark:text-gray-400">
+                    {(i.risques ?? []).length === 0 ? '—' : (
+                      <ul className="space-y-0.5">
+                        {(i.risques ?? []).slice(0, 2).map(r => <li key={r.id} className="text-gray-700 dark:text-gray-200">{r.intitule}</li>)}
+                        {(i.risques ?? []).length > 2 && <li title={(i.risques ?? []).slice(2).map(r => r.intitule).join(' · ')}>{n.autresRisques.replace('{n}', String((i.risques ?? []).length - 2))}</li>}
+                      </ul>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${STATUT_BADGE[i.statut] ?? STATUT_BADGE.DECLARE}`}>
                       {(n.statuts as Record<string, string>)[i.statut] ?? i.statut}
                     </span>
                   </td>
-                  <td className="px-4 py-3">{doraCell(i)}</td>
-                  <td className="px-4 py-3">
+                  <td className="hidden px-3 py-3 lg:table-cell">{doraCell(i)}</td>
+                  <td className="hidden px-3 py-3 lg:table-cell">
                     {i.l1 && i.l1.horloges.length > 0 ? (
                       <button onClick={() => setNotifId(i.id)} className="hover:underline focus:underline" title={n.notifTitle}>
                         {i.l1.nbEnRetard > 0
@@ -558,19 +585,23 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
                     ) : <span className="text-gray-300 dark:text-gray-600">—</span>}
                   </td>
                   {canQualify && (
-                    <td className="px-4 py-3 whitespace-nowrap text-right">
+                    <td className="px-3 py-3 whitespace-nowrap text-right">
                       {qualId === i.id ? (
                         <span className="text-xs text-gray-400">…</span>
                       ) : (
-                        <>
-                          <button onClick={() => setDeclId(i.id)} className="text-xs text-ebios-600 hover:underline mr-2">{n.decl.button}</button>
-                          <button onClick={() => startQual(i)} className="text-xs text-ebios-600 hover:underline mr-2">{n.qualify}</button>
-                          {!i.riskItemId && (
+                        <details className="relative inline-block text-left">
+                          <summary className="cursor-pointer list-none rounded border border-gray-200 px-2 py-1 text-xs font-medium text-ebios-700 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">{n.actionsMenu}</summary>
+                        <div className="absolute right-0 z-20 mt-1 flex min-w-[12rem] flex-col items-start gap-1.5 rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                          <button onClick={() => startQual(i)} className="text-xs text-ebios-600 hover:underline">{n.qualify}</button>
+                          <button onClick={() => { setAssocId(i.id); setAssocIds((i.risques ?? []).map(r => r.id)); setError(null) }} className="text-xs text-ebios-600 hover:underline">{n.associer}</button>
+                          {!i.riskItemId && (i.risques ?? []).length === 0 && (
                             <button onClick={() => promouvoir(i.id)} disabled={busy} title={n.promoteHint}
-                              className="text-xs text-ebios-600 hover:underline mr-2 disabled:opacity-50">{n.promote}</button>
+                              className="text-xs text-ebios-600 hover:underline disabled:opacity-50">{n.promote}</button>
                           )}
+                          <button onClick={() => setDeclId(i.id)} className="text-xs text-ebios-600 hover:underline">{n.decl.button}</button>
                           <button onClick={() => supprimer(i.id)} className="text-xs text-red-500 hover:underline">{n.delete}</button>
-                        </>
+                        </div>
+                        </details>
                       )}
                     </td>
                   )}
@@ -579,6 +610,24 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
           </tbody>
         </table>
       </div>
+
+      {/* Association à des risques du registre (cas le plus courant ; « Créer le risque » si aucun ne correspond) */}
+      {canQualify && assocId && (() => {
+        const i = incidents.find(x => x.id === assocId)
+        if (!i) return null
+        return (
+          <div id="incident-association" className="card p-4 mt-5 space-y-3" role="region" aria-label={n.associerTitre}>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{n.associerTitre} — {i.intitule}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{n.associerHint}</p>
+            {error && <p className="text-xs text-red-600">{error}</p>}
+            <RisquesRegistrePicker risks={risks} value={assocIds} onChange={setAssocIds} />
+            <div className="flex gap-2">
+              <button type="button" onClick={associer} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{n.enregistrerRisques}</button>
+              <button type="button" onClick={() => setAssocId(null)} className="btn-secondary text-sm">{n.annuler}</button>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Panneau de qualification (2ᵉ ligne) */}
       {canQualify && qualId && (() => {
@@ -611,12 +660,9 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
                   {taxo.filter(x => x.actif !== false).map(x => <option key={x.code} value={x.code}>{taxonomieLabel(x, tr)}</option>)}
                 </select>
               </label>
-              <label className="text-xs text-gray-500 dark:text-gray-400">{n.linkRisk}
-                <select value={qual.riskItemId} onChange={e => setQual(f => ({ ...f, riskItemId: e.target.value }))} className={`${inp} w-full mt-1`}>
-                  <option value="">{n.riskNone}</option>
-                  {risks.map(r => <option key={r.id} value={r.id}>{r.intitule}</option>)}
-                </select>
-              </label>
+              <div className="text-xs text-gray-500 dark:text-gray-400 sm:col-span-2">{n.associerTitre}
+                <div className="mt-1"><RisquesRegistrePicker risks={risks} value={qual.riskItemIds} onChange={ids => setQual(f => ({ ...f, riskItemIds: ids }))} /></div>
+              </div>
             </div>
             <L1FieldsBlock v={qual} set={patch => setQual(f => ({ ...f, ...patch }))} cfg={cfg} n={n} inp={inp} />
             <ChampsPersonnalisesFields defs={defsChamps} values={qual.champs} onChange={v => setQual(f => ({ ...f, champs: v }))} />

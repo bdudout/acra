@@ -17,6 +17,13 @@ import {
 import { CONFORMITE_STATUTS } from '@/lib/conformite'
 import { anchorExistsInOrg } from './anchors.server'
 import { parseAnalysisImportRequest, summarizeAnalysisImport } from '@/lib/analysis-import'
+import { getEffectiveScaleConfig } from '@/lib/configuration-server'
+import { getOrgConfig } from '@/lib/org-config.server'
+import { isProjet360ProposalValid, sanitizeProjet360Proposal } from './projet360-proposal'
+import { isPssiProposalValid, sanitizePssiProposal } from './pssi-proposal'
+
+/** Origines possibles d'un plan d'action : un objet précis, jamais l'organisation entière. */
+const PLAN_TARGET_TYPES = PROPOSAL_TARGET_TYPES.filter(t => t !== 'ORGANISATION')
 
 /** Vérifie qu'une analyse (ancre ANALYSE) appartient à l'organisation de la clé. */
 async function analyseInOrg(analyseId: string, organizationId: string): Promise<boolean> {
@@ -32,23 +39,32 @@ async function analyseInOrg(analyseId: string, organizationId: string): Promise<
 export const proposeRiskTool: McpTool<McpContext> = {
   name: 'propose_risk',
   description:
-    "Propose l'ajout d'un risque à une analyse (atelier 5). Ne crée PAS le risque : dépose une " +
-    "proposition validée par un humain dans l'interface. Fournir `analyseId` (de l'organisation) et " +
-    "`risque` { nom, gravite 1-4, vraisemblance 1-4, strategie, description?, niveauResiduel? 1-16 }.",
+    "Propose un risque pour une analyse ou un projet 360 de l'organisation. Ne crée RIEN : proposition validée par un humain " +
+    "dans l'interface. Fournir `analyseId` (voir read_analyses) et `risque` { nom, description?, domaine? (projet 360 : CYBER, IT, " +
+    "PROJECT, BUSINESS, FRAUD, OUTSOURCING), gravite et vraisemblance (brut), graviteActuelle / vraisemblanceActuelle (avec les " +
+    "mesures existantes), graviteResiduelle / vraisemblanceResiduelle (après traitement), strategie, mesures? [{ nom, type }], " +
+    "plans? [{ titre, porteur?, echeance AAAA-MM-JJ?, priorite }] }. Cotations sur l'échelle de l'organisation (voir read_projet) ; " +
+    "actuel ≤ brut et résiduel ≤ actuel sont imposés. Mesures et plans sont créés avec le risque à l'acceptation.",
   inputSchema: {
     type: 'object',
     properties: {
-      analyseId: { type: 'string', description: "Identifiant de l'analyse cible (dans l'organisation de la clé)." },
+      analyseId: { type: 'string', description: "Identifiant de l'analyse ou du projet cible (dans l'organisation de la clé)." },
       risque: {
         type: 'object',
         description: 'Proposition de risque.',
         properties: {
           nom: { type: 'string' },
-          gravite: { type: 'integer', minimum: 1, maximum: 4 },
-          vraisemblance: { type: 'integer', minimum: 1, maximum: 4 },
-          strategie: { type: 'string', enum: ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER'] },
           description: { type: 'string' },
-          niveauResiduel: { type: 'integer', minimum: 1, maximum: 16 },
+          domaine: { type: 'string', enum: ['CYBER', 'IT', 'PROJECT', 'BUSINESS', 'FRAUD', 'OUTSOURCING'] },
+          gravite: { type: 'integer', minimum: 1, maximum: 5 },
+          vraisemblance: { type: 'integer', minimum: 1, maximum: 5 },
+          graviteActuelle: { type: 'integer', minimum: 1, maximum: 5 },
+          vraisemblanceActuelle: { type: 'integer', minimum: 1, maximum: 5 },
+          graviteResiduelle: { type: 'integer', minimum: 1, maximum: 5 },
+          vraisemblanceResiduelle: { type: 'integer', minimum: 1, maximum: 5 },
+          strategie: { type: 'string', enum: ['REDUIRE', 'ACCEPTER', 'TRANSFERER', 'REFUSER', 'SURVEILLER'] },
+          mesures: { type: 'array', maxItems: 10, items: { type: 'object', properties: { nom: { type: 'string' }, type: { type: 'string', enum: [...MEASURE_TYPES] } }, required: ['nom'] } },
+          plans: { type: 'array', maxItems: 10, items: { type: 'object', properties: { titre: { type: 'string' }, porteur: { type: 'string' }, echeance: { type: 'string', description: 'AAAA-MM-JJ' }, priorite: { type: 'string', enum: ['CRITIQUE', 'MAJEUR', 'MODERE'] } }, required: ['titre'] } },
         },
         required: ['nom'],
         additionalProperties: false,
@@ -64,7 +80,9 @@ export const proposeRiskTool: McpTool<McpContext> = {
     if (!(await analyseInOrg(analyseId, ctx.organizationId))) {
       return { content: [{ type: 'text', text: 'analyse_introuvable' }], isError: true }
     }
-    const payload = sanitizeRiskProposal(args.risque)
+    // Échelle de l'organisation (4 ou 5 niveaux) : la proposition est bornée comme une saisie directe.
+    const { nbNiveaux } = await getEffectiveScaleConfig(ctx.organizationId)
+    const payload = sanitizeRiskProposal(args.risque, nbNiveaux)
     if (!isRiskProposalValid(payload)) {
       return { content: [{ type: 'text', text: 'proposition_invalide: nom requis' }], isError: true }
     }
@@ -137,7 +155,7 @@ export const proposePlanActionTool: McpTool<McpContext> = {
   inputSchema: {
     type: 'object',
     properties: {
-      targetType: { type: 'string', enum: [...PROPOSAL_TARGET_TYPES], description: "Type de l'origine (ancre)." },
+      targetType: { type: 'string', enum: [...PLAN_TARGET_TYPES], description: "Type de l'origine (ancre)." },
       targetId: { type: 'string', description: "Identifiant de l'origine (dans l'organisation de la clé)." },
       planAction: {
         type: 'object',
@@ -161,7 +179,7 @@ export const proposePlanActionTool: McpTool<McpContext> = {
   async handler(args, ctx): Promise<McpToolResult> {
     const targetType = typeof args.targetType === 'string' ? args.targetType : ''
     const targetId = typeof args.targetId === 'string' ? args.targetId : ''
-    if (!(PROPOSAL_TARGET_TYPES as readonly string[]).includes(targetType)) {
+    if (!(PLAN_TARGET_TYPES as readonly string[]).includes(targetType)) {
       return { content: [{ type: 'text', text: 'ancre_invalide' }], isError: true }
     }
     // Ancre bornée à l'organisation : une origine hors périmètre est « introuvable ».
@@ -278,7 +296,127 @@ async function depose(type: string, targetType: string, targetId: string, payloa
   })
 }
 
+/**
+ * `propose_projet360` — propose la création d'un projet 360 (les champs du formulaire de lancement). Ancre :
+ * l'organisation de la clé. Ne crée RIEN : un humain habilité à créer des analyses accepte, et le projet est alors
+ * créé et peuplé comme depuis l'interface (questionnaire pré-rempli, risques et plans par défaut).
+ */
+export const proposeProjet360Tool: McpTool<McpContext> = {
+  name: 'propose_projet360',
+  description:
+    "Propose la création d'un projet 360 (risque opérationnel complet d'un projet, ISO 31000:2018). Ne crée RIEN : un humain " +
+    "valide dans l'interface. Fournir `projet` { nom, description? (périmètre), objectifs?, secteur (libellé de read_sector_examples), " +
+    "sousSecteurs? (identifiants), patternsArchi (au moins un code de pattern d'architecture), miseEnService? AAAA-MM-JJ }. " +
+    "Une fois le projet accepté, retrouvez-le avec read_analyses puis proposez ses risques (propose_risk).",
+  inputSchema: {
+    type: 'object',
+    properties: {
+      projet: {
+        type: 'object',
+        properties: {
+          nom: { type: 'string' }, description: { type: 'string' }, objectifs: { type: 'string' }, secteur: { type: 'string' },
+          sousSecteurs: { type: 'array', items: { type: 'string' } }, patternsArchi: { type: 'array', items: { type: 'string' } },
+          miseEnService: { type: 'string', description: 'AAAA-MM-JJ' },
+        },
+        required: ['nom', 'secteur', 'patternsArchi'],
+        additionalProperties: false,
+      },
+    },
+    required: ['projet'],
+    additionalProperties: false,
+  },
+  async handler(args, ctx): Promise<McpToolResult> {
+    const cfg = await getOrgConfig(ctx.organizationId)
+    if (!cfg.projets360Active) return { content: [{ type: 'text', text: 'module_projets360_inactif' }], isError: true }
+    const payload = sanitizeProjet360Proposal(args.projet, { patternsMax: cfg.patternsArchiMax })
+    if (!isProjet360ProposalValid(payload)) {
+      return { content: [{ type: 'text', text: 'proposition_invalide: nom, secteur et au moins un pattern d’architecture requis' }], isError: true }
+    }
+    return depose('projet360', 'ORGANISATION', ctx.organizationId, payload, ctx)
+  },
+}
+
+/** Origine d'une nouvelle analyse proposée : rédigée d'après une expression de besoins, ou reprise d'une analyse existante. */
+export const ORIGINES_NOUVELLE_ANALYSE = ['EXPRESSION_BESOINS', 'ANALYSE_HISTORIQUE'] as const
+
+/**
+ * `propose_nouvelle_analyse` — propose la CRÉATION d'une analyse de risque complète (paquet canonique de l'import
+ * historique : contexte, risques, mesures, plans, contenu des ateliers EBIOS RM). Ancre : l'organisation de la clé.
+ * Rien n'est créé avant qu'un humain habilité à créer des analyses accepte ; la création passe alors par
+ * l'import historique (même transaction, mêmes garde-fous, source MCP).
+ */
+export const proposeNouvelleAnalyseTool: McpTool<McpContext> = {
+  name: 'propose_nouvelle_analyse',
+  description:
+    "Propose la création d'une nouvelle analyse de risque, rédigée d'après une expression de besoins (origine EXPRESSION_BESOINS) " +
+    "ou reprise d'une analyse existante hors outil (origine ANALYSE_HISTORIQUE). Ne crée RIEN : un humain valide dans l'interface. " +
+    "Fournir `import` : analysis { title, description?, methode? (EBIOS_RM|ISO_27005|ISO_31000|NIST_800_30), secteur?, sousSecteurs?, patternsArchi? }, " +
+    "context? { perimetre, objectifs… }, risks[] { externalId, title, description?, gravity 1-4, likelihood 1-4, strategy? }, measures[], actions[], " +
+    "links[] { riskExternalId, actionExternalId } et, en EBIOS RM, le contenu des ateliers (businessValues, supportAssets, fearedEvents, " +
+    "riskSources, strategicScenarios, operationalScenarios…). Vérifier d'abord le paquet avec analyse_import_preview.",
+  inputSchema: {
+    type: 'object',
+    properties: {
+      origine: { type: 'string', enum: [...ORIGINES_NOUVELLE_ANALYSE], description: 'EXPRESSION_BESOINS (défaut) ou ANALYSE_HISTORIQUE.' },
+      import: { type: 'object', description: 'Paquet canonique (cf. analyse_import_preview).', properties: { analysis: { type: 'object' } }, required: ['analysis'] },
+    },
+    required: ['import'],
+    additionalProperties: false,
+  },
+  async handler(args, ctx): Promise<McpToolResult> {
+    const origine = ORIGINES_NOUVELLE_ANALYSE.find(o => o === args.origine) ?? 'EXPRESSION_BESOINS'
+    let paquet
+    try {
+      // Le paquet est revalidé (Zod) : toute clé inconnue, dont un identifiant d'organisation, est écartée.
+      paquet = parseAnalysisImportRequest({ ...(args.import as object), idempotencyKey: `mcp-new-${Date.now()}-${Math.random().toString(36).slice(2)}` })
+    } catch { return { content: [{ type: 'text', text: 'proposition_invalide: paquet d’analyse invalide (cf. analyse_import_preview)' }], isError: true } }
+    return depose('analysis_create', 'ORGANISATION', ctx.organizationId, { origine, ...paquet }, ctx)
+  },
+}
+
+/**
+ * `propose_pssi` — propose l'import d'une PSSI : référentiel personnalisé de type PSSI (exigences = mesures, utilisable
+ * comme référentiel de conformité), document de la bibliothèque rattaché et suivi de conformité. Ancre : l'organisation.
+ * Accepté par un administrateur (même règle que la création d'un référentiel), module conformité actif.
+ */
+export const proposePssiTool: McpTool<McpContext> = {
+  name: 'propose_pssi',
+  description:
+    "Propose l'import d'une PSSI (politique de sécurité des systèmes d'information) : elle devient un référentiel de mesures de type PSSI, " +
+    "suivi en conformité, et un document de la bibliothèque. Ne crée RIEN : un administrateur valide dans l'interface. Fournir `pssi` " +
+    "{ titre, version, code? (défaut PSSI-<version>), date? AAAA-MM-JJ, description?, texte? (Markdown intégral), " +
+    "exigences[] { ref, nom, description?, categorie?, type? (ORGANISATIONNELLE|TECHNIQUE|PHYSIQUE|JURIDIQUE) }, suivreConformite? (défaut true) }.",
+  inputSchema: {
+    type: 'object',
+    properties: {
+      pssi: {
+        type: 'object',
+        properties: {
+          titre: { type: 'string' }, version: { type: 'string' }, code: { type: 'string' }, date: { type: 'string', description: 'AAAA-MM-JJ' },
+          description: { type: 'string' }, texte: { type: 'string' }, domaine: { type: 'string' }, suivreConformite: { type: 'boolean' },
+          exigences: { type: 'array', items: { type: 'object', properties: { ref: { type: 'string' }, nom: { type: 'string' }, description: { type: 'string' }, categorie: { type: 'string' }, type: { type: 'string' } }, required: ['ref', 'nom'] } },
+        },
+        required: ['titre', 'exigences'],
+        additionalProperties: false,
+      },
+    },
+    required: ['pssi'],
+    additionalProperties: false,
+  },
+  async handler(args, ctx): Promise<McpToolResult> {
+    const cfg = await getOrgConfig(ctx.organizationId)
+    if (!cfg.conformiteActive) return { content: [{ type: 'text', text: 'module_conformite_inactif' }], isError: true }
+    const payload = sanitizePssiProposal(args.pssi)
+    if (!isPssiProposalValid(payload)) {
+      return { content: [{ type: 'text', text: 'proposition_invalide: titre et au moins une exigence (ref + nom) requis' }], isError: true }
+    }
+    const pris = await prisma.referentiel.count({ where: { organizationId: ctx.organizationId, code: payload.referentiel.code } })
+    if (pris) return { content: [{ type: 'text', text: `code_existant: ${payload.referentiel.code} (fournir un autre code ou une autre version)` }], isError: true }
+    return depose('pssi', 'ORGANISATION', ctx.organizationId, payload, ctx)
+  },
+}
+
 /** Outils d'écriture validée : propositions déposées, jamais appliquées directement. */
 export function buildProposeTools(): McpTool<McpContext>[] {
-  return [proposeRiskTool, proposeMeasureTool, proposePlanActionTool, proposeConformiteTool, previewAnalysisImportTool, proposeAnalysisImportTool]
+  return [proposeProjet360Tool, proposeRiskTool, proposeMeasureTool, proposePlanActionTool, proposeConformiteTool, previewAnalysisImportTool, proposeAnalysisImportTool, proposeNouvelleAnalyseTool, proposePssiTool]
 }

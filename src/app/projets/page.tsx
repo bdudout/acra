@@ -16,7 +16,9 @@ export const revalidate = 0
 
 // Onglet Projets (module « Projets 360 ») : analyses projet 360 de l'organisation
 // active, visibles selon le périmètre de l'utilisateur ; lancement d'un projet.
-export default async function ProjetsPage() {
+export default async function ProjetsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  // Ancien lien « ?nouveau=1 » (menu, favoris) : le lancement a désormais sa page dédiée.
+  if ((await searchParams).nouveau === '1') redirect('/projets/nouveau')
   const session = await getServerSession(authOptions)
   if (!session?.user) redirect('/auth/signin')
   const userId = (session.user as { id: string }).id
@@ -29,13 +31,14 @@ export default async function ProjetsPage() {
   )))).filter((orgId): orgId is string => orgId !== null)
   if (!enabledOrgIds.length) notFound()
   const t = await getServerT()
+  // Analyses cyber du projet : seulement celles que l'utilisateur peut ouvrir (mêmes droits que la liste).
   const rows = await prisma.analyse.findMany({
     where: { AND: [analyseWhereClause(userId, scope.role, scope.scope)], organizationId: { in: enabledOrgIds }, methode: 'PROJET_360' },
-    select: { id: true, nom: true, statut: true, updatedAt: true, _count: { select: { risques: true } }, analysesDuProjet: { where: { deletedAt: null }, select: { id: true, nom: true }, orderBy: { createdAt: 'desc' }, take: 20 } },
+    select: { id: true, nom: true, statut: true, updatedAt: true, meteoProjet: true, dateEcheance: true, _count: { select: { risques: true } }, analysesDuProjet: { where: { deletedAt: null, AND: [analyseWhereClause(userId, scope.role, scope.scope)] }, select: { id: true, nom: true }, orderBy: { createdAt: 'desc' }, take: 20 } },
     orderBy: { updatedAt: 'desc' },
     take: 200,
   })
-  const projets = rows.map(r => ({ id: r.id, nom: r.nom, statut: r.statut, risques: r._count.risques, updatedAt: r.updatedAt.toISOString(), analyses: r.analysesDuProjet }))
+  const projets = rows.map(r => ({ id: r.id, nom: r.nom, statut: r.statut, risques: r._count.risques, updatedAt: r.updatedAt.toISOString(), analyses: r.analysesDuProjet, meteo: r.meteoProjet, miseEnService: r.dateEcheance ? r.dateEcheance.toISOString().slice(0, 10) : null }))
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />

@@ -19,7 +19,10 @@ PRISMA="node node_modules/prisma/build/index.js"
 
 STATUS="$($PRISMA migrate status 2>&1 || true)"
 
-if echo "$STATUS" | grep -q "Database schema is up to date"; then
+if [ "${ACRA_MIGRATE_AUTO_RESOLVE:-1}" = "0" ]; then
+  # Mise à jour pilotée (scripts/update.sh) : aucune réconciliation automatique, un échec doit être visible.
+  echo "[migrate-recover] Réconciliation automatique désactivée (mise à jour en cours)."
+elif echo "$STATUS" | grep -q "Database schema is up to date"; then
   echo "[migrate-recover] Migrations à jour."
 else
   if echo "$STATUS" | grep -qiE "failed|not yet been applied|P3009"; then

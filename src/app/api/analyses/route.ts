@@ -1,6 +1,7 @@
+import { cadrageInitial } from '@/lib/cadrage-initial'
 import { populateProjet360 } from '@/lib/projet360.server'
 import { resolveProjetSource } from '@/lib/projet360'
-import { getServerT } from '@/lib/i18n'
+import { getServerLocale, getServerT } from '@/lib/i18n'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -10,7 +11,8 @@ import { cleanTags } from '@/lib/analyse-tags'
 import { canCreateAnalyse, analyseWhereClause } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { isSousSecteurOfSecteur } from '@/lib/sous-secteurs'
+import { MAX_SOUS_SECTEURS, resolveSousSecteursUpdate } from '@/lib/sous-secteurs'
+import { normalizePatterns, PATTERNS_MAX_MAX, validateInitialAnalysisContext } from '@/lib/patterns-archi'
 import { MENTIONS_PROTECTION, normalizeMentionProtection } from '@/lib/mention-protection'
 import { resolveMethodes, isRiskMethod } from '@/lib/methodes'
 import { getActiveMethodes } from '@/lib/interfaces-config.server'
@@ -24,7 +26,9 @@ const createSchema = z.object({
   description:  z.string().max(1000).optional(),
   organisation: z.string().max(200).optional(),
   secteur:      z.string().max(100).optional(),
-  sousSecteur:  z.string().max(60).optional(), // id stable de sous-secteur (issue #25)
+  sousSecteur:  z.string().max(60).optional(), // id stable de sous-secteur (issue #25) — ancien champ unique
+  sousSecteurs: z.array(z.string().max(60)).max(MAX_SOUS_SECTEURS * 2).optional(), // plusieurs sous-secteurs (premier = principal)
+  patternsArchi: z.array(z.string().max(60)).max(PATTERNS_MAX_MAX).optional(), // patterns d'architecture de SI (vision technique)
   tags:         z.array(z.string()).optional(), // tags / programme (regroupement)
   dateEcheance: z.string().optional(),
   socleId:      z.string().cuid().optional(), // analyse socle dont hériter
@@ -33,6 +37,7 @@ const createSchema = z.object({
   mentionProtection: z.enum(MENTIONS_PROTECTION).optional(), // mention de protection (label §3.2)
   methode:      z.string().max(20).optional(), // méthode d'analyse (validée contre l'ensemble effectif)
   qualification: z.record(z.string(), z.union([z.boolean(), z.string()])).optional(),
+  objectifsEtude: z.string().max(2000).optional(), // objectifs de l'étude saisis dès la création (projet 360)
 })
 
 // GET /api/analyses — liste des analyses de l'utilisateur
@@ -135,6 +140,13 @@ export async function POST(req: NextRequest) {
       socleData = socle
     }
 
+    // Patterns d'architecture : codes connus, sans doublon, plafond de l'organisation (400 au-delà).
+    let patternsArchi: string[]
+    try { patternsArchi = normalizePatterns(data.patternsArchi, { max: orgConfig.patternsArchiMax, strict: true }) }
+    catch { return NextResponse.json({ error: 'patterns_too_many' }, { status: 400 }) }
+    const initialContextError = validateInitialAnalysisContext({ secteur: data.secteur, patterns: patternsArchi })
+    if (initialContextError) return NextResponse.json({ error: initialContextError }, { status: 400 })
+
     const analyse = await prisma.analyse.create({
       data: {
         userId,
@@ -143,8 +155,9 @@ export async function POST(req: NextRequest) {
         description: data.description,
         organisation: data.organisation,
         secteur: data.secteur,
-        // Sous-secteur conservé seulement s'il est cohérent avec le secteur.
-        sousSecteur: isSousSecteurOfSecteur(data.secteur, data.sousSecteur) ? data.sousSecteur : null,
+        // Sous-secteurs conservés seulement s'ils sont cohérents avec le secteur (famille + interconnexions).
+        ...resolveSousSecteursUpdate({ secteur: data.secteur, input: { sousSecteurs: data.sousSecteurs, sousSecteur: data.sousSecteur } }),
+        patternsArchi,
         tags: cleanTags(data.tags),
         dateEcheance: data.dateEcheance ? new Date(data.dateEcheance) : undefined,
         isSocle: data.isSocle ?? false,
@@ -154,21 +167,9 @@ export async function POST(req: NextRequest) {
         methode,
         qualification,
         // Cadrage : copier du socle ou créer vide
-        cadrage: {
-          create: methode === 'PROJET_360' && !socleData.cadrage
-            ? { perimetre: data.description ?? null }
-            : socleData.cadrage
-            ? {
-                perimetre:      socleData.cadrage.perimetre,
-                objectifsEtude: socleData.cadrage.objectifsEtude,
-                missions:       socleData.cadrage.missions,
-                valeursMetier:  socleData.cadrage.valeursMetier,
-                biensSupports:  socleData.cadrage.biensSupports,
-                // NB: events redoutés et socle de sécurité NE sont PAS hérités —
-                // ils dépendent du contexte de chaque analyse.
-              }
-            : {},
-        },
+        // Cadrage : hérité du socle, ou initialisé (projet 360 : périmètre + objectifs saisis à la création).
+        // NB : événements redoutés et socle de sécurité ne sont jamais hérités (propres à chaque analyse).
+        cadrage: { create: cadrageInitial({ methode, description: data.description, objectifsEtude: data.objectifsEtude }, socleData.cadrage) as never },
       },
     })
 
@@ -186,7 +187,7 @@ export async function POST(req: NextRequest) {
     // proposés créés sans doublon (lib/projet360.server).
     let population: { answers: number; risks: number } | null = null
     if (methode === 'PROJET_360' && orgId) {
-      population = await populateProjet360(analyse.id, orgId, await getServerT())
+      population = await populateProjet360(analyse.id, orgId, await getServerT(), await getServerLocale())
     }
 
     await auditLog('ANALYSE_CREATED', {

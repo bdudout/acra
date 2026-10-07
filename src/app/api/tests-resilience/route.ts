@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { testsResilienceContext, scopeLinks, TEST_SELECT, toLite } from '@/lib/tests-resilience.server'
-import { sanitizeTestResilience, programmeStats } from '@/lib/tests-resilience'
+import { sanitizeTestResilience, programmeStats, actionsParConstat } from '@/lib/tests-resilience'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 
@@ -20,9 +20,17 @@ export async function GET(req: NextRequest) {
   const annee = Number(req.nextUrl.searchParams.get('annee')) || now.getUTCFullYear()
   const rows = await prisma.testResilience.findMany({ where: { organizationId: ctx.orgId }, select: TEST_SELECT, orderBy: [{ annee: 'desc' }, { datePrevue: 'asc' }] })
   const lites = rows.map(toLite)
+  // Actions du plan unifié issues des constats : statut par constat, pour PROPOSER la clôture (jamais automatique).
+  const liensActions = await prisma.planAction.findMany({
+    where: { organizationId: ctx.orgId, liens: { some: { type: 'TEST_RESILIENCE' } } },
+    select: { statut: true, liens: { where: { type: 'TEST_RESILIENCE' }, select: { targetId: true, ref: true } } },
+  })
+  const parTest = new Map<string, { ref: string | null; statut: string }[]>()
+  for (const a of liensActions) for (const l of a.liens) parTest.set(l.targetId, [...(parTest.get(l.targetId) ?? []), { ref: l.ref, statut: a.statut }])
+  const actionsParConstatMap = Object.fromEntries([...parTest].map(([id, ls]) => [id, actionsParConstat(ls)]))
   const annees = [...new Set([now.getUTCFullYear(), ...rows.map(r => r.annee)])].sort((a, b) => b - a)
   return NextResponse.json({
-    annee, annees, canWrite: ctx.canWrite,
+    annee, annees, canWrite: ctx.canWrite, actionsParConstat: actionsParConstatMap,
     tests: rows.filter(r => r.annee === annee),
     stats: programmeStats(lites, annee, now),
   })

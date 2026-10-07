@@ -16,7 +16,7 @@ describe('catalogue d’incidents types', () => {
     expect(new Set(INCIDENT_TYPES.map(t => t.key)).size).toBe(INCIDENT_TYPES.length)
     const regimes = new Set(CATALOGUE_REGIMES.map(r => r.code))
     for (const t of INCIDENT_TYPES) {
-      expect(t.key).toMatch(/^[a-z]+\.[a-z0-9-]+$/)
+      expect(t.key).toMatch(/^[a-z_]+\.[a-z0-9-]+$/)
       expect((TYPES_EVENEMENT as readonly string[]).includes(t.categorie), t.key).toBe(true)
       expect(['PROCESSUS', 'PERSONNES', 'SYSTEMES', 'EXTERNE', 'TIERS']).toContain(t.causeRacine)
       for (const r of t.regimes) expect(regimes.has(r), `${t.key} → ${r}`).toBe(true)

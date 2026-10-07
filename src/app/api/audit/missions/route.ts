@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { accesResultats } from '@/lib/acces-resultats.server'
+import { visibiliteMission } from '@/lib/acces-resultats'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -31,7 +33,7 @@ async function ctx(session: { user: { id: string; role?: string } }) {
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { orgId, userRole: roleLecture } = await ctx(session as unknown as { user: { id: string; role?: string } })
+  const { userId, orgId, userRole: roleLecture } = await ctx(session as unknown as { user: { id: string; role?: string } })
   if (!orgId) return NextResponse.json({ missions: [], active: false })
   const cfg = await getOrgConfig(orgId)
   if (!cfg.auditInterneActive) return NextResponse.json({ missions: [], active: false })
@@ -39,13 +41,18 @@ export async function GET() {
   const rows = await prisma.auditMission.findMany({
     where: { organizationId: orgId },
     orderBy: [{ createdAt: 'desc' }],
-    include: { constats: { select: { criticite: true, statut: true, echeance: true } } },
+    include: { constats: { select: { criticite: true, statut: true, echeance: true, responsableAction: true } } },
   })
+  // Résultats réservés aux interlocuteurs concernés : 1re ligne et lecture seule ne voient que leurs missions / constats.
+  const acces = await accesResultats(userId, roleLecture as UserRole)
   const now = new Date()
   const dureeAnnees = cleanArchivageDuree(cfg.archivageMissionsAnnees)
   const constatOuvert = (s: string) => !constatTermine(s as ConstatStatut)
   const defsChamps = sanitizeChampsConfig(cfg.champsPersonnalises).mission ?? []
-  const missions = rows.map(({ constats, ...m }) => {
+  const missions = rows.flatMap(({ constats: tous, ...m }) => {
+    const vue = visibiliteMission(m, tous, acces)
+    if (!vue.visible) return []
+    const constats = vue.constats
     const constatsOuverts = constats.filter(x => constatOuvert(x.statut)).length
     return {
       ...m,
@@ -53,7 +60,8 @@ export async function GET() {
       synthese: synthetiserConstats(constats, now),
       constatsOuverts,
       archivable: estArchivable({ statut: m.statut, dateFin: m.dateFin, archiveLe: m.archiveLe, constatsOuverts }, now, dureeAnnees),
-      nbRapports: Array.isArray(m.rapports) ? (m.rapports as unknown[]).length : 0,
+      nbRapports: vue.complete && Array.isArray(m.rapports) ? (m.rapports as unknown[]).length : 0,
+      ...(vue.complete ? {} : { rapports: [] }),
     }
   })
   return NextResponse.json({ missions, active: true, archivageDureeAnnees: dureeAnnees })

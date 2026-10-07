@@ -72,4 +72,10 @@ describe('RiskMatrix — rendu piloté par la configuration', () => {
     expect(screen.getByText('G-Quatre')).toBeInTheDocument()
     expect(screen.getByText('V-Un')).toBeInTheDocument()
   })
+  it('référence fournie (numérotation stable du projet) : affichée telle quelle, légende dans l’ordre des références', () => {
+    render(<RiskMatrix risks={[{ nom: 'Faible', vraisemblance: 1, gravite: 1, ref: 'R1' }, { nom: 'Fort', vraisemblance: 4, gravite: 4, ref: 'R2' }]} />)
+    const items = screen.getAllByRole('listitem').map(li => li.textContent ?? '').filter(x => /^R\d/.test(x))
+    expect(items[0]).toMatch(/^R1.*Faible/)
+    expect(items[1]).toMatch(/^R2.*Fort/)
+  })
 })

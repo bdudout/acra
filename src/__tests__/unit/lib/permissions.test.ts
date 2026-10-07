@@ -411,3 +411,30 @@ describe('resolveAnalyseRole (#130 — rôle gouvernant les actions sur une anal
     expect(resolveAnalyseRole('ADMIN', 'org1', null)).toBe('LECTEUR')
   })
 })
+
+describe('peutGererRegistreIa — registre des systèmes d’IA', () => {
+  it('gouvernance (ADMIN, RSSI, RISK_MANAGER, CONFORMITE, DPO) seulement', async () => {
+    const { peutGererRegistreIa } = await import('@/lib/permissions')
+    for (const r of ['ADMIN', 'SUPER_ADMIN', 'RSSI', 'RISK_MANAGER', 'CONFORMITE', 'DPO'] as const) expect(peutGererRegistreIa(r), r).toBe(true)
+    for (const r of ['ANALYSTE', 'LECTEUR', 'METIER', 'CONTROLEUR', 'AUDITEUR', 'DIRECTION_METIER'] as const) expect(peutGererRegistreIa(r), r).toBe(false)
+  })
+})
+
+describe('peutLireRegistreIa — lecture du registre IA', () => {
+  it('gouvernance + contrôle permanent et audit interne (lecture seule) ; pas la 1re ligne', async () => {
+    const { peutLireRegistreIa, peutGererRegistreIa } = await import('@/lib/permissions')
+    for (const r of ['ADMIN', 'RSSI', 'RISK_MANAGER', 'CONFORMITE', 'DPO', 'CONTROLEUR', 'AUDITEUR'] as const) expect(peutLireRegistreIa(r), r).toBe(true)
+    for (const r of ['ANALYSTE', 'LECTEUR', 'METIER', 'DIRECTION_METIER'] as const) expect(peutLireRegistreIa(r), r).toBe(false)
+    expect(peutGererRegistreIa('AUDITEUR')).toBe(false)
+  })
+})
+
+describe('conformité — gestion et lecture', () => {
+  it('gérer : ADMIN, RSSI, RISK_MANAGER, CONFORMITE, DPO ; lire : + ANALYSTE', async () => {
+    const { peutGererConformite, peutLireConformite } = await import('@/lib/permissions')
+    for (const r of ['ADMIN', 'SUPER_ADMIN', 'RSSI', 'RISK_MANAGER', 'CONFORMITE', 'DPO'] as const) expect(peutGererConformite(r), r).toBe(true)
+    for (const r of ['ANALYSTE', 'CONTROLEUR', 'AUDITEUR', 'METIER', 'LECTEUR', 'DIRECTION_METIER'] as const) expect(peutGererConformite(r), r).toBe(false)
+    expect(peutLireConformite('ANALYSTE')).toBe(true)
+    for (const r of ['METIER', 'LECTEUR'] as const) expect(peutLireConformite(r), r).toBe(false)
+  })
+})

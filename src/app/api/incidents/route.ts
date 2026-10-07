@@ -47,9 +47,9 @@ export async function GET() {
   const rows = await prisma.incident.findMany({
     where: { organizationId: orgId },
     orderBy: [{ createdAt: 'desc' }],
-    include: { processus: { select: { nom: true } }, riskItem: { select: { intitule: true } } },
+    include: { processus: { select: { nom: true } }, riskItem: { select: { intitule: true } }, risquesLies: { select: { riskItem: { select: { id: true, intitule: true } } }, orderBy: { createdAt: 'asc' } } },
   })
-  const incidents = rows.map(({ processus, riskItem, montantBrut, recuperations, ...r }) => {
+  const incidents = rows.map(({ processus, riskItem, risquesLies, montantBrut, recuperations, ...r }) => {
     const brut = num(montantBrut)
     const recup = num(recuperations)
     return {
@@ -58,6 +58,8 @@ export async function GET() {
       recuperations: recup,
       processusNom: processus?.nom ?? null,
       riskItemIntitule: riskItem?.intitule ?? null,
+      // Risques du registre associés (plusieurs) ; repli sur le risque principal pour les données antérieures.
+      risques: risquesLies.length ? risquesLies.map(l => l.riskItem) : (r.riskItemId && riskItem ? [{ id: r.riskItemId, intitule: riskItem.intitule }] : []),
       perteNette: perteNette(brut, recup),
       // Lot L1 : horloges de notification, totaux convertis, seuils, ventilation par type.
       l1: vueIncidentL1(r, cfgL1, now),
@@ -135,6 +137,7 @@ export async function POST(req: NextRequest) {
       champs: champs as unknown as Prisma.InputJsonValue,
     },
   })
+  if (incident.riskItemId) await prisma.incidentRisque.create({ data: { incidentId: incident.id, riskItemId: incident.riskItemId } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, organizationId: orgId, ip: getClientIp(req),
     details: { scope: 'incident', action: 'declare', id: incident.id },

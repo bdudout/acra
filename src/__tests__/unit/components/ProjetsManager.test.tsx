@@ -1,69 +1,60 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import ProjetsManager from '@/components/ProjetsManager'
 
 vi.mock('@/lib/i18n/context', async () => {
   const { fr } = await import('@/lib/i18n/fr')
   return { useTranslation: () => ({ t: fr, locale: 'fr' }) }
 })
-const push = vi.fn()
-const search = { value: '' }
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push, refresh: vi.fn() }), useSearchParams: () => new URLSearchParams(search.value) }))
 
-const fetchMock = vi.fn()
-beforeEach(() => { search.value = ''; fetchMock.mockReset(); push.mockReset(); vi.stubGlobal('fetch', fetchMock) })
+const projets = [
+  { id: 'p1', nom: 'Refonte portail', statut: 'EN_COURS', risques: 7, updatedAt: '2026-09-20T00:00:00.000Z', analyses: [{ id: 'c1', nom: 'Cyber — portail' }] },
+  { id: 'p2', nom: 'Migration cloud', statut: 'APPROUVE', risques: 12, updatedAt: '2026-10-01T00:00:00.000Z' },
+]
+const noms = () => within(screen.getByRole('table')).getAllByRole('row').slice(1).map(r => within(r).getAllByRole('cell')[0].textContent)
 
-const projets = [{ id: 'p1', nom: 'Refonte portail', statut: 'EN_COURS', risques: 7, updatedAt: '2026-09-20T00:00:00.000Z', analyses: [{ id: 'c1', nom: 'Cyber — portail' }] }]
-
-describe('ProjetsManager', () => {
-  it('liste les projets 360 avec statut et nombre de risques', () => {
+describe('ProjetsManager — liste des projets 360', () => {
+  it('liste les projets (plus récent d’abord) avec statut et nombre de risques', () => {
     render(<ProjetsManager projets={projets} canCreate />)
-    expect(screen.getByRole('link', { name: 'Refonte portail' }).getAttribute('href')).toBe('/analyses/p1/atelier/1?phase=qualification')
+    expect(screen.getByRole('link', { name: 'Refonte portail' }).getAttribute('href')).toBe('/projets/p1')
     expect(screen.getByText('7')).toBeTruthy()
+    expect(noms()).toEqual(['Migration cloud', 'Refonte portail'])
   })
-
-  it('lance un projet 360 (méthode PROJET_360) puis ouvre sa qualification', async () => {
-    fetchMock.mockResolvedValue({ ok: true, status: 201, json: async () => ({ analyse: { id: 'n1' } }) })
-    render(<ProjetsManager projets={[]} canCreate />)
-    fireEvent.click(screen.getByRole('button', { name: 'Lancer un projet 360' }))
-    fireEvent.change(screen.getByLabelText('Nom du projet'), { target: { value: 'Migration cloud' } })
-    fireEvent.change(screen.getByLabelText('Description / périmètre'), { target: { value: 'Paie et RH' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Créer le projet' }))
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/analyses/n1/atelier/1?phase=qualification'))
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ nom: 'Migration cloud', description: 'Paie et RH', methode: 'PROJET_360' })
-  })
-
-  it('propose de lancer une analyse cyber depuis le projet et liste les analyses déjà rattachées', () => {
+  it('« Lancer un projet 360 » ouvre la page dédiée', () => {
     render(<ProjetsManager projets={projets} canCreate />)
-    expect(screen.getByRole('link', { name: 'Lancer une analyse cyber' }).getAttribute('href')).toBe('/analyses/new?projet=p1')
+    expect(screen.getByRole('link', { name: 'Lancer un projet 360' }).getAttribute('href')).toBe('/projets/nouveau')
+  })
+  it('recherche rapide, filtre par statut, tri par colonne', () => {
+    render(<ProjetsManager projets={projets} canCreate />)
+    fireEvent.change(screen.getByLabelText('Rechercher un projet'), { target: { value: 'portail' } })
+    expect(noms()).toEqual(['Refonte portail'])
+    fireEvent.change(screen.getByLabelText('Rechercher un projet'), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('Statut'), { target: { value: 'APPROUVE' } })
+    expect(noms()).toEqual(['Migration cloud'])
+    fireEvent.change(screen.getByLabelText('Statut'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Trier par Risques' }))
+    expect(noms()).toEqual(['Migration cloud', 'Refonte portail'])
+    fireEvent.click(screen.getByRole('button', { name: 'Trier par Risques' }))
+    expect(noms()).toEqual(['Refonte portail', 'Migration cloud'])
+  })
+  it('recherche sans résultat : message', () => {
+    render(<ProjetsManager projets={projets} canCreate />)
+    fireEvent.change(screen.getByLabelText('Rechercher un projet'), { target: { value: 'zzz' } })
+    expect(screen.getByText('Aucun projet ne correspond à la recherche.')).toBeTruthy()
+  })
+  it('« Associer une analyse cyber » seulement pour les projets sans analyse liée ; liste les analyses déjà rattachées', () => {
+    render(<ProjetsManager projets={projets} canCreate />)
+    const lignes = within(screen.getByRole('table')).getAllByRole('row').slice(1)
+    const avec = lignes.find(r => within(r).queryByRole('link', { name: 'Cyber — portail' }))!
+    expect(within(avec).queryByText('Associer une analyse cyber', { selector: 'summary' })).toBeNull()
+    const sans = lignes.find(r => r !== avec)!
+    expect(within(sans).getByText('Associer une analyse cyber', { selector: 'summary' })).toBeTruthy()
+    expect(within(sans).getByRole('link', { name: 'Créer une nouvelle analyse' }).getAttribute('href')).toMatch(/^\/analyses\/new\?projet=p/)
     expect(screen.getByRole('link', { name: 'Cyber — portail' }).getAttribute('href')).toBe('/analyses/c1')
   })
-
-  it('un exemple de projet préremplit le nom et la description', () => {
-    render(<ProjetsManager projets={[]} canCreate />)
-    fireEvent.click(screen.getByRole('button', { name: 'Lancer un projet 360' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Migration vers le cloud' }))
-    expect((screen.getByLabelText('Nom du projet') as HTMLInputElement).value).toBe('Migration vers le cloud')
-    expect((screen.getByLabelText('Description / périmètre') as HTMLTextAreaElement).value.length).toBeGreaterThan(20)
-  })
-
-  it('sans droit de création : pas de bouton', () => {
+  it('export du portefeuille disponible ; sans droit de création : ni lancement ni analyse cyber', () => {
     render(<ProjetsManager projets={[]} canCreate={false} />)
-    expect(screen.queryByRole('button', { name: 'Lancer un projet 360' })).toBeNull()
-    expect(screen.queryByRole('link', { name: 'Lancer une analyse cyber' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Lancer un projet 360' })).toBeNull()
     expect(screen.getByText('Aucun projet pour le moment.')).toBeTruthy()
-  })
-
-  it('?nouveau=1 (menu « Nouveau projet 360 ») : le formulaire de création est déjà ouvert', () => {
-    search.value = 'nouveau=1'
-    render(<ProjetsManager projets={[]} canCreate />)
-    expect(screen.getByLabelText('Nom du projet')).toBeTruthy()
-  })
-  it('sans ?nouveau=1 ou sans droit de création : formulaire fermé', () => {
-    render(<ProjetsManager projets={[]} canCreate />)
-    expect(screen.queryByLabelText('Nom du projet')).toBeNull()
-    search.value = 'nouveau=1'
-    const { container } = render(<ProjetsManager projets={[]} canCreate={false} />)
-    expect(container.querySelector('input')).toBeNull()
   })
 })

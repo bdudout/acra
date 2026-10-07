@@ -1,13 +1,18 @@
 'use client'
 
-// ─── Identités de tiers (page Tiers) ─────────────────────────────────────────
-// Une identité = une personne morale. Liste des tiers de l'organisation avec leur couverture (cyber / TIC) et file de rapprochement
-// des arrangements TIC non rattachés : candidats proposés avec leur raison, lien posé seulement au clic, jamais automatiquement.
+// ─── Entités de tiers (page /tiers/entites et Configuration › Tiers) ─────────
+// Une entité = une personne morale. Liste des entités de l'organisation avec leur couverture (cyber / TIC) ; un clic sur une
+// entité affiche ses liens (graphe services tiers ↔ entité ↔ contrats) et permet de rattacher services tiers et contrats.
+// Import depuis les services tiers des analyses et file de rapprochement des arrangements TIC non rattachés : candidats
+// proposés avec leur raison, lien posé seulement au clic, jamais automatiquement.
 
 import { Fragment, useCallback, useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { certainMatches } from '@/lib/tier-identity'
 import TierDetailPanel from '@/components/TierDetailPanel'
+import ImportServicesTiers from '@/components/tiers/ImportServicesTiers'
+import EntiteLiens from '@/components/tiers/EntiteLiens'
+import type { ServiceTiers } from '@/lib/services-tiers'
 
 type Candidate = { tierId: string; nom: string; reason: 'LEI' | 'NAME' | 'ALIAS'; strength: 'STRONG' | 'WEAK' }
 type TierRow = { id: string; nom: string; lei: string | null; pays: string | null; analysesCount: number; arrangements: { id: string; reference: string }[]; coverage: 'CYBER_ONLY' | 'TIC_ONLY' | 'CYBER_AND_TIC' | 'UNUSED' }
@@ -15,12 +20,13 @@ type Unlinked = { id: string; reference: string; prestataireNom: string; lei: st
 type Proposal = { arrangementId: string; reference: string; prestataireNom: string; ownerNom: string }
 type Registry = { active: boolean; canManage?: boolean; isAdmin?: boolean; orgId?: string; tiers: TierRow[]; unlinkedArrangements: Unlinked[]; proposals?: Proposal[] }
 type MergePreview = { ok: boolean; error?: string; source: { id: string; nom: string }; target: { id: string; nom: string }; groupAdmin?: boolean; counts: { arrangements: number; parties: number; services: number; usages: number; organizations?: number } }
-type Duplicate = { payload: { nom: string; lei?: string | null; pays?: string; linkArrangementIds?: string[] }; candidates: Candidate[] }
+type Duplicate = { payload: { nom: string; lei?: string | null; pays?: string; linkArrangementIds?: string[]; linkPartieIds?: string[] }; candidates: Candidate[] }
 
 const send = (url: string, method: string, body: object) => fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 const post = (url: string, body: object) => send(url, 'POST', body)
 
-export default function TierIdentityPanel() {
+/** `sansTitre` : sur la page dédiée (/tiers/entites), qui porte déjà le titre et l'explication. */
+export default function TierIdentityPanel({ sansTitre = false }: { sansTitre?: boolean } = {}) {
   const { t } = useTranslation()
   const c = t.tierIdentity
   const [data, setData] = useState<Registry | null>(null)
@@ -32,9 +38,12 @@ export default function TierIdentityPanel() {
   const [mergeFrom, setMergeFrom] = useState<string | null>(null)
   const [mergeTarget, setMergeTarget] = useState('')
   const [mergePreview, setMergePreview] = useState<MergePreview | null>(null)
+  const [services, setServices] = useState<ServiceTiers[]>([])
+  const [info, setInfo] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try { const res = await fetch('/api/tier-registry', { cache: 'no-store' }); if (res.ok) setData(await res.json() as Registry) } catch { /* lecture indisponible : panneau masqué */ }
+    try { const res = await fetch('/api/tier-registry/services-tiers', { cache: 'no-store' }); if (res.ok) setServices(((await res.json()) as { services?: ServiceTiers[] }).services ?? []) } catch { /* services tiers indisponibles */ }
   }, [])
   useEffect(() => { void load() }, [load])
 
@@ -95,6 +104,19 @@ export default function TierIdentityPanel() {
     } catch { setError(c.errors.failed) }
     finally { setBusy(false) }
   }
+  // Services tiers (parties prenantes des analyses) rattachés à une entité, ou détachés (tierId null).
+  async function rattacher(partieIds: string[], tierId: string | null) {
+    if (!partieIds.length) return
+    setBusy(true); setError(null); setInfo(null)
+    try {
+      const res = await post('/api/tier-registry/services-tiers', { partieIds, tierId })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(errorText(body.error)); return }
+      if (body.ignored > 0) setInfo(c.ignores.replace('{n}', String(body.ignored)))
+      await load()
+    } catch { setError(c.errors.failed) }
+    finally { setBusy(false) }
+  }
   async function link(arrangementId: string, tierId: string | null) {
     setBusy(true); setError(null)
     try {
@@ -107,10 +129,13 @@ export default function TierIdentityPanel() {
 
   return (
     <section className="card mb-6 space-y-4 p-4" aria-label={c.title}>
-      <div>
-        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{c.title}</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{c.hint}</p>
-      </div>
+      {!sansTitre && (
+        <div>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{c.title}</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-300">{c.hint}</p>
+        </div>
+      )}
+      {info && <p role="status" className="rounded border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100">{info}</p>}
       {error && <p role="alert" className="rounded border border-red-300 bg-red-50 p-2 text-sm text-red-900 dark:border-red-700 dark:bg-red-950/40 dark:text-red-100">{error}</p>}
       {duplicate && (
         <div role="alert" className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-100">
@@ -167,7 +192,10 @@ export default function TierIdentityPanel() {
               <tbody>{data.tiers.map(tier => (
                 <Fragment key={tier.id}>
                   <tr className="border-t border-gray-100 dark:border-gray-800">
-                    <td className="px-2 py-1 font-medium text-gray-900 dark:text-gray-100">{tier.nom}{tier.pays && <span className="ml-2 text-xs text-gray-500">{tier.pays}</span>}</td>
+                    <td className="px-2 py-1 font-medium text-gray-900 dark:text-gray-100">
+                      <button type="button" className="text-left text-ebios-700 hover:underline dark:text-ebios-300" aria-expanded={open === tier.id} aria-label={c.ouvrir.replace('{name}', tier.nom)} onClick={() => setOpen(o => o === tier.id ? null : tier.id)}>{tier.nom}</button>
+                      {tier.pays && <span className="ml-2 text-xs text-gray-500">{tier.pays}</span>}
+                    </td>
                     <td className="px-2 py-1 font-mono text-xs text-gray-600 dark:text-gray-300">{tier.lei ?? '—'}</td>
                     <td className="px-2 py-1"><span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-800 dark:bg-gray-800 dark:text-gray-100">{c.coverage[tier.coverage]}</span></td>
                     <td className="px-2 py-1 text-gray-700 dark:text-gray-200">{tier.arrangements.map(a => a.reference).join(', ') || '—'}</td>
@@ -195,11 +223,21 @@ export default function TierIdentityPanel() {
                       </div>
                     </td></tr>
                   )}
-                  {open === tier.id && <tr><td colSpan={6} className="px-2 pb-3"><TierDetailPanel tierId={tier.id} /></td></tr>}
+                  {open === tier.id && <tr><td colSpan={6} className="px-2 pb-3">
+                    <EntiteLiens tier={tier} services={services} contrats={tier.arrangements} contratsLibres={data.unlinkedArrangements}
+                      canManage={canManage} busy={busy} onRattacher={(ids, tierId) => void rattacher(ids, tierId)} onContrat={(id, tierId) => void link(id, tierId)} />
+                    <TierDetailPanel tierId={tier.id} />
+                  </td></tr>}
                 </Fragment>))}</tbody>
             </table>
           </div>
         )}
+
+      {services.length > 0 && (
+        <ImportServicesTiers services={services} canManage={canManage} busy={busy}
+          onRattacher={(ids, tierId) => void rattacher(ids, tierId)}
+          onCreer={sv => void create({ nom: sv.nom, linkPartieIds: sv.aRattacher })} />
+      )}
 
       {data.unlinkedArrangements.length > 0 && (
         <div>

@@ -13,6 +13,8 @@ describe('ProjectTiers', () => {
     render(<ProjectTiers analyseId="p1" initial={[]} editable />)
     fireEvent.click(screen.getByRole('button', { name: 'Ajouter un tiers' }))
     const input = screen.getByLabelText('Nom du tiers 1') as HTMLInputElement
+    // Pas de choix « prestataire / fournisseur / partenaire » : inutile pour un projet.
+    expect(document.querySelector('select')).toBeNull()
     fireEvent.change(input, { target: { value: 'Prestataire déjà contractualisé' } })
     await waitFor(() => expect(document.querySelector('#project-known-tiers option')?.getAttribute('value')).toBe('Prestataire déjà contractualisé'))
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer les tiers' }))

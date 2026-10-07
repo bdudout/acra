@@ -56,9 +56,18 @@ describe('resolveProjetSource', () => {
 })
 
 describe('prefillFromProjet', () => {
-  it('ne remplace jamais ce que l’utilisateur a déjà saisi', () => {
-    expect(prefillFromProjet({ nom: 'Refonte', description: 'Portail' }, { nom: '', description: '' })).toEqual({ nom: 'Analyse cyber — Refonte', description: 'Portail' })
-    expect(prefillFromProjet({ nom: 'Refonte', description: 'Portail' }, { nom: 'Mon nom', description: 'Ma desc' })).toEqual({ nom: 'Mon nom', description: 'Ma desc' })
+  it('transmet secteur et patterns du projet à l’analyse cyber', () => {
+    expect(prefillFromProjet(
+      { nom: 'Refonte', description: 'Portail', secteur: 'Santé', patternsArchi: ['SI_STANDARD', 'CLOUD_SAAS'] },
+      { nom: '', description: '', secteur: '', patternsArchi: [] },
+    )).toEqual({ nom: 'Analyse cyber — Refonte', description: 'Portail', secteur: 'Santé', patternsArchi: ['SI_STANDARD', 'CLOUD_SAAS'] })
+  })
+
+  it('ne remplace jamais le contexte que l’utilisateur a déjà choisi', () => {
+    expect(prefillFromProjet(
+      { nom: 'Refonte', description: 'Portail', secteur: 'Santé', patternsArchi: ['CLOUD_SAAS'] },
+      { nom: 'Mon nom', description: 'Ma desc', secteur: 'Banque', patternsArchi: ['SI_STANDARD'] },
+    )).toEqual({ nom: 'Mon nom', description: 'Ma desc', secteur: 'Banque', patternsArchi: ['SI_STANDARD'] })
   })
 })
 

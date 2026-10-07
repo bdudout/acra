@@ -16,7 +16,10 @@ const M = {
   subtitleReadonly: 'Consultez et priorisez vos risques (lecture seule).',
   manageTreatment: 'Gérer les mesures et plans d’action', manageMesures: 'Gérer les mesures de sécurité', managePlans: 'Gérer les plans d’action', treatmentCounts: '{mesures} mesures · {plans} plans', mesuresCount: '{count} mesures', plansCount: '{count} plans',
 }
-vi.mock('@/lib/i18n/context', () => ({ useTranslation: () => ({ locale: 'fr', t: { risquesDirects: M } }) }))
+vi.mock('@/lib/i18n/context', async () => {
+  const { fr } = await import('@/lib/i18n/fr')
+  return { useTranslation: () => ({ locale: 'fr', t: { risquesDirects: { ...fr.risquesDirects, ...M } } }) }
+})
 
 const fetchMock = vi.fn()
 beforeEach(() => { fetchMock.mockReset(); vi.stubGlobal('fetch', fetchMock) })
@@ -40,14 +43,12 @@ describe('RisquesDirects', () => {
     ] }))
     render(<RisquesDirects analyseId="an1" editable />)
     expect(await screen.findByText('Panne SI')).toBeInTheDocument()
-    // niveau brut affiché (badge « Brut 12 ») ; actuel/résiduel masqués car non réduits.
-    const niveaux = within(screen.getByRole('group', { name: 'Niveau' }))
-    expect(niveaux.getByText('Brut')).toBeInTheDocument()
-    expect(niveaux.getByText('12')).toBeInTheDocument()
-    expect(niveaux.queryByText('Actuel')).toBeNull()
+    // Chaque étape affiche son niveau EN MOTS (palier de l'échelle) avec le score.
+    expect(screen.getByRole('status', { name: 'Brut (sans mesure) : Critique (12)' })).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: 'Actuel (mesures existantes) : Critique (12)' })).toBeInTheDocument()
   })
 
-  it('3 niveaux : affiche Brut, puis Actuel/Résiduel seulement s\'ils sont réduits', async () => {
+  it('3 niveaux : brut, actuel et résiduel ont chacun leur niveau en mots', async () => {
     fetchMock.mockReturnValueOnce(jsonOk({ risques: [
       { id: 'r1', nom: 'Rançongiciel', gravite: 4, vraisemblance: 3, niveauRisque: 12,
         graviteActuelle: 2, vraisemblanceActuelle: 3, niveauActuel: 6,
@@ -55,10 +56,9 @@ describe('RisquesDirects', () => {
     ] }))
     render(<RisquesDirects analyseId="an1" editable />)
     expect(await screen.findByText('Rançongiciel')).toBeInTheDocument()
-    const niveaux = within(screen.getByRole('group', { name: 'Niveau' }))
-    expect(niveaux.getByText('Brut')).toBeInTheDocument()
-    expect(niveaux.getByText('Actuel')).toBeInTheDocument()   // 6 < 12 → affiché
-    expect(niveaux.getByText('Résiduel')).toBeInTheDocument() // 3 < 6 → affiché
+    expect(screen.getByRole('status', { name: 'Brut (sans mesure) : Critique (12)' })).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: 'Actuel (mesures existantes) : Modéré (6)' })).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: 'Résiduel (cible) : Faible (3)' })).toBeInTheDocument()
   })
 
   it('éditeur « Actuel » (avec mesures) : modifier G met à jour graviteActuelle (PATCH)', async () => {
@@ -67,9 +67,9 @@ describe('RisquesDirects', () => {
     ] }))
     render(<RisquesDirects analyseId="an1" editable mode="rate" />)
     expect(await screen.findByText('Panne SI')).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Actuel (avec mesures)' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Actuel (mesures existantes)' })).toBeInTheDocument()
     // L'éditeur « Actuel » part des valeurs brutes ; on abaisse sa gravité à 2 (liste ciblée par son nom accessible).
-    const gActuel = screen.getByRole('combobox', { name: 'Actuel (avec mesures) — Gravité' }) as HTMLSelectElement
+    const gActuel = screen.getByRole('combobox', { name: 'Actuel (mesures existantes) — Gravité' }) as HTMLSelectElement
     expect(gActuel.value).toBe('4')
     fetchMock.mockReturnValueOnce(jsonOk({ risque: { id: 'r1', gravite: 4, vraisemblance: 3, niveauRisque: 12, graviteActuelle: 2, vraisemblanceActuelle: 3, niveauActuel: 6, strategie: 'REDUIRE' } }))
     fireEvent.change(gActuel, { target: { value: '2' } })
@@ -161,9 +161,10 @@ describe('RisquesDirects', () => {
     render(<RisquesDirects analyseId="an1" editable mode="rate" />)
     expect(await screen.findByText('Panne SI')).toBeInTheDocument()
     expect(screen.queryByText('Ajouter')).toBeNull()
-    expect(screen.getByRole('columnheader', { name: 'Niveau' })).toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: 'Brut — Gravité' })).toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: 'Brut — Vraisemblance' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Brut (sans mesure)' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Actuel (mesures existantes)' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Brut (sans mesure) — Gravité' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Brut (sans mesure) — Vraisemblance' })).toBeInTheDocument()
     expect(screen.queryByRole('columnheader', { name: 'Traitement' })).toBeNull()
   })
 
@@ -187,8 +188,10 @@ describe('RisquesDirects', () => {
     expect(await screen.findByText('Panne SI')).toBeInTheDocument()
     expect(screen.queryByText('Ajouter')).toBeNull()
     expect(screen.getByRole('columnheader', { name: 'Traitement' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Niveau' })).toBeInTheDocument()
-    expect(screen.queryByRole('combobox', { name: 'Brut — Gravité' })).toBeNull()
+    // L'actuel est rappelé en lecture (point de départ du traitement), sans sélecteur.
+    expect(screen.getByRole('columnheader', { name: 'Actuel (mesures existantes)' })).toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: 'Actuel (mesures existantes) — Gravité' })).toBeNull()
+    expect(screen.queryByRole('combobox', { name: 'Brut (sans mesure) — Gravité' })).toBeNull()
     expect(screen.getByRole('combobox', { name: 'Résiduel (cible) — Gravité' })).toBeInTheDocument()
   })
 
@@ -202,6 +205,8 @@ describe('RisquesDirects', () => {
     ]
     render(<RisquesDirects analyseId="an1" editable suggestions={suggestions} />)
     expect(await screen.findByText('Panne SI')).toBeInTheDocument() // ligne du registre
+    // Registre non vide : suggestions repliées d'office, on les déplie.
+    fireEvent.click(screen.getByRole('button', { name: /Suggestions pour votre secteur/ }))
     // La suggestion « Fuite de données » est proposée ; « Panne SI » ne l'est pas (déjà ajoutée).
     expect(screen.getByRole('button', { name: /Fuite de données/ })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Panne SI/ })).toBeNull()
@@ -239,7 +244,7 @@ describe('RisquesDirects', () => {
     fetchMock.mockReturnValueOnce(oneRow())
     render(<RisquesDirects analyseId="an1" editable mode="rate" scale={{ nbNiveaux: 5 }} />)
     expect(await screen.findByText('Panne SI')).toBeInTheDocument()
-    const g = screen.getByRole('combobox', { name: 'Brut — Gravité' }) as HTMLSelectElement
+    const g = screen.getByRole('combobox', { name: 'Brut (sans mesure) — Gravité' }) as HTMLSelectElement
     expect([...g.options].map(o => o.value)).toEqual(['1', '2', '3', '4', '5'])
   })
 
@@ -263,11 +268,50 @@ describe('RisquesDirects', () => {
     expect(screen.getByText('Appétit : acceptable jusqu’à 2')).toBeInTheDocument()
   })
 
-  it('P2 — écran complet (ISO 31000 / NIST) : la décision est affichée dans la colonne Niveau', async () => {
+  it('P2 — écran complet (ISO 31000 / NIST) : la décision a sa colonne, en fin de ligne', async () => {
     fetchMock.mockReturnValueOnce(oneRow())
     render(<RisquesDirects analyseId="an1" editable />)
     expect(await screen.findByText('Panne SI')).toBeInTheDocument()
-    expect(within(screen.getByRole('group', { name: 'Niveau' })).getByText(M.decisionTreat)).toBeInTheDocument()
+    // Tableau des risques (les tableaux de la légende sont à part).
+    const tables = screen.getAllByRole('table')
+    const headers = within(tables[tables.length - 1]).getAllByRole('columnheader').map(h => h.textContent)
+    expect(headers).toEqual(['Risque', 'Brut (sans mesure)', 'Actuel (mesures existantes)', 'Traitement', 'Résiduel (cible)', 'Décision', ''])
+    expect(screen.getByText(M.decisionTreat)).toBeInTheDocument()
+  })
+
+  it('cotation lisible et contrôlée : libellés des niveaux, actuel borné par le brut, cascade à la baisse', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [
+      { id: 'r1', nom: 'Panne SI', gravite: 3, vraisemblance: 3, niveauRisque: 9, graviteActuelle: 3, vraisemblanceActuelle: 2, graviteResiduelle: 2, vraisemblanceResiduelle: 2, strategie: 'REDUIRE', mesuresCount: 1 },
+    ] }))
+    render(<RisquesDirects analyseId="an1" editable />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument()
+    const gActuel = screen.getByRole('combobox', { name: 'Actuel (mesures existantes) — Gravité' }) as HTMLSelectElement
+    expect([...gActuel.options].map(o => [o.textContent, o.disabled])).toEqual([['1 · Mineure', false], ['2 · Limitée', false], ['3 · Importante', false], ['4 · Critique', true]])
+    fetchMock.mockReturnValueOnce(jsonOk({ risque: {} }))
+    fireEvent.change(screen.getByRole('combobox', { name: 'Brut (sans mesure) — Gravité' }), { target: { value: '1' } })
+    await waitFor(() => {
+      const patch = fetchMock.mock.calls.find(c => c[1]?.method === 'PATCH')
+      expect(patch && JSON.parse(patch[1].body)).toEqual({ gravite: 1, graviteActuelle: 1, graviteResiduelle: 1 })
+    })
+  })
+
+  it('alertes de cohérence du traitement ; légende des échelles G/V dépliable', async () => {
+    fetchMock.mockReturnValueOnce(oneRow())
+    render(<RisquesDirects analyseId="an1" editable />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument()
+    expect(screen.getByText(/« Réduire » sans mesure ni plan d’action/)).toBeInTheDocument()
+    expect(screen.getByText(/G = gravité · V = vraisemblance/)).toBeInTheDocument()
+    expect(screen.getByRole('table', { name: /Gravité : ampleur des conséquences/ })).toBeInTheDocument()
+    expect(screen.getAllByText(/survie financière menacée/).length).toBeGreaterThan(0)
+  })
+
+  it('cotation refusée par le serveur : message explicite', async () => {
+    fetchMock.mockReturnValueOnce(oneRow())
+    render(<RisquesDirects analyseId="an1" editable />)
+    expect(await screen.findByText('Panne SI')).toBeInTheDocument()
+    fetchMock.mockReturnValueOnce(Promise.resolve({ ok: false, status: 400, json: async () => ({ error: 'cotation_incoherente' }) } as Response))
+    fireEvent.change(screen.getByRole('combobox', { name: 'Résiduel (cible) — Gravité' }), { target: { value: '1' } })
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Cotation refusée/)
   })
 
   it('P3 — saisie du propriétaire (validée à la sortie du champ) → PATCH', async () => {
@@ -296,5 +340,29 @@ describe('RisquesDirects', () => {
     fireEvent.change(screen.getByLabelText('Propriétaire'), { target: { value: '__none__' } })
     expect(screen.queryByText('Panne SI')).toBeNull()
     expect(screen.getByText('Fuite')).toBeInTheDocument()
+  })
+})
+
+describe('RisquesDirects — projet 360 : suppression soumise à validation', () => {
+  const cyber = { id: 'r1', nom: 'Fuite de données', gravite: 3, vraisemblance: 2, niveauRisque: 6, strategie: 'REDUIRE', domaine: 'CYBER' }
+  it('un analyste DEMANDE la suppression (envoyée au RSSI) ; le risque reste, marqué', async () => {
+    vi.stubGlobal('confirm', vi.fn(() => true))
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [cyber] }))
+    render(<RisquesDirects analyseId="an1" editable withDomaine suppression={{ role: 'ANALYSTE', validationActive: true }} />)
+    expect(await screen.findByText('Fuite de données')).toBeInTheDocument()
+    fetchMock.mockReturnValueOnce(Promise.resolve({ ok: true, status: 202, json: async () => ({ pending: true, risque: { ...cyber, suppressionDemandeeLe: '2026-10-06T10:00:00Z' } }) } as Response))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Demander la suppression' })[0])
+    expect(await screen.findByText('Demande de suppression envoyée, à valider par le RSSI.')).toBeInTheDocument()
+    expect(screen.getByText('Suppression demandée — à valider par le RSSI')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Valider la suppression' })).toBeNull()
+  })
+  it('le RSSI voit « Valider la suppression » et « Refuser » sur une demande en attente', async () => {
+    fetchMock.mockReturnValueOnce(jsonOk({ risques: [{ ...cyber, suppressionDemandeeLe: '2026-10-06T10:00:00Z' }] }))
+    render(<RisquesDirects analyseId="an1" editable withDomaine suppression={{ role: 'RSSI', validationActive: true }} />)
+    expect(await screen.findByRole('button', { name: 'Valider la suppression' })).toBeInTheDocument()
+    fetchMock.mockReturnValueOnce(jsonOk({ risque: { ...cyber, suppressionDemandeeLe: null } }))
+    fireEvent.click(screen.getByRole('button', { name: 'Refuser' }))
+    await waitFor(() => expect(screen.queryByText(/Suppression demandée/)).toBeNull())
+    expect(JSON.parse(fetchMock.mock.calls.find(c => c[1]?.method === 'PATCH')![1].body)).toEqual({ refuserSuppression: true })
   })
 })

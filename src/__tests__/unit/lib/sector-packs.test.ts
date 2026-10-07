@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SECTOR_CODES, listSectorSuggestions, CATALOGUE_PACK_VERSION } from '@/lib/sector-suggestions'
-import { CATALOGUE_CHANGELOG } from '@/lib/sector-suggestions-changelog'
+import { CATALOGUE_CHANGELOG, compareCatalogueVersions } from '@/lib/sector-suggestions-changelog'
 import { planSuggestionSelection } from '@/lib/sector-suggestion-plan'
 
 const LOCALES = ['fr', 'en', 'de', 'es', 'it'] as const
@@ -42,7 +42,7 @@ describe('packs sectoriels de contrôles, KRI et audit (catalogue 1.5)', () => {
     const last = CATALOGUE_CHANGELOG.find(e => e.version === '1.5')!
     expect(last.added).toContain('finance.control.reconciliation')
     expect(last.added).toContain('services.audit.confidentiality')
-    expect(CATALOGUE_PACK_VERSION >= '1.5').toBe(true)
+    expect(compareCatalogueVersions(CATALOGUE_PACK_VERSION, '1.5')).toBeGreaterThanOrEqual(0)
   })
 
   it('un contrôle sectoriel sans son processus est signalé, jamais rattaché à un processus inventé', () => {

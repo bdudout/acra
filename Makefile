@@ -4,7 +4,7 @@
 # Usage : make <cible>
 # =============================================================================
 
-.PHONY: help setup setup-auto up down logs restart build test db-reset db-migrate check-env
+.PHONY: help setup setup-auto up down logs restart build rebuild docker-usage docker-clean test db-reset db-migrate check-env
 
 # Affiche l'aide par défaut
 help:
@@ -17,7 +17,10 @@ help:
 	@echo "  make down       Arrêter l'application"
 	@echo "  make restart    Redémarrer l'application"
 	@echo "  make logs       Afficher les logs en temps réel"
-	@echo "  make build      Reconstruire les images Docker"
+	@echo "  make build      Reconstruire les images Docker (avec cache)"
+	@echo "  make rebuild    Reconstruire sans cache"
+	@echo "  make docker-usage  Espace disque utilisé par Docker"
+	@echo "  make docker-clean  Libérer l'espace Docker (images, cache, conteneurs arrêtés ; jamais les volumes)"
 	@echo "  make test       Lancer les tests unitaires"
 	@echo "  make db-migrate Appliquer les migrations Prisma"
 	@echo "  make db-reset   Réinitialiser la base de données (DANGER)"
@@ -49,7 +52,24 @@ logs:
 	docker compose logs -f app
 
 build:
-	docker compose build --no-cache app
+	docker compose build app migrator
+
+rebuild:
+	docker compose build --no-cache app migrator
+
+# ── Espace disque Docker ──────────────────────────────────────────────────────
+docker-usage:
+	docker system df -v
+
+# Supprime : images sans étiquette, cache de build au-delà de 5 Go, conteneurs ARRÊTÉS du projet.
+# Ne supprime JAMAIS de volume (base de données, documents, sauvegardes).
+docker-clean:
+	@echo "Supprime les images orphelines, le cache de build > 5 Go et les conteneurs arrêtés du projet."
+	@echo "Les volumes (base, documents, sauvegardes) ne sont jamais touchés."
+	@read -p "Confirmer ? (oui/non) : " confirm && [ "$$confirm" = "oui" ] || exit 1
+	docker compose rm -f
+	docker image prune -f
+	docker builder prune -f --keep-storage 5GB
 
 # ── Base de données ───────────────────────────────────────────────────────────
 db-migrate:

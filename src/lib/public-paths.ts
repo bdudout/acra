@@ -24,6 +24,10 @@ export function isPublicPath(pathname: string): boolean {
     // SCIM 2.0 : provisioning par l'IdP (SailPoint/Azure AD), auth Bearer (clé
     // d'API scope provision) dans le handler → exempté de l'auth par session.
     pathname.startsWith('/api/scim/') ||
+    // Serveur MCP : clé d'API Bearer + scope `mcp` + interrupteurs d'instance et d'organisation vérifiés dans le
+    // handler → exempté de l'auth par session. Chemin exact : /api/mcp-proposals (validation humaine) reste protégé.
+    pathname === '/api/mcp' ||
+    pathname === '/api/mcp/' ||
     // Statut démo : lu par la page d'accueil (visiteur anonyme) pour afficher
     // l'encart « mode démonstration ». Ne renvoie aucune donnée sensible.
     pathname === '/api/demo/status' ||

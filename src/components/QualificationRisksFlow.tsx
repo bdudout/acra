@@ -65,7 +65,7 @@ export function QualificationRisksDialog({ analyseId, risks, onClose, onDone }: 
     setBusy(false)
     if (!res || !res.ok) { setError(rp.error); return }
     const d = await res.json().catch(() => ({}))
-    onDone(rp.summary.replace('{created}', String(d.created ?? 0)).replace('{skipped}', String((d.skipped ?? []).length)))
+    onDone(rp.summary.replace('{created}', String(d.created ?? 0)).replace('{skipped}', String((d.skipped ?? []).filter((s: { reason?: string }) => s.reason === 'NOT_SELECTED').length)))
   }
   return <QualificationRiskProposal risks={risks} labels={labels} strategies={strategies} busy={busy} error={error} onCancel={onClose} onConfirm={confirm} />
 }

@@ -6,6 +6,7 @@
 //  - canal : EBIOS RM → proposé en atelier 5 ; méthodes directes → registre.
 
 import type { QualificationRiskProposalItem } from '@/lib/qualification'
+import { SOCLE_EQUIVALENTS, SOCLE_RULE_PREFIX } from '@/lib/projet360-socle'
 
 /** Textes traduits du catalogue : t.qualification.riskCatalog. */
 export type QualificationRiskCatalogTexts = Record<string, { title: string; description?: string }>
@@ -49,6 +50,25 @@ export function planQualificationRiskCreation<T extends { id: string; mandatory:
     else skipped.push({ id: p.id, reason: 'NOT_SELECTED' })
   }
   return { toCreate, skipped }
+}
+
+/** Intitulé comparable : minuscules, sans accents, apostrophes unifiées, espaces réduits. */
+const normaliserIntitule = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[’`]/g, "'").toLowerCase().replace(/\s+/g, ' ').trim()
+
+/**
+ * Propositions déjà présentes dans l'analyse, à ne pas reproposer : même règle, même intitulé (risque saisi ou importé
+ * d'une analyse cyber), ou risque par défaut équivalent encore présent (SOCLE_EQUIVALENTS).
+ */
+export function propositionsDejaPresentes(
+  proposals: readonly { id: string; title: string }[],
+  risques: readonly { nom: string; qualificationRuleId: string | null }[],
+): Set<string> {
+  const regles = new Set(risques.flatMap(r => (r.qualificationRuleId ? [r.qualificationRuleId] : [])))
+  const titres = new Set(risques.map(r => normaliserIntitule(r.nom)))
+  for (const [code, equivalents] of Object.entries(SOCLE_EQUIVALENTS)) {
+    if (regles.has(`${SOCLE_RULE_PREFIX}${code}`)) for (const id of equivalents) regles.add(id)
+  }
+  return new Set(proposals.filter(p => regles.has(p.id) || titres.has(normaliserIntitule(p.title))).map(p => p.id))
 }
 
 /** Propositions encore en attente (règle pas encore créée dans l'analyse). */

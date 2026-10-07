@@ -4,18 +4,22 @@
 // Questions oui/non groupées par domaine (cyber, IT, projet, métier, fraude,
 // externalisation), progression par domaine, enregistrement (PUT
 // /api/analyses/[id]/qualification-360), puis risques proposés par les réponses
-// via le flux commun des risques de qualification (sélection, risques imposés).
+// via le flux commun des risques de qualification (sélection, risques imposés) :
+// la proposition s'ouvre d'office après l'enregistrement s'il y a des risques à créer,
+// et les réponses enregistrées remontent au parent (onSaved) pour survivre au changement de phase.
 
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { DOMAINES_360, QUESTIONS_360, progression360 } from '@/lib/projet360'
 import { QualificationRisksDialog, useQualificationProposals } from '@/components/QualificationRisksFlow'
 
-export default function Questionnaire360({ analyseId, editable, initialAnswers, sources: initialSources = {}, onRisksCreated }: {
+export default function Questionnaire360({ analyseId, editable, initialAnswers, sources: initialSources = {}, onRisksCreated, onSaved }: {
   analyseId: string; editable: boolean; initialAnswers: Record<string, boolean>
   /** Réponses pré-remplies d'après les données existantes : question → source (jusqu'à confirmation). */
   sources?: Record<string, string>
   onRisksCreated?: () => void
+  /** Réponses enregistrées (le parent les conserve : le questionnaire est démonté au changement de phase). */
+  onSaved?: (answers: Record<string, boolean>) => void
 }) {
   const { t } = useTranslation()
   const p = t.projet360
@@ -41,7 +45,9 @@ export default function Questionnaire360({ analyseId, editable, initialAnswers, 
     if (!res || !res.ok) { setMsg(p.saveError); return }
     setMsg(p.saved)
     setSources({}) // réponses confirmées : plus de badge « pré-rempli »
-    await reload()
+    onSaved?.(answers)
+    const { pending: aCreer } = await reload()
+    if (aCreer.length > 0) setDialogOpen(true)
   }
 
   return (

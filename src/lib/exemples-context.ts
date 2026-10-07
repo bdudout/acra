@@ -143,16 +143,26 @@ export function scoreExemple(ex: RankableExemple, keywords: string[]): number {
  * supprimer. Tri stable (ordre d'origine conservé à score égal). Chaque exemple
  * renvoyé porte un drapeau `pertinent` (score > 0) pour l'affichage d'un badge.
  */
+/** Raison du badge : cas d'usage (sous-secteur choisi), architecture (pattern coché) ou secteur (mots-clés). */
+export type PertinenceBadge = 'CAS_USAGE' | 'ARCHITECTURE' | 'SECTEUR'
+const RANG: Record<string, number> = { CAS_USAGE: 0, ARCHITECTURE: 1 }
+
 export function rankExemples<T extends RankableExemple>(
   exemples: T[],
   ctx: RankContext,
-): (T & { pertinent: boolean })[] {
+): (T & { pertinent: boolean; pertinence?: PertinenceBadge })[] {
   const keywords = [...vocabForSecteur(ctx.secteur), ...vocabForSousSecteur(ctx.sousSecteur), ...(ctx.extraKeywords ?? [])]
     .map(k => k.toLowerCase().trim())
     .filter(Boolean)
 
+  // Les exemples propres au cas d'usage puis à l'architecture passent en tête (dans leur ordre), puis le classement
+  // par mots-clés du secteur et des réponses précédentes.
+  const origine = (ex: T) => (typeof ex.pertinence === 'string' && ex.pertinence in RANG ? ex.pertinence as PertinenceBadge : undefined)
   return exemples
-    .map((ex, idx) => ({ ex, idx, score: scoreExemple(ex, keywords) }))
-    .sort((a, b) => (b.score - a.score) || (a.idx - b.idx)) // tri stable
-    .map(({ ex, score }) => ({ ...ex, pertinent: score > 0 }))
+    .map((ex, idx) => ({ ex, idx, rang: RANG[origine(ex) ?? ''] ?? 2, score: scoreExemple(ex, keywords) }))
+    .sort((a, b) => (a.rang - b.rang) || (a.rang < 2 ? a.idx - b.idx : (b.score - a.score) || (a.idx - b.idx)))
+    .map(({ ex, score }) => {
+      const pertinence = origine(ex) ?? (score > 0 ? 'SECTEUR' as const : undefined)
+      return { ...ex, pertinent: pertinence !== undefined, ...(pertinence ? { pertinence } : {}) }
+    })
 }

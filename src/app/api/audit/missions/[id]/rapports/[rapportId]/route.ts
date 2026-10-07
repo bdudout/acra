@@ -2,6 +2,7 @@
  * GET    /api/audit/missions/[id]/rapports/[rapportId] — télécharger un rapport.
  * DELETE /api/audit/missions/[id]/rapports/[rapportId] — supprimer un rapport.
  */
+import { accesResultats } from '@/lib/acces-resultats.server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -25,7 +26,7 @@ async function load(session: { user: { id: string; role?: string } }, id: string
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
   const mission = await prisma.auditMission.findFirst({
     where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },
-    select: { id: true, organizationId: true, rapports: true },
+    select: { id: true, organizationId: true, rapports: true, responsable: true },
   })
   if (!mission) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
   const cfg = await getOrgConfig(mission.organizationId)
@@ -40,6 +41,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const { id, rapportId } = await params
   const c = await load(session as unknown as { user: { id: string; role?: string } }, id)
   if ('error' in c) return c.error
+  // Rapport de mission : interlocuteurs concernés seulement (lecture globale ou responsable de la mission).
+  const acces = await accesResultats(c.userId, c.userRole as UserRole)
+  if (!acces.tout && !acces.concerne(c.mission.responsable)) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
   const rapports = (Array.isArray(c.mission.rapports) ? c.mission.rapports : []) as unknown as RapportMeta[]
   const r = rapports.find(x => x.id === rapportId)
   if (!r) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })

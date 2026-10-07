@@ -94,3 +94,18 @@ describe('dispatchMcpMessage — notifications & erreurs', () => {
     expect(response).toMatchObject({ id: null, error: { code: JSONRPC_ERRORS.INVALID_REQUEST } })
   })
 })
+
+describe('dispatchMcpMessage — interopérabilité des clients (Claude, Codex, Mistral Vibe…)', () => {
+  it('initialize : consignes de serveur et identité lisible quand elles sont fournies', async () => {
+    const r = await dispatchMcpMessage({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }, tools, ctx, { instructions: 'Lire avant de proposer.', serverInfo: { name: 'acra', title: 'ACRA', version: '1.0.5' } })
+    expect(r.response?.result).toMatchObject({ instructions: 'Lire avant de proposer.', serverInfo: { name: 'acra', title: 'ACRA', version: '1.0.5' } })
+  })
+  it('tools/list : titre et annotations transmis quand l’outil les déclare, absents sinon', async () => {
+    const annote: McpTool<Ctx> = { ...echoTool, name: 'lire', title: 'Lire', annotations: { readOnlyHint: true, openWorldHint: false } }
+    const r = await dispatchMcpMessage({ jsonrpc: '2.0', id: 2, method: 'tools/list' }, [annote, boomTool], ctx)
+    const [a, b] = (r.response?.result as { tools: Record<string, unknown>[] }).tools
+    expect(a).toMatchObject({ name: 'lire', title: 'Lire', annotations: { readOnlyHint: true, openWorldHint: false } })
+    expect(b).not.toHaveProperty('annotations')
+    expect(b).not.toHaveProperty('title')
+  })
+})

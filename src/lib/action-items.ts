@@ -27,7 +27,7 @@ export type ActionSource = (typeof ACTION_SOURCES)[number]
 // Les mesures d'analyse EBIOS et les actions du registre partagent l'origine
 // « risque » ; un constat d'audit venu d'une autorité de contrôle bascule en
 // « regulateur » (même objet, source différente — cf. lib/audit.ts).
-export const ACTION_ORIGINES = ['risque', 'conformite', 'controle', 'audit', 'regulateur', 'incident', 'orpheline'] as const
+export const ACTION_ORIGINES = ['risque', 'conformite', 'controle', 'audit', 'regulateur', 'incident', 'resilience', 'preconisation', 'orpheline'] as const
 /** Typologie métier d'origine d'un plan d'action, exposée comme facette de filtre (vue /actions). */
 export type ActionOrigine = (typeof ACTION_ORIGINES)[number]
 
@@ -242,6 +242,15 @@ export function normalizeOrphanPlanAction(row: OrphanPlanActionRow, opt: LienOpt
     echeance: toDate(row.echeance), statut, priorite,
     lien: opt.lien ?? null, riskItemId: null,
   }
+}
+
+/**
+ * Plan d'action rattaché à une origine qui n'a pas sa propre liste (test de
+ * résilience, préconisation) : même forme que l'orpheline mais avec son origine
+ * métier et son lien profond, pour qu'il apparaisse dans la vue unifiée.
+ */
+export function normalizeLinkedPlanAction(row: OrphanPlanActionRow, origine: 'resilience' | 'preconisation', opt: LienOpt = {}): ActionItem {
+  return { ...normalizeOrphanPlanAction(row, opt), origine }
 }
 
 /** Forme brute d'un traitement de conformité (plan d'action), en entrée de normalisation. */

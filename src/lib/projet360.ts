@@ -239,8 +239,9 @@ export interface Faits360 {
   processusCritiques: number // processus cartographiés critiques
   traitementsRgpd: number    // traitements au registre RGPD (art. 30)
   doraActif: boolean         // module de reporting réglementaire DORA actif (entité financière)
+  patterns?: readonly string[] // patterns d'architecture de SI cochés dans l'analyse (vision technique)
 }
-export type SourcePrefill = 'analyseCyber' | 'tic' | 'cloud' | 'processus' | 'ropa' | 'dora'
+export type SourcePrefill = 'analyseCyber' | 'tic' | 'cloud' | 'processus' | 'ropa' | 'dora' | 'patterns'
 
 /**
  * Réponses pré-remplies : « oui » UNIQUEMENT quand une donnée existante le prouve
@@ -257,6 +258,36 @@ export function defaultAnswers360(f: Faits360): { answers: QualificationAnswers;
   if (f.processusCritiques > 0) set('p360.metier.processusCritique', 'processus')
   if (f.traitementsRgpd > 0) set('p360.cyber.donneesSensibles', 'ropa')
   if (f.doraActif) { set('p360.metier.exigenceReglementaire', 'dora'); set('p360.fraude.fluxFinanciers', 'dora') }
+  // Patterns d'architecture : complètent les faits de l'organisation (la source d'un fait déjà établi prime).
+  const fromPatterns = prefillFromPatterns(f.patterns ?? [])
+  for (const q of Object.keys(fromPatterns.answers)) if (!(q in answers)) set(q, 'patterns')
+  return { answers, sources }
+}
+
+/** Question du questionnaire 360 qu'un pattern d'architecture permet de pré-remplir (« oui » seulement). */
+const PATTERN_PREFILL: Record<string, string> = {
+  EXPOSITION_INTERNET: 'p360.cyber.exposeInternet',
+  INTERCO_TIERS: 'p360.ext.prestataireCritique', EXTERNALISATION_DONNEES: 'p360.ext.prestataireCritique', TELEMAINTENANCE: 'p360.ext.prestataireCritique',
+  CLOUD_SAAS: 'p360.ext.cloud', CLOUD_IAAS_PAAS: 'p360.ext.cloud',
+  SI_SENSIBLE: 'p360.cyber.donneesSensibles', SI_PATRIMONIAL: 'p360.it.obsolescence',
+}
+
+/** Réponses pré-remplies par les patterns cochés : « oui » seulement (jamais de « non » deviné), source « patterns ». */
+export function prefillFromPatterns(patterns: readonly string[]): { answers: QualificationAnswers; sources: Record<string, SourcePrefill> } {
+  const answers: QualificationAnswers = {}
+  const sources: Record<string, SourcePrefill> = {}
+  for (const p of patterns) { const q = PATTERN_PREFILL[p]; if (q) { answers[q] = true; sources[q] = 'patterns' } }
+  return { answers, sources }
+}
+
+/** Ajoute les réponses pré-remplies SANS écraser une réponse déjà donnée (oui ou non) ; ne renvoie que ce qui est ajouté. */
+export function mergePrefill(existing: Record<string, unknown>, prefill: { answers: QualificationAnswers; sources: Record<string, SourcePrefill> }): { answers: QualificationAnswers; sources: Record<string, SourcePrefill> } {
+  const answers: QualificationAnswers = { ...(existing as QualificationAnswers) }
+  const sources: Record<string, SourcePrefill> = {}
+  for (const [q, v] of Object.entries(prefill.answers)) {
+    if (typeof existing[q] === 'boolean') continue
+    answers[q] = v; sources[q] = prefill.sources[q]
+  }
   return { answers, sources }
 }
 
@@ -374,11 +405,23 @@ export function resolveProjetSource(o: {
   return { status: 'OK', projetId: p.id }
 }
 
-/** Préremplit nom/description d'une analyse cyber depuis le projet, sans écraser la saisie. */
-export function prefillFromProjet(projet: { nom: string; description?: string | null }, current: { nom: string; description: string }): { nom: string; description: string } {
+/**
+ * Préremplit une analyse cyber depuis le projet, sans jamais écraser la saisie.
+ * Le secteur et les patterns font partie du cadrage obligatoire : les reprendre
+ * évite à l'utilisateur de devoir refaire un choix déjà validé pour le projet.
+ */
+export function prefillFromProjet(
+  projet: { nom: string; description?: string | null; secteur?: string | null; patternsArchi?: unknown },
+  current: { nom: string; description: string; secteur: string; patternsArchi: string[] },
+): { nom: string; description: string; secteur: string; patternsArchi: string[] } {
+  const projectPatterns = Array.isArray(projet.patternsArchi)
+    ? projet.patternsArchi.filter((pattern): pattern is string => typeof pattern === 'string')
+    : []
   return {
     nom: current.nom || `Analyse cyber — ${projet.nom}`,
     description: current.description || (projet.description ?? ''),
+    secteur: current.secteur || projet.secteur || '',
+    patternsArchi: current.patternsArchi.length ? current.patternsArchi : projectPatterns,
   }
 }
 
@@ -389,4 +432,58 @@ export function isGrcActive(c: {
   incidentsActive?: boolean; projets360Active?: boolean
 }): boolean {
   return Boolean(c.registreRisquesActive || c.controlePermanentActive || c.auditInterneActive || c.kriActive || c.reglementaireActive || c.profilsOperationnelsActive)
+}
+
+// ─── Import des tiers avec les risques cyber ──────────────────────────────────
+const TYPES_PP = ['FOURNISSEUR', 'CLIENT', 'PARTENAIRE', 'PRESTATAIRE', 'ORGANISME_REGULATION', 'AUTRE'] as const
+export interface SourceTiers {
+  nom: string; type: string; description: string | null; tierId: string | null
+  dependance: number; penetration: number; maturite: number; confiance: number; critique: boolean; rang: number
+}
+
+/**
+ * Tiers de l'analyse cyber source à recopier dans le projet 360 : identité, type, cotation et criticité repris, en
+ * rang 1 (le projet ne reprend pas l'arborescence des tiers connexes) ; sans doublon avec les tiers déjà présents
+ * (même identité de tiers ou même nom). Pur → testé (projet360-import-tiers.test.ts).
+ */
+export function planTiersImport(args: { analyseId: string; source: readonly SourceTiers[]; existants: readonly { nom: string; tierId: string | null }[] }) {
+  const cle = (s: string) => s.trim().toLocaleLowerCase()
+  const noms = new Set(args.existants.map(e => cle(e.nom)))
+  const ids = new Set(args.existants.flatMap(e => (e.tierId ? [e.tierId] : [])))
+  const out: (Omit<SourceTiers, 'type'> & { analyseId: string; type: (typeof TYPES_PP)[number]; exposition: number; fiabilite: number; parentCle: null; cle: null })[] = []
+  for (const s of args.source) {
+    const nom = s.nom.trim()
+    if (!nom || noms.has(cle(nom)) || (s.tierId && ids.has(s.tierId))) continue
+    noms.add(cle(nom)); if (s.tierId) ids.add(s.tierId)
+    out.push({
+      analyseId: args.analyseId, nom, type: (TYPES_PP as readonly string[]).includes(s.type) ? s.type as (typeof TYPES_PP)[number] : 'PRESTATAIRE',
+      description: s.description, tierId: s.tierId, dependance: s.dependance, penetration: s.penetration, maturite: s.maturite, confiance: s.confiance,
+      exposition: s.dependance * s.penetration, fiabilite: s.maturite * s.confiance, critique: s.critique, rang: 1, parentCle: null, cle: null,
+    })
+  }
+  return out
+}
+
+// ─── Qualification d'une analyse cyber reprise du projet 360 ──────────────────
+// Questions équivalentes : exposition Internet, données personnelles / sensibles, exigence réglementaire,
+// externalisation (prestataire critique ou nuage). Une réponse déjà saisie dans l'analyse n'est jamais remplacée.
+
+/** Réponses de la qualification d'analyse déduites des réponses 360 du projet (questions répondues seulement). */
+export function qualificationDepuisProjet(qualification360: unknown): QualificationAnswers {
+  const q = sanitizeAnswers360(qualification360)
+  const out: QualificationAnswers = {}
+  const reprendre = (cle360: string, cle: string) => { if (typeof q[cle360] === 'boolean') out[cle] = q[cle360] }
+  reprendre('p360.cyber.exposeInternet', 'expositionInternet')
+  reprendre('p360.cyber.donneesSensibles', 'donneesPersonnelles')
+  reprendre('p360.metier.exigenceReglementaire', 'reglementation')
+  const presta = q['p360.ext.prestataireCritique'], cloud = q['p360.ext.cloud']
+  if (presta === true || cloud === true) out.externalisation = true
+  else if (presta === false && cloud === false) out.externalisation = false
+  return out
+}
+
+/** Complète les réponses de l'analyse sans remplacer une réponse saisie ; `reprises` = questions complétées. */
+export function completerQualification(actuelles: QualificationAnswers, depuisProjet: QualificationAnswers): { answers: QualificationAnswers; reprises: string[] } {
+  const reprises = Object.keys(depuisProjet).filter(k => actuelles[k] === undefined || actuelles[k] === '')
+  return { answers: { ...actuelles, ...Object.fromEntries(reprises.map(k => [k, depuisProjet[k]])) }, reprises }
 }

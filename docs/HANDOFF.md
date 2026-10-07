@@ -6,6 +6,622 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-07 (84) — Claude : MCP nouvelle analyse, PSSI, activité MCP, guide de connexion
+
+- `b570c697` : `propose_nouvelle_analyse` (paquet de l'import historique, origine `EXPRESSION_BESOINS` /
+  `ANALYSE_HISTORIQUE`, type `analysis_create`, acceptation = `canCreateAnalyse` → `executeAnalysisImport` source MCP ;
+  import : secteur, sous-secteurs, cadrage hors EBIOS RM) et `propose_pssi` (type `pssi`, `lib/mcp/pssi-proposal.ts`
+  pur et idempotent, `lib/mcp/pssi-import.server.ts` : référentiel PSSI + document Markdown portée REFERENTIEL + suivi
+  de conformité en une transaction, fichier retiré si échec, 409 `code_existant` ; acceptation = administrateur,
+  conformité active). File de validation : motif de refus affiché (avant : échec silencieux).
+- `0d257c10` : page `/mcp-activite` (ADMIN de l'org) + `GET /api/mcp-activity` + `lib/mcp/activity.ts` (pur) ; création
+  de clé au seul droit `mcp`, révocation par `DELETE /api/config/api-keys/[id]` ; lien menu et configuration.
+- Documentation : `docs/mcp-clients.md` (guide pour un assistant : clé, transport, outils, erreurs), README
+  « Assistants IA (serveur MCP) », consignes `initialize` complétées, dossier de démo M7–M9.
+- **Vérifié** : `tsc` 0 · `npm test` 582 fichiers / 4540 tests · `i18n:check` · parcours réel : propositions déposées par
+  MCP, refus RSSI (403, conforme : création d'analyse = analyste / administrateur), acceptation analyste → analyse créée
+  (capture 17) ; `/mcp-activite` en RSSI → « réservé à l'administrateur ».
+- **Non vérifié en direct** : acceptation PSSI et vue administrateur de `/mcp-activite` (aucun compte administrateur de
+  recette ; la réinitialisation du mot de passe de `recette-claude` a été refusée) — couverts par les tests unitaires.
+  Deux propositions PSSI identiques restent EN_ATTENTE sur l'instance locale (la 2ᵉ sera refusée en 409).
+- **Proposé, non développé** : évolution des catalogues par défaut (secteurs, sous-secteurs, cas d'usage) par MCP.
+
+---
+
+## 2026-10-07 (83) — Claude : MCP lots M1–M5 livrés, démo projet 360 réalisée
+
+- `8c282b6a` : `read_analyses`, `read_projet` (`lib/mcp/tools-projet.server.ts`), `propose_projet360` (ancre
+  `ORGANISATION` = organisation de la clé, `lib/mcp/projet360-proposal.ts`, création par `lib/projet360-creation.server.ts`
+  à l'acceptation), `propose_risk` enrichi (domaine, cotations brut / actuel / résiduel cohérentes, échelle 4/5,
+  mesures et plans créés dans la transaction d'acceptation, plans `RISQUE_ANALYSE`), `projectRiskTypes` dans
+  `recommend_risks_scenarios` ; acceptation conformité alignée sur `peutGererConformite`. Matrice d'isolation :
+  type `PROPOSITION_ORGANISATION` (aucun identifiant d'ancre accepté).
+- `ba26353f` : démo réalisée (`docs/demo/mcp-projet-360.md` § 7, `docs/demo/captures/`, scripts `docs/demo/scripts/`).
+- **Vérifié** : `tsc` 0 · `npm test` 577 fichiers / 4512 tests (avant le dernier correctif d'affichage, test du
+  composant vert) · parcours réel via MCP + validation Playwright · contrôles de sécurité rejoués.
+- **Environnement** : les conteneurs Docker avaient disparu (volumes intacts) → `docker-compose up -d` ; Codex : quota
+  épuisé (reprise possible plus tard) ; Claude Code CLI fourni avec l'application : non connecté.
+- **À décider / à faire** : domaine 360 des risques types d'architecture classés « Fraude » (catégorie bâloise
+  « fraude externe ») ; rejouer le parcours avec Codex et Mistral Vibe ; build non relancé depuis M1–M5.
+
+---
+
+## 2026-10-08 (82) — Claude : MCP prêt pour les clients, dossier de démo projet 360
+
+- **Bloquant corrigé** `c1152c63` : `/api/mcp` était redirigé vers la connexion par le middleware de session
+  (`lib/public-paths`) — aucun client MCP ne pouvait se connecter. `/api/mcp-proposals` reste protégé.
+- `53d9eee1` : `instructions` et `serverInfo` (titre, version) à `initialize` (`lib/mcp/instructions.ts`) ; `title` et
+  `annotations` d'outils (`readOnlyHint` lectures / recommandations / aperçus ; propositions non destructives) ;
+  `WWW-Authenticate: Bearer` sur 401.
+- Vérifié en local avec curl : initialize (client 2025-11-25 → 2025-06-18 négocié), notification 202, 17 outils,
+  appel d'outil, GET 405, 401 sans clé ou clé invalide. Tests MCP 102/102.
+- **Local** : MCP activé pour « Organisation principale », clé de test `mcp` seule (expire 2026-11-05) dans
+  `.acra-test-memory/mcp-demo.json` (ignoré par git).
+- **Dossier** `docs/demo/mcp-projet-360.md` : expression de besoins fictive (mutuelle, espace adhérent 2027),
+  résultat attendu, scénario, configuration Claude Code / Codex / Mistral Vibe, lots M1–M6.
+- **Prochain pas** : lots M1–M5 (lister les analyses, contexte d'un projet, proposer un projet, `propose_risk`
+  enrichi, recommandations complètes pour un projet) ; installer les clients (aucun n'est présent sur le poste).
+
+---
+
+## 2026-10-08 (81) — Claude : décisions de droits appliquées
+
+- `53388ea` conformité : `peutGererConformite` (ADMIN, RSSI, RISK_MANAGER, CONFORMITE, DPO) remplace les gardes locales
+  des 4 routes `/api/organizations/[orgId]/conformite/*` et le socle ; `peutLireConformite` (+ ANALYSTE) pour le
+  tableau de bord et le menu (liens vers le socle masqués à l'analyste).
+- `1989c8b` résultats d'audit et de contrôle : `lib/acces-resultats` (`voitTousLesResultats` = lecture globale du
+  dispositif ; `estConcerne` = responsable texte libre ↔ nom / e-mail ; `visibiliteMission`) appliqué à
+  `/api/audit/missions`, `/api/audit/missions/[id]`, rapports de mission, `/api/controles`, plan, campagnes, rapports de
+  campagne, vue réseau, volets audit / contrôle du cockpit (`/api/grc/rollup`). Plan et univers d'audit restent ouverts
+  (planification, pas des résultats) ; papiers de travail déjà réservés à l'audit.
+- **Vérifié** : `tsc` 0 · `npm test` 574 fichiers / 4489 tests · `next build` OK · recette navigateur 8 rôles (conformité,
+  socle, contrôles, missions, campagnes, cockpit) conforme.
+- **Piège** : les responsables sont souvent des équipes (« Contrôle permanent ») ; la 1re ligne ne voit alors rien —
+  saisir le nom ou l'e-mail de la personne pour qu'elle voie ses contrôles et recommandations.
+
+---
+
+## 2026-10-08 (80) — Claude : recette par rôle dans le navigateur, points mineurs
+
+- `cdafb89` revues d'habilitations masquées (menu, configuration, politique d'instance) ; `14dbe5a` import des
+  entités limité aux fournisseurs / prestataires / partenaires, titre non répété ; `44724b3` registre IA en lecture
+  seule pour CONTROLEUR et AUDITEUR (`peutLireRegistreIa`, `iaContext({ ecriture })`, `canManage` côté UI) ;
+  `c77419b` invitation « Créer ma première analyse » réservée aux rôles qui créent.
+- **Comptes de recette par rôle** : `npx tsx prisma/seed-recette-roles.ts` (10 rôles, « Organisation principale »,
+  identifiants dans `.acra-test-memory/recette-roles.json`, ignoré par git ; `--purge` désactive).
+- **Recette navigateur (10 rôles)** : accès aux 34 pages conforme au menu ; écritures refusées (registre IA, entités,
+  services tiers, configuration) pour LECTEUR, METIER, ANALYSTE, AUDITEUR, CONTROLEUR, DIRECTION_METIER.
+- **Décisions ouvertes** : (1) CONFORMITE et DPO voient « Conformité » dans le menu mais la page et ses API sont
+  réservées à ADMIN / RSSI / RISK_MANAGER ; (2) LECTEUR, METIER, ANALYSTE lisent par URL / API le registre des risques,
+  les missions d'audit, les KRI, le cockpit GRC et le registre TIC (masqués du menu ; antérieur à cette version).
+
+---
+
+## 2026-10-08 (79) — Claude : audit avant v1.0.5, README ×5, notes de version
+
+- **Bloquants corrigés** : `next build` échouait (`FICHIER_SELECT` exporté par une route) → `6536d8f` + test
+  `route-exports.test.ts` (toute exportation hors handlers dans route/page/layout) ; faux positif de la politique de
+  migrations (DROP d'une table temporaire) qui aurait fait échouer la CI de la PR → `c3e1bb0` ; `/auth/login`
+  inexistant (admin audit, SMTP) → `60e070d`.
+- **Audit par rôle** (navigation × gardes des pages, tous modules actifs) : cohérent ; seul lien mort
+  `/recertification` (module P5 sans page, désactivé partout par défaut). Passage des 39 pages en ADMIN : 200, sans
+  erreur (sauf `/plans-actions` → redirection voulue vers `/actions`).
+- `docs/releases/v1.0.5.md` rédigé (41 migrations : 36 additives, 4 données, 1 destructive auto-réparatrice) ;
+  README ×5 : projets 360, tiers (services / entités / contrats), registre IA, déclarations, navigation, contenu
+  sectoriel, sauvegardes planifiées.
+- **Vérifié** : `tsc` 0 · `npm test` 572 fichiers / 4469 tests · `next build` OK · `check-migrations --ci --base
+  origin/main` conforme.
+- **Reste avant publication** : décision Recertification (masquer ou livrer P5) ; `package.json` → 1.0.5 dans la PR de
+  version ; pousser la branche (38 commits locaux) et ouvrir la PR (≈ 195 commits hors `main`) ; CI du commit exact.
+
+---
+
+## 2026-10-08 (78) — Claude : navigation réorganisée, registre IA livré
+
+- Navigation (mode GRC, `lib/navigation.ts`) : menu « Tiers » ; **Registres** = risques, campagnes, processus,
+  incidents, TIC, RGPD, IA ; **Conformité** (nouveau groupe `conformite`) = conformité, référentiels, documents,
+  profils, dérogations, homologations, recertification ; **Réglementaire** = DORA, suivi régulateur, tests de
+  résilience, rapports. 1ʳᵉ ligne : « Incidents » en lien direct.
+- `28db151` : `POST /api/projets/[id]/analyses` refusé si le module Projets 360 est désactivé (boutons déjà masqués).
+- **Registre IA** (spec P7, `docs/specs/protection-sociale-specs.md`) : `/registre-ia` répondait 404 (module sans page).
+  Modèle `SystemeIA` (migration `20261008100000_registre_ia`), `lib/registre-ia` (classement indicatif
+  2024/1689, revue 12 mois, champs à compléter), catalogue ×5 (`lib/registre-ia-catalogue`, 9 systèmes types +
+  « propre à l'activité »), API `/api/registre-ia` (+ `[id]`, `catalogue` sous verrou), `RegistreIaManager`,
+  `peutGererRegistreIa`. Module requis (sinon 404).
+- **Vérifié** : `tsc` (hors `.next/dev` généré) · tests ciblés 97/97 · `check-migrations` · migration appliquée ·
+  navigateur : `/registre-ia` (synthèse, avertissement, catalogue de 10 systèmes et classes) — aucun import fait.
+- **Non vérifié** : `npm run build` ; import, création, suppression réels dans le navigateur (laissés à l'utilisateur).
+- **Piège** : `prisma migrate diff` remonte une dérive sans rapport (index `AuditConstat_referentielCode_idx`) — ne
+  pas l'embarquer dans une migration sans vérifier.
+
+---
+
+## 2026-10-08 (77) — Claude : services tiers et entités de tiers
+
+- Vocabulaire (×5) : **service tiers** = partie prenante étudiée dans une analyse (service rendu, adhérence) ;
+  **entité de tiers** = personne morale (`Tier`, ex-« identité »). Menu et page `/tiers` → « Services tiers », encadré
+  explicatif, bouton « Entités de tiers » (même style que « Cartographie de l'écosystème ») → nouvelle page
+  `/tiers/entites` (même `TierIdentityPanel` que Configuration › Tiers).
+- `lib/services-tiers` (pur, testé) : regroupement des parties prenantes par nom comparable (entités rattachées,
+  occurrences à rattacher, candidates nom/alias jamais appliquées) + disposition du graphe d'une entité.
+- `GET/POST /api/tier-registry/services-tiers` : liste ; rattacher/détacher des parties prenantes à une entité (ADMIN ou
+  2ᵉ ligne, entité autorisée pour l'org, analyses visibles de l'org active, **hors analyse gelée**, ignorés comptés).
+  `POST /api/tier-registry` accepte `linkPartieIds` (créer l'entité depuis un service tiers).
+- UI : `tiers/ImportServicesTiers` (import depuis les services tiers), `tiers/EntiteLiens` (clic sur une entité :
+  graphe services ↔ entité ↔ contrats, rattacher/détacher services et contrats via `/api/tier-registry/link`).
+- **Vérifié** : `tsc` 0 · `npm test` (568 fichiers, 8 échecs de libellés corrigés → 24/24 sur les fichiers touchés) ·
+  `i18n:check` · navigateur : `/tiers` (encadré, bouton), `/tiers/entites` (32 services tiers proposés), POST hors
+  périmètre → ignoré, entité inconnue → 404.
+- **Non vérifié** : création d'entité / rattachement réels dans le navigateur (aucune donnée de recette isolée : pas
+  d'écriture dans les analyses de l'utilisateur) ; `npm run build`.
+- **À décider** : l'import propose toutes les parties prenantes, y compris des rôles internes ou des clients
+  (« Assurés », « Administrateur Système ») ; filtrer par type (prestataire, fournisseur, partenaire) ?
+
+---
+
+## 2026-10-08 (76) — Claude : retours de recette projet (plans, sous-secteurs, secteurs masqués, risques types)
+
+- `956be03` références R1, R2… stables des risques d'un projet (`lib/risque-refs`, cotation actuelle) : plans
+  d'action (API `plans-projet`, page, PPTX) et matrice (identique quelle que soit l'étape ou la catégorie) ;
+  priorités en couleur (`ACTION_PRIORITE_BADGE` dans `lib/risk-action`, partagé avec `RiskActionsPanel`).
+- `4954ffe` sous-secteurs à la création d'un projet et sur sa page.
+- `6757001` secteurs masqués par organisation (`OrganizationConfig.secteursMasques`, migration
+  `20261008090000_secteurs_masques`, `lib/secteurs-masques` : libellé FR canonique, même ordre dans les 5 langues).
+- Import de risques types en phase Identification (`appreciation`) du projet : `ImportRisquesTypes` (contexte +
+  `AnalyseMetaEditor`, catalogue groupé REGISTRE / SOUS_SECTEUR / ARCHITECTURE / SECTEUR / TRANSVERSE),
+  `GET/POST /api/analyses/[id]/risques-types` (création seulement depuis le catalogue recalculé côté serveur, garde
+  `guardDirectRisk`). Sources : packs EBIOS (≈ 7 par secteur, cotation suggérée) + **catalogue sectoriel GRC**
+  (`listSectorSuggestions`, via `lib/secteur-catalogue` : secteur d'analyse → `SectorCode`, assurance par
+  sous-secteur ; cotation G2·V2 à revoir, domaine depuis la catégorie bâloise). Ex. Santé + clinique + cloud :
+  48 propositions au lieu de 9.
+- **Vérifié** : `tsc` 0 · `npm test` 566 fichiers / 4439 tests · `i18n:check` · `check-migrations` · migration
+  appliquée en local · navigateur :3005 (refs et couleurs sur « Souris chauve », import de 2 risques sur le projet de
+  recette, POST d'un intitulé inventé ou déjà présent → 0 créé, configuration : 21 secteurs affichés).
+- **Non vérifié** : `npm run build` (dev en cours) ; masquage réel d'un secteur dans le navigateur (non modifié pour
+  ne pas toucher la configuration de l'organisation de l'utilisateur ; couvert par tests unitaires).
+- **Piège** : après une migration, le dev doit être redémarré (sinon `Unknown field secteursMasques` partout).
+  Lancement du dev : onglet Terminal (l'aperçu intégré n'a plus accès à ~/Documents).
+
+---
+
+## 2026-10-06 (75) — Claude : incidents récupérables, page projet réorganisée, météo, PPTX exécutif, listes à deux vues
+
+- `dfc34af` incidents : suppression → corbeille (`ElementSupprime`, migration `20261007090000`, `lib/corbeille`),
+  restauration / purge ADMIN dans Récupération, audit `INCIDENT_DELETED/RESTORED/PURGED` (+ SIEM) ; tableau compact.
+- `80e63f9` page projet : matrice à gauche (filtre par catégorie AU-DESSUS), validation à droite, bandeau des analyses
+  cyber liées, répartition après les plans ; indicateurs resserrés (6) ; météo (`Analyse.meteoProjet`, migration
+  `20261007100000`, `lib/projet-meteo`) ; graphique des plans restants (`lib/projet-burndown`) ; « Associer une
+  analyse cyber » (POST `/api/projets/[id]/analyses`) ; `TitreEditable` (renommage en ligne projet et analyse).
+- `ffb5046` « Associer un projet » sur une analyse cyber sans projet (créer avec `?analyse=` ou lier).
+- `d61efec` export PPTX : couverture, synthèse exécutive (2e diapo), cartographies actuel / résiduel, graphiques.
+- Listes : bascule vue détaillée / liste simple (`VueListeToggle`, mémorisée par navigateur) sur `/analyses` et
+  `/projets` (cartes avec météo et mise en service).
+- **Incident machine** : disque plein (cache `.next/dev` du serveur de dev à 16 Go) → `.next/dev` et `.next/cache`
+  supprimés (régénérables). À surveiller : ce cache grossit vite avec les redémarrages répétés.
+
+---
+
+## 2026-10-06 (74) — Claude : projet — validation sur sa page, plans éditables, mise en service, cyber liées, export PowerPoint
+
+- **Page du projet** (`/projets/[id]`, chargement commun `lib/projet-vue.server` avec l'export) : panneaux de
+  validation (soumission / double approbation RM + RSSI, acceptation des résiduels — mêmes droits que la page de
+  l'analyse), date de mise en service modifiable (PATCH `dateEcheance`, normalisée par `lib/date-saisie`),
+  indicateur J-n et plans prévus après la mise en service, encart « Analyses cyber liées » (risques à traiter non
+  importés — `lib/projet-cyber-lies`), bouton « Exporter (PowerPoint) ».
+- **Plans éditables** (porteur, échéance, statut) sur la page du projet et en phase 5 (`PlansParPriorite editable`,
+  via la route plan du risque) ; badge « Après la mise en service ».
+- **Création** : date de mise en service facultative. **Relances** : lien vers l'objet (`lib/relances-chemins` —
+  projet à approuver → `/projets/[id]`, suppression → phase 3 du projet).
+- **Export PPTX** `/api/projets/[id]/export?lang=` (`lib/projet-pptx` : titre, vision, avancement risques, avancement
+  plans, plans par priorité paginés ; libellés i18n ×5).
+- **Sécurité** : la route PATCH/DELETE d'un plan de risque vérifiait le lien plan ↔ risque mais pas risque ↔ analyse
+  éditée (modification possible d'un plan d'une autre analyse de l'org) → corrigé + test ; échéance illisible ignorée.
+- **Vérifié en navigateur** : date enregistrée, porteur / échéance d'un plan persistés, badge, téléchargement PPTX ;
+  rendu des diapositives contrôlé (LibreOffice → PDF).
+- Note : après un redémarrage, le mot de passe du compte local de recette a été régénéré (scratchpad de session).
+
+---
+
+## 2026-10-06 (73) — Claude : bascule analyse ⇄ projet, qualification reprise du 360, cotations incohérentes
+
+- **Bascule de vue** (`VueAnalyseProjet`) en haut de l'analyse (`/analyses/[id]`) et de ses ateliers (EBIOS RM et
+  méthodes par phases), de la présentation du projet et des phases du projet ; projet lié résolu par
+  `projetLieAccessible` (lib/projet360-sources.server, accès vérifié) ; liens analyse ↔ projet via `Analyse.projetSourceId`.
+- **Correctif d'accès** : la liste `/projets` et la présentation d'un projet listaient ses analyses cyber sans filtre
+  de droits (noms visibles) → filtre `analyseWhereClause` / `analysesCyberDuProjet` (lib/projet360-sources.server).
+- **Qualification d'analyse reprise du 360** (`qualificationDepuisProjet`, `completerQualification` dans
+  lib/projet360) : exposition Internet, données personnelles, réglementation, externalisation (prestataire critique
+  ou nuage) ; à la création depuis un projet (`/api/projets` expose `qualificationAnalyse`) et sur l'analyse existante
+  (panneau déplié, réponses à vérifier puis enregistrer) ; jamais à la place d'une réponse saisie.
+- **Cotation incohérente signalée** (résiduel V 4 > actuel 3) : risque importé d'une analyse cyber puis modifié le
+  2026-10-05 à 21:23, avant le contrôle actuel ≤ brut / résiduel ≤ actuel (23:44). Reprise des données :
+  migration `20261006140000_risque_cotation_coherente` (`472d351`).
+- **Vérifié en navigateur** : création d'une analyse cyber depuis le projet de recette (3 réponses reprises), bascule
+  dans les deux sens.
+
+---
+
+## 2026-10-06 (72) — Claude : projets — mesures par défaut, propositions sans doublon, tableau de bord, documents, données et services
+
+- `33927ca` : mesure par défaut (à faire) pour chaque risque par défaut (`RisqueSocle.mesure`, ×5 langues ; mesure
+  facultative des risques ajoutés en configuration) ; propositions de la qualification ni proposées ni créées si le
+  risque est déjà en phase 3 (`propositionsDejaPresentes` : même règle, même intitulé normalisé, risque par défaut
+  équivalent — `SOCLE_EQUIVALENTS`) ; fenêtre des propositions défilante ; page du projet : matrice brut / actuel /
+  résiduel + filtre par catégorie (`MatriceProjet`), indicateurs (`lib/projet-indicateurs` : avancement des plans,
+  retards, sans porteur / échéance, risques à traiter sans plan, réduction, résiduels hors appétit).
+- Phase 1 : « Objectifs du projet » (plus de critères d'acceptation) ; **documents du projet** (`Document.analyseId`,
+  migration `20261006130000_document_analyse`, routes `/api/analyses/[id]/fichiers[/docId]`, accès = accès au projet ;
+  la GED exclut désormais `analyseId` non nul en liste / téléchargement / suppression).
+- Phase 2 : **données et services** avec criticité 1–4 (`lib/actifs-projet`, stockés dans `Cadrage.valeursMetier` du
+  projet, route `/api/analyses/[id]/actifs-projet`), import des valeurs métier d'une analyse cyber (filtre commun
+  `lib/projet360-sources.server`, aussi utilisé par l'import de risques).
+- **Vérifié en navigateur** : dépôt / téléchargement d'un schéma, absent de la GED ; import de 4 valeurs métier.
+- **Hors périmètre, constaté** : `prisma migrate diff` signale 2 index du schéma sans migration (AuditConstat et
+  Controle `referentielCode`), préexistants.
+
+---
+
+## 2026-10-06 (71) — Claude : qualification 360, réponses conservées et risques proposés
+
+- **Diagnostic** : les réponses étaient bien enregistrées en base, mais `Questionnaire360` est démonté au changement
+  de phase et repartait des réponses chargées avec la page (`projet360.answers`) → réponses « perdues » à l'écran.
+  Les risques proposés n'étaient créés qu'après ouverture manuelle de « Voir les risques proposés » + confirmation.
+- **Corrigé** : `PhasedRiskWorkshop` conserve les réponses enregistrées (`onSaved` → `answers360`, aussi passées au
+  tableau de bord) ; après enregistrement, la proposition des risques s'ouvre d'office s'il y a des risques à créer ;
+  le bilan « non retenus » ne compte plus les risques déjà créés (seulement `NOT_SELECTED`).
+- **Vérifié** : tests `Projet360.test.tsx` (rouge puis vert) ; navigateur : enregistrement → dialogue ouvert →
+  risques créés visibles en phase 3 → retour en qualification, réponses intactes.
+
+---
+
+## 2026-10-06 (70) — Claude : présentation d'un projet, plans par défaut, suggestions repliables
+
+- **Fait** : `51ec3cd` suggestions de risques repliables (repliées d'office si le registre contient des risques) ;
+  `d4d7a62` plan d'action par défaut pour chaque risque par défaut (`RisqueSocle.plan`, créé par `populateProjet360`
+  via `createAnalyseRiskPlanAction`, lien RISQUE_ANALYSE) + plan facultatif des risques ajoutés (Configuration ›
+  Projets) ; `bf50a1e` page `/projets/[id]` (présentation, indicateurs, répartition brut / actuel / résiduel par palier
+  — `lib/projet-synthese.ts`, risques par domaine, principaux risques, plans par priorité ; « Modifier » →
+  phases du projet) ; la liste `/projets` ouvre cette page.
+- **Vérifié en navigateur** : page de présentation du projet de recette (indicateurs, graphe, Modifier) ; nouveau
+  projet créé par l'API : 8 plans par défaut rattachés à leurs risques, triés par priorité.
+- **Non fait** : mesures par défaut (seuls les plans, jugés suffisants pour la qualification) ; les projets créés
+  avant ce lot n'ont pas de plan par défaut (pas de reprise).
+
+---
+
+## 2026-10-06 (69) — Claude : incidents multi-risques, validation des suppressions, plans par priorité, recette
+
+- **Fait** (`1e29f65`, `dc537f6`, `dce9f9d` + ce commit) : incident ↔ plusieurs risques du registre (table
+  `IncidentRisque`, reprise des liens existants ; `riskItemId` = risque principal ; calibrage par la liaison ;
+  export Excel) ; tableau des incidents lisible ; projet 360 : suppression d'un risque soumise à validation (RM, RSSI si
+  cyber ; `OrganizationConfig.projetSuppressionValidation`, activée par défaut ; garde `guardValidationSuppression`,
+  relance `SUPPRESSION_RISQUE` dans l'e-mail de synthèse, marqueur `Risque.suppressionRappelLe`) ; phase Traitement :
+  plans d'action par priorité (`lib/plans-priorite.ts`, `GET /api/analyses/[id]/plans-projet`) ; « Vue globale des
+  risques projets » ; registre : suggestions = risques seulement, « Importer aussi » processus / contrôles / KRI / audits
+  associés (`lib/suggestions-associees.ts`) ; menu Registres : Processus pour tous ceux qui voient les registres.
+- **Recette fonctionnelle** (navigateur, base Docker locale, compte de recette `recette-claude@acra.test`, ADMIN de
+  `global` — mot de passe aléatoire hors dépôt ; **à supprimer** quand la recette est terminée) : liste et création de
+  projet (objectifs repris en phase 1), 13 risques en phase 3 (8 par défaut + 5 proposés), ordre des colonnes, libellés,
+  légende, plans par priorité en phase 5, incidents (association de 2 risques), vue globale, menu Registres, suggestions
+  du registre (43 risques, option « Importer aussi »), Configuration › Projets / Tiers, badges « architecture » en
+  atelier 1. Correctifs issus de la recette : colonne Traitement, alerte limitée aux risques à traiter, largeur de la
+  ligne (tient à 1 024 px), en-tête « Risques liés », panneau d'association à l'écran, export incidents, relance.
+- **Non vérifié en navigateur** : demande de suppression par un non-validateur (pas de 2ᵉ compte), e-mail de relance
+  réel, OV en atelier 2 (couvert par les tests unitaires).
+- **Piège** : chaque `prisma generate` impose de redémarrer le serveur de dev (sinon 500 sur toutes les pages qui lisent
+  la configuration).
+
+---
+
+## 2026-10-06 (68) — Claude : risques projet par défaut, ligne de risque lisible et contrôlée
+
+- **Fait** : risques présents par défaut dans tout projet 360 (`lib/projet360-socle.ts`, créés par
+  `populateProjet360`, marqués `socle:<code>`), configurables dans Configuration › Projets
+  (`RisquesProjetDefautEditor`, `OrganizationConfig.risquesProjetDefaut`, migration `20261006090000`) ; refonte de la
+  ligne du registre à saisie directe (`RisquesDirects`) : ordre brut → actuel → traitement → résiduel → décision,
+  niveau en mots par étape, libellés dans les sélecteurs, bornes + cascade (`lib/cotation-risque.ts`), refus serveur
+  `cotation_incoherente` (route PATCH, seulement si la cotation est modifiée), alertes de cohérence, légende G/V
+  (`EchelleLegende`, `lib/echelle-legende.ts`) ; `getEffectiveScaleConfig` : même correctif de chemin « / » que
+  `getOrgConfig`.
+- **Vérifié** : voir la réponse du tour (tsc, i18n, suite complète, build sur export de l'arbre).
+  **Non vérifié** : rendu navigateur (poste en swap, pas de compte sur la base Docker).
+- **Piège** : la base Docker locale montre un écart de schéma préexistant (index `Controle_referentielCode_idx`
+  déclaré mais absent) — sans lien avec ce tour, non corrigé.
+
+---
+
+## 2026-10-05 (67) — Claude : pertinence des exemples, patterns, projets 360, tiers
+
+- **Fait** :
+  - `7f70593` — badges « pertinent pour votre cas d'usage » (sous-secteur choisi) / « … votre architecture : <patterns> »
+    (pattern coché) dans les 5 ateliers (`PertinenceBadge`, `annoterPertinence`, `rankExemples` les met en tête) ;
+    OV : la description de l'exemple était perdue depuis la v1.0 (`ov?.desc`) → `lib/objectifs-vises.ts`.
+  - `d7af12d` — lot 2 des patterns réécrit (fin du gabarit « X — composants… »), compléments du lot 1
+    (`exemples-patterns-complements.ts`), test de cohérence par pattern (`exemples-patterns-coherence.test.ts`) ;
+    affichage : combinaisons d'abord, entrelacement des patterns, ≤ 4 par pattern, ≤ 10 « architecture » par catégorie.
+  - (ce tour, commit suivant) Projets 360 : lancement dans une page dédiée `/projets/nouveau` (objectifs saisis dès
+    la création → `Cadrage.objectifsEtude`, `lib/cadrage-initial.ts`) ; liste `/projets` avec recherche, filtre par
+    statut et tri (`lib/projets-liste.ts`) ; carte de chaleur du portefeuille retirée de la page (export Excel conservé,
+    `ProjetsPortefeuille` supprimé) ; import cyber : recherche d'analyse (plus de chargement de tous les risques),
+    import des tiers de la source (`planTiersImport`, case cochée par défaut, tiers seuls possibles), bouton « Voir
+    les risques importés » ; « Tiers concernés » sans typologie ; mesures d'un projet sans cotation d'efficacité ;
+    « Identités de tiers » déplacé de `/tiers` vers `/configuration` › Tiers (`?section=tiers`).
+- **Diagnostic lenteur** (poste local) : 8 Go de RAM, ~10 Go de swap utilisés, serveur Next quasi entièrement en
+  swap → la lenteur ressentie est d'abord environnementale. Côté code : les 5 dictionnaires i18n (~1,5 Mo minifiés)
+  sont envoyés sur **chaque** page (`lib/i18n/index.ts` importe les 5 langues, `context.tsx` s'en sert) et les données
+  d'exemples (~740 Ko) sur la création d'analyse et les ateliers. **Non fait** : chargement paresseux de la langue
+  active (proposé à l'utilisateur).
+- **Signalé, non vérifié** : « risques importés absents de l'atelier 3 » — en base, le projet « Kangourou » a bien
+  3 risques importés (`sourceRisqueId`) et le registre (phase 3) les lit sans filtre ; hypothèse : chargement en swap.
+- **Pièges** : `<input list>` a le rôle ARIA combobox (tests) ; sur ce poste, lancer tsc/vitest en arrière-plan
+  (> 2 min) et ne jamais en lancer deux à la fois.
+
+---
+
+## 2026-10-05 (66) — Claude : reprise du travail de Codex et finitions stockage
+
+- **Fait (commits `d43a988`, `5cfa15c`)** : page `/admin/storage` (panneau Stockage + gestion des sauvegardes,
+  retirée de `/admin` et de `VersionCard`) ; chaque alerte cite sa mesure et sa règle (`storageAlertCauses`) ; bouton
+  « Lancer VACUUM » (`POST /api/admin/storage/vacuum` : `VACUUM (ANALYZE)` simple, tables candidates relues en base,
+  SUPER_ADMIN, audit `INSTANCE_VACUUM_RUN`, jamais `VACUUM FULL`) ; `/api/health` vérifie toujours le schéma
+  (`schema: ok|outdated|unknown`) ; overrides `vite/postcss/esbuild` liés aux dépendances directes ; ESLint 10 différé.
+  (Corrige l'entrée 65 : le panneau n'est plus sur `/admin` mais sur `/admin/storage`.)
+- **Vérifié** : `tsc` propre ; `npm test` 507 fichiers / 4180 tests verts ; `npm run i18n:check` ok ; `npm run build` ok ;
+  `prisma migrate deploy` : 184 migrations, aucune en attente ; `/api/health?deep=1` → `ok`, `schema: ok`.
+  **Non vérifié** : panneau authentifié dans le navigateur, VACUUM réel, Docker/agent hôte réels.
+- **Prochain pas** : relancer le dev (`npm run dev -- -p 3005`, `DATABASE_URL` en `localhost`), ouvrir `/admin/storage`,
+  tester aperçu/nettoyage/VACUUM ; `make docker-usage` puis `make docker-clean` ; B9 (documents orphelins).
+
+---
+
+## 2026-10-05 (65) — Claude : stockage, supervision et nettoyage (spec `stockage-supervision-nettoyage.md`)
+
+- **Fait (lots D, C, B, A, tous commités, rien poussé)** :
+  D — journaux plafonnés (ancre `x-logging`), image unique `acra-app:${ACRA_VERSION:-dev}` pour `app`/`migrator`,
+  `make docker-usage|docker-clean|rebuild`, purge des images ACRA < N-1 + `image prune` + `builder prune` après une
+  mise à jour réussie (jamais de volume), `.dockerignore` élargi, README ×5. C — « Libérer de l'espace » : aperçu,
+  confirmation par saisie du nombre, `selectBackupsToPrune` (point protégé, au moins un point vérifié, N de 1 à 60),
+  route `POST /api/admin/backup/prune`, demande `backup-prune` (liste exacte, revalidée par l'agent contre SON index),
+  `acra-snapshot.sh prune --ids` (code 31 si identifiant invalide) ; service `backup` historique : `BACKUP_KEEP`,
+  pas de dump au démarrage si dump < 20 h. B — règles B1–B7 automatiques (B8 manuel) en lib pure, suppression par
+  lots de 1 000, bail d'exécution, routes GET/POST/PUT, cron `/api/cron/cleanup` (03:00 via `scheduler.sh`).
+  A — `StorageUsagePanel` sur `/admin` (SUPER_ADMIN : 5 blocs + bandeau + projection ; ADMIN : documents de son
+  périmètre), seuils réglables, `StorageSnapshot` quotidien (écrit par le cron de nettoyage, purge > 400 j = B10),
+  `host-stats.json` publié par l'agent (1×/h, types connus, valeurs assainies).
+- **Correctif au passage** : `update-lib.sh` `smoke_ok` utilisait `sed '\+'` (non portable BSD/macOS) → le test
+  « enchaîne … FINALIZE » était rouge sur Mac avant mes changements ; remplacé par `grep -Eo`.
+- **Écarts assumés vs spec** : B8 (accusés d'import) hors nettoyage automatique car `GET /api/v2/analysis-imports/{id}`
+  les relit ; B9 (fichiers de documents orphelins) non fait (demande `list()` sur `DocumentStorage` local + S3) ;
+  `prune` n'a pas d'options `--keep-*` (l'app envoie une liste exacte, donc pas de test de parité de règles) ;
+  pas de MFA de ré-authentification sur la purge ; pas de ligne d'alerte dans l'e-mail quotidien ; service `backup`
+  non placé derrière un profil compose (dépend du flux d'installation de l'agent) ; dumps du volume `backup_data`
+  non exposés dans `backup-stats.json`.
+- **Vérifié** : `npx tsc --noEmit` propre ; `npm test` 503 fichiers / 4159 tests verts ; `npm run i18n:check` ok.
+  **Non vérifié** : Docker réel (journaux, image unique, `docker-clean`, purge d'images), agent hôte réel
+  (`host-stats.json`, `backup-prune`), migrations `20261005100000` et `20261005110000` sur une vraie base,
+  rendu navigateur du panneau. À faire : `docker system df` avant/après sur le poste, puis recette navigateur.
+- **Prochain pas** : appliquer les migrations (`prisma migrate deploy`) et **redémarrer le dev** ; lancer
+  `make docker-usage` puis `make docker-clean` pour récupérer de l'espace ; B9 ; alerte e-mail.
+
+---
+
+## 2026-10-04 (64) — Codex : correctifs finaux de la PR #215
+
+- **Suivi après correction de la révision stable** : toutes les vérifications
+  hors Docker sont vertes (dont Vitest et E2E). Le banc Docker atteint désormais
+  la cible, mais l'étape `MIGRATE` échoue puis le rollback se termine correctement
+  (`rolledBack: true`, journal `run/last.json` de la CI). Le workflow conservait
+  seulement les manifestes de sauvegarde : les fichiers cachés de diagnostic
+  étaient exclus de l'artefact. Les statuts/journaux sont maintenant collectés
+  explicitement, sans fichiers de sauvegarde. Un mode `ACRA_UPDATE_VERBOSE=1`
+  réservé au banc permet d'afficher l'erreur exacte du migrateur ; le comportement
+  de production reste silencieux et inchangé. Cette exécution a révélé
+  `EACCES: permission denied, open '/app/prisma.config.ts'` : Git crée les
+  nouveaux fichiers avec le `umask 077` du lanceur, puis Docker les copie avec
+  le propriétaire root tandis que Prisma tourne sous `nextjs`. Le Dockerfile
+  attribue désormais `public`, `prisma` et `prisma.config.ts` à `nextjs` ; un test
+  de non-régression est rouge avant puis vert après la correction. La recette
+  Docker complète reste à reconfirmer après ce commit.
+- **CI après ownership** : les 182 migrations sont appliquées avec succès ;
+  `START` et `HEALTH` sont également verts. Le scénario 3 échoue désormais au
+  `SMOKE` et revient correctement à la stable. La sortie HTTP du chemin fautif
+  était supprimée ; le mode diagnostic CI l'affiche maintenant pour identifier
+  le code de réponse ou l'option `wget` non reconnue, sans changer les critères
+  de santé ni le comportement en production.
+- **Cause du SMOKE confirmée sans attendre un autre build** : le conteneur
+  `node:26-alpine` utilise BusyBox `wget`, dont l'aide ne répertorie pas
+  `--max-redirect=0` (reproduit avec l'image locale `alpine:latest`). Cette
+  option faisait échouer systématiquement le test de fumée malgré `MIGRATE`,
+  `START` et `HEALTH` verts. Le contrôle utilise maintenant `wget -S -q -O`
+  compatible BusyBox et vérifie le dernier code HTTP après redirection. Un test
+  ciblé était rouge avant correction et passe après (2 fichiers, 2 tests avec
+  le test de permissions Docker).
+- **URL du smoke** : le script interrogeait également `/login`, qui n'est pas
+  une route App Router de l'application. La page publique effective est
+  `/auth/signin` (`src/app/auth/signin/page.tsx`, lien de la landing page). Le
+  contrôle utilise maintenant cette route ; test rouge puis vert. Aucun écran
+  applicatif n'a été modifié.
+- **Scénario 4 réel** : la mise à jour complète et son smoke passent. L'injection
+  d'une migration `SELECT 1/0` provoque bien `P3018` et le rollback revient à la
+  stable, mais le document de recette manque ensuite. Dans la stable, le volume
+  documentaire est anonyme : la restauration par `compose run` touche un volume
+  éphémère distinct de celui du conteneur `app` recréé. Le secours hôte déjà
+  réalisé avant mise à jour est maintenant copié explicitement dans le vrai
+  conteneur applicatif lors du rollback, puis réattribué à l'UID 1001. Un échec
+  de cette copie marque le rollback en échec au lieu de prétendre que les données
+  sont restaurées. Une assertion de non-régression est ajoutée au test de
+  migration fautive ; la recette Docker complète doit encore confirmer.
+- **Recette réelle validée** : le job Docker du commit `e067a07` a terminé les
+  cinq scénarios en 14 min 54 s (`✓ Cinq scénarios passés.`), y compris le
+  document après rollback et la reprise après `kill -9`. Les contrôles build,
+  TypeScript, ESLint, sécurité, base et E2E sont verts. Vitest a signalé une
+  seule attente obsolète : le faux Docker simulait un échec permanent de toute
+  copie `compose cp`, alors que le test attendait un rollback réussi. Le banc
+  distingue désormais l'échec ponctuel (rollback sûr) de l'échec persistant
+  (statut `rollback_failed`, application arrêtée). Le dernier run CI après cette
+  correction du simulateur reste à vérifier.
+
+- **Diagnostic des relances CI successives** : le scénario Docker part de la
+  branche `stable` (1.0.4), antérieure au contrat de révision de `/api/health`.
+  Lors du rollback, cette image servait `revision: "unknown"` ; le contrôle
+  strict attendait le SHA stable et échouait après ses 60 essais, même quand
+  l’application et la base étaient saines. Les autres relances avaient exposé
+  des défauts distincts du banc inter-version (script absent, injection de
+  fichiers locaux bloquée par Git) et une vraie perte possible de documents sur
+  passage volume anonyme → volume nommé. Le dernier défaut de santé est corrigé
+  **dans le banc seul** : une surcouche Compose ignorée par Git injecte le SHA
+  stable dans l’ancien conteneur ; les valeurs exportées par le lanceur gardent
+  la priorité pour la cible et le rollback. Le test du générateur est rouge avant
+  ajout du script, puis 2/2 vert ; `docker compose config` confirme les deux
+  résolutions de SHA. La CI Docker réelle doit encore confirmer la séquence.
+
+- **Snapshot réel** : `pg_restore --list | grep -q` échouait à tort avec `pipefail`
+  dès qu’un catalogue PostgreSQL était suffisamment long : `grep -q` fermait le
+  tube, provoquant un SIGPIPE du producteur. La vérification écrit désormais le
+  catalogue temporaire, vérifie explicitement son code de sortie puis recherche
+  `TABLE DATA` dans ce fichier.
+- **Régression TDD** : le faux `pg_restore` produit un catalogue long au moyen
+  d’un processus remplacé (`exec awk`) afin de reproduire le SIGPIPE. Le test est
+  rouge sur l’ancienne implémentation (`21` au lieu de `0`) et vert après le
+  correctif. L’échec réel de `pg_restore` reste couvert (`21`, point `.invalid`).
+- **CI déterministe et e2e Projet 360** : les bancs de scripts Vitest sont
+  sérialisés (`fileParallelism: false`) car ils créent des dépôts Git/exécutables
+  simulés ; les labels des deux sélecteurs secteur sont associés à leurs champs
+  (`projet-secteur`, `analyse-secteur`) et les sélecteurs Playwright distinguent
+  le pattern exact `SI standard`.
+- **Vérifié avant push** : snapshot 32/32 ; suites Projet 360 ciblées 29/29 ;
+  `tsc --noEmit` 0 erreur ; `git diff --check` propre. La CI GitHub de #215 doit
+  être recontrôlée après le commit de ce lot.
+- **Correctif CI ultérieur** : le scénario Docker instancie désormais
+  `.acra-update` avec les droits du runner avant `docker compose up`. Sans cela,
+  Docker créait le bind mount absent en root et empêchait ensuite la publication
+  de `snapshots.json` par le script hôte. `bash -n` est vert ; le scénario réel
+  est relancé par la CI.
+- **Suite des échecs CI et Node** : la dernière exécution a validé Vitest
+  (4 030 tests), mais a exposé deux défauts : le sélecteur e2e devait cibler le
+  code technique du pattern plutôt que son libellé enrichi par l’aide ; et un
+  échec de restitution de documents ne peut plus être ignoré — il déclenche un
+  rollback. Tous les workflows passent de `actions/checkout@v4` (runtime Node
+  20 dépréciée) à `v5.0.0` épinglé, runtime Node 24. Node 24 reste la version
+  explicitement installée en CI ; l’image applicative et le poste de travail
+  utilisent Node 26.
+- **Correction documents (CI Docker)** : détecter seulement un montage ne suffit
+  pas : un volume Docker anonyme est monté mais disparaît quand le compose cible
+  introduit un volume nommé. La copie hôte est maintenant systématique avant
+  toute mise à jour et son échec annule l’opération ; elle est recopiée après le
+  démarrage cible. Le scénario Docker réel doit confirmer ce cas.
+- **Banc de migration inter-version** : les instances de recette partent d’une
+  révision stable, dont le lanceur `update.sh` ne contient pas nécessairement les
+  garanties ajoutées par la cible. Comme pour le script de snapshot, le scénario
+  installe donc explicitement `update.sh`, ses bibliothèques et les étapes de la
+  révision testée avant de déclencher la montée de version. Cela contrôle le
+  comportement effectivement livré, sans masquer les données ni le compose de
+  l’instance antérieure. Le lanceur cible, sa bibliothèque et le snapshot sont
+  désormais exécutés depuis le checkout testé, **sans copie dans le clone
+  stable** : son pré-contrôle Git reste donc réel et la mise à jour peut écraser
+  proprement les fichiers de la cible. `ACRA_UPDATE_LIB_PATH` et un script de
+  snapshot explicitement fourni ne servent qu’à ce point d’entrée contrôlé ; le
+  lancement normal garde la copie locale auto-réexécutée.
+
+---
+
+## 2026-10-04 (63) — Codex : correction CI et continuité de cadrage Projet 360 → cyber
+
+- **CI réparée** : le script de point de restauration utilisait `$db…` sous Bash `set -u` ; l’ellipse était lue comme partie du nom de variable. `${db}…` restaure la création de point. Le lien d’export du réseau est un `Link` Next.js (erreur ESLint CI).
+- **Cadrage obligatoire cohérent** : la création d’un Projet 360 demande désormais elle aussi un secteur et au moins un pattern, avant le questionnaire. Lorsqu’une analyse cyber est lancée depuis ce projet, secteur et patterns sont préremplis sans jamais écraser les choix déjà saisis. L’API `/api/projets` expose uniquement ces deux métadonnées de cadrage supplémentaires aux projets déjà autorisés dans l’organisation active.
+- **Catalogue** : `SI_STANDARD` comporte maintenant risque, deux contrôles et KRI ; le préfixe est rattaché au pattern pour la validation du catalogue.
+- **Tests ajoutés/ajustés** : composant Projet 360, API projets, préremplissage pur, catalogue, e2e Projet 360 (propagation du secteur/pattern) et e2e cycle cyber (pattern requis).
+- **Vérifié** : 51 tests ciblés verts ; snapshots 31/31, offsite 21/21, planification 12/12 ; `tsc` 0 ; `i18n:check` 1612 clés ; `npm run build` OK (warning préexistant d’import dynamique dans `document-storage.ts`).
+- **Non vérifié localement** : e2e Playwright est arrêté par la base de recette disponible, dépourvue de la table `Derogation`, et Docker Desktop est indisponible ; la CI utilise sa base migrée et doit exécuter les deux parcours. Lint local reste indisponible parce que le paquet local `eslint-plugin-react-hooks` est incohérent, alors que la CI avait signalé la seule erreur de code corrigée ici.
+- **Prochain pas** : commit/push de ce lot puis contrôler les checks de la PR #215 ; ne pas inclure les fichiers non suivis `.agents/`, `.claude/launch.json` ou `rapports/`.
+
+### Correctif CI après le push
+
+- Le scénario Docker de rollback révélait que la version source antérieure ne contenait pas encore `acra-snapshot.sh` (`exit 127`). `ci-update-rollback.sh` copie maintenant explicitement le script de la révision cible dans cette instance, ce qui reproduit la première mise à jour réelle. `bash -n` est vert ; le scénario Docker complet sera rejoué par CI après le commit dédié.
+
+## 2026-10-03 (62) — Codex : clôture patterns A6 et reprise sans conflit
+
+- **Conflits** : les 15 fichiers laissés indexés par Claude terminaient BE-6 (pré-remplissage Projet 360 non destructif depuis les patterns) et le passage des patterns au catalogue ; ils ont été validés puis commités sans chevauchement avec les lots sauvegarde/rollback (`ff310cc`).
+- **A6** (`2afdaee`) : portefeuille Projet 360 filtrable par un ou plusieurs patterns (recherche « au moins un », export Excel conserve le filtre) ; import canonique et Excel reconnaît les codes ou libellés de pattern en FR/EN/DE/ES/IT (séparateurs explicites, inconnu ignoré) et les persiste ; `patternsArchiMasques` dans `OrganizationConfig` (migration `20261004090000_patterns_archi_masques`) est hérité, administrable dans `/configuration`, et masque seulement les propositions des formulaires — un pattern déjà présent dans une analyse reste visible/modifiable.
+- **Lot 2** (`dc6a205`) : contenu localisé des 9 patterns restants (mobile, SaaS/IaaS-PaaS, sauvegarde, supervision, IA, isolé, industriel, patrimonial) ; six catégories de suggestions minimum par pattern, testées.
+- **Vérifié** : 84 tests ciblés verts (portefeuille, import, patterns, config) ; `tsc` 0 ; `i18n:check` 1612 clés ; `check-migrations` conforme (182 migrations) ; `git diff --check` propre. La suite complète a été lancée séquentiellement mais dépasse la fenêtre de retour de l’outil dans cette session : ne pas la déclarer verte sans son bilan final. Docker/base réelle non disponible dans ce tour.
+
+---
+
+## 2026-10-04 (61) — Claude : sauvegardes planifiées (quotidienne / hebdomadaire / mensuelle), conservation et espace disque
+
+- **Politique** `.acra-update/backup-policy.json` (défaut : jour + semaine + mois activés, **3 copies de chaque**, 02 h) ; lib pure `backup-policy.ts` (validation, estimation `estimateStorage`, verdict `diskAdvice`, conseils `policyAdvice` 7/4/6, `nextRuns`, `backupOverview`).
+- **Exécution** : `scripts/acra-schedule.sh tick` (appelé chaque minute par `update-agent.sh`) → `acra-snapshot.sh create --reason scheduled --tier … --scheduled-for … --no-clone` (un point partagé entre fréquences, vérification complète si hebdo/mensuel), rétention GFS dans `acra-snapshot.sh prune`, reprise après échec (30 min), statistiques `backup-stats.json` (df/du, rafraîchies toutes les 10 min hors échéance).
+- **Interface** : `BackupSchedulePanel` (fréquences, copies, jour, heure ; estimation en direct, espace libre/occupé, verdict OK/marge faible/insuffisant, conseils de bonnes pratiques, dernier passage, prochaines exécutions) ; `POST /api/admin/backup/policy` (SUPER_ADMIN, validation, audit `INSTANCE_BACKUP_POLICY_CHANGED`) → demande `backup-policy` validée de nouveau par l'agent.
+- **Vérifié** : tests unitaires (lib, scripts avec docker simulé et heure simulée `ACRA_SCHEDULE_NOW`, composant, route). **NON vérifié** : aucune exécution réelle sur plusieurs jours (cron, `date` BSD/GNU hors macOS, `df`/`du` sur de gros volumes) ; estimation approximative tant qu'aucun point n'est mesuré (≈ 40 % de la base).
+- **Pièges** : l'heure de planification est celle du serveur ; un point planifié survit tant qu'une de ses fréquences le retient ; deux points créés dans la même seconde attendent la seconde suivante.
+
+## 2026-10-03 (60) — Claude : plusieurs sous-secteurs par analyse, cohérence du contenu, expression de besoins protection sociale
+
+- **Plusieurs sous-secteurs** (`d614f57`) : `Analyse.sousSecteurs` (JSON ; migration `20261003130000_analyse_sous_secteurs`, classée « data », reprise de `sousSecteur`) ; le premier reste le principal dans `sousSecteur` (référentiels recommandés, mise en garde HDS, exports). Pur : `selectableSousSecteurIds`, `normalizeSousSecteurs`, `sousSecteursOf`, `resolveSousSecteursUpdate` (`lib/sous-secteurs.ts`) ; UI `SousSecteursPicker` (création + `AnalyseMetaEditor`) ; routes POST/PATCH ; ateliers 1–5, suggestions de risques, MCP (`read_sector_examples.sousSecteurs`, `recommend_risks_scenarios`).
+- **Cohérence** : proposés = famille du secteur + interconnexions (transverses), jamais un autre secteur ; re-validés côté serveur et au changement de secteur ; `sectorExemplesFor` accepte une liste (union dédoublonnée, sous-secteur incohérent ignoré) ; contenu commun santé masqué là où il n'a pas de sens (`ExtItem.notFor` ; profession `veterinaire` ajoutée : la santé animale ne reçoit plus le contenu hospitalier).
+- **Expression de besoins** : `docs/specs/protection-sociale-besoins.md` (taxonomie protection sociale, homologation, maîtrise des risques en réseau, registre IA, fraude, volumes ; exemples génériques ; décisions D1–D4).
+- **Vérifié** : `tsc` 0 · `npm test` 467 fichiers / 3760 tests · `i18n:check` · `check-migrations` conforme · `npm run build` OK · recette navigateur dev :3005 : 25 cases (21 santé + 4 interconnexions, aucune d'un autre secteur), création avec 2 sous-secteurs → base `["sante-amc","technique-interco-prestataire"]`, atelier 5 = union (IBAN + complétude des livraisons) sans INS/CPS/biomédical, PATCH secteur Banque → reste l'interconnexion seule, PATCH avec `banque-detail` pour une analyse santé → rejeté, éditeur d'analyse affiche les deux cases cochées (principal marqué).
+- **Environnement** : la base embarquée de `/private/tmp/claude-502/pg` a disparu (nettoyage du dossier temporaire) ; nouvelle base dans le scratchpad de session (`…/scratchpad/pg`, `node start.mjs`, mot de passe dans `pw.txt`), migrations appliquées, organisation « Organisation de recette » et compte local SUPER_ADMIN (mot de passe dans `test-account.txt`, non commité). Serveur de dev arrêté après la recette (build lancé ensuite).
+
+---
+
+## 2026-10-03 (60) — Claude : retour arrière (dialogue d'impact) et sauvegarde externe (lots S1/S2)
+
+- **Dialogue « Revenir à ce point »** : chiffre les saisies perdues (entrées d'audit et documents postérieurs au point, calcul serveur `snapshot-impact.server.ts`), la durée de conservation de la base écrasée et la clé des secrets (commit `311c64d`).
+- **Sauvegarde externe** (`docs/specs/sauvegarde-externe-proposition.md`) : `scripts/acra-offsite.sh` (push/fetch/test/status) avec pilotes **fs** et **command** (S1, `468b30a`) puis **s3** via rclone (S2, `fc09d1c`) ; garde-fous : refus d'un point non chiffré hors serveur (codes 52), copie vérifiée (51), échec publié sans bloquer le point, rétention, identifiants par l'environnement. État publié `.acra-update/offsite.json` → panneau lecture seule (`offsite-status.ts`, i18n ×5). Branché sur `acra-snapshot.sh create` (`ACRA_OFFSITE_DRIVER`).
+- **Vérifié** : tests unitaires des scripts avec `rclone`/`docker` simulés, composants, i18n. **NON vérifié** : aucun envoi réel (S3, NFS) ; rclone jamais exécuté ; `rclone check` sur des fichiers multipart non éprouvé ; Object Lock non testé.
+- **Reste** : restic (S4), alerte e-mail (non décidée), PITR (chantier séparé), recette réelle.
+
+## 2026-10-03 (59) — Claude : étude sauvegarde/rollback des mises à jour ; contenu santé, mutuelle et interconnexions (catalogue 1.12)
+
+**Rien n'est poussé** ; commits locaux sur `feat/historical-excel-import`.
+
+- **Axe 1 — étude + spec (aucun code)** : `docs/specs/sauvegarde-rollback-etude.md` (constats C1–C14, ADR-001 à 005) et `docs/specs/sauvegarde-rollback-spec.md` (lots 0 à 7, prêts pour Sonnet 5.5). **Constat P0** : en `docker-compose.yml` (et surcouche production), `/app/.data/documents` n'est pas sur un volume → **les pièces jointes sont perdues à chaque `update.sh`** (recréation du conteneur). Le lot 0 (volume + sauvetage `docker cp` avant recréation, app arrêtée avant `pg_dump -Fc` vérifié, `ACRA_MIGRATE_AUTO_RESOLVE=0` pendant une mise à jour) doit sortir **avant** tout le reste : c'est le `update.sh` installé chez le client qui fera sa prochaine sauvegarde.
+- **Axe 2 — contenu** (spec `docs/specs/contenu-sante-interconnexions.md`) : secteur d'analyse « Technique / Interconnexion de SI » (4 sous-secteurs) ; sous-secteurs santé portail / entrepôt / délégataire ; `lib/exemples-sectoriels-ext.ts` (ateliers 1 à 5, dont nouvelles catégories `actionsElementaires`, `mesuresEcosysteme`, `mesures`, textes ×5 dans la donnée) ; atelier 5 `SectorMeasuresPanel` ; MCP `read_sector_examples` étendu ; catalogue **1.12** (`sector-packs-sante-technique.ts` : secteur TECHNIQUE complet, compléments SANTE et ASSURANCE, 4 incidents types TECHNIQUE).
+- **Pièges** : `SECTEURS_ACTIVITE` est indexé dans les dictionnaires `ebios-data/*.ts` → insérer avant « Autre » impose de décaler `SECTEURS_ACTIVITE.19/20` dans les 5 langues puis `node scripts/extract-ebios-data-i18n.mjs` (ne réécrit que fr.ts) ; tout ajout au catalogue impose `npm run catalogue:review` (grille CSV testée). Nouveau contenu d'exemples : l'écrire dans `exemples-sectoriels-ext.ts` (pas d'index positionnel).
+- **Comparatif Opus seul / Opus + ACRA** (`docs/benchmark/2026-10-03-sante-interco/resultats.md`) : ACRA gagne T6 (portail, 16,5 vs 15) et T10 (témoin), seul gagne de justesse T7 et T8, égalité T9 ; aucune référence inventée ; pas de supériorité générale démontrée (un passage, contamination partielle signalée).
+- **Vérifié** : `tsc` 0 erreur · `npm test` 450 fichiers / 3565 tests verts · `npm run i18n:check` OK (1603 clés) · `npm run catalogue:review` régénéré · recette navigateur dev :3005 : secteur Technique et sous-secteurs visibles à la création d'analyse, atelier 1 propose les valeurs métier du portail (pas celles de l'hôpital), atelier 5 affiche « Mesures proposées pour votre secteur », ajout d'une mesure au plan → « Ajoutée », mesures du sous-secteur en tête après correctif. **Non vérifié** : masquage du panneau en lecture seule dans le navigateur (code + test unitaire du composant seulement) ; `npm run build` non lancé (aucune route ni configuration Next modifiée) ; références à confirmer listées dans `docs/specs/contenu-sante-interconnexions.md`.
+- **Prochain pas** : faire développer le **lot 0** de la spec rollback et le publier ; décider D1–D5 (étude § 9) ; relecture experte du contenu 1.12.
+- **Passage 2 du comparatif** (catalogue 1.13, commit `0520f01` : ATT&CK sur les actions élémentaires, analyseurs/schéma, pièces jointes de portail, continuité e-santé, consignes de restitution MCP) : ACRA 4 victoires / 1 défaite / 2 égalités (T6 18 vs 14,5) ; tâches non vues 1–1 (T11 gagnée, T12 perdue sur une référence ISO A.8.28 mal appliquée). Détails et biais : `resultats.md` § passage 2.
+- **Autre session (Sonnet) en parallèle** : lots 0, 2 et 3 de la spec rollback commités (`796551a`, `2d00341`, `365aef4`) ; lot 5 en cours (fichiers `migration-*` non commités). Après les lots 0–3 : `tsc` 0 erreur, `npm test` 463 fichiers / 3711 tests verts.
+- Recette locale : serveur de dev :3005 sur le PostgreSQL embarqué :5433 (`/private/tmp/claude-502/pg/start.mjs`), compte local de recette (SUPER_ADMIN, mot de passe dans le scratchpad de session, non commité). Le serveur :3000 est un build de production du tour (58), **périmé**.
+
+---
+
+## 2026-10-03 (59) — Claude : point de restauration avant mise à jour et retour arrière (spec `sauvegarde-rollback-spec.md`, lots 0 à 7)
+
+**Rien n'est poussé** ; tout est commité localement sur `feat/historical-excel-import` (commits `796551a` lot 0, `30a87a9` lot 1, `2d00341` lot 2, `365aef4` lot 3, `6c7d6ad` lot 4, `2af29bb` lot 5, `ac7b5b6` lot 6, `a8cf046` mode B, + docs lot 7).
+
+- **Lot 0** — `update.sh` : documents sauvés hors d'un conteneur sans volume puis recopiés (`documents_data` ajouté à `docker-compose.yml`), application arrêtée avant la sauvegarde, dump format custom vérifié (`pg_restore --list`, `TABLE DATA`), fichiers `0600`/dossier `0700`, `ACRA_MIGRATE_AUTO_RESOLVE=0` pendant une mise à jour, santé vérifiée sur la **révision** cible (`ACRA_VERSION`/`ACRA_REVISION` en build args).
+- **Lot 1** — `scripts/acra-snapshot.sh` (create/verify/list/restore/prune/index), `src/lib/snapshot.ts` (identifiant, index publié `.acra-update/snapshots.json`, parité testée avec le script). Clone `TEMPLATE … STRATEGY FILE_COPY`, vérification `full`/`quick`, manifeste écrit en dernier, `restore` renomme toujours la base courante en `__failed_`.
+- **Lot 2** — `update.sh` v2 (lanceur : PRECHECK→FETCH→HANDOFF, se ré-exécute depuis une copie), `update-lib.sh` (journal `run/current.json`, statut, `do_rollback`, santé, fumée), `update-steps.sh` (MIGRATE→FINALIZE, **depuis la version cible**, contrat `ACRA_UPDATE_STEPS_API=1`), `src/lib/update-run.ts` (table d'échec normative). Reprise après interruption (`update.sh resume`, agent à chaque passage).
+- **Lot 3** — demande `rollback` (`buildRollbackRequest`), route `POST /api/admin/version/rollback` (SUPER_ADMIN, identifiant validé contre l'index, version confirmée, audit `INSTANCE_ROLLBACK_REQUESTED`), `update-agent.sh` valide l'identifiant contre SON index.
+- **Lot 4** — `/api/health?deep=1` (migrations en attente/en échec ⇒ 503), `InstanceEvent` + migration `20261003120000_instance_event`, journal d'audit `INSTANCE_UPDATED/RESTORED/UPDATE_ROLLED_BACK` au démarrage (`instrumentation.ts`), `UpdateRestorePanel` (avancement, retour arrière, points, dialogue de confirmation), i18n ×5 (`version.restore/updateSteps/updateCodes`).
+- **Lot 5** — `migration-policy` / `migration-check` + `scripts/check-migrations.ts` (CI `migrations.yml`, PRECHECK des migrations destructives publiées dans `status.json`), workflow `update-rollback.yml` + `scripts/ci-update-rollback.sh` (5 scénarios Docker réels).
+- **Lot 6** — `ACRA_DB_MODE=url` (client dans `postgres:<majeure>-alpine` ou sur l'hôte, code 10 si client plus ancien), mode `--no-docker` (`ACRA_STOP_CMD`/`ACRA_START_CMD`, refus sinon), documents sur disque (`ACRA_DOCUMENTS_DIR`), `ACRA_SNAPSHOT_HOOK`.
+- **Mode B** — `deploy-release.sh` crée un point `pre-update` et, si les migrations diffèrent, **restaure** avant de relancer l'image précédente (au lieu d'arrêter).
+- **Lot 7** — runbook § 4 et nouveau § 6, README ×5, ARCHITECTURE, notes v1.0.4.
+- **Vérifié** : `tsc` 0 · `npm test` 467 fichiers / 3760 tests · `i18n:check` · `test:db` 70/70 (PostgreSQL embarqué :5433). Les scripts shell sont testés avec des `docker`/`psql`/`git` **simulés** (banc `src/__tests__/helpers/update-fixture.ts`), dépôt git temporaire réel.
+- **NON vérifié** : **aucun scénario sur Docker réel** (Docker indisponible dans ce tour) — le script `ci-update-rollback.sh` et le workflow `update-rollback.yml` n'ont jamais tourné ; `shellcheck` absent (relecture seulement) ; `docker compose cp`/`run`/`exec -u 0`, `CREATE DATABASE … STRATEGY FILE_COPY` (PostgreSQL ≥ 15) et le comportement réel de `pg_restore` ne sont validés que par simulation ; le mode `--no-docker` et la base externe jamais essayés sur un vrai hôte ; recette navigateur du panneau `UpdateRestorePanel` non faite (tests de composant seulement). **Première mise à jour d'une instance ≤ v1.0.4** : c'est l'ancien script qui s'exécute (le lot 0 doit être publié avant le lot 2) — scénario manuel à consigner avant release.
+- **Pièges** : le fixture bash du simulé impose bash 3.2 (macOS) : pas de tableaux associatifs ; `sed` BSD sans `\|` ; un `docker` simulé ne reproduit pas les erreurs réelles de compose. `src/instrumentation.ts` existait déjà (j'y ai seulement ajouté l'appel `recordInstanceEvents`).
+
+## 2026-10-03 (58) — Claude : chantier contenu sectoriel, MCP phase 5, rapports et exports (lots L0–L5 en grande partie)
+
+Spec : `docs/specs/chantier-contenu-sectoriel-mcp-rapports.md` (décisions de l'utilisateur consignées § 10). **Rien n'est poussé** ; tout est commité localement sur `feat/historical-excel-import`.
+
+- **L0** — `TEST_RESILIENCE` déclaré dans `PLAN_ACTION_LIEN_TYPES` (+ cliquet : tout `{ type, targetId }` écrit par une route doit être déclaré) ; origines `resilience` et `preconisation` visibles dans `/actions` (elles étaient invisibles) ; lien profond `?test=`.
+- **Catalogue 1.10** — 18 secteurs (ordre = analyses ; 7 nouveaux : défense, éducation, agricole, immobilier/BTP, médias, tourisme, associations), chacun ≥ 20 contrôles, 8 KRI, 4 missions, 12 risques, 3 incidents types, ≥ 2 contrôles ancrés sur un texte cité (`sector-packs-*.ts` via `catalogue-pack-builder`, `sector-packs-ext.ts`, `incident-types-sector.ts`) ; **cliquet `sector-depth.test.ts`** ; statut « à relire par un expert » affiché (`catalogue-review-status.ts`, aucun secteur « relu » sans relecteur nommé) ; périodicités allégées si `petiteStructure` (`adaptPeriodicite`). **Le contenu n'a pas été relu par un expert du secteur.**
+- **Analyses** — sous-secteurs santé / assurance maladie (cabinet, gestion de cabinets, MSP, AMO, AMC, tiers payant, imagerie/dialyse, transport sanitaire, DM/optique, e-santé) avec exemples ×5 (`exemples-sectoriels.ts`, générés ; ne s'affichent que si le sous-secteur est choisi).
+- **Navbar / UX** — une seule entrée active (`activeNavHref`) ; la cartographie devient un onglet « Liste | Cartographie » du registre (`RisquesViewTabs`) ; filtres du suivi régulateur ; sélecteur d'incidents types filtré par secteurs.
+- **Déclarations** — RGPD art. 33 § 3 (rubriques, JSON, Excel) ; rapport de réexamen DORA déplacé vers **Rapports** et élargi (registre TIC, constats du régulateur, plans d'action des tests).
+- **MCP phase 5** — interrupteur **par organisation** `mcpActive` (migration `20261003100000_org_mcp_active`, `403 mcp_org_disabled`) ; `recommend_risks_scenarios` (calculé par ACRA, sans LLM) ; matrice d'isolation `mcp-isolation-matrix.test.ts` ; traitement de conformité couvert par `propose_plan_action` (ancre CONFORMITE) — dérogation / acceptation volontairement non proposables.
+- **Rapports** — portefeuille de projets 360 (carte de chaleur, appétit, Excel : `projet360-portefeuille*.ts`, `/api/projets/portefeuille`) ; historique d'appétence mensuel (`AppetenceSnapshot`, migration `20261003110000_appetence_snapshot`, cron `appetence-snapshots` le 1er à 03:00, tendances, Excel) ; résilience : statut des actions par constat et **clôture proposée** (PATCH explicite).
+- **Vérifié (fin de tour)** : `tsc` 0 erreur · `npm test` 3530 tests verts · `i18n:check` (1595 clés) · migrations appliquées sur un PostgreSQL embarqué (:5433, Docker indisponible) et `npm run test:db` 16 fichiers / 70 tests verts · recette navigateur sur build de production (:3000) : registre ↔ cartographie (onglets, une seule entrée de navbar active), suivi régulateur (une seule entrée active), rapports (carte DORA), projets, appétence (historique), configuration. **Non vérifié** : `npm run lint` échoue sur la **configuration** ESLint (plugin `react-hooks` introuvable, antérieur à ce tour) ; filtres du suivi régulateur et déclaration RGPD testés par tests unitaires seulement (base sans données) ; interrupteur MCP par org non visible tant que l'interrupteur d'instance est off (attendu).
+- **Comparatif Claude+ACRA / Claude seul** : `docs/benchmark/2026-10-03/resultats.md` — ACRA meilleur sur T1, T5, T2, T3 ; **seul meilleur sur T4** (plan de contrôle mutuelle : ACRA sur-représente le TIC). Un seul passage, aveugle imparfait, écarts faibles sur T2/T4.
+- **Reste du spec** : pièces de preuve sur les tests (L3), Excel RAS/RAD courant et pack de comité (L4), intake MCP depuis un document, file de validation (expiration / relances, L7), guide exploitant MCP, recette navigateur de tout ce qui précède, comparaison « Claude avec ACRA » vs « Claude seul ».
+- **Pièges** : `prisma format` réécrit tout le schéma (ne pas l'utiliser) ; ne jamais changer les indices des exemples sectoriels existants (les traductions sont indexées par position — ajouter en fin de tableau) ; `zsh` : `setopt nonomatch` pour les globs.
+
 ## 2026-10-02 (57) — Claude : listes officielles DORA, export Excel, délais et fiches des régimes
 
 - **PR #213 fusionnée** (déclarations d'incidents, types, pack banque / assurance / mutuelle).

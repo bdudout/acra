@@ -11,7 +11,7 @@ import { prisma } from '@/lib/prisma'
 import { resolveOrgConfig, type RawOrgConfig, type OrgConfigResolved } from '@/lib/org-config'
 import { resolveModuleActivation, sanitizeModulesPolicy } from '@/lib/module-policy'
 
-const CONFIG_SELECT = {
+export const CONFIG_SELECT = {
   entitesMesures: true,
   typesImpacts: true,
   referentielsActifs: true,
@@ -36,6 +36,10 @@ const CONFIG_SELECT = {
   derogationAlerteJours: true,
   derogationDureeMaxJours: true,
   archivageMissionsAnnees: true,
+  patternsArchiMax: true,
+  patternsArchiMasques: true,
+  secteursMasques: true,
+  risquesProjetDefaut: true,
   derogationWorkflow: true,
   derogationDoubleRegard: true,
   derogationSortCatalogue: true,
@@ -49,6 +53,11 @@ const CONFIG_SELECT = {
   secondeLigneActive: true,
   profilsOperationnelsActive: true,
   projets360Active: true,
+  homologationsActive: true,
+  projetSuppressionValidation: true,
+  recertificationActive: true,
+  registreIaActive: true,
+  mcpActive: true,
   echelleMaturite: true,
   processusCartographie: true,
   incidentsConfig: true,
@@ -69,7 +78,9 @@ export async function getOrgConfig(orgId: string | null | undefined): Promise<Or
 
   const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { path: true } })
   // Chaîne d'ids racine→nœud déduite du chemin "/racine/…/nœud/".
-  const idsRootToSelf = org?.path ? org.path.split('/').filter(Boolean) : [orgId]
+  // Chemin absent ou dégénéré (« / ») : l'organisation seule, plutôt qu'une chaîne vide (= défauts).
+  const fromPath = org?.path ? org.path.split('/').filter(Boolean) : []
+  const idsRootToSelf = fromPath.length ? fromPath : [orgId]
 
   const rows = await prisma.organizationConfig.findMany({
     where: { id: { in: idsRootToSelf } },
@@ -104,6 +115,9 @@ async function applyInstancePolicy(cfg: OrgConfigResolved): Promise<OrgConfigRes
       secondeLigneActive: resolveModuleActivation(policy.secondeLigne, cfg.secondeLigneActive),
       profilsOperationnelsActive: resolveModuleActivation(policy.profilsOperationnels, cfg.profilsOperationnelsActive),
       projets360Active: resolveModuleActivation(policy.projets360, cfg.projets360Active),
+      homologationsActive: resolveModuleActivation(policy.homologations, cfg.homologationsActive),
+      recertificationActive: resolveModuleActivation(policy.recertification, cfg.recertificationActive),
+      registreIaActive: resolveModuleActivation(policy.registreIa, cfg.registreIaActive),
     }
   } catch {
     return cfg

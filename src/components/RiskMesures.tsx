@@ -13,7 +13,8 @@ import { useTranslation } from '@/lib/i18n/context'
 interface MesureRow { id: string; nom: string; type: string; statut: string; efficacite?: number | null; echeance?: string | null }
 const MESURE_STATUTS = ['REALISE', 'EN_COURS', 'A_FAIRE', 'REPORTE'] as const
 
-export default function RiskMesures({ analyseId, riskId, editable }: { analyseId: string; riskId: string; editable: boolean }) {
+/** `withEfficacite` : cotation d'efficacité de la mesure (inutile pour un projet 360, où la mesure suffit). */
+export default function RiskMesures({ analyseId, riskId, editable, withEfficacite = true }: { analyseId: string; riskId: string; editable: boolean; withEfficacite?: boolean }) {
   const { t } = useTranslation()
   const m = t.risquesDirects
   const statutLabel = (s: string) => (m.mesuresStatuts as Record<string, string>)[s] ?? s
@@ -37,7 +38,7 @@ export default function RiskMesures({ analyseId, riskId, editable }: { analyseId
     setBusy(true)
     const res = await fetch(base, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nom, efficacite, statut, ...(echeance ? { echeance } : {}) }),
+      body: JSON.stringify({ nom, ...(withEfficacite ? { efficacite } : {}), statut, ...(echeance ? { echeance } : {}) }),
     }).catch(() => null)
     setBusy(false)
     if (res && res.ok) { setNom(''); setEfficacite(3); setStatut('REALISE'); setEcheance(''); reload() }
@@ -62,7 +63,7 @@ export default function RiskMesures({ analyseId, riskId, editable }: { analyseId
                 <span className="text-ebios-500">›</span>
                 <span className="flex-1">{r.nom}</span>
                 <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${r.statut === 'REALISE' ? 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-200' : 'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-200'}`}>{statutLabel(r.statut)}</span>
-                {r.efficacite != null && <span className="text-gray-400 tabular-nums">{m.mesuresEfficacite} {r.efficacite}</span>}
+                {withEfficacite && r.efficacite != null && <span className="text-gray-400 tabular-nums">{m.mesuresEfficacite} {r.efficacite}</span>}
                 {editable && <button onClick={() => supprimer(r.id)} className="text-gray-400 hover:text-red-600 p-0.5" aria-label={m.delete}><Trash2 size={13} aria-hidden="true" /></button>}
               </li>
             ))}
@@ -77,11 +78,11 @@ export default function RiskMesures({ analyseId, riskId, editable }: { analyseId
               {MESURE_STATUTS.map(s => <option key={s} value={s}>{statutLabel(s)}</option>)}
             </select>
           </label>
-          <label className="text-[10px] text-gray-500 dark:text-gray-400">{m.mesuresEfficacite}
+          {withEfficacite && <label className="text-[10px] text-gray-500 dark:text-gray-400">{m.mesuresEfficacite}
             <select value={efficacite} onChange={e => setEfficacite(Number(e.target.value))} className="block mt-0.5 px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs">
               {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
-          </label>
+          </label>}
           <label className="text-[10px] text-gray-500 dark:text-gray-400">{m.mesuresEcheance}
             <input type="date" value={echeance} onChange={e => setEcheance(e.target.value)} className="block mt-0.5 px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs" />
           </label>

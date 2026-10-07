@@ -1,0 +1,103 @@
+/** Risques présents par défaut dans tout projet 360 (configurables par l'organisation). */
+import { describe, expect, it } from 'vitest'
+import { RISQUES_PROJET_SOCLE, sanitizeSocleConfig, risquesSocle, planSocle, reglesEquivalentesSocle, SOCLE_RULE_PREFIX } from '@/lib/projet360-socle'
+import { DOMAINES_360 } from '@/lib/projet360'
+import { MESURE_TYPES } from '@/lib/risque-mesure'
+
+describe('catalogue des risques projet par défaut', () => {
+  it('couvre gestion de projet, RGPD, externalisation, sécurité, mise en service ; codes uniques ; textes ×5', () => {
+    const codes = RISQUES_PROJET_SOCLE.map(r => r.code)
+    expect(new Set(codes).size).toBe(codes.length)
+    expect(codes).toEqual(expect.arrayContaining(['PROJ_DELAIS', 'PROJ_BUDGET', 'PROJ_RGPD', 'PROJ_PRESTATAIRE', 'PROJ_SECURITE']))
+    for (const r of RISQUES_PROJET_SOCLE) {
+      expect(DOMAINES_360).toContain(r.domaine)
+      expect(r.intitule.every(s => s.trim().length > 0)).toBe(true)
+      expect(r.intitule[1]).not.toBe(r.intitule[0])
+    }
+    expect(RISQUES_PROJET_SOCLE.length).toBeLessThanOrEqual(10) // l'essentiel, sans surcharger
+  })
+})
+
+describe('configuration de l’organisation', () => {
+  it('assainit : codes désactivés connus seulement, risques ajoutés bornés (intitulé, domaine, cotation), 30 au plus', () => {
+    const c = sanitizeSocleConfig({
+      desactives: ['PROJ_BUDGET', 'INCONNU', 'PROJ_BUDGET'],
+      ajoutes: [
+        { id: 'a1', intitule: '  Indisponibilité du site pilote ', domaine: 'BUSINESS', gravite: 9, vraisemblance: 0 },
+        { id: 'a2', intitule: '', domaine: 'IT', gravite: 2, vraisemblance: 2 },
+        { intitule: 'Sans identifiant', domaine: 'X', gravite: 2, vraisemblance: 2 },
+        ...Array.from({ length: 40 }, (_, i) => ({ id: `x${i}`, intitule: `R${i}`, gravite: 2, vraisemblance: 2 })),
+      ],
+    })
+    expect(c.desactives).toEqual(['PROJ_BUDGET'])
+    expect(c.ajoutes[0]).toEqual({ id: 'a1', intitule: 'Indisponibilité du site pilote', domaine: 'BUSINESS', gravite: 5, vraisemblance: 1 })
+    expect(c.ajoutes.find(a => a.intitule === 'Sans identifiant')).toMatchObject({ domaine: null })
+    expect(c.ajoutes.every(a => a.id && a.intitule)).toBe(true)
+    expect(c.ajoutes.length).toBeLessThanOrEqual(30)
+    expect(sanitizeSocleConfig(null)).toEqual({ desactives: [], ajoutes: [] })
+  })
+})
+
+describe('risques créés avec le projet', () => {
+  const cfg = sanitizeSocleConfig({ desactives: ['PROJ_BUDGET'], ajoutes: [{ id: 'a1', intitule: 'Indisponibilité du site pilote', domaine: 'BUSINESS', gravite: 5, vraisemblance: 2 }] })
+  it('catalogue moins les désactivés, plus les ajoutés ; libellés dans la langue ; cotation bornée à l’échelle', () => {
+    const r = risquesSocle(cfg, 'en', 4)
+    expect(r.some(x => x.ruleId === `${SOCLE_RULE_PREFIX}PROJ_BUDGET`)).toBe(false)
+    expect(r.find(x => x.ruleId === `${SOCLE_RULE_PREFIX}PROJ_DELAIS`)!.nom).toMatch(/schedule|milestone/i)
+    expect(r.find(x => x.ruleId === `${SOCLE_RULE_PREFIX}custom:a1`)).toMatchObject({ nom: 'Indisponibilité du site pilote', domaine: 'BUSINESS', gravite: 4 })
+  })
+  it('sans doublon : règle déjà présente ou intitulé déjà saisi', () => {
+    const r = risquesSocle(cfg, 'fr', 4)
+    const plan = planSocle(r, [`${SOCLE_RULE_PREFIX}PROJ_DELAIS`], [r.find(x => x.ruleId.endsWith('PROJ_RGPD'))!.nom.toUpperCase()])
+    expect(plan.some(x => x.ruleId.endsWith('PROJ_DELAIS'))).toBe(false)
+    expect(plan.some(x => x.ruleId.endsWith('PROJ_RGPD'))).toBe(false)
+    expect(plan.length).toBe(r.length - 2)
+  })
+})
+
+describe('plans d’action par défaut des risques par défaut', () => {
+  it('chaque risque du catalogue porte un plan (5 langues) qui fait intervenir l’expert compétent', () => {
+    for (const r of RISQUES_PROJET_SOCLE) {
+      expect(r.plan.titre.every(s => s.trim().length > 0), r.code).toBe(true)
+      expect(r.plan.description.every(s => s.trim().length > 0), r.code).toBe(true)
+    }
+    const rgpd = RISQUES_PROJET_SOCLE.find(r => r.code === 'PROJ_RGPD')!
+    expect(rgpd.plan.titre[0]).toMatch(/DPO|délégué à la protection des données/)
+    expect(RISQUES_PROJET_SOCLE.find(r => r.code === 'PROJ_SECURITE')!.plan.titre[0]).toMatch(/RSSI/)
+  })
+  it('le plan est résolu dans la langue ; un risque ajouté peut porter un plan (facultatif, borné)', () => {
+    const cfg = sanitizeSocleConfig({ ajoutes: [{ id: 'a1', intitule: 'Site pilote indisponible', domaine: 'BUSINESS', gravite: 3, vraisemblance: 2, plan: '  Valider le site de repli avec la direction des opérations  ' }, { id: 'a2', intitule: 'Sans plan', gravite: 2, vraisemblance: 2 }] })
+    expect(cfg.ajoutes[0].plan).toBe('Valider le site de repli avec la direction des opérations')
+    expect(cfg.ajoutes[1].plan).toBeUndefined()
+    const r = risquesSocle(cfg, 'en', 4)
+    expect(r.find(x => x.ruleId.endsWith('PROJ_RGPD'))!.plan).toMatchObject({ titre: expect.stringMatching(/DPO/) })
+    expect(r.find(x => x.ruleId.endsWith('custom:a1'))!.plan).toEqual({ titre: 'Valider le site de repli avec la direction des opérations', description: null })
+    expect(r.find(x => x.ruleId.endsWith('custom:a2'))!.plan).toBeNull()
+  })
+})
+
+describe('mesures par défaut des risques par défaut', () => {
+  it('chaque risque du catalogue porte une mesure (5 langues, type de mesure connu), distincte du plan', () => {
+    for (const r of RISQUES_PROJET_SOCLE) {
+      expect(r.mesure.nom.every(s => s.trim().length > 0), r.code).toBe(true)
+      expect(MESURE_TYPES).toContain(r.mesure.type)
+      expect(r.mesure.nom[0]).not.toBe(r.plan.titre[0])
+    }
+  })
+  it('la mesure est résolue dans la langue ; un risque ajouté peut porter une mesure (facultative, bornée)', () => {
+    const cfg = sanitizeSocleConfig({ ajoutes: [{ id: 'a1', intitule: 'Site pilote indisponible', gravite: 3, vraisemblance: 2, mesure: `  Site de repli équipé ${'x'.repeat(300)}` }, { id: 'a2', intitule: 'Sans mesure', gravite: 2, vraisemblance: 2 }] })
+    expect(cfg.ajoutes[0].mesure).toMatch(/^Site de repli équipé/)
+    expect(cfg.ajoutes[0].mesure!.length).toBe(200)
+    expect(cfg.ajoutes[1].mesure).toBeUndefined()
+    const r = risquesSocle(cfg, 'en', 4)
+    expect(r.find(x => x.ruleId.endsWith('PROJ_SECURITE'))!.mesure).toMatchObject({ nom: expect.stringMatching(/security test/i), type: 'TECHNIQUE' })
+    expect(r.find(x => x.ruleId.endsWith('custom:a1'))!.mesure).toEqual({ nom: cfg.ajoutes[0].mesure, type: 'ORGANISATIONNELLE' })
+    expect(r.find(x => x.ruleId.endsWith('custom:a2'))!.mesure).toBeNull()
+  })
+})
+
+describe('règles du questionnaire équivalentes aux risques par défaut', () => {
+  it('donne les règles 360 couvertes par les risques par défaut créés (pas de doublon à la création du projet)', () => {
+    expect(reglesEquivalentesSocle([`${SOCLE_RULE_PREFIX}PROJ_DELAIS`, `${SOCLE_RULE_PREFIX}PROJ_RGPD`, `${SOCLE_RULE_PREFIX}custom:a1`]).sort()).toEqual(['p360-derivePlanning'])
+  })
+})

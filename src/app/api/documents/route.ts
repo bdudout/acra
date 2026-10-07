@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 
   const referentiel = new URL(req.url).searchParams.get('referentiel')
   const docs = await prisma.document.findMany({
-    where: { organizationId: orgId, ...(referentiel ? { referentielCode: referentiel } : {}) },
+    where: { organizationId: orgId, analyseId: null, ...(referentiel ? { referentielCode: referentiel } : {}) },
     orderBy: [{ createdAt: 'desc' }],
     select: {
       id: true, titre: true, type: true, portee: true, referentielCode: true, risqueId: true,

@@ -1,5 +1,8 @@
 'use client'
 
+import SecteursMasquesEditor from '@/components/SecteursMasquesEditor'
+import TierIdentityPanel from '@/components/TierIdentityPanel'
+import RisquesProjetDefautEditor from '@/components/RisquesProjetDefautEditor'
 import SectorSettings from '@/components/SectorSettings'
 import { resolveIsAdmin } from '@/lib/effective-admin'
 import { Lock, Palette, X } from 'lucide-react'
@@ -27,6 +30,7 @@ import MaturityScaleEditor from '@/components/config/MaturityScaleEditor'
 import QualificationQuestionnaireEditor from '@/components/QualificationQuestionnaireEditor'
 import { QUALIFICATION_QUESTIONS, type QualificationConfig } from '@/lib/qualification'
 import Link from 'next/link'
+import { ARCHI_PATTERNS, normalizePatterns, PATTERNS_MAX_MAX, patternLabel } from '@/lib/patterns-archi'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -128,7 +132,9 @@ export default function ConfigurationPage() {
   const [saved, setSaved] = useState(false)
   const [activeTab, setActiveTab] = useState<'gravite' | 'vraisemblance' | 'matrice' | 'apercu'>('gravite')
   // Onglet principal de la configuration (4 sections)
-  const [section, setSection] = useState<'echelles' | 'options' | 'exemples' | 'ecosysteme'>('echelles')
+  const [section, setSection] = useState<'echelles' | 'options' | 'exemples' | 'ecosysteme' | 'tiers' | 'projets'>('echelles')
+  // Lien direct vers un onglet (ex. /configuration?section=tiers depuis la page Tiers), lu après le montage.
+  useEffect(() => { { const sec = new URLSearchParams(window.location.search).get('section'); if (sec === 'tiers' || sec === 'projets') setSection(sec) } }, [])
 
   const [config, setConfig] = useState<Config>(DEFAUT_4)
 
@@ -170,6 +176,9 @@ export default function ConfigurationPage() {
   const [derogationAlerte, setDerogationAlerte] = useState(30)
   const [derogationDureeMax, setDerogationDureeMax] = useState(365)
   const [archivageAnnees, setArchivageAnnees] = useState(5)
+  const [patternsMax, setPatternsMax] = useState(12)
+  const [hiddenPatterns, setHiddenPatterns] = useState<string[]>([])
+  const [secteursMasques, setSecteursMasques] = useState<string[] | null>(null)
   const [actionDelais, setActionDelais] = useState({ CRITIQUE: 6, MAJEUR: 12, MODERE: 24 })
   const [derogationWorkflow, setDerogationWorkflow] = useState('RSSI')
   const [derogationDoubleRegard, setDerogationDoubleRegard] = useState(true)
@@ -183,6 +192,10 @@ export default function ConfigurationPage() {
   const [secondeLigneActive, setSecondeLigneActive] = useState(true) // défaut true = mode réglementé
   const [profilsOperationnelsActive, setProfilsOperationnelsActive] = useState(false)
   const [projets360Active, setProjets360Active] = useState(true)
+  const [homologationsActive, setHomologationsActive] = useState(false)
+  const [recertificationActive, setRecertificationActive] = useState(false)
+  const [registreIaActive, setRegistreIaActive] = useState(false)
+  const [mcpActive, setMcpActive] = useState(false)
   // Politique d'instance (SUPER_ADMIN) : { <module>: 'PER_ORG'|'FORCE_ON'|'FORCE_OFF' }.
   const [modulesPolicy, setModulesPolicy] = useState<Record<string, string>>({})
   const [taxonomieRisques, setTaxonomieRisques] = useState<TaxonomieNode[] | null>(null) // null = pas encore chargé
@@ -237,6 +250,9 @@ export default function ConfigurationPage() {
         if (typeof data.derogationAlerteJours === 'number') setDerogationAlerte(data.derogationAlerteJours)
         if (typeof data.derogationDureeMaxJours === 'number') setDerogationDureeMax(data.derogationDureeMaxJours)
         if (typeof data.archivageMissionsAnnees === 'number') setArchivageAnnees(data.archivageMissionsAnnees)
+        if (typeof data.patternsArchiMax === 'number') setPatternsMax(data.patternsArchiMax)
+        if (Array.isArray(data.patternsArchiMasques)) setHiddenPatterns(normalizePatterns(data.patternsArchiMasques, { max: PATTERNS_MAX_MAX }))
+        setSecteursMasques(Array.isArray(data.secteursMasques) ? data.secteursMasques : [])
         if (['AUTONOME', 'RSSI', 'RSSI_METIER'].includes(data.derogationWorkflow)) setDerogationWorkflow(data.derogationWorkflow)
         setDerogationDoubleRegard(data.derogationDoubleRegard !== false)
         setRegistreRisquesActive(Boolean(data.registreRisquesActive))
@@ -248,6 +264,10 @@ export default function ConfigurationPage() {
         setSecondeLigneActive(data.secondeLigneActive !== false) // défaut true
         setProfilsOperationnelsActive(Boolean(data.profilsOperationnelsActive))
         setProjets360Active(data.projets360Active !== false)
+        setHomologationsActive(data.homologationsActive === true)
+        setRecertificationActive(data.recertificationActive === true)
+        setRegistreIaActive(data.registreIaActive === true)
+        setMcpActive(data.mcpActive === true)
         if (data.modulesPolicy && typeof data.modulesPolicy === 'object') setModulesPolicy(data.modulesPolicy)
         setTaxonomieRisques(sanitizeTaxonomie(data.taxonomieRisques))
         setDerogationSortCatalogue(data.derogationSortCatalogue !== false)
@@ -300,8 +320,12 @@ export default function ConfigurationPage() {
     secondeLigneActive: setSecondeLigneActive,
     profilsOperationnelsActive: setProfilsOperationnelsActive,
     projets360Active: setProjets360Active,
+    homologationsActive: setHomologationsActive,
+    recertificationActive: setRecertificationActive,
+    registreIaActive: setRegistreIaActive,
+    mcpActive: setMcpActive,
   }
-  async function saveFeature(field: 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active', value: boolean) {
+  async function saveFeature(field: 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive', value: boolean) {
     FEATURE_SETTERS[field]?.(value) // mise à jour optimiste
     setSavingFeatures(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -362,6 +386,27 @@ export default function ConfigurationPage() {
     })
     setSavingFeatures(false)
     return res.ok
+  }
+
+  // Plafond de patterns d'architecture de SI cochés par analyse (1 à 25, défaut 12).
+  async function savePatternsMax(value: number) {
+    setPatternsMax(value)
+    setSavingFeatures(true)
+    const res = await fetch('/api/admin/organization-config', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ patternsArchiMax: value }),
+    })
+    setSavingFeatures(false)
+    return res.ok
+  }
+
+  async function saveHiddenPatterns(next: string[]) {
+    const clean = normalizePatterns(next, { max: PATTERNS_MAX_MAX })
+    setHiddenPatterns(clean)
+    setSavingFeatures(true)
+    const res = await fetch('/api/admin/organization-config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ patternsArchiMasques: clean }) })
+    setSavingFeatures(false)
+    if (!res.ok) setHiddenPatterns(hiddenPatterns)
   }
 
   // Délais d'échéance par défaut d'une action selon sa priorité (mois).
@@ -787,6 +832,8 @@ export default function ConfigurationPage() {
             ['echelles', t.config.tabScales],
             ['exemples', t.config.tabExamples],
             ['ecosysteme', t.config.tabEcosysteme],
+            ['tiers', t.config.tabTiers],
+            ['projets', t.config.tabProjets],
             ...(isAdmin ? [['options', t.config.tabOptions] as const] : []),
           ] as const).map(([key, label]) => (
             <button
@@ -1327,6 +1374,9 @@ export default function ConfigurationPage() {
                 { field: 'secondeLigneActive' as const, value: secondeLigneActive, title: t.features.secondeLigneTitle, desc: t.features.secondeLigneDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.secondeLigne === 'FORCE_ON' || modulesPolicy.secondeLigne === 'FORCE_OFF', indent: false, forced: modulesPolicy.secondeLigne },
                 { field: 'profilsOperationnelsActive' as const, value: profilsOperationnelsActive, title: t.features.profilsOperationnelsTitle, desc: t.features.profilsOperationnelsDesc, href: '/maturite', disabled: modulesPolicy.profilsOperationnels === 'FORCE_ON' || modulesPolicy.profilsOperationnels === 'FORCE_OFF', indent: false, forced: modulesPolicy.profilsOperationnels },
                 { field: 'projets360Active' as const, value: projets360Active, title: t.features.projets360Title, desc: t.features.projets360Desc, href: '/projets', disabled: modulesPolicy.projets360 === 'FORCE_ON' || modulesPolicy.projets360 === 'FORCE_OFF', indent: false, forced: modulesPolicy.projets360 },
+                { field: 'homologationsActive' as const, value: homologationsActive, title: t.features.homologationsTitle, desc: t.features.homologationsDesc, href: '/homologations', disabled: modulesPolicy.homologations === 'FORCE_ON' || modulesPolicy.homologations === 'FORCE_OFF', indent: false, forced: modulesPolicy.homologations },
+                { field: 'registreIaActive' as const, value: registreIaActive, title: t.features.registreIaTitle, desc: t.features.registreIaDesc, href: '/registre-ia', disabled: modulesPolicy.registreIa === 'FORCE_ON' || modulesPolicy.registreIa === 'FORCE_OFF', indent: false, forced: modulesPolicy.registreIa },
+                { field: 'mcpActive' as const, value: mcpActive, title: t.features.mcpTitle, desc: t.features.mcpDesc, href: '/mcp-activite', disabled: false },
               ]).map(f => {
                 const forced = (f as { forced?: string }).forced // 'FORCE_ON' | 'FORCE_OFF' | undefined
                 const isForced = forced === 'FORCE_ON' || forced === 'FORCE_OFF'
@@ -1458,6 +1508,40 @@ export default function ConfigurationPage() {
                 disabled={savingFeatures}
                 className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
             </label>
+          </section>
+        )}
+
+        {/* ── Secteurs d'activité proposés à la saisie (les autres sont masqués) ── */}
+        {isAdmin && secteursMasques !== null && (
+          <section className="mt-8 card p-6">
+            <SecteursMasquesEditor initial={secteursMasques} />
+          </section>
+        )}
+
+        {/* ── Patterns d'architecture de SI : plafond de sélection par analyse ── */}
+        {isAdmin && (
+          <section className="mt-8 card p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-1">{t.patternsArchi.title}</h2>
+            <p className="text-sm text-gray-500 mb-4">{t.patternsArchi.maxHelp}</p>
+            <label className="text-sm text-gray-700">
+              <span className="block text-xs font-medium text-gray-600 mb-1">{t.patternsArchi.maxLabel}</span>
+              <input type="number" min={1} max={PATTERNS_MAX_MAX} value={patternsMax}
+                onChange={e => setPatternsMax(Number(e.target.value))}
+                onBlur={e => savePatternsMax(Math.max(1, Math.min(24, Math.floor(Number(e.target.value)) || 12)))}
+                disabled={savingFeatures}
+                className="w-28 px-2 py-1 rounded border border-gray-300 text-sm" />
+            </label>
+            <fieldset className="mt-5">
+              <legend className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.patternsArchi.hiddenLabel}</legend>
+              <p className="mt-1 text-xs text-gray-500">{t.patternsArchi.hiddenHelp}</p>
+              <div className="mt-2 grid gap-1 sm:grid-cols-2">
+                {ARCHI_PATTERNS.map(pattern => <label key={pattern.code} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                  <input type="checkbox" checked={hiddenPatterns.includes(pattern.code)} disabled={savingFeatures}
+                    onChange={() => { const next = hiddenPatterns.includes(pattern.code) ? hiddenPatterns.filter(code => code !== pattern.code) : [...hiddenPatterns, pattern.code]; void saveHiddenPatterns(next) }} />
+                  {patternLabel(pattern.code, locale)}
+                </label>)}
+              </div>
+            </fieldset>
           </section>
         )}
 
@@ -1857,6 +1941,12 @@ export default function ConfigurationPage() {
         <div className={section === 'ecosysteme' ? '' : 'hidden'}>
           <EchellesEcosystemeEditor isAdmin={isAdmin} />
         </div>
+
+        {/* ═══ Section 5 — Tiers (identités de tiers : référentiel des personnes morales) ═══ */}
+        {section === 'tiers' && <TierIdentityPanel />}
+
+        {/* ═══ Section 6 — Projets (risques présents par défaut dans chaque projet 360) ═══ */}
+        {section === 'projets' && <RisquesProjetDefautEditor isAdmin={isAdmin} />}
       </main>
 
       {pendingConfirm && (

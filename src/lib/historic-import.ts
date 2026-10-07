@@ -2,6 +2,7 @@ import { parseLevelLabel, isTemplateRow, extractReferences, aliasPrefix, canonic
 import { ATELIER_REQUIRED, ATELIER_ROLES, buildAtelierContent, detectAtelierRole, type AtelierRole, type AtelierSheet, type AtelierValueMaps } from './import-ateliers-build'
 import type { AtelierContent } from './analysis-import-ateliers'
 import { buildContextFromBlocks, type KeyValue, type TextBlock } from './excel-blocks'
+import { parseImportedPatterns } from './patterns-archi'
 /** Reconnaissance pure et prudente des feuilles historiques avant mapping humain. */
 export const HISTORIC_SHEET_TYPES = ['ANALYSES', 'RISKS', 'VULNERABILITIES', 'MEASURES', 'ACTIONS', 'RISK_ACTION_LINKS', ...ATELIER_ROLES, 'CONTEXT', 'UNKNOWN'] as const
 export type HistoricSheetType = (typeof HISTORIC_SHEET_TYPES)[number]
@@ -94,6 +95,7 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   riskExternalId: ['risques initiaux concernes', 'risques concernes', 'risque concerne', 'affected risk', 'reference risque', 'risque id', 'risk id', 'risk reference', 'risiko id', 'riesgo id'],
   actionExternalId: ['reference action', 'action id', 'action reference'],
   analysisExternalId: ['reference analyse', 'analyse id', 'analyse external id', 'analysis id', 'analysis external id', 'analysis reference'],
+  patternsArchi: ['patterns d architecture', 'pattern architecture', 'patterns architecture', 'architecture si', 'architecture technique', 'architecture patterns'],
 }
 
 const HEADER_CELL_MAX = 60
@@ -366,7 +368,7 @@ export type HistoricImportRow = Record<string, string>
 export type HistoricContextBlocks = { text: TextBlock[]; kv: KeyValue[] }
 export type HistoricImportSheet = { valueMaps?: AtelierValueMaps; refAliases?: Record<string, string>; blocks?: HistoricContextBlocks; name?: string; type: HistoricSheetType; mapping: HistoricColumnMapping; transforms?: HistoricFieldTransforms; statusMapping?: Record<string, string>; scoreMappings?: Record<string, Record<string, string>>; rows: HistoricImportRow[]; rowNumbers?: number[] }
 export type HistoricImportPackage = {
-  analysis: { title: string; description?: string; methode?: 'EBIOS_RM' }
+  analysis: { title: string; description?: string; methode?: 'EBIOS_RM'; patternsArchi?: string[] }
   risks: Array<{ externalId?: string; title: string; description?: string; gravity?: number; likelihood?: number; strategy?: string }>
   vulnerabilities: Array<{ riskExternalId: string; title: string; description?: string }>
   measures: Array<{ externalId?: string; riskExternalId?: string; title: string; description?: string; status?: string; responsible?: string; dueDate?: string }>
@@ -547,7 +549,8 @@ export function buildHistoricImportPackage(sheets: HistoricImportSheet[], fallba
   for (const sheet of sheets) for (const row of sheet.rows) {
     const title = first(row, sheet, 'title')
     if (sheet.type === 'ANALYSES' && title && result.analysis.title === fallbackTitle) {
-      result.analysis = { title: title.slice(0, 200), description: descriptionText(row, sheet.mapping.description)?.slice(0, 2000) }
+      const patternsArchi = parseImportedPatterns(first(row, sheet, 'patternsArchi'))
+      result.analysis = { title: title.slice(0, 200), description: descriptionText(row, sheet.mapping.description)?.slice(0, 2000), ...(patternsArchi.length ? { patternsArchi } : {}) }
     }
     if (sheet.type === 'RISKS' && title) {
       const externalId = text(row, sheet.mapping.externalId)

@@ -16,6 +16,8 @@ import { usesDirectRiskEntry } from '@/lib/methodes'
 type Guarded = {
   ok: true
   analyse: { id: string; organizationId: string; methode: string }
+  /** Rôle effectif dans l'organisation de l'analyse ; options de structure et de validation de l'organisation. */
+  role?: UserRole; petiteStructure?: boolean; projetSuppressionValidation?: boolean
 } | { ok: false; status: number; error: string }
 
 /** Vérifie les 4 conditions (accès, méthode, édition, gel) ; renvoie l'analyse ou un refus. */
@@ -44,5 +46,30 @@ export async function guardDirectRisk(analyseId: string, userId: string, instanc
     return { ok: false, status: 403, error: 'ANALYSE_GELEE' }
   }
 
-  return { ok: true, analyse: { id: analyse.id, organizationId: analyse.organizationId, methode: analyse.methode } }
+  return { ok: true, analyse: { id: analyse.id, organizationId: analyse.organizationId, methode: analyse.methode }, role: effRole, petiteStructure: orgConfig.petiteStructure, projetSuppressionValidation: orgConfig.projetSuppressionValidation }
 }
+
+/**
+ * Garde de VALIDATION d'une demande de suppression (projet 360) : le validateur (RM, ou RSSI si risque cyber) n'a pas
+ * forcément le droit d'éditer l'analyse ; il lui suffit d'y accéder. Le contrôle du rôle et de la demande en attente
+ * se fait dans la route (lib/projet360-suppression). Analyse gelée → refus, comme pour toute écriture.
+ */
+export async function guardValidationSuppression(analyseId: string, userId: string, instanceRole: UserRole): Promise<Guarded> {
+  const analyse = await prisma.analyse.findFirst({ where: await analyseAccessWhere(userId, instanceRole, analyseId) })
+  if (!analyse || analyse.deletedAt || analyse.methode !== 'PROJET_360') return { ok: false, status: 404, error: 'Analyse introuvable' }
+  const role = resolveAnalyseRole(
+    instanceRole, analyse.organizationId,
+    analyse.organizationId ? await getEffectiveRoleForOrg(userId, instanceRole, analyse.organizationId) : null,
+  )
+  const orgConfig = await getOrgConfig(analyse.organizationId)
+  if (analyseGelee(analyse.risquesResiduelsStatut, orgConfig.gelApresAcceptationActive)) return { ok: false, status: 403, error: 'ANALYSE_GELEE' }
+  return { ok: true, analyse: { id: analyse.id, organizationId: analyse.organizationId, methode: analyse.methode }, role, petiteStructure: orgConfig.petiteStructure, projetSuppressionValidation: orgConfig.projetSuppressionValidation }
+}
+
+/** Garde de LECTURE d'un projet 360 (vue des plans par priorité) : accès à l'analyse, sans droit d'édition requis. */
+export async function guardLectureProjet360(analyseId: string, userId: string, instanceRole: UserRole): Promise<{ ok: true; analyse: { id: string; organizationId: string | null } } | { ok: false; status: number; error: string }> {
+  const analyse = await prisma.analyse.findFirst({ where: await analyseAccessWhere(userId, instanceRole, analyseId), select: { id: true, organizationId: true, methode: true, deletedAt: true } })
+  if (!analyse || analyse.deletedAt || analyse.methode !== 'PROJET_360') return { ok: false, status: 404, error: 'Analyse introuvable' }
+  return { ok: true, analyse: { id: analyse.id, organizationId: analyse.organizationId } }
+}
+

@@ -10,6 +10,7 @@ import { prisma } from '@/lib/prisma'
 import { lookupApiKey } from '@/lib/api-key-lookup.server'
 import { parseAuthorizationHeader, apiKeyUtilisable, hasScope } from '@/lib/api-key'
 import { isMcpEnabled } from '@/lib/interfaces-config.server'
+import { getOrgConfig } from '@/lib/org-config.server'
 
 /** Résultat d'authentification MCP : succès (org + clé) ou échec (status + message). */
 export type McpAuth =
@@ -36,6 +37,9 @@ export async function authenticateMcpRequest(req: Request): Promise<McpAuth> {
 
   const scopes = Array.isArray(key.scopes) ? (key.scopes as string[]) : []
   if (!hasScope(scopes, 'mcp')) return { ok: false, status: 403, error: 'insufficient_scope' }
+
+  // Interrupteur PAR ORGANISATION (ADMIN de l'organisation, défaut désactivé) en plus de l'interrupteur d'instance.
+  if (!(await getOrgConfig(key.organizationId)).mcpActive) return { ok: false, status: 403, error: 'mcp_org_disabled' }
 
   prisma.apiKey.update({ where: { id: key.id }, data: { lastUsedAt: new Date() } }).catch(() => {})
   return { ok: true, organizationId: key.organizationId, keyId: key.id, scopes }

@@ -279,9 +279,12 @@ export default async function DashboardPage() {
                   <div className="text-5xl mb-4"><ShieldCheck size={40} aria-hidden="true" /></div>
                   <h3 className="font-semibold text-gray-800 mb-2">{t.dashboard.noAnalyses}</h3>
                   <p className="text-gray-500 text-sm mb-6">{t.dashboard.noAnalysesDesc}</p>
-                  <Link href="/analyses/new" className="btn-primary inline-block">
-                    {t.dashboard.createFirst}
-                  </Link>
+                  {/* Seuls les rôles qui peuvent créer une analyse voient l'invitation à en créer une. */}
+                  {peutCreerAnalyse && (
+                    <Link href="/analyses/new" className="btn-primary inline-block">
+                      {t.dashboard.createFirst}
+                    </Link>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">

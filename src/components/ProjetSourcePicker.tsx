@@ -6,8 +6,17 @@
 
 import { Briefcase } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
+import type { QualificationAnswers } from '@/lib/qualification'
 
-export interface ProjetOption { id: string; nom: string; description?: string | null }
+export interface ProjetOption {
+  id: string
+  nom: string
+  description?: string | null
+  secteur?: string | null
+  patternsArchi?: string[]
+  /** Réponses de qualification d'analyse déduites de la qualification 360 du projet (lib/projet360). */
+  qualificationAnalyse?: QualificationAnswers
+}
 
 export default function ProjetSourcePicker({ projets, value, onChange }: { projets: ProjetOption[]; value: string; onChange: (p: ProjetOption | null) => void }) {
   const { t } = useTranslation()

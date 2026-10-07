@@ -212,6 +212,14 @@ describe('buildHistoricImportPackage', () => {
     expect(packages.map(item => [item.analysis.title, item.risks[0]?.title])).toEqual([['Analyse 1', 'R1'], ['Analyse 2', 'R2']])
     expect(packages.map(item => item.vulnerabilities[0]?.title)).toEqual(['V1', 'V2'])
   })
+
+  it('importe les patterns d’architecture depuis la colonne dédiée, par code ou libellé', () => {
+    const result = buildHistoricImportPackage([{
+      type: 'ANALYSES', mapping: { title: 'Titre', patternsArchi: 'Architecture' },
+      rows: [{ Titre: 'Portail', Architecture: 'Exposition sur Internet; INTERCO_TIERS; inconnu' }],
+    }], 'Fallback')
+    expect(result.analysis).toMatchObject({ title: 'Portail', patternsArchi: ['EXPOSITION_INTERNET', 'INTERCO_TIERS'] })
+  })
 })
 
 describe('validateHistoricColumnMapping', () => {

@@ -8,7 +8,8 @@
 // page. Chaque phase se rend selon son `type` :
 //   context = périmètre/objectifs · appreciation = registre éditable ·
 //   review = registre lecture seule (priorisation) · note = conseils seuls ·
-//   qualification = questionnaire 360 + import cyber (analyse projet 360).
+//   qualification = données et services, questionnaire 360 + import cyber (analyse projet 360) ;
+//   projet 360 : documents du projet sous le contexte.
 // L'appréciation réutilise RisquesDirects (saisie directe gravité × vraisemblance).
 
 import { useState } from 'react'
@@ -19,6 +20,10 @@ import Questionnaire360 from '@/components/projet360/Questionnaire360'
 import ImportCyberRisks from '@/components/projet360/ImportCyberRisks'
 import Dashboard360 from '@/components/projet360/Dashboard360'
 import ProjectTiers from '@/components/projet360/ProjectTiers'
+import PlansParPriorite from '@/components/projet360/PlansParPriorite'
+import FichiersProjet from '@/components/projet360/FichiersProjet'
+import ActifsProjet from '@/components/projet360/ActifsProjet'
+import ImportRisquesTypes, { type ContexteProjet } from '@/components/projet360/ImportRisquesTypes'
 import type { PhaseType, ApprMode } from '@/lib/methodes'
 import type { RisqueExemple } from '@/lib/risque-exemples'
 import type { ScaleConfig } from '@/lib/risk-scale'
@@ -72,7 +77,13 @@ export default function PhasedRiskWorkshop({
   /** Ouvre directement cette phase (deep-link `?phase=`), ex. depuis le registre. */
   initialPhaseKey?: string
   /** Analyse projet 360 : réponses du questionnaire et seuil d'appétit global (tableau de bord). */
-  projet360?: { answers: Record<string, boolean>; sources?: Record<string, string>; appetitSeuil: number | null; tiers: { id: string; nom: string; type: string }[] }
+  projet360?: { answers: Record<string, boolean>; sources?: Record<string, string>; appetitSeuil: number | null; tiers: { id: string; nom: string; type: string }[]
+    /** Suppression d'un risque soumise à validation (RM, ou RSSI si cyber) : rôle effectif et configuration. */
+    suppression?: { role: string; validationActive: boolean; petiteStructure?: boolean }
+    /** Date de mise en service (AAAA-MM-JJ) : plans prévus après elle signalés en phase de traitement. */
+    miseEnService?: string | null
+    /** Contexte qui oriente les risques types (secteur, sous-secteurs, architecture), modifiable en phase d'identification. */
+    contexte?: ContexteProjet }
 }) {
   const initialIndex = initialPhaseKey ? phases.findIndex(p => p.key === initialPhaseKey) : -1
   const [active, setActive] = useState(initialIndex >= 0 ? initialIndex : 0)
@@ -80,6 +91,10 @@ export default function PhasedRiskWorkshop({
   const multi = phases.length > 1
   // Rechargement du registre après création de risques proposés ou import cyber.
   const [registryKey, setRegistryKey] = useState(0)
+  // Réponses du questionnaire 360 enregistrées pendant la session (le questionnaire est démonté au changement de phase :
+  // sans cela, il repartirait des réponses chargées avec la page).
+  const [answers360, setAnswers360] = useState(projet360?.answers ?? {})
+  const [sources360, setSources360] = useState(projet360?.sources)
 
   return (
     <div>
@@ -104,6 +119,7 @@ export default function PhasedRiskWorkshop({
       )}
 
       {phase.type === 'context' ? (
+        <>
         <section className="card p-6">
           <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">{phase.label}</h2>
           {phase.desc && <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{phase.desc}</p>}
@@ -128,10 +144,14 @@ export default function PhasedRiskWorkshop({
             </dl>
           )}
         </section>
+        {/* Projet 360 : documents du projet (schémas, architecture, dossiers projet). */}
+        {projet360 && <FichiersProjet analyseId={analyseId} editable={editable} />}
+        </>
       ) : phase.type === 'qualification' && projet360 ? (
         <>
-          <Questionnaire360 analyseId={analyseId} editable={editable} initialAnswers={projet360.answers} sources={projet360.sources} onRisksCreated={() => setRegistryKey(k => k + 1)} />
-          {editable && <ImportCyberRisks analyseId={analyseId} onImported={() => setRegistryKey(k => k + 1)} />}
+          <ActifsProjet analyseId={analyseId} editable={editable} />
+          <Questionnaire360 analyseId={analyseId} editable={editable} initialAnswers={answers360} sources={sources360} onSaved={a => { setAnswers360(a); setSources360(undefined) }} onRisksCreated={() => setRegistryKey(k => k + 1)} />
+          {editable && <ImportCyberRisks analyseId={analyseId} onImported={() => setRegistryKey(k => k + 1)} onVoirRisques={() => { const i = phases.findIndex(ph => ph.key === 'appreciation'); if (i >= 0) setActive(i) }} />}
           <ProjectTiers analyseId={analyseId} initial={projet360.tiers} editable={editable} />
         </>
       ) : phase.type === 'note' ? (
@@ -142,11 +162,13 @@ export default function PhasedRiskWorkshop({
       ) : (
         <>
           {phase.desc && <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{phase.desc}</p>}
-          {projet360 && phase.type === 'review' && <Dashboard360 key={registryKey} analyseId={analyseId} appetitSeuil={projet360.appetitSeuil} answers={projet360.answers} />}
+          {projet360 && phase.type === 'review' && <Dashboard360 key={registryKey} analyseId={analyseId} appetitSeuil={projet360.appetitSeuil} answers={answers360} />}
           {/* appreciation = éditable ; review = lecture seule (priorisation +
               décision d'acceptation). Le sous-mode (identify/rate/treat) différencie
               les phases d'appréciation ISO 27005. */}
-          <RisquesDirects key={`${phase.key}-${registryKey}`} analyseId={analyseId} editable={editable && phase.type !== 'review'} withDomaine={!!projet360}
+          {projet360?.contexte && phase.key === 'appreciation' && editable && <ImportRisquesTypes analyseId={analyseId} contexte={projet360.contexte} onImported={() => setRegistryKey(k => k + 1)} />}
+          {projet360 && phase.key === 'traitement' && <PlansParPriorite analyseId={analyseId} reloadKey={registryKey} editable={editable} miseEnService={projet360.miseEnService ?? null} />}
+          <RisquesDirects key={`${phase.key}-${registryKey}`} suppression={projet360?.suppression} analyseId={analyseId} editable={editable && phase.type !== 'review'} withDomaine={!!projet360}
             mode={phase.type === 'review' ? 'review' : (phase.apprMode ?? 'full')}
             withVulnerabilites={withVulnerabilites}
             scale={scale} appetit={appetit} ownerSuggestions={ownerSuggestions}
