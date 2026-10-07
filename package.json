@@ -77,7 +77,8 @@
     "deepmerge-ts": "^8.0.0",
     "postcss": "$postcss",
     "esbuild": "$esbuild",
-    "sharp": ">=0.35.0",
+    "sharp": ">=0.35.5",
+    "source-map-js": "^1.2.2",
     "minimatch@3": {
       "brace-expansion": "^1.1.21"
     },
