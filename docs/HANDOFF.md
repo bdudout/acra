@@ -6,6 +6,20 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-07 (85) — Claude : v1.0.5 publiée et déployée sur la démo
+
+- PR #215 fusionnée (squash `727c8dd1`) après CI verte sur le commit exact ; correctifs en route : overrides sharp 0.35.5 et
+  source-map-js 1.2.2 (audit), deux parcours E2E réalignés (lancement de projet par sa page, « Actions › Qualifier »),
+  plafond démo appliqué aux créations MCP, README ×5 : architecture complète (MCP, SIEM, sauvegarde externe).
+- Release v1.0.5 : « Prepare versioned release » sur `main` → brouillon relu (titre sans « recette requise », ligne CI
+  complétée) → publiée (Latest) ; branche `stable` alignée par son workflow.
+- Démo : « Deploy stable demo release » v1.0.5 réussi (recette publique OK, pas de retour arrière) ; `/api/health` →
+  v1.0.5, révision `727c8dd1` ; `/api/mcp` GET → 405 (route en place).
+- `main` → 1.0.6-beta.1. Poste local : disque saturé (98 %) a arrêté le dev ; cache de build Docker vidé (13,5 Go) ;
+  `.next` (8,7 Go) laissé en place. Le dev :3005 est à relancer par l'utilisateur.
+
+---
+
 ## 2026-10-07 (84) — Claude : MCP nouvelle analyse, PSSI, activité MCP, guide de connexion
 
 - `b570c697` : `propose_nouvelle_analyse` (paquet de l'import historique, origine `EXPRESSION_BESOINS` /
