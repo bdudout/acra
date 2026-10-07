@@ -88,7 +88,7 @@ export function buildMcpTools(): McpTool<McpContext>[] {
 /** Titres lisibles affichés par les clients MCP (Claude, Codex, Mistral Vibe…). */
 const TITRES: Record<string, string> = {
   read_referentiels: 'Référentiels et exigences', read_taxonomie: 'Taxonomie des risques', read_sector_examples: 'Exemples par secteur et architecture',
-  read_risk_posture: 'Posture de risque', read_analyses: 'Analyses et projets', read_projet: 'Contexte d’un projet 360', propose_projet360: 'Proposer un projet 360', recommend_risks_scenarios: 'Risques et scénarios recommandés', recommend_control_plan: 'Plan de contrôle recommandé',
+  read_risk_posture: 'Posture de risque', read_analyses: 'Analyses et projets', read_projet: 'Contexte d’un projet 360', propose_projet360: 'Proposer un projet 360', propose_nouvelle_analyse: 'Proposer une nouvelle analyse', propose_pssi: 'Proposer l’import d’une PSSI', recommend_risks_scenarios: 'Risques et scénarios recommandés', recommend_control_plan: 'Plan de contrôle recommandé',
   read_notification_regimes: 'Régimes de déclaration', read_incident_types: 'Incidents types', read_dora_fields: 'Champs de déclaration DORA',
   read_catalogue: 'Catalogue sectoriel', read_resilience_tests: 'Tests de résilience', propose_risk: 'Proposer un risque', propose_measure: 'Proposer une mesure',
   propose_plan_action: 'Proposer un plan d’action', propose_conformite: 'Proposer une évaluation de conformité',

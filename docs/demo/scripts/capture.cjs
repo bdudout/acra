@@ -1,5 +1,5 @@
 // ─── Captures de la démo MCP « projet 360 » (Playwright) ──────────────────────
-// node docs/demo/scripts/capture.cjs <étape>   — étapes : projet | risques | projet-page | export
+// node docs/demo/scripts/capture.cjs <étape>   — étapes : projet | risques | projet-page | export | rejet | import-pssi
 // Identifiants de l'humain qui valide : variables ACRA_EMAIL et ACRA_PASSWORD (jamais écrits dans un fichier).
 // Images : docs/demo/captures/*.png (1440 × 900, ×2). Instance : ACRA_BASE (défaut http://localhost:3005).
 const path = require('node:path')
@@ -57,6 +57,32 @@ const PROJET = 'Espace adhérent 2027'
     await carte.getByRole('button', { name: 'Rejeter' }).click()
     await page.waitForFunction(() => !document.body.innerText.includes('Risque proposé'), null, { timeout: 60000 })
     await shot('12-proposition-rejetee')
+  }
+  if (etape === 'import-pssi') {
+    // Nouvelle analyse reprise d'un historique et PSSI proposées par l'assistant : validation humaine, puis résultat.
+    await file(); await shot('13-propositions-analyse-pssi', { fullPage: true })
+    const accepter = async (texte) => {
+      const avant = await page.locator('li').count()
+      await page.locator('li', { hasText: texte }).first().getByRole('button', { name: 'Accepter' }).click()
+      // Un rôle non habilité (la PSSI exige un administrateur) : la proposition reste dans la file.
+      await page.waitForFunction(([n]) => document.querySelectorAll('li').length < n, [avant], { timeout: 20000 }).catch(() => console.log('non acceptée :', texte))
+    }
+    await accepter('Nouvelle analyse proposée')
+    await accepter('PSSI proposée')
+    // Doublon (même code de référentiel) : l'acceptation est refusée, l'humain le rejette.
+    const doublon = page.locator('li', { hasText: 'PSSI proposée' }).first()
+    if (process.env.REJETER_DOUBLON && await doublon.count()) { const n = await page.locator('li').count(); await doublon.getByRole('button', { name: 'Rejeter' }).click(); await page.waitForFunction(([c]) => document.querySelectorAll('li').length < c, [n]) }
+    await shot('14-propositions-traitees')
+    await page.goto(BASE + '/referentiels'); await page.waitForLoadState('networkidle'); await page.waitForTimeout(2000)
+    const pssi = page.getByText('PSSI Mutuelle Horizon Santé').first()
+    if (await pssi.count()) { await pssi.click().catch(() => {}); await page.waitForTimeout(1500) }
+    await shot('15-referentiel-pssi')
+    await page.goto(BASE + '/documents'); await page.waitForLoadState('networkidle'); await page.waitForTimeout(2000); await shot('16-document-pssi')
+  }
+  if (etape === 'analyse-reprise') {
+    // Analyse créée à l'acceptation (rôle qui crée des analyses : analyste ou administrateur) ; ANALYSE_ID = appliedId.
+    await page.goto(`${BASE}/analyses/${process.env.ANALYSE_ID}`); await page.waitForLoadState('networkidle'); await page.waitForTimeout(3000)
+    await shot('17-analyse-reprise', { fullPage: true })
   }
   if (etape === 'projet-page') {
     await ouvrirProjet()

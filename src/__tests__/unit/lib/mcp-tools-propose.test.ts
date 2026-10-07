@@ -16,16 +16,18 @@ vi.mock('@/lib/prisma', () => ({
     mcpProposal: { create: (...a: unknown[]) => proposalCreate(...a) },
     risque: { create: (...a: unknown[]) => risqueCreate(...a) },
     organization: { count: (...a: unknown[]) => orgCount(...a) },
+    referentiel: { count: (...a: unknown[]) => referentielCount(...a) },
   },
 }))
 
 const scale = vi.hoisted(() => ({ nbNiveaux: 4 }))
-const orgCfg = vi.hoisted(() => ({ projets360Active: true, patternsArchiMax: 12 }))
+const orgCfg = vi.hoisted(() => ({ projets360Active: true, patternsArchiMax: 12, conformiteActive: true }))
+const referentielCount = vi.hoisted(() => vi.fn(async (..._a: unknown[]) => 0))
 const orgCount = vi.hoisted(() => vi.fn())
 vi.mock('@/lib/configuration-server', () => ({ getEffectiveScaleConfig: vi.fn(async () => scale) }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => orgCfg) }))
 
-import { proposeProjet360Tool } from '@/lib/mcp/tools-propose.server'
+import { proposeProjet360Tool, proposeNouvelleAnalyseTool, proposePssiTool } from '@/lib/mcp/tools-propose.server'
 import { previewAnalysisImportTool, proposeAnalysisImportTool, proposeRiskTool, proposeMeasureTool, proposePlanActionTool, proposeConformiteTool } from '@/lib/mcp/tools-propose.server'
 
 const ctx = { organizationId: 'orgA', keyId: 'key1' }
@@ -204,6 +206,50 @@ describe('propose_projet360', () => {
     orgCfg.projets360Active = false
     expect((await proposeProjet360Tool.handler({ projet }, ctx)).isError).toBe(true)
     orgCfg.projets360Active = true
+    expect(proposalCreate).not.toHaveBeenCalled()
+  })
+})
+
+describe('propose_nouvelle_analyse', () => {
+  const paquet = { analysis: { title: 'Portail patients', methode: 'ISO_27005', secteur: 'Santé / Médico-social' }, context: { perimetre: 'Portail web' }, risks: [{ externalId: 'R1', title: 'Fuite de données' }] }
+  it('dépose une proposition de création ancrée à l’organisation de la clé, paquet assaini et origine tracée', async () => {
+    proposalCreate.mockResolvedValue({ id: 'pn', statut: 'EN_ATTENTE' })
+    const res = await proposeNouvelleAnalyseTool.handler({ import: { ...paquet, organizationId: 'orgB' }, origine: 'ANALYSE_HISTORIQUE' }, ctx)
+    expect(res.isError).toBeUndefined()
+    const data = proposalCreate.mock.calls[0][0].data
+    expect(data).toMatchObject({ organizationId: 'orgA', type: 'analysis_create', targetType: 'ORGANISATION', targetId: 'orgA', statut: 'EN_ATTENTE' })
+    expect(data.payload).toMatchObject({ origine: 'ANALYSE_HISTORIQUE', analysis: { title: 'Portail patients', methode: 'ISO_27005' }, risks: [{ externalId: 'R1' }] })
+    expect(data.payload.idempotencyKey).toMatch(/^mcp-new-/)
+    expect(JSON.stringify(data.payload)).not.toContain('orgB')
+  })
+  it('origine par défaut : expression de besoins ; paquet invalide → erreur, rien n’est déposé', async () => {
+    proposalCreate.mockResolvedValue({ id: 'pn', statut: 'EN_ATTENTE' })
+    await proposeNouvelleAnalyseTool.handler({ import: paquet }, ctx)
+    expect(proposalCreate.mock.calls[0][0].data.payload.origine).toBe('EXPRESSION_BESOINS')
+    proposalCreate.mockReset()
+    expect((await proposeNouvelleAnalyseTool.handler({ import: { analysis: {} } }, ctx)).isError).toBe(true)
+    expect(proposalCreate).not.toHaveBeenCalled()
+  })
+})
+
+describe('propose_pssi', () => {
+  const pssi = { titre: 'PSSI groupe', version: '3.2', exigences: [{ ref: 'PSSI-01', nom: 'Gestion des accès', categorie: 'Accès' }] }
+  it('dépose une proposition PSSI ancrée à l’organisation (référentiel PSSI assaini)', async () => {
+    proposalCreate.mockResolvedValue({ id: 'ps', statut: 'EN_ATTENTE' })
+    const res = await proposePssiTool.handler({ pssi }, ctx)
+    expect(res.isError).toBeUndefined()
+    const data = proposalCreate.mock.calls[0][0].data
+    expect(data).toMatchObject({ organizationId: 'orgA', type: 'pssi', targetType: 'ORGANISATION', targetId: 'orgA' })
+    expect(data.payload.referentiel).toMatchObject({ code: 'PSSI-3-2', type: 'PSSI', nom: 'PSSI groupe' })
+  })
+  it('sans exigence, code déjà pris ou module conformité inactif : erreur, rien n’est déposé', async () => {
+    expect((await proposePssiTool.handler({ pssi: { ...pssi, exigences: [] } }, ctx)).isError).toBe(true)
+    referentielCount.mockResolvedValueOnce(1)
+    const pris = await proposePssiTool.handler({ pssi }, ctx)
+    expect(pris.isError).toBe(true); expect(pris.content[0].text).toContain('code_existant')
+    orgCfg.conformiteActive = false
+    expect((await proposePssiTool.handler({ pssi }, ctx)).isError).toBe(true)
+    orgCfg.conformiteActive = true
     expect(proposalCreate).not.toHaveBeenCalled()
   })
 })

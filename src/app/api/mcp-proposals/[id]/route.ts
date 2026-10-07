@@ -11,7 +11,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { lockConformite } from '@/lib/row-lock.server'
-import { canCreateAnalyse, canEditAnalyse, peutGererConformite, resolveAnalyseRole, isAdminRole, type UserRole } from '@/lib/permissions'
+import { canCreateAnalyse, canEditAnalyse, peutGererConformite, peutGererReferentiels, resolveAnalyseRole, isAdminRole, type UserRole } from '@/lib/permissions'
 import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { getOrgConfig, optionsStructure } from '@/lib/org-config.server'
@@ -29,7 +29,10 @@ import {
 } from '@/lib/mcp/proposals'
 import { sanitizeConformite, applyConformiteEntry } from '@/lib/conformite'
 import type { Prisma } from '@prisma/client'
-import { applyAnalysisImportContent, parseAnalysisImportRequest } from '@/lib/analysis-import'
+import { applyAnalysisImportContent, executeAnalysisImport, parseAnalysisImportRequest } from '@/lib/analysis-import'
+import { isPssiProposalValid, sanitizePssiProposal } from '@/lib/mcp/pssi-proposal'
+import { importerPssi } from '@/lib/mcp/pssi-import.server'
+import { usesConformiteEntity } from '@/lib/conformite-config'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ id: string }> }
@@ -141,6 +144,30 @@ async function resolveGate(proposal: ProposalRow, userId: string, instanceRole: 
     return { ok: true, validatorRole: role, apply: (uid, note) => applyProjet360(proposal, cfg.patternsArchiMax, uid, note) }
   }
 
+  // ── Nouvelle analyse (expression de besoins ou analyse historique) : même règle que le projet 360 ──
+  if (proposal.type === 'analysis_create') {
+    if (proposal.targetType !== 'ORGANISATION' || !(await anchorExistsInOrg('ORGANISATION', proposal.targetId, proposal.organizationId))) {
+      return { ok: false, status: 400, error: 'Type d\'ancre non supporté' }
+    }
+    const role = await getEffectiveRoleForOrg(userId, instanceRole, proposal.organizationId)
+    if (!role) return { ok: false, status: 403, error: 'Organisation hors périmètre' }
+    if (!canCreateAnalyse({ id: userId, role }, await optionsStructure(proposal.organizationId))) return { ok: false, status: 403, error: 'Validation non autorisée' }
+    return { ok: true, validatorRole: role, apply: (uid, note) => applyNouvelleAnalyse(proposal, uid, note) }
+  }
+
+  // ── PSSI : ancre = l'organisation ; RBAC = création d'un référentiel (administrateur), module conformité actif ──
+  if (proposal.type === 'pssi') {
+    if (proposal.targetType !== 'ORGANISATION' || !(await anchorExistsInOrg('ORGANISATION', proposal.targetId, proposal.organizationId))) {
+      return { ok: false, status: 400, error: 'Type d\'ancre non supporté' }
+    }
+    const role = await getEffectiveRoleForOrg(userId, instanceRole, proposal.organizationId)
+    if (!role) return { ok: false, status: 403, error: 'Organisation hors périmètre' }
+    if (!peutGererReferentiels(role)) return { ok: false, status: 403, error: 'Validation non autorisée' }
+    const cfg = await getOrgConfig(proposal.organizationId)
+    if (!cfg.conformiteActive) return { ok: false, status: 403, error: 'Module conformité désactivé' }
+    return { ok: true, validatorRole: role, apply: (uid, note) => applyPssi(proposal, usesConformiteEntity(cfg.conformiteNiveau), uid, note) }
+  }
+
   // ── Plan d'action : ancre org-scopée, RBAC = gouvernance de l'organisation ──
   if (proposal.type === 'plan_action') {
     if (!(await anchorExistsInOrg(proposal.targetType, proposal.targetId, proposal.organizationId))) {
@@ -174,6 +201,24 @@ async function applyProjet360(proposal: ProposalRow, patternsMax: number, userId
   const { id } = await creerProjet360(payload, { userId, organizationId: proposal.organizationId })
   await prisma.mcpProposal.update({ where: { id: proposal.id }, data: { statut: 'ACCEPTEE', reviewedById: userId, reviewedAt: new Date(), appliedId: id, reviewNote: (note ?? '').slice(0, 2000) || null } })
   return { ok: true, appliedId: id }
+}
+
+/** Crée la nouvelle analyse par l'import historique (transaction et reçu d'idempotence), le relecteur en est le créateur. */
+async function applyNouvelleAnalyse(proposal: ProposalRow, userId: string, note?: string): Promise<ApplyResult> {
+  let payload
+  try { payload = parseAnalysisImportRequest(proposal.payload) } catch { return { ok: false, error: 'Proposition d’analyse invalide' } }
+  const res = await executeAnalysisImport(payload, { organizationId: proposal.organizationId, userId, source: 'MCP' })
+  const appliedId = (res as { analyseId: string }).analyseId
+  await prisma.mcpProposal.update({ where: { id: proposal.id }, data: { statut: 'ACCEPTEE', reviewedById: userId, reviewedAt: new Date(), appliedId, reviewNote: (note ?? '').slice(0, 2000) || null } })
+  return { ok: true, appliedId }
+}
+
+/** Importe la PSSI : référentiel PSSI, document de la bibliothèque et suivi de conformité (cf. pssi-import.server). */
+async function applyPssi(proposal: ProposalRow, suiviPossible: boolean, userId: string, note?: string): Promise<ApplyResult> {
+  const payload = sanitizePssiProposal(proposal.payload)
+  if (!isPssiProposalValid(payload)) return { ok: false, error: 'Proposition invalide' }
+  const res = await importerPssi(payload, { organizationId: proposal.organizationId, userId, proposalId: proposal.id, note, suiviConformite: payload.suivreConformite && suiviPossible })
+  return res.ok ? { ok: true, appliedId: res.referentielId } : { ok: false, error: res.error, status: res.status }
 }
 
 /** Applique atomiquement le paquet MCP après l'accord explicite du relecteur. */

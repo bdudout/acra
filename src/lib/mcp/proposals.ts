@@ -16,7 +16,7 @@ export const PROPOSAL_STATUS = ['EN_ATTENTE', 'ACCEPTEE', 'REJETEE'] as const
 export type ProposalStatus = (typeof PROPOSAL_STATUS)[number]
 
 /** Types de propositions supportés (extensible aux phases suivantes). */
-export const PROPOSAL_TYPES = ['risk', 'measure', 'plan_action', 'conformite', 'projet360'] as const
+export const PROPOSAL_TYPES = ['risk', 'measure', 'plan_action', 'conformite', 'projet360', 'analysis_import', 'analysis_create', 'pssi'] as const
 export type ProposalType = (typeof PROPOSAL_TYPES)[number]
 
 /**

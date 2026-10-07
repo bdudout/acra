@@ -57,6 +57,20 @@ describe('executeAnalysisImport', () => {
     links: [{ riskExternalId: 'R2', actionExternalId: 'A2' }],
   })
 
+  it('création (méthode à saisie directe) : secteur, sous-secteurs cohérents, périmètre et objectifs repris dans le cadrage', async () => {
+    const { tx } = fakeTx()
+    findUnique.mockResolvedValue(null)
+    transaction.mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx))
+    const input = parseAnalysisImportRequest({
+      idempotencyKey: 'import-contexte-2026-01',
+      analysis: { title: 'Portail', secteur: 'Santé / Médico-social', sousSecteurs: ['sante-amc', 'banque-detail'] },
+      context: { perimetre: 'Portail adhérents', objectifs: 'Souscription en ligne' },
+    })
+    await executeAnalysisImport(input, { organizationId: 'org-a', userId: 'user-a', source: 'MCP' })
+    const data = (tx.analyse.create.mock.calls[0] as unknown as [{ data: Record<string, unknown> }])[0].data
+    expect(data).toMatchObject({ secteur: 'Santé / Médico-social', sousSecteurs: ['sante-amc'], cadrage: { create: { perimetre: 'Portail adhérents', objectifsEtude: 'Souscription en ligne' } } })
+  })
+
   it('import : chaque lien RISQUE_ANALYSE porte ref = analyseId (compteurs et liens profonds)', async () => {
     const { tx, liens } = fakeTx()
     findUnique.mockResolvedValue(null)

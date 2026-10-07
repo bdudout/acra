@@ -21,6 +21,8 @@ const MATRICE: Record<string, { kind: Kind; preuve: string }> = {
   read_analyses: { kind: 'LECTURE_ORG', preuve: 'mcp-tools-projet.test.ts' },
   read_projet: { kind: 'LECTURE_ORG', preuve: 'mcp-tools-projet.test.ts' },
   propose_projet360: { kind: 'PROPOSITION_ORGANISATION', preuve: 'mcp-tools-propose.test.ts' },
+  propose_nouvelle_analyse: { kind: 'PROPOSITION_ORGANISATION', preuve: 'mcp-tools-propose.test.ts' },
+  propose_pssi: { kind: 'PROPOSITION_ORGANISATION', preuve: 'mcp-tools-propose.test.ts' },
   propose_risk: { kind: 'PROPOSITION_ANCREE', preuve: 'mcp-tools-propose.test.ts' },
   propose_measure: { kind: 'PROPOSITION_ANCREE', preuve: 'mcp-tools-propose.test.ts' },
   propose_plan_action: { kind: 'PROPOSITION_ANCREE', preuve: 'mcp-tools-propose.test.ts' },

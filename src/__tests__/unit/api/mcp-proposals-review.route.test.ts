@@ -45,13 +45,18 @@ vi.mock('@/lib/org-context.server', () => ({
 vi.mock('@/lib/logger', () => ({ auditLog: vi.fn(), getClientIp: vi.fn(() => '') }))
 const gel = { value: false }
 vi.mock('@/lib/org-config.server', () => ({
-  getOrgConfig: vi.fn(async () => ({ gelApresAcceptationActive: gel.value, projets360Active: true, patternsArchiMax: 12 })),
+  getOrgConfig: vi.fn(async () => ({ gelApresAcceptationActive: gel.value, projets360Active: true, patternsArchiMax: 12, conformiteActive: true, conformiteNiveau: 'ORGANISATION' })),
   optionsStructure: vi.fn(async () => ({ petiteStructure: false })),
 }))
 vi.mock('@/lib/configuration-server', () => ({ getEffectiveScaleConfig: vi.fn(async () => ({ nbNiveaux: 4 })) }))
 vi.mock('@/lib/projet360-creation.server', () => ({ creerProjet360: (...a: unknown[]) => creerProjet360(...a) }))
+const executeAnalysisImport = vi.hoisted(() => vi.fn(async (..._a: unknown[]) => ({ replayed: false, analyseId: 'analyse-new' })))
+vi.mock('@/lib/analysis-import', async (orig) => ({ ...(await orig<object>()), executeAnalysisImport: (...a: unknown[]) => executeAnalysisImport(...a) }))
+const importerPssi = vi.hoisted(() => vi.fn(async (..._a: unknown[]) => ({ ok: true, referentielId: 'ref-new', documentId: 'doc-new' })))
+vi.mock('@/lib/mcp/pssi-import.server', () => ({ importerPssi: (...a: unknown[]) => importerPssi(...a) }))
 
 import { PATCH } from '@/app/api/mcp-proposals/[id]/route'
+import { sanitizePssiProposal } from '@/lib/mcp/pssi-proposal'
 
 const PENDING = { id: 'p1', statut: 'EN_ATTENTE', type: 'risk', targetType: 'ANALYSE', targetId: 'an1', organizationId: 'orgA', payload: { nom: 'Rançongiciel', gravite: 4, vraisemblance: 3, niveauRisque: 12, strategie: 'REDUIRE' } }
 const ANALYSE = { id: 'an1', userId: 'owner', organizationId: 'orgA', deletedAt: null, accesUtilisateurs: [] }
@@ -198,5 +203,31 @@ describe('PATCH /api/mcp-proposals/[id]', () => {
     vi.clearAllMocks(); proposalFindUnique.mockResolvedValue({ ...PROJET }); effRole.value = 'LECTEUR'
     expect((await PATCH(req({ action: 'accept' }), params)).status).toBe(403)
     expect(creerProjet360).not.toHaveBeenCalled()
+  })
+
+  it('nouvelle analyse proposée : créée par import (source MCP, créateur = relecteur) ; refusée en lecture seule', async () => {
+    const NOUVELLE = { ...PENDING, type: 'analysis_create', targetType: 'ORGANISATION', targetId: 'orgA', payload: { origine: 'EXPRESSION_BESOINS', idempotencyKey: 'mcp-new-123456', analysis: { title: 'Portail patients' }, risks: [{ externalId: 'R1', title: 'Fuite' }] } }
+    proposalFindUnique.mockResolvedValue({ ...NOUVELLE })
+    const ok = await PATCH(req({ action: 'accept' }), params)
+    expect(ok.status).toBe(200)
+    expect(executeAnalysisImport.mock.calls[0][0]).toMatchObject({ analysis: { title: 'Portail patients' }, risks: [{ externalId: 'R1' }] })
+    expect(executeAnalysisImport.mock.calls[0][1]).toEqual({ organizationId: 'orgA', userId: 'reviewer', source: 'MCP' })
+    expect(argOf(proposalUpdate).data).toMatchObject({ statut: 'ACCEPTEE', appliedId: 'analyse-new' })
+    vi.clearAllMocks(); proposalFindUnique.mockResolvedValue({ ...NOUVELLE }); effRole.value = 'LECTEUR'
+    expect((await PATCH(req({ action: 'accept' }), params)).status).toBe(403)
+    expect(executeAnalysisImport).not.toHaveBeenCalled()
+  })
+
+  it('PSSI proposée : importée par un administrateur (référentiel + document + suivi) ; refusée au RSSI ; code pris → 409', async () => {
+    const PSSI = { ...PENDING, type: 'pssi', targetType: 'ORGANISATION', targetId: 'orgA', payload: sanitizePssiProposal({ titre: 'PSSI groupe', version: '3.2', exigences: [{ ref: 'PSSI-01', nom: 'Accès' }] }) }
+    proposalFindUnique.mockResolvedValue({ ...PSSI })
+    const ok = await PATCH(req({ action: 'accept' }), params)
+    expect(ok.status).toBe(200)
+    expect(importerPssi.mock.calls[0][1]).toMatchObject({ organizationId: 'orgA', userId: 'reviewer', proposalId: 'p1', suiviConformite: true })
+    vi.clearAllMocks(); proposalFindUnique.mockResolvedValue({ ...PSSI }); importerPssi.mockResolvedValueOnce({ ok: false, error: 'code_existant', status: 409 } as never)
+    expect((await PATCH(req({ action: 'accept' }), params)).status).toBe(409)
+    vi.clearAllMocks(); proposalFindUnique.mockResolvedValue({ ...PSSI }); effRole.value = 'RSSI'
+    expect((await PATCH(req({ action: 'accept' }), params)).status).toBe(403)
+    expect(importerPssi).not.toHaveBeenCalled()
   })
 })
