@@ -35,7 +35,8 @@ conformité, compléter le registre d'un projet. L'assistant prépare, l'humain 
 Pour les petites structures comme pour les grands groupes : vous l'installez chez vous, vous l'adaptez,
 sans licence à payer.
 
-👉 github.com/bdudout/acra
+👉 Démo : https://acra-cyber.com
+👉 Code : github.com/bdudout/acra
 
 Vos retours m'intéressent, en particulier si vous travaillez sur la GRC dans une PME, une mutuelle,
 une banque ou une collectivité. 🙏
@@ -53,4 +54,5 @@ ACRA, ce n'est plus seulement EBIOS RM ni seulement le cyber 👇
 ✅ Aucune IA embarquée, mais IA native : serveur MCP pour migrer et compléter vos analyses avec une IA
 locale ou souveraine, toujours sous validation humaine
 ✅ Gratuit, open source, licence MIT, des PME aux grands groupes
-👉 github.com/bdudout/acra
+👉 Démo : https://acra-cyber.com
+👉 Code : github.com/bdudout/acra
