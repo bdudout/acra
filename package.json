@@ -33,7 +33,7 @@
     "@react-pdf/renderer": "^4.5.1",
     "@types/nodemailer": "^8.0.1",
     "bcryptjs": "^2.4.3",
-    "docx": "^9.7.1",
+    "docx": "^9.8.1",
     "exceljs": "^4.4.0",
     "ldapts": "^9.2.0",
     "lucide-react": "^1.17.0",
