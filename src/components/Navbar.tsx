@@ -23,7 +23,7 @@ import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
   User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked,
   Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp, Landmark,
-  LayoutGrid, Radar, ScrollText, FileText, ListChecks, Menu, X, Gauge, Briefcase, type LucideIcon,
+  LayoutGrid, Radar, ScrollText, FileText, ListChecks, Bot, Menu, X, Gauge, Briefcase, type LucideIcon,
   BadgeCheck, UserCheck, BrainCircuit,
 } from 'lucide-react'
 
@@ -350,6 +350,23 @@ export default function Navbar() {
                   >
                     <ListChecks size={16} aria-hidden="true" />
                     {t.nav.mcpProposals}
+                  </Link>
+                )}
+
+                {/* Activité MCP : assistants connectés, clés MCP (création, révocation). Administrateur de l'organisation. */}
+                {isAdmin && (
+                  <Link
+                    href="/mcp-activite"
+                    role="menuitem"
+                    className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg ${
+                      pathname === '/mcp-activite'
+                        ? 'bg-ebios-50 text-ebios-700 font-medium'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <Bot size={16} aria-hidden="true" />
+                    {t.nav.mcpActivite}
                   </Link>
                 )}
 

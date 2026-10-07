@@ -1376,7 +1376,7 @@ export default function ConfigurationPage() {
                 { field: 'projets360Active' as const, value: projets360Active, title: t.features.projets360Title, desc: t.features.projets360Desc, href: '/projets', disabled: modulesPolicy.projets360 === 'FORCE_ON' || modulesPolicy.projets360 === 'FORCE_OFF', indent: false, forced: modulesPolicy.projets360 },
                 { field: 'homologationsActive' as const, value: homologationsActive, title: t.features.homologationsTitle, desc: t.features.homologationsDesc, href: '/homologations', disabled: modulesPolicy.homologations === 'FORCE_ON' || modulesPolicy.homologations === 'FORCE_OFF', indent: false, forced: modulesPolicy.homologations },
                 { field: 'registreIaActive' as const, value: registreIaActive, title: t.features.registreIaTitle, desc: t.features.registreIaDesc, href: '/registre-ia', disabled: modulesPolicy.registreIa === 'FORCE_ON' || modulesPolicy.registreIa === 'FORCE_OFF', indent: false, forced: modulesPolicy.registreIa },
-                { field: 'mcpActive' as const, value: mcpActive, title: t.features.mcpTitle, desc: t.features.mcpDesc, href: '/mcp-propositions', disabled: false },
+                { field: 'mcpActive' as const, value: mcpActive, title: t.features.mcpTitle, desc: t.features.mcpDesc, href: '/mcp-activite', disabled: false },
               ]).map(f => {
                 const forced = (f as { forced?: string }).forced // 'FORCE_ON' | 'FORCE_OFF' | undefined
                 const isForced = forced === 'FORCE_ON' || forced === 'FORCE_OFF'
