@@ -21,5 +21,8 @@ describe('McpProposalsQueue — démo projet 360', () => {
     expect(screen.getByText(/Projet 360 proposé · Mutuelle Horizon Santé/)).toBeTruthy()
     expect(screen.getByText(/Santé \/ Médico-social · Mise en service 01\/03\/2027/)).toBeTruthy()
     expect(screen.getByText(/Domaine Cyber · 1 mesure\(s\) · 2 plan\(s\) d’action/)).toBeTruthy()
+    // Stratégie affichée par son libellé, pas par son code.
+    expect(screen.getByText(/Stratégie Réduire/)).toBeTruthy()
+    expect(screen.queryByText(/REDUIRE/)).toBeNull()
   })
 })

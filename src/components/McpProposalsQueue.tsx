@@ -69,7 +69,7 @@ export default function McpProposalsQueue() {
           ? `${m.statut} ${(m.conformiteStatuts as Record<string, string>)?.[String(p.payload.statut)] ?? p.payload.statut ?? '—'}${p.payload.commentaire ? ` · ${p.payload.commentaire}` : ''}`
           : p.type === 'projet360'
           ? `${p.payload.secteur ?? '—'}${p.payload.miseEnService ? ` · ${m.miseEnService} ${new Date(`${p.payload.miseEnService}T00:00:00`).toLocaleDateString(locale)}` : ''}`
-          : `${m.gravite} ${p.payload.gravite ?? '—'} · ${m.vraisemblance} ${p.payload.vraisemblance ?? '—'} · ${m.niveau} ${p.payload.niveauRisque ?? '—'} · ${m.strategie} ${p.payload.strategie ?? '—'}`
+          : `${m.gravite} ${p.payload.gravite ?? '—'} · ${m.vraisemblance} ${p.payload.vraisemblance ?? '—'} · ${m.niveau} ${p.payload.niveauRisque ?? '—'} · ${m.strategie} ${p.payload.strategie ? (t.risquesDirects.strategies as Record<string, string>)[p.payload.strategie] ?? p.payload.strategie : '—'}`
             + (p.payload.domaine ? ` · ${m.domaine} ${(t.projet360.domaines as Record<string, string>)[p.payload.domaine] ?? p.payload.domaine}` : '')
             + (p.payload.mesures?.length || p.payload.plans?.length ? ` · ${m.enfants.replace('{m}', String(p.payload.mesures?.length ?? 0)).replace('{p}', String(p.payload.plans?.length ?? 0))}` : '')
         return (

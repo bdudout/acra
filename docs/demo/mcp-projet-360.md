@@ -103,13 +103,14 @@ Clé d'API de l'organisation avec le **seul** droit `mcp` (Configuration › Cl�
 activé pour l'instance et pour l'organisation. Variable d'environnement : `ACRA_MCP_KEY`.
 
 - **Claude Code** : `claude mcp add --transport http acra http://localhost:3005/api/mcp --header "Authorization: Bearer $ACRA_MCP_KEY"`
-- **Codex (CLI)** : dans `~/.codex/config.toml`, une entrée `[mcp_servers.acra]` avec `url = "http://localhost:3005/api/mcp"`
-  et `bearer_token_env_var = "ACRA_MCP_KEY"` (syntaxe à confirmer sur la version installée).
+- **Codex (CLI 0.160, livré avec l'application ChatGPT)** : `codex mcp add acra --url http://localhost:3005/api/mcp --bearer-token-env-var ACRA_MCP_KEY`,
+  ou ponctuellement `-c 'mcp_servers.acra.url="…"' -c 'mcp_servers.acra.bearer_token_env_var="ACRA_MCP_KEY"'` — **vérifié** :
+  Codex liste les outils et appelle `read_sector_examples`.
 - **Mistral Vibe (CLI)** : serveur MCP en transport HTTP déclaré dans la configuration de Vibe, avec l'en-tête
   `Authorization: Bearer …` (syntaxe à confirmer à l'installation). Le modèle tourne chez Mistral AI : rien à
   charger en mémoire sur le poste, contrairement à un modèle local.
 - Les interfaces web (claude.ai, Le Chat) exigent une adresse HTTPS publique et, en pratique, OAuth : hors du
-  périmètre de cette démo (voir § 5, lot M5).
+  périmètre de cette démo (voir § 5, lot M6).
 
 ## 5. État du serveur MCP et changements
 
@@ -122,7 +123,7 @@ activé pour l'instance et pour l'organisation. Variable d'environnement : `ACRA
   possible), propositions non destructives.
 - En-tête `WWW-Authenticate` sur les refus 401.
 
-### À faire pour la démo (lots proposés)
+### Lots de la démo (M1 à M5 livrés le 2026-10-07)
 | Lot | Changement | Pourquoi |
 |---|---|---|
 | M1 | `read_analyses` : analyses et projets de l'organisation (id, nom, méthode, secteur, statut) | aujourd'hui un assistant ne peut pas trouver l'identifiant d'un projet |
@@ -137,3 +138,32 @@ activé pour l'instance et pour l'organisation. Variable d'environnement : `ACRA
 - Débit limité à 120 appels par minute et par clé : suffisant pour une démo, à surveiller pour trois clients en
   parallèle sur la même clé (prévoir une clé par client).
 - Chaque appel d'outil est journalisé (`MCP_TOOL_INVOKED`) : la trace fait partie de la démonstration.
+
+## 7. Démo réalisée (2026-10-07, instance locale)
+
+L'assistant est **Claude** (session Claude Code) appelant le serveur MCP d'ACRA par le protocole (client
+`docs/demo/scripts/mcp.sh`) ; l'humain qui valide est piloté par Playwright (`docs/demo/scripts/capture.cjs`).
+Codex a été vérifié en lecture (§ 4) ; son quota d'usage était épuisé pour le parcours complet ; Mistral Vibe n'est pas
+installé sur le poste.
+
+| # | Étape | Outil / action | Capture |
+|---|---|---|---|
+| 1 | L'assistant lit les sous-secteurs et patterns disponibles, puis propose le projet (3 sous-secteurs, 11 patterns, mise en service 2027-03-01) | `read_sector_examples`, `propose_projet360` | `captures/01-proposition-projet.png` |
+| 2 | L'humain accepte : le projet est créé comme depuis le formulaire, avec ses 13 risques et 8 plans par défaut | Accepter | `captures/02-projet-accepte.png`, `captures/03-projet-cree.png` |
+| 3 | L'assistant retrouve le projet, lit son contexte et les recommandations (80 risques types : 21 sous-secteurs, 31 architecture, 23 secteur, 5 registre) | `read_analyses`, `read_projet`, `recommend_risks_scenarios` | — |
+| 4 | Il propose les 8 risques manquants, avec domaine, cotations brut / actuel / résiduel, 9 mesures et 10 plans datés avant la mise en service | `propose_risk` ×8 | `captures/04-propositions-risques.png` |
+| 5 | L'humain accepte les 8 propositions : 21 risques, plans rattachés R1, R2… | Accepter ×8 | `captures/05-file-vide.png` |
+| 6 | Page du projet : météo, matrice (R1 « Fuite des données de santé » en tête), plans par priorité | — | `captures/06-page-projet.png`, `captures/07-matrice-des-risques.png`, `captures/08-plans-par-priorite.png`, `captures/09-page-projet-complete.png` |
+| 7 | Export PowerPoint de la revue de projet (8 diapositives) | Exporter | `captures/revue-projet-espace-adherent-2027.pptx`, `captures/10-pptx-*.png` |
+| 8 | L'assistant propose un risque **hors périmètre** (refonte du système de gestion) : l'humain le rejette, la trace reste (statut REJETEE) | `propose_risk`, Rejeter | `captures/11-proposition-hors-perimetre.png`, `captures/12-proposition-rejetee.png` |
+
+**Contrôles de sécurité rejoués** sur l'instance : analyse d'une autre organisation introuvable (proposition et
+lecture) ; projet sans pattern refusé ; `organizationId` injecté ignoré (l'outil reste sur l'organisation de la clé) ;
+plan d'action ancré sur l'organisation entière refusé ; aucune proposition déposée par ces tentatives.
+
+**Constats** : quelques risques types d'architecture sont classés au domaine « Fraude » alors qu'ils relèvent du cyber
+(ex. « Un serveur de la DMZ compromis sert de rebond ») — classement à revoir dans le catalogue (catégorie bâloise →
+domaine 360). En mode développement, l'acceptation d'un projet prend une dizaine de secondes (compilation et peuplement).
+
+**Rejouer** : `.acra-test-memory/mcp-demo.json` (clé `mcp`), puis `docs/demo/scripts/mcp.sh <outil> '<json>'` et
+`ACRA_EMAIL=… ACRA_PASSWORD=… node docs/demo/scripts/capture.cjs projet|risques|projet-page|export|rejet`.
