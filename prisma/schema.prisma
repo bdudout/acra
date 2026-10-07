@@ -2197,6 +2197,10 @@ model OrganizationConfig {
   projetSuppressionValidation Boolean      @default(true)
   recertificationActive      Boolean       @default(false)
   registreIaActive           Boolean       @default(false)
+  // Fonctions spécifiques activables séparément (désactivées par défaut) : campagnes RCSA, appétence (RAS / RAD), rapports GRC.
+  campagnesRcsaActive        Boolean       @default(false)
+  appetenceActive            Boolean       @default(false)
+  rapportsGrcActive          Boolean       @default(false)
   // Serveur MCP (agents/LLM) pour cette organisation : désactivé par défaut ; exige aussi l'interrupteur d'instance `mcpEnabled`.
   mcpActive                  Boolean       @default(false)
   // Personnalisation de l'échelle de maturité CMMI (niveaux 0–5) :

@@ -37,7 +37,7 @@ interface OrgPosture {
 }
 interface Rollup {
   active: boolean; orgCount: number
-  modules: { incidents: boolean; controles: boolean; audit: boolean; appetit: boolean; kri: boolean; reglementaire: boolean }
+  modules: { incidents: boolean; controles: boolean; audit: boolean; appetit: boolean; ras?: boolean; kri: boolean; reglementaire: boolean }
   consolide: { risques: RiskTotals; actions: ActionsSummary; projets?: ProjetsSynthese; incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; appetit?: AppetitSynthese; kri?: KriSynthese; dora?: DoraSynthese; regulateur?: RegulateurSynthese; quatreNiveaux?: NiveauSuivi[] }
   parOrg: OrgPosture[]
 }
@@ -144,7 +144,7 @@ export default function PilotageGrc({ canCreateAnalyse = false, projets360 = fal
       <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100"><BarChart3 size={22} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {p.title}</h1>
         <div className="flex items-center gap-3">
-          {mod.appetit && (
+          {mod.ras && (
             <a href={`/api/appetit/ras?lang=${locale}`}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
               <FileText size={15} aria-hidden="true" /> {p.exportRas}

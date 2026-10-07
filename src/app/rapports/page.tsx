@@ -8,6 +8,8 @@ import { peutLireRapports } from '@/lib/rapport-acces'
 import { rapportsDisponibles } from '@/lib/rapport-model'
 import Navbar from '@/components/Navbar'
 import RapportsManager from '@/components/RapportsManager'
+import { superAdminSansOrganisation } from '@/lib/choisir-organisation'
+import ChoisirOrganisation from '@/components/ChoisirOrganisation'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -18,6 +20,8 @@ export default async function RapportsPage() {
   if (!session?.user) redirect('/auth/signin')
   const userId = (session.user as { id: string }).id
   const scope = await getAnalyseScope(userId, ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole)
+  // Super-administrateur en vue « toutes les organisations » : page propre à une organisation → message d'information.
+  if (superAdminSansOrganisation(((session.user as { role?: string }).role), scope.activeOrgId)) return <ChoisirOrganisation />
   if (!scope.activeOrgId || !peutLireRapports(scope.role as UserRole)) redirect('/dashboard')
   const cfg = await getOrgConfig(scope.activeOrgId)
   if (rapportsDisponibles(cfg).length === 0) redirect('/dashboard')

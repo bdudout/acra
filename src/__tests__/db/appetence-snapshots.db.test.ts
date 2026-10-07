@@ -13,9 +13,9 @@ const now = new Date('2026-10-15T10:00:00Z')
 
 beforeAll(async () => {
   orgA = (await makeOrg('Org A appétence')).id; orgB = (await makeOrg('Org B appétence')).id; orgVide = (await makeOrg('Sans source')).id
-  await prisma.organizationConfig.create({ data: { id: orgA, registreRisquesActive: true } })
-  await prisma.organizationConfig.create({ data: { id: orgB, registreRisquesActive: true } })
-  await prisma.organizationConfig.create({ data: { id: orgVide, registreRisquesActive: false } })
+  await prisma.organizationConfig.create({ data: { id: orgA, registreRisquesActive: true, appetenceActive: true } })
+  await prisma.organizationConfig.create({ data: { id: orgB, registreRisquesActive: true, appetenceActive: true } })
+  await prisma.organizationConfig.create({ data: { id: orgVide, registreRisquesActive: false, appetenceActive: true } })
   await prisma.riskItem.create({ data: { organizationId: orgA, intitule: 'Risque secret de A', graviteResiduelle: 3, vraisemblanceResiduelle: 3 } })
 })
 afterAll(async () => { await prisma.$disconnect() })

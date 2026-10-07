@@ -29,7 +29,8 @@ export async function GET(req: NextRequest) {
   // Le RAS relève de la gouvernance : 1ʳᵉ ligne « pure » exclue.
   if (role === 'LECTEUR' || role === 'METIER') return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   const orgConfig = await getOrgConfig(orgId)
-  if (!orgConfig.registreRisquesActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
+  // Document RAS : registre des risques ET module « Appétence » actifs.
+  if (!orgConfig.registreRisquesActive || !orgConfig.appetenceActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
 
   const rows = await prisma.riskItem.findMany({
     where: { organizationId: orgId },

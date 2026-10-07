@@ -1724,6 +1724,7 @@ export const es: Translations = {
       p360_reversibilite: { title: 'Dependencia del proveedor (reversibilidad)', description: 'Imposibilidad de cambiar de proveedor o de recuperar la actividad internamente.' },
     },
   },
+  orgContexte: { choisirTitre: "Elija una organización", choisirMessage: "Esta página se refiere a una organización concreta. Está en la vista «Todas las organizaciones»: elija una organización en el selector de la parte superior de la página." },
   appetence: { historique: {"title": "Histórico y tendencia", "hint": "Instantáneas mensuales de agregados (sin títulos de riesgo) fijadas automáticamente cada mes; el histórico comienza en la primera instantánea.", "capture": "Fijar la instantánea del mes", "export": "Exportar (Excel)", "empty": "Aún no hay instantáneas: fije el primer mes.", "saved": "Instantánea guardada.", "failed": "No se pudo guardar.", "periode": "Mes", "globalLabel": "Nivel global", "hors": "Fuera del apetito", "kri": "KRI en alerta / críticos", "maturite": "Requisitos bajo el objetivo", "sensCol": "Tendencia", "sens": {"AMELIORATION": "Mejora", "DEGRADATION": "Empeora", "STABLE": "Estable"}},
     guide: { what: 'Dos vistas complementarias: lo que acepta la dirección (RAS, umbrales de apetito) y dónde se sitúa la organización frente a esos límites (RAD).', how: 'Fije los umbrales por categoría de riesgo y la madurez objetivo por marco; el panel compara después la situación real con esos límites.', result: 'Indicadores claros (dentro del límite, a vigilar, fuera del apetito) y un soporte para presentar al comité de riesgos.' },
     title: 'Apetito de riesgo',
@@ -4398,6 +4399,13 @@ export const es: Translations = {
 
   // ─── Funcionalidades opcionales (interruptores admin) ─────────────────────
   features: {
+    groupeGeneral: "General",
+    campagnesRcsaTitle: "Campañas RCSA",
+    campagnesRcsaDesc: "Campañas de autoevaluación de riesgos y controles (RCSA) por las áreas de negocio, sobre el registro de riesgos. Requiere el registro de riesgos.",
+    appetenceTitle: "Apetito de riesgo (RAS / RAD)",
+    appetenceDesc: "Declaración de apetito de riesgo (RAS) y cuadro de mando de apetito (RAD), instantáneas mensuales y documento RAS para el comité. Requiere el registro de riesgos, los KRI o la madurez. Los umbrales de apetito siguen visibles en el mapa del registro.",
+    rapportsGrcTitle: "Informes GRC",
+    rapportsGrcDesc: "Ediciones congeladas y validadas de los informes de incidentes y pérdidas, control permanente, auditoría interna y síntesis para la dirección.",
     sectionTitle:  'Funcionalidades opcionales',
     sectionDesc:   'Active pasos adicionales inspirados en las fichas de método del Club EBIOS. Desactivados, no aparecen en los análisis.',
     qualificationTitle: 'Cuestionario de cualificación al inicio de un análisis',

@@ -1748,6 +1748,7 @@ export const fr = {
       p360_reversibilite: { title: 'Dépendance au prestataire (réversibilité)', description: 'Impossibilité de changer de prestataire ou de reprendre l’activité en interne.' },
     },
   },
+  orgContexte: { choisirTitre: "Choisissez une organisation", choisirMessage: "Cette page porte sur une organisation précise. Vous êtes en vue « Toutes les organisations » : choisissez une organisation dans le sélecteur en haut de page." },
   appetence: { historique: {"title": "Historique et tendance", "hint": "Instantanés mensuels d’agrégats (aucun intitulé de risque) figés automatiquement chaque mois ; l’historique commence au premier instantané.", "capture": "Figer l’instantané du mois", "export": "Exporter (Excel)", "empty": "Aucun instantané pour le moment : figez le premier mois.", "saved": "Instantané enregistré.", "failed": "Enregistrement impossible.", "periode": "Mois", "globalLabel": "Niveau global", "hors": "Hors appétit", "kri": "KRI en alerte / critiques", "maturite": "Exigences sous la cible", "sensCol": "Tendance", "sens": {"AMELIORATION": "Amélioration", "DEGRADATION": "Dégradation", "STABLE": "Stable"}},
     guide: { what: 'Deux vues complémentaires : ce que la gouvernance accepte (RAS, seuils d’appétit) et où en est l’organisation face à ces limites (RAD).', how: 'Fixez les seuils par catégorie de risque et la maturité visée par référentiel ; le tableau de bord compare ensuite la situation réelle à ces limites.', result: 'Des voyants clairs (dans la limite, à surveiller, hors appétit) et un support à présenter au comité des risques.' },
     title: 'Appétence au risque',
@@ -4447,6 +4448,13 @@ export const fr = {
   ],
   // ─── Fonctionnalités optionnelles (toggles admin) ────────────────────────
   features: {
+    groupeGeneral: "Général",
+    campagnesRcsaTitle: "Campagnes RCSA",
+    campagnesRcsaDesc: "Campagnes d’auto-évaluation des risques et des contrôles (RCSA) par les métiers, sur le registre des risques. Nécessite le registre des risques.",
+    appetenceTitle: "Appétence au risque (RAS / RAD)",
+    appetenceDesc: "Déclaration d’appétence (RAS) et tableau de bord d’appétence (RAD), instantanés mensuels et document RAS pour le comité. Nécessite le registre des risques, les KRI ou la maturité. Les seuils d’appétit restent visibles sur la cartographie du registre.",
+    rapportsGrcTitle: "Rapports GRC",
+    rapportsGrcDesc: "Éditions figées et validées des rapports d’incidents et de pertes, de contrôle permanent, d’audit interne et de synthèse pour la direction.",
     sectionTitle:  'Fonctionnalités optionnelles',
     sectionDesc:   "Activez des étapes complémentaires inspirées des fiches méthode du Club EBIOS. Désactivées, elles n'apparaissent pas dans les analyses.",
     qualificationTitle: "Questionnaire de qualification en début d'analyse",

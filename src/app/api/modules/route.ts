@@ -26,5 +26,8 @@ export async function GET() {
     homologationsActive: cfg.homologationsActive,
     recertificationActive: cfg.recertificationActive,
     registreIaActive: cfg.registreIaActive,
+    campagnesRcsaActive: cfg.campagnesRcsaActive,
+    appetenceActive: cfg.appetenceActive,
+    rapportsGrcActive: cfg.rapportsGrcActive,
   })
 }

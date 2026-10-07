@@ -78,6 +78,9 @@ export interface RawOrgConfig {
   projetSuppressionValidation?: boolean
   recertificationActive?: boolean
   registreIaActive?: boolean
+  campagnesRcsaActive?: boolean
+  appetenceActive?: boolean
+  rapportsGrcActive?: boolean
   mcpActive?: boolean
   echelleMaturite?: unknown
   processusCartographie?: unknown
@@ -151,6 +154,12 @@ export interface OrgConfigResolved {
   recertificationActive: boolean
   /** Module « Registre IA » (algorithmes et systèmes d'IA), désactivé par défaut. */
   registreIaActive: boolean
+  /** Campagnes d'auto-évaluation des risques et des contrôles (RCSA) — avec le registre des risques ; désactivées par défaut. */
+  campagnesRcsaActive: boolean
+  /** Appétence au risque (RAS / RAD, instantanés mensuels) — avec le registre, les KRI ou la maturité ; désactivée par défaut. */
+  appetenceActive: boolean
+  /** Rapports GRC (éditions figées incidents, pertes, contrôle, audit, synthèse) ; désactivés par défaut. */
+  rapportsGrcActive: boolean
   /** Serveur MCP autorisé pour cette organisation (défaut : non). */
   mcpActive: boolean
   /** Personnalisation de l'échelle CMMI (0–5) ; [] ⇒ libellés par défaut (i18n). Cf. lib/maturity. */
@@ -216,6 +225,9 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   projetSuppressionValidation: true,
   recertificationActive: false,
   registreIaActive: false,
+  campagnesRcsaActive: false,
+  appetenceActive: false,
+  rapportsGrcActive: false,
   mcpActive: false,
   echelleMaturite: [],
   processusCartographie: {},
@@ -238,7 +250,7 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'secteursMasques' | 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig' | 'relancesConfig' | 'patternsArchiMasques' | 'risquesProjetDefaut'
-type BoolKey = 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive' | 'projetSuppressionValidation'
+type BoolKey = 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive' | 'campagnesRcsaActive' | 'appetenceActive' | 'rapportsGrcActive' | 'projetSuppressionValidation'
 type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode' | 'derogationWorkflow'
 type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees' | 'patternsArchiMax'
 
@@ -319,6 +331,9 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     projetSuppressionValidation: pickBool('projetSuppressionValidation', defaults.projetSuppressionValidation),
     recertificationActive: pickBool('recertificationActive', defaults.recertificationActive),
     registreIaActive: pickBool('registreIaActive', defaults.registreIaActive),
+    campagnesRcsaActive: pickBool('campagnesRcsaActive', defaults.campagnesRcsaActive),
+    appetenceActive: pickBool('appetenceActive', defaults.appetenceActive),
+    rapportsGrcActive: pickBool('rapportsGrcActive', defaults.rapportsGrcActive),
     mcpActive: pickBool('mcpActive', defaults.mcpActive),
     echelleMaturite: pickJson('echelleMaturite', defaults.echelleMaturite),
     processusCartographie: pickJson('processusCartographie', defaults.processusCartographie),
@@ -331,4 +346,14 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     appetitRisque: pickJson('appetitRisque', defaults.appetitRisque),
     actionDelaisMois: cleanActionDelais(pickJson('actionDelaisMois', defaults.actionDelaisMois)),
   }
+}
+
+/** Campagnes RCSA disponibles : le registre des risques ET l'interrupteur des campagnes sont actifs. */
+export function campagnesRcsaActives(cfg: { registreRisquesActive?: boolean; campagnesRcsaActive?: boolean }): boolean {
+  return !!cfg.registreRisquesActive && !!cfg.campagnesRcsaActive
+}
+
+/** Appétence (RAS / RAD) disponible : l'interrupteur est actif ET au moins une source l'alimente (registre, KRI, maturité). */
+export function appetenceDisponible(m: { actif: boolean; registre: boolean; kri: boolean; maturite: boolean }): boolean {
+  return m.actif && (m.registre || m.kri || m.maturite)
 }

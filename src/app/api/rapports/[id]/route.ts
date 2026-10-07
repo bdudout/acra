@@ -24,6 +24,8 @@ async function charger(id: string) {
   if (!scope.activeOrgId) return { error: NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 }) }
   const role = scope.role as UserRole
   if (!peutLireRapports(role)) return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
+  // Module « Rapports GRC » coupé (ou interdit par l'instance) : éditions inaccessibles.
+  if (!(await getOrgConfig(scope.activeOrgId)).rapportsGrcActive) return { error: NextResponse.json({ error: 'module_inactif' }, { status: 404 }) }
   // 404 hors organisation active : aucune divulgation d'une édition d'une autre organisation.
   const edition = await prisma.rapportEdition.findFirst({ where: { id, organizationId: scope.activeOrgId } })
   if (!edition) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }

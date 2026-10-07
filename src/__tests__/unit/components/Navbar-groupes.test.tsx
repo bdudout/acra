@@ -33,7 +33,7 @@ beforeEach(() => {
     ok: true,
     json: async () => url === '/api/modules' ? {
       registreRisquesActive: true, incidentsActive: true, controlePermanentActive: true,
-      auditInterneActive: true, kriActive: true, reglementaireActive: true,
+      auditInterneActive: true, kriActive: true, reglementaireActive: true, campagnesRcsaActive: true, appetenceActive: true, rapportsGrcActive: true,
       profilsOperationnelsActive: true,
     } : { pending: 0 },
   })))

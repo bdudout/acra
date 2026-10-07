@@ -16,7 +16,7 @@ import { de } from '@/lib/i18n/de'
 import { es } from '@/lib/i18n/es'
 import { it as itLocale } from '@/lib/i18n/it'
 
-const ALL_ON: NavModules = { registre: true, incidents: true, controles: true, audit: true, kri: true, reglementaire: true, profilsOperationnels: true }
+const ALL_ON: NavModules = { registre: true, incidents: true, controles: true, audit: true, kri: true, reglementaire: true, profilsOperationnels: true, campagnesRcsa: true, appetence: true, rapportsGrc: true }
 const ALL_OFF: NavModules = { registre: false, incidents: false, controles: false, audit: false, kri: false, reglementaire: false, profilsOperationnels: false }
 
 /** Toutes les destinations atteignables (liens directs + items de groupes). */
@@ -173,7 +173,7 @@ describe('buildNav — mode grc (module 2ᵉ/3ᵉ ligne actif)', () => {
 
 describe('buildNav — appétence (RAS / RAD)', () => {
   it('visible pour la gouvernance dès qu’une source existe, jamais pour la 1re ligne', () => {
-    const none = { registre: false, incidents: false, controles: false, audit: false, kri: false, reglementaire: false, profilsOperationnels: false }
+    const none = { registre: false, incidents: false, controles: false, audit: false, kri: false, reglementaire: false, profilsOperationnels: false, appetence: true }
     const pil = (role: Parameters<typeof buildNav>[0], mods: typeof none) => {
       const e = buildNav(role, mods).entries[0]
       return e.kind === 'group' ? e.items : [e.key]
@@ -245,7 +245,7 @@ describe('buildNav — regroupement KRI et registres', () => {
 })
 
 describe('buildNav — onglet Projets (module Projets 360)', () => {
-  const none = { registre: false, incidents: false, controles: false, audit: false, kri: false, reglementaire: false, profilsOperationnels: false }
+  const none = { registre: false, incidents: false, controles: false, audit: false, kri: false, reglementaire: false, profilsOperationnels: false, rapportsGrc: true }
   const keys = (m: ReturnType<typeof buildNav>) => m.entries.flatMap(e => (e.kind === 'group' ? e.items : [e.key]))
   it('mode cyber : lien Projets juste après Analyses quand le module est actif', () => {
     const k = keys(buildNav('ANALYSTE', { ...none, projets: true }))

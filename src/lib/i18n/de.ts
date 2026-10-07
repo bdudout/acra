@@ -1723,6 +1723,7 @@ export const de: Translations = {
       p360_reversibilite: { title: 'Abhängigkeit vom Dienstleister (Reversibilität)', description: 'Dienstleister kann nicht gewechselt, die Tätigkeit nicht zurückgeholt werden.' },
     },
   },
+  orgContexte: { choisirTitre: "Wählen Sie eine Organisation", choisirMessage: "Diese Seite betrifft eine bestimmte Organisation. Sie befinden sich in der Ansicht „Alle Organisationen“: Wählen Sie oben auf der Seite eine Organisation aus." },
   appetence: { historique: {"title": "Verlauf und Trend", "hint": "Monatliche Momentaufnahmen von Aggregaten (keine Risikobezeichnungen), automatisch jeden Monat festgehalten; der Verlauf beginnt mit der ersten Momentaufnahme.", "capture": "Momentaufnahme des Monats festhalten", "export": "Exportieren (Excel)", "empty": "Noch keine Momentaufnahme: ersten Monat festhalten.", "saved": "Momentaufnahme gespeichert.", "failed": "Speichern nicht möglich.", "periode": "Monat", "globalLabel": "Gesamtniveau", "hors": "Über Risikoappetit", "kri": "KRI in Warnung / kritisch", "maturite": "Anforderungen unter Ziel", "sensCol": "Trend", "sens": {"AMELIORATION": "Verbesserung", "DEGRADATION": "Verschlechterung", "STABLE": "Stabil"}},
     guide: { what: 'Zwei ergänzende Sichten: was die Leitung akzeptiert (RAS, Risikoappetit-Schwellen) und wo die Organisation gegenüber diesen Grenzen steht (RAD).', how: 'Legen Sie Schwellen je Risikokategorie und die angestrebte Reife je Regelwerk fest; das Dashboard vergleicht dann die tatsächliche Lage mit diesen Grenzen.', result: 'Klare Ampeln (innerhalb der Grenzen, beobachten, außerhalb des Appetits) und Material für den Risikoausschuss.' },
     title: 'Risikoappetit',
@@ -4397,6 +4398,13 @@ export const de: Translations = {
 
   // ─── Optionale Funktionen (Admin-Schalter) ───────────────────────────────
   features: {
+    groupeGeneral: "Allgemein",
+    campagnesRcsaTitle: "RCSA-Kampagnen",
+    campagnesRcsaDesc: "Kampagnen zur Selbstbewertung von Risiken und Kontrollen (RCSA) durch die Fachbereiche, auf Basis des Risikoregisters. Erfordert das Risikoregister.",
+    appetenceTitle: "Risikobereitschaft (RAS / RAD)",
+    appetenceDesc: "Erklärung zur Risikobereitschaft (RAS) und Dashboard zur Risikobereitschaft (RAD), monatliche Momentaufnahmen und RAS-Dokument für den Ausschuss. Erfordert das Risikoregister, KRIs oder den Reifegrad. Die Schwellenwerte bleiben in der Risikokarte des Registers sichtbar.",
+    rapportsGrcTitle: "GRC-Berichte",
+    rapportsGrcDesc: "Festgeschriebene und freigegebene Ausgaben der Berichte zu Vorfällen und Verlusten, permanenter Kontrolle, interner Revision und der Zusammenfassung für die Geschäftsleitung.",
     sectionTitle:  'Optionale Funktionen',
     sectionDesc:   'Aktivieren Sie zusätzliche Schritte, inspiriert von den Methodenblättern des Club EBIOS. Deaktiviert erscheinen sie nicht in den Analysen.',
     qualificationTitle: 'Qualifizierungsfragebogen zu Beginn einer Analyse',

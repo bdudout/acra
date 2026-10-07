@@ -20,7 +20,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   m.session.mockResolvedValue({ user: { id: 'u1', role: 'ANALYSTE' } })
   m.scope.mockResolvedValue({ activeOrgId: 'o1', role: 'RSSI' })
-  m.config.mockResolvedValue({ incidentsActive: true, registreRisquesActive: false })
+  m.config.mockResolvedValue({ rapportsGrcActive: true, incidentsActive: true, registreRisquesActive: false })
   m.find.mockResolvedValue([{ id: 'e1', code: 'R-INC-1', statut: 'BROUILLON', periodeDebut: new Date('2026-09-01'), periodeFin: new Date('2026-09-30'), createdAt: new Date('2026-10-01') }])
   m.gen.mockResolvedValue({ code: 'R-INC-1', periode: { debut: '2026-09-01', fin: '2026-09-30' }, sections: [] })
   m.create.mockImplementation(async (a: { data: unknown }) => ({ id: 'e2', ...(a.data as object) }))
@@ -44,7 +44,7 @@ describe('GET /api/rapports', () => {
   })
   it('signale le livrable DORA (réexamen du cadre TIC) seulement si le module réglementaire est actif', async () => {
     expect((await (await GET()).json()).livrableDora).toBe(false)
-    m.config.mockResolvedValue({ incidentsActive: true, reglementaireActive: true })
+    m.config.mockResolvedValue({ rapportsGrcActive: true, incidentsActive: true, reglementaireActive: true })
     expect((await (await GET()).json()).livrableDora).toBe(true)
   })
 })

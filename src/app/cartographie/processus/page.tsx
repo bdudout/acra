@@ -10,6 +10,8 @@ import { getServerT } from '@/lib/i18n'
 import { ETAPES_CARTO, resolveProcessusCarto, prochaineRevue, statutRevue } from '@/lib/processus-carto'
 import Navbar from '@/components/Navbar'
 import ProcessusCartoView from '@/components/ProcessusCartoView'
+import { superAdminSansOrganisation } from '@/lib/choisir-organisation'
+import ChoisirOrganisation from '@/components/ChoisirOrganisation'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -22,6 +24,8 @@ export default async function ProcessusCartoPage() {
   const userId = (session.user as { id: string }).id
   const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
   const scope = await getAnalyseScope(userId, instanceRole)
+  // Super-administrateur en vue « toutes les organisations » : page propre à une organisation → message d'information.
+  if (superAdminSansOrganisation(instanceRole, scope.activeOrgId)) return <ChoisirOrganisation />
   if (!scope.activeOrgId) notFound()
   const cfg = await getOrgConfig(scope.activeOrgId)
   if (!cfg.registreRisquesActive) notFound()

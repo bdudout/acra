@@ -78,5 +78,5 @@ export async function loadRasRad(orgId: string, locale: Locale, t: Translations)
     voyants.push(kri.voyant)
   }
 
-  return { appetit, maturite, kri, global: voyantGlobal(voyants), modules: { registre: cfg.registreRisquesActive, maturite: cfg.profilsOperationnelsActive, kri: cfg.kriActive } }
+  return { appetit, maturite, kri, global: voyantGlobal(voyants), modules: { actif: cfg.appetenceActive, registre: cfg.registreRisquesActive, maturite: cfg.profilsOperationnelsActive, kri: cfg.kriActive } }
 }
