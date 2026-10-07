@@ -84,7 +84,7 @@ export default function StorageUsagePanel() {
     } catch { setThMessage(s.thInvalid) } finally { setBusy(false) }
   }
 
-  const badge = (st: Status) => <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${COLOR[st]}`}>{s.st[st]}</span>
+  const badge = (st: Status) => <span className={`rounded-sm px-1.5 py-0.5 text-xs font-medium ${COLOR[st]}`}>{s.st[st]}</span>
 
   if (error && !data) return <p className="text-sm text-red-700">{s.loadError}</p>
   if (!data) return null
@@ -120,7 +120,7 @@ export default function StorageUsagePanel() {
       </div>
       <p className="text-xs text-gray-500">{s.intro} {fill(s.measured, { when: when(r.measuredAt) })}</p>
       {alerts.map(a => (
-        <p key={a.kind} role="alert" className={`flex items-center gap-1.5 rounded px-3 py-2 text-sm ${COLOR[a.status]}`}><AlertTriangle size={15} aria-hidden="true" /> {alertText(a)}</p>
+        <p key={a.kind} role="alert" className={`flex items-center gap-1.5 rounded-sm px-3 py-2 text-sm ${COLOR[a.status]}`}><AlertTriangle size={15} aria-hidden="true" /> {alertText(a)}</p>
       ))}
 
       <div className="grid gap-3 md:grid-cols-2">

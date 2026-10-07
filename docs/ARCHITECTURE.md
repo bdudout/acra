@@ -24,7 +24,7 @@
   `new PrismaClient()` sans `adapter`. Dans l'image Docker, la CLI est installée à part
   (`/app/prisma-cli`, lien `node_modules/prisma`) pour le service migrator.
 - **NextAuth** (Credentials + SSO OIDC ; SAML en chantier de maintenance).
-- **Tailwind** pour le style ; **lucide-react** pour les icônes.
+- **Tailwind 4** pour le style (thème et variante `dark` déclarés dans `src/app/globals.css`, plus de `tailwind.config.js`) ; **lucide-react** pour les icônes.
 - **Vitest** + Testing Library pour les tests.
 
 ```bash

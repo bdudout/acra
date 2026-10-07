@@ -243,7 +243,7 @@ export default function Navbar() {
         {/* Logo */}
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 mr-4 flex-shrink-0"
+          className="flex items-center gap-2 mr-4 shrink-0"
           aria-label={branding.nom}
         >
           <Image src="/logo-head.png" alt="" width={365} height={384} priority className="h-10 w-auto" />
@@ -435,7 +435,7 @@ export default function Navbar() {
                 <Link
                   key={`link:${entry.key}`}
                   href={item.href}
-                  className={`${navClass(active)} inline-flex items-center gap-1.5 flex-shrink-0`}
+                  className={`${navClass(active)} inline-flex items-center gap-1.5 shrink-0`}
                   aria-current={active ? 'page' : undefined}
                 >
                   <item.Icon size={16} aria-hidden="true" />
@@ -450,7 +450,7 @@ export default function Navbar() {
             const open = openGroup === entry.id
             const pending = entry.items.includes('derogations') ? derogPending : 0
             return (
-              <div key={`group:${entry.id}`} className="relative flex-shrink-0">
+              <div key={`group:${entry.id}`} className="relative shrink-0">
                 <button
                   onClick={e => toggleGroup(entry.id, e.currentTarget)}
                   aria-expanded={open}

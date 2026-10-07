@@ -67,7 +67,7 @@ export default function ControleCataloguePanel({ onImported }: { onImported: () 
         : (data?.risks ?? []).map(r => ({ key: r.key, title: r.title, owned: !!data?.ownedRiskKeys.includes(r.key), items: catalogueTemplates.filter(x => x.riskKeys.includes(r.key)) })).filter(g => g.items.length)
 
   const row = (x: Template) => (
-    <label key={x.key} data-key={x.key} className="flex gap-2 rounded px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-800">
+    <label key={x.key} data-key={x.key} className="flex gap-2 rounded-sm px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-800">
       <input type="checkbox" className="mt-1" checked={selected.includes(x.key)} disabled={x.status === 'ALREADY_IMPORTED'} onChange={() => toggle(x.key)} aria-label={x.title} />
       <span className="min-w-0 text-sm">
         <span className="text-gray-900 dark:text-gray-100">{x.title}</span>
@@ -92,7 +92,7 @@ export default function ControleCataloguePanel({ onImported }: { onImported: () 
         ))}
       </div>
       {angle === 'REFERENTIEL' && <label className="block text-sm text-gray-700 dark:text-gray-200">{c.referentiel}
-        <select className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100" value={referentiel} onChange={e => setReferentiel(e.target.value)}>
+        <select className="mt-1 w-full rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100" value={referentiel} onChange={e => setReferentiel(e.target.value)}>
           {(data?.referentiels ?? []).map(r => <option key={r.id} value={r.id}>{r.nom} ({r.count})</option>)}
         </select>
         {locale !== 'fr' && <span className="mt-1 block text-xs text-amber-800 dark:text-amber-300">{c.frenchOnly}</span>}

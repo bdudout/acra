@@ -54,7 +54,7 @@ export default function RopaManager() {
   }
   useEffect(() => { reload() }, [])
 
-  const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm w-full'
+  const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm w-full'
 
   function openCreate() { setForm(EMPTY); setEditId(null); setError(null); setShowForm(true) }
   function openEdit(x: Traitement) {

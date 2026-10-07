@@ -25,7 +25,7 @@ export default function QualificationRiskRulesEditor({ rules, questions, onChang
   const categories = t.qualification.riskProposal.categories as Record<string, string>
   const strategies = t.risquesDirects.strategies as Record<string, string>
   const catalog = t.qualification.riskCatalog as Record<string, { title: string }>
-  const inp = 'w-full px-2 py-1 text-sm border border-gray-300 rounded bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-600'
+  const inp = 'w-full px-2 py-1 text-sm border border-gray-300 rounded-sm bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-600'
   const lbl = 'flex flex-col gap-0.5 text-[11px] text-gray-500 dark:text-gray-400'
 
   const update = (i: number, patch: (r: QualificationRiskRule) => QualificationRiskRule) => onChange(rules.map((r, j) => (j === i ? patch(r) : r)))

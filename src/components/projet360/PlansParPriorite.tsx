@@ -14,7 +14,7 @@ interface Plan {
   risques: { id: string; ref?: string; nom: string; niveau: number }[]; niveauMax: number; enRetard: boolean
 }
 
-const field = 'rounded border border-gray-300 bg-white px-1.5 py-0.5 text-xs dark:border-gray-600 dark:bg-gray-800'
+const field = 'rounded-sm border border-gray-300 bg-white px-1.5 py-0.5 text-xs dark:border-gray-600 dark:bg-gray-800'
 
 export default function PlansParPriorite({ analyseId, reloadKey = 0, editable = false, miseEnService = null }: {
   analyseId: string; reloadKey?: number; editable?: boolean

@@ -17,7 +17,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-ebios-950 to-ebios-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-ebios-950 to-ebios-800 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
         <div className="text-center mb-6">
           <div className="text-4xl mb-3" aria-hidden="true"><KeyRound size={32} aria-hidden="true" /></div>

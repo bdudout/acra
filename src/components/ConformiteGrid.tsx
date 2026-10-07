@@ -291,7 +291,7 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
       />
 
       {/* Grille */}
-      <div className="space-y-2 max-h-[28rem] overflow-y-auto pr-1">
+      <div className="space-y-2 max-h-112 overflow-y-auto pr-1">
         {filtered.map(c => {
           const entry = byRef.get(c.ref)
           const showComment = entry && (entry.statut === 'partiel' || entry.statut === 'non_conforme')
@@ -309,14 +309,14 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                     if (!k) return null
                     const cc = t.conformiteConstats
                     const tone = k.statut === 'ANOMALIE' ? 'bg-red-50 text-red-800 dark:bg-red-500/10 dark:text-red-200' : k.statut === 'CONFORME' ? 'bg-green-50 text-green-800 dark:bg-green-500/10 dark:text-green-200' : 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200'
-                    return <p data-testid="constat-exigence" className={`mt-1 inline-block rounded px-1.5 py-0.5 text-[11px] ${tone}`}>
+                    return <p data-testid="constat-exigence" className={`mt-1 inline-block rounded-sm px-1.5 py-0.5 text-[11px] ${tone}`}>
                       {cc.statuts[k.statut as 'ANOMALIE' | 'CONFORME' | 'PARTIEL']} — {cc.detail.replace('{c}', String(k.nbControles)).replace('{a}', String(k.nbAnomaliesAudit)).replace('{q}', String(k.nbAnomaliesControle ?? 0))}
                       {k.divergent && <strong className="ml-1">· {cc.divergent}</strong>}
                       {k.divergent && !readOnly && <button type="button" className="ml-2 underline" onClick={() => appliquerConstat(c.ref)}>{cc.appliquer}</button>}
                     </p>
                   })()}
                 </div>
-                <div className="flex gap-1 flex-wrap sm:flex-shrink-0 sm:justify-end">
+                <div className="flex gap-1 flex-wrap sm:shrink-0 sm:justify-end">
                   {CONFORMITE_STATUTS.map(s => {
                     const active = entry?.statut === s
                     return (
@@ -448,11 +448,11 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
                     </div>
                     <div className="flex gap-2">
                       <button type="button" disabled={derogBusy} onClick={() => submitDerogation(c)}
-                        className="text-xs px-2.5 py-1 rounded bg-cyan-600 text-white font-medium disabled:opacity-50">
+                        className="text-xs px-2.5 py-1 rounded-sm bg-cyan-600 text-white font-medium disabled:opacity-50">
                         {d.submit}
                       </button>
                       <button type="button" onClick={() => setDerogFormRef(null)}
-                        className="text-xs px-2.5 py-1 rounded text-gray-500 hover:text-gray-700">
+                        className="text-xs px-2.5 py-1 rounded-sm text-gray-500 hover:text-gray-700">
                         {d.cancel}
                       </button>
                     </div>
@@ -478,7 +478,7 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
               const ctl = controles.find(c => c.ref === nc.ref)
               return (
                 <li key={nc.ref} className="text-sm text-gray-700 flex gap-2">
-                  <span className={`mt-1.5 h-2 w-2 rounded-full flex-shrink-0 ${STATUT_STYLE[nc.statut].dot}`} />
+                  <span className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${STATUT_STYLE[nc.statut].dot}`} />
                   <span>
                     <span className="text-gray-400 mr-1">{nc.ref}</span>
                     {ctl?.nom ?? nc.ref}

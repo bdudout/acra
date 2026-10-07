@@ -24,7 +24,7 @@ export default function VueListeToggle({ mode, onChange }: { mode: ModeVue; onCh
   const v = t.vueListe
   const bouton = (m: ModeVue, label: string, Icone: typeof List) => (
     <button type="button" aria-pressed={mode === m} aria-label={label} title={label} onClick={() => onChange(m)}
-      className={`rounded-md p-1.5 ${mode === m ? 'bg-white text-ebios-700 shadow-sm dark:bg-gray-700' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}>
+      className={`rounded-md p-1.5 ${mode === m ? 'bg-white text-ebios-700 shadow-xs dark:bg-gray-700' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}>
       <Icone size={16} aria-hidden="true" />
     </button>
   )

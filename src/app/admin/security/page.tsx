@@ -397,7 +397,7 @@ export default function AdminSecurityPage() {
                 <label key={field} className="flex items-center gap-3 cursor-pointer select-none group">
                   <div
                     onClick={() => toggle(field)}
-                    className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${
+                    className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${
                       policy[field] ? 'bg-ebios-500' : 'bg-gray-500 dark:bg-gray-400'
                     }`}
                   >
@@ -516,7 +516,7 @@ export default function AdminSecurityPage() {
               <label className={`flex items-center gap-3 select-none group ${smtpReady ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
                 <div
                   onClick={() => { if (!smtpReady && !policy.requireEmailVerification) return; toggle('requireEmailVerification') }}
-                  className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${
+                  className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${
                     policy.requireEmailVerification ? 'bg-ebios-500' : 'bg-gray-500 dark:bg-gray-400'
                   } ${!smtpReady && !policy.requireEmailVerification ? 'opacity-50' : ''}`}
                 >
@@ -550,7 +550,7 @@ export default function AdminSecurityPage() {
               <label className={`flex items-center gap-3 select-none group mb-1 ${smtpReady ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
                 <div
                   onClick={() => { if (!smtpReady && !policy.mfaEnabled) return; setPolicy(p => ({ ...p, mfaEnabled: !p.mfaEnabled })) }}
-                  className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${
+                  className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${
                     policy.mfaEnabled ? 'bg-ebios-500' : 'bg-gray-500 dark:bg-gray-400'
                   } ${!smtpReady && !policy.mfaEnabled ? 'opacity-50' : ''}`}
                 >
@@ -613,7 +613,7 @@ export default function AdminSecurityPage() {
                           onClick={() => setPolicy(p => ({ ...p, trustedDeviceEnabled: !p.trustedDeviceEnabled }))}
                           className={`relative h-6 w-10 rounded-full transition-colors ${policy.trustedDeviceEnabled ? 'bg-ebios-600' : 'bg-gray-400'}`}
                         >
-                          <span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform ${policy.trustedDeviceEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                          <span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${policy.trustedDeviceEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
                         </button>
                         <span className="text-sm text-gray-700">{t.mfa.trustedDeviceEnable}</span>
                         {policy.trustedDeviceEnabled && (
@@ -786,7 +786,7 @@ export default function AdminSecurityPage() {
               <label className="flex items-center gap-3 cursor-pointer select-none group">
                 <div
                   onClick={() => setSso(s => ({ ...s, enabled: !s.enabled }))}
-                  className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${
+                  className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${
                     sso.enabled ? 'bg-ebios-500' : 'bg-gray-500 dark:bg-gray-400'
                   }`}
                 >
@@ -939,7 +939,7 @@ export default function AdminSecurityPage() {
                     <label className="flex items-start gap-3 cursor-pointer select-none group">
                       <div
                         onClick={() => setSso(s => ({ ...s, autoProvision: !s.autoProvision }))}
-                        className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 mt-0.5 ${
+                        className={`relative w-9 h-5 rounded-full transition-colors shrink-0 mt-0.5 ${
                           sso.autoProvision ? 'bg-ebios-500' : 'bg-gray-500 dark:bg-gray-400'
                         }`}
                       >

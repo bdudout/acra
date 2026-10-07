@@ -340,7 +340,7 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
                   <button type="button" onMouseDown={e => { e.preventDefault(); selectAction(a) }}
                     className="w-full text-left px-2 py-1.5 hover:bg-ebios-50 dark:hover:bg-ebios-500/10 flex items-center justify-between gap-2">
                     <span className="truncate text-gray-800 dark:text-gray-100">{a.titre}</span>
-                    <span className="shrink-0 text-[9px] px-1 py-px rounded bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300 font-medium">{u.actionTag}</span>
+                    <span className="shrink-0 text-[9px] px-1 py-px rounded-sm bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300 font-medium">{u.actionTag}</span>
                   </button>
                 </li>
               ))}
@@ -358,7 +358,7 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
                   <button type="button" onMouseDown={e => { e.preventDefault(); selectPromote(p) }}
                     className="w-full text-left px-2 py-1.5 hover:bg-ebios-50 dark:hover:bg-ebios-500/10 flex items-center justify-between gap-2">
                     <span className="truncate text-gray-800 dark:text-gray-100">{p.titre}</span>
-                    <span className="shrink-0 text-[9px] px-1 py-px rounded bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 font-medium">{u.promoteTag}</span>
+                    <span className="shrink-0 text-[9px] px-1 py-px rounded-sm bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 font-medium">{u.promoteTag}</span>
                   </button>
                 </li>
               ))}
@@ -402,15 +402,15 @@ export default function TraitementPopover({ orgId, referentiel, entite, controlR
             <label className="flex items-center gap-1.5 text-[11px] text-gray-700 dark:text-gray-300">
               <input type="checkbox" checked={maintien} onChange={e => setMaintien(e.target.checked)} /> {u.niveauRisqueMaintenu}
             </label>
-            <input value={niveau} onChange={e => setNiveau(e.target.value)} placeholder={u.niveauRisquePh} className={`${inputCls} flex-1 min-w-[8rem]`} />
+            <input value={niveau} onChange={e => setNiveau(e.target.value)} placeholder={u.niveauRisquePh} className={`${inputCls} flex-1 min-w-32`} />
           </div>
         )}
         <div className="flex gap-2 pt-0.5">
           <button type="button" disabled={busy} onClick={submit}
-            className="text-xs px-3 py-1 rounded bg-ebios-600 text-white font-medium disabled:opacity-50">
+            className="text-xs px-3 py-1 rounded-sm bg-ebios-600 text-white font-medium disabled:opacity-50">
             {busy ? u.creating : isPromote ? u.promote : isLinkAction ? u.attachBtn : isUpdate ? u.update : u.create}
           </button>
-          <button type="button" onClick={onClose} className="text-xs px-2.5 py-1 rounded text-gray-500 hover:text-gray-700">{u.cancel}</button>
+          <button type="button" onClick={onClose} className="text-xs px-2.5 py-1 rounded-sm text-gray-500 hover:text-gray-700">{u.cancel}</button>
         </div>
       </div>
       <p className="text-[10px] text-gray-400 truncate">{controlNom}</p>

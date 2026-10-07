@@ -7,7 +7,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import { JALONS, NOTATION_MIN, NOTATION_MAX } from '@/lib/audit-l4'
 
 export interface MissionSuiviData { id: string; notation: number | null; jalons: Record<string, string>; independance: Record<string, unknown> }
-const inp = 'px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs'
+const inp = 'px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs'
 
 export default function MissionSuiviPanel({ mission, canWrite, busy, onSave, onIndependance }: {
   mission: MissionSuiviData; canWrite: boolean; busy: boolean

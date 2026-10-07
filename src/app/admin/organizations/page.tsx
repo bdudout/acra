@@ -227,9 +227,9 @@ export default function OrganizationsAdminPage() {
                       className={`flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-sm ${selected === org.id ? 'bg-ebios-50 text-ebios-700' : 'hover:bg-gray-50 text-gray-700'}`}
                     >
                       <span className="flex min-w-0 items-center gap-2 font-medium" style={{ paddingLeft: depth(org) * 16 }}>
-                        <OrgLogo id={org.id} nom={org.nom} logo={org.logo} size={20} className="shrink-0 rounded" />
+                        <OrgLogo id={org.id} nom={org.nom} logo={org.logo} size={20} className="shrink-0 rounded-sm" />
                         <span className="truncate">{org.nom}</span>
-                        {!org.parentId && <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500">{o.rootBadge}</span>}
+                        {!org.parentId && <span className="rounded-sm bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500">{o.rootBadge}</span>}
                       </span>
                       <span className="shrink-0 text-xs text-gray-400">
                         {org._count.membres} <Users size={11} className="inline" /> · {org._count.analyses} {o.analyses}
@@ -326,7 +326,7 @@ export default function OrganizationsAdminPage() {
                           {m.user.email} · {ROLE_LABELS[m.role as keyof typeof ROLE_LABELS] ?? m.role} · {m.scope === 'SUBTREE' ? o.scopeSubtree : o.scopeNode}
                         </span>
                       </span>
-                      <button onClick={() => removeMember(m.id)} title={o.remove} aria-label={o.remove} className="shrink-0 rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600"><X size={15} /></button>
+                      <button onClick={() => removeMember(m.id)} title={o.remove} aria-label={o.remove} className="shrink-0 rounded-sm p-1 text-gray-400 hover:bg-red-50 hover:text-red-600"><X size={15} /></button>
                     </li>
                   ))}
                 </ul>

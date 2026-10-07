@@ -114,7 +114,7 @@ export default function ProjetPresentation({ projet: p, canEdit, canCreateCyber,
         <div>
           {canEdit
             ? <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{l.miseEnService}
-                <input type="date" aria-label={l.miseEnService} value={mes} onChange={e => enregistrerMiseEnService(e.target.value)} className="mt-0.5 block rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-800" />
+                <input type="date" aria-label={l.miseEnService} value={mes} onChange={e => enregistrerMiseEnService(e.target.value)} className="mt-0.5 block rounded-sm border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-800" />
               </label>
             : <><p className="text-xs font-medium text-gray-500 dark:text-gray-400">{l.miseEnService}</p><p className="text-sm text-gray-800 dark:text-gray-100">{mes ? new Date(`${mes}T00:00:00`).toLocaleDateString(locale) : l.nonDefinie}</p></>}
           {mesMsg && <p role="status" className="text-xs text-gray-500">{mesMsg}</p>}
@@ -137,7 +137,7 @@ export default function ProjetPresentation({ projet: p, canEdit, canCreateCyber,
             <div className="mt-1 flex items-center gap-2">
               {meteo && (() => { const M = METEO_ICONE[meteo]; return <M size={28} aria-hidden="true" className={METEO_COULEUR[meteo]} /> })()}
               {canEdit
-                ? <select aria-label={l.meteoChoisir} value={meteo ?? ''} onChange={e => changerMeteo(e.target.value)} className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-1 py-1 text-xs dark:border-gray-600 dark:bg-gray-800">
+                ? <select aria-label={l.meteoChoisir} value={meteo ?? ''} onChange={e => changerMeteo(e.target.value)} className="min-w-0 flex-1 rounded-sm border border-gray-300 bg-white px-1 py-1 text-xs dark:border-gray-600 dark:bg-gray-800">
                     <option value="">{l.meteoNonRenseignee}</option>
                     {METEOS.map(m => <option key={m} value={m}>{meteos[m]}</option>)}
                   </select>
@@ -151,7 +151,7 @@ export default function ProjetPresentation({ projet: p, canEdit, canCreateCyber,
           <div className="rounded-lg border border-gray-100 p-3 dark:border-gray-800">
             <p className="text-xs text-gray-500 dark:text-gray-400">{l.avancement}</p>
             <p className="text-2xl font-semibold tabular-nums text-gray-900 dark:text-gray-100">{ind.plans.avancement == null ? l.nd : `${ind.plans.avancement} %`}</p>
-            {ind.plans.avancement != null && <div className="mt-1 h-1.5 rounded bg-gray-100 dark:bg-gray-800" aria-hidden="true"><div className="h-1.5 rounded bg-ebios-600" style={{ width: `${ind.plans.avancement}%` }} /></div>}
+            {ind.plans.avancement != null && <div className="mt-1 h-1.5 rounded-sm bg-gray-100 dark:bg-gray-800" aria-hidden="true"><div className="h-1.5 rounded-sm bg-ebios-600" style={{ width: `${ind.plans.avancement}%` }} /></div>}
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{l.avancementSous.replace('{faits}', String(ind.plans.faits)).replace('{total}', String(ind.plans.total))}</p>
           </div>
           {kpi(l.enRetard, ind.plans.enRetard, { alerte: ind.plans.enRetard > 0, sous: (ind.plans.sansPorteur || ind.plans.sansEcheance) ? l.sansPorteurEcheance.replace('{p}', String(ind.plans.sansPorteur)).replace('{e}', String(ind.plans.sansEcheance)) : undefined })}
@@ -202,7 +202,7 @@ export default function ProjetPresentation({ projet: p, canEdit, canCreateCyber,
                   {etapes.map(([k, lib, op]) => (
                     <div key={k} className="flex items-center gap-2 text-xs">
                       <span className="w-16 shrink-0 text-gray-500 dark:text-gray-400">{lib}</span>
-                      <span role="img" aria-label={`${pal.label} — ${lib} : ${pal[k]}`} className="h-3 rounded" style={{ width: `${(pal[k] / max) * 100}%`, minWidth: pal[k] ? '0.5rem' : 0, backgroundColor: pal.couleur, opacity: op }} />
+                      <span role="img" aria-label={`${pal.label} — ${lib} : ${pal[k]}`} className="h-3 rounded-sm" style={{ width: `${(pal[k] / max) * 100}%`, minWidth: pal[k] ? '0.5rem' : 0, backgroundColor: pal.couleur, opacity: op }} />
                       <span className="tabular-nums text-gray-600 dark:text-gray-300">{pal[k]}</span>
                     </div>
                   ))}

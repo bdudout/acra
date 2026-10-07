@@ -217,7 +217,7 @@ export default function KriManager({ canDefine, canMeasure }: { canDefine: boole
                   {canMeasure && (
                     <div className="flex flex-wrap items-center gap-2 mb-3">
                       <input type="number" className="input w-28" placeholder={k.valeurPlaceholder} value={mesureForm.valeur} onChange={e => setMesureForm(m => ({ ...m, valeur: e.target.value }))} />
-                      <input className="input flex-1 min-w-[8rem]" placeholder={k.commentairePlaceholder} value={mesureForm.commentaire} onChange={e => setMesureForm(m => ({ ...m, commentaire: e.target.value }))} />
+                      <input className="input flex-1 min-w-32" placeholder={k.commentairePlaceholder} value={mesureForm.commentaire} onChange={e => setMesureForm(m => ({ ...m, commentaire: e.target.value }))} />
                       <button onClick={() => addMesure(row.id)} className="btn-primary text-sm">{k.addMesure}</button>
                     </div>
                   )}

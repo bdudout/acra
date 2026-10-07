@@ -11,7 +11,7 @@ import { configToRaw, type IncidentsConfig, type IncidentsConfigRaw, type Catalo
 import type { Regime } from '@/lib/notification-regimes'
 import RegimeInfoBlock from '@/components/RegimeInfoBlock'
 
-const inp = 'px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+const inp = 'px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
 const slug = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40)
 
 export default function IncidentsConfigEditor({ config, onSave, busy }: { config: IncidentsConfig; onSave: (raw: IncidentsConfigRaw) => void; busy: boolean }) {
@@ -111,7 +111,7 @@ export default function IncidentsConfigEditor({ config, onSave, busy }: { config
         <p className="text-xs text-gray-500">{n.tauxTitle}</p>
         <ul className="flex flex-wrap gap-2">
           {Object.entries(c.taux).map(([d, v]) => (
-            <li key={d} className="text-xs rounded bg-gray-100 dark:bg-gray-800 px-2 py-1">{d} → {v} <button type="button" aria-label={`${n.retirer} ${d}`} onClick={() => setC(x => { const t2 = { ...x.taux }; delete t2[d]; return { ...x, taux: t2 } })} className="text-red-500 ml-1">×</button></li>
+            <li key={d} className="text-xs rounded-sm bg-gray-100 dark:bg-gray-800 px-2 py-1">{d} → {v} <button type="button" aria-label={`${n.retirer} ${d}`} onClick={() => setC(x => { const t2 = { ...x.taux }; delete t2[d]; return { ...x, taux: t2 } })} className="text-red-500 ml-1">×</button></li>
           ))}
         </ul>
         <div className="flex gap-2">

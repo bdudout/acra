@@ -113,7 +113,7 @@ function SignInForm() {
               type="text" inputMode="numeric" autoComplete="one-time-code" autoFocus required
               maxLength={6} value={mfaCode}
               onChange={e => setMfaCode(e.target.value.replace(/\D/g, ''))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-center text-lg tracking-[0.4em] font-mono focus:outline-none focus:ring-2 focus:ring-ebios-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-center text-lg tracking-[0.4em] font-mono focus:outline-hidden focus:ring-2 focus:ring-ebios-500 focus:border-transparent"
               placeholder="••••••"
             />
           </div>
@@ -175,7 +175,7 @@ function SignInForm() {
             required
             value={email}
             onChange={e => setEmail(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ebios-500 focus:border-transparent"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-ebios-500 focus:border-transparent"
             placeholder={t.auth.emailPh}
           />
         </div>
@@ -187,7 +187,7 @@ function SignInForm() {
             required
             value={password}
             onChange={e => setPassword(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ebios-500 focus:border-transparent"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-ebios-500 focus:border-transparent"
             placeholder={t.auth.passwordPh}
           />
         </div>
@@ -239,7 +239,7 @@ export default function SignInPage() {
   const branding = useBranding()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-ebios-950 to-ebios-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-ebios-950 to-ebios-800 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
         <div className="text-center mb-8">
           <Image src="/logo-mark.png" alt="" width={334} height={384} priority className="h-16 w-auto mx-auto mb-3" />

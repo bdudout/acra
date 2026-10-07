@@ -47,11 +47,11 @@ export default function ContexteEditor({
     <div className="space-y-3">
       <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">{perimetreLabel}
         <textarea value={per} onChange={e => { setPer(e.target.value); setOk(false) }} placeholder={perimetrePlaceholder} rows={2}
-          className="block mt-1 w-full px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm text-gray-800 dark:text-gray-100" />
+          className="block mt-1 w-full px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm text-gray-800 dark:text-gray-100" />
       </label>
       <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">{objectifsLabel}
         <textarea value={obj} onChange={e => { setObj(e.target.value); setOk(false) }} placeholder={objectifsPlaceholder} rows={2}
-          className="block mt-1 w-full px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm text-gray-800 dark:text-gray-100" />
+          className="block mt-1 w-full px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm text-gray-800 dark:text-gray-100" />
       </label>
       <div className="flex items-center gap-3">
         <button type="button" onClick={enregistrer} disabled={!dirty || busy}

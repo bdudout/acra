@@ -481,7 +481,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-              activeTab === tab.id ? 'bg-white shadow-sm text-ebios-700' : 'text-gray-600 hover:text-gray-900'
+              activeTab === tab.id ? 'bg-white shadow-xs text-ebios-700' : 'text-gray-600 hover:text-gray-900'
             }`}
           >
             <tab.Icon size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" />{tab.label}
@@ -663,7 +663,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
                         { k: 'C', v: vm.confidentialite },
                         ...(vm.type === 'PROCESSUS' ? [{ k: 'T', v: vm.tracabilite }] : []),
                       ].map(({ k, v }) => (
-                        <span key={k} className={`text-xs px-1.5 py-0.5 rounded font-mono font-bold ${getDictColor(v)}`}>
+                        <span key={k} className={`text-xs px-1.5 py-0.5 rounded-sm font-mono font-bold ${getDictColor(v)}`}>
                           {k}{v}
                         </span>
                       ))}
@@ -774,7 +774,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
                             <select
                               value={val}
                               onChange={e => updateVm(vm.id, crit.key, Number(e.target.value))}
-                              className={`w-full text-xs font-semibold rounded px-2 py-1 border-0 cursor-pointer ${getDictColor(val)}`}
+                              className={`w-full text-xs font-semibold rounded-sm px-2 py-1 border-0 cursor-pointer ${getDictColor(val)}`}
                             >
                               {NIVEAUX_DICT.map(n => (
                                 <option key={n.value} value={n.value}>{n.value} – {n.label}</option>
@@ -870,7 +870,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
                             className={`text-left p-2.5 border rounded-lg transition-all ${
                               added
                                 ? 'border-green-400 bg-green-50 opacity-70 cursor-default shadow-none dark:border-green-600/60 dark:bg-green-500/10'
-                                : `hover:shadow-sm group ${cat.color} border-opacity-60 hover:border-opacity-100`
+                                : `hover:shadow-xs group ${cat.color} border-opacity-60 hover:border-opacity-100`
                             }`}
                           >
                             {added && <div className="text-xs text-green-600 dark:text-green-300 font-semibold mb-0.5">{t.workshop.addedLabel}</div>}
@@ -1146,7 +1146,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
               </p>
             )}
             {recommendedFw.includes('HDS') && showsHdsCaveat(analyse?.sousSecteur) && (
-              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mb-3">
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-sm p-2 mb-3">
                 ℹ️ {t.workshop.a1.hdsNote}
               </p>
             )}
@@ -1162,7 +1162,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
                     onClick={() => setReferentielMesures(fid)}
                     className={`relative text-left p-3 rounded-xl border-2 transition-all ${
                       selected
-                        ? 'border-indigo-500 bg-indigo-50 shadow-sm'
+                        ? 'border-indigo-500 bg-indigo-50 shadow-xs'
                         : isReco
                           ? 'border-indigo-200 hover:border-indigo-300 bg-white'
                           : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -1214,7 +1214,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
                   <div className="space-y-1">
                     {customControles.map((c, i) => (
                       <div key={i} className="flex items-start gap-2 p-2 bg-gray-50 rounded-lg">
-                        <span className="text-xs font-mono font-semibold text-indigo-700 w-16 flex-shrink-0">{c.ref}</span>
+                        <span className="text-xs font-mono font-semibold text-indigo-700 w-16 shrink-0">{c.ref}</span>
                         <div className="flex-1 min-w-0">
                           <div className="text-xs font-medium text-gray-800">{c.nom}</div>
                           {c.description && (
@@ -1225,7 +1225,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
                           type="button"
                           aria-label={t.workshop.a1.customDeleteAriaLabel}
                           onClick={() => setCustomControles(prev => prev.filter((_, j) => j !== i))}
-                          className="text-gray-400 hover:text-red-500 flex-shrink-0 text-sm"
+                          className="text-gray-400 hover:text-red-500 shrink-0 text-sm"
                         >✕</button>
                       </div>
                     ))}
@@ -1368,12 +1368,12 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
                   const etat = etatSocleFromEntry(r)
                   return (
                     <div key={r.nom} className="flex gap-3 items-center p-3 bg-gray-50 rounded-lg flex-wrap">
-                      <span className="flex items-center gap-2 text-sm font-medium text-gray-700 w-40 flex-shrink-0">
-                        <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${ETAT_SOCLE_STYLE[etat].dot}`} aria-hidden />
+                      <span className="flex items-center gap-2 text-sm font-medium text-gray-700 w-40 shrink-0">
+                        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${ETAT_SOCLE_STYLE[etat].dot}`} aria-hidden />
                         {r.nom}
                       </span>
                       {/* Indicateur d'état d'application (vert / orange / rouge) — EXI_M1_20 */}
-                      <div className="flex gap-1 flex-shrink-0" role="group" aria-label={t.workshop.a1.socleEtatLabel}>
+                      <div className="flex gap-1 shrink-0" role="group" aria-label={t.workshop.a1.socleEtatLabel}>
                         {ETATS_SOCLE.map(e => {
                           const on = etat === e
                           return (
@@ -1392,7 +1392,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
                       <input
                         value={r.ecarts || ''}
                         onChange={e => setReferentiels(prev => prev.map(x => x.nom === r.nom ? { ...x, ecarts: e.target.value } : x))}
-                        className="input text-sm flex-1 min-w-[8rem]"
+                        className="input text-sm flex-1 min-w-32"
                         placeholder={t.workshop.a1.socleGapPh}
                       />
                     </div>

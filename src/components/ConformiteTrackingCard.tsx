@@ -98,13 +98,13 @@ export default function ConformiteTrackingCard({ rows, locale }: { rows: Conform
               <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
                 <div className="flex items-center gap-2 min-w-0">
                   {r.source === 'org'
-                    ? <span className="text-xs px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-medium flex-shrink-0" title={t.dashboard.conformiteOrgBadge}><Building2 size={18} aria-hidden="true" /></span>
-                    : r.isSocle && <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium flex-shrink-0" title="Analyse socle"><Landmark size={18} aria-hidden="true" /></span>}
+                    ? <span className="text-xs px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-medium shrink-0" title={t.dashboard.conformiteOrgBadge}><Building2 size={18} aria-hidden="true" /></span>
+                    : r.isSocle && <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium shrink-0" title="Analyse socle"><Landmark size={18} aria-hidden="true" /></span>}
                   <span className="text-sm font-medium text-gray-800 truncate">{r.nom}</span>
-                  <span className="text-xs text-gray-400 flex-shrink-0">· {r.frameworkNom}</span>
+                  <span className="text-xs text-gray-400 shrink-0">· {r.frameworkNom}</span>
                 </div>
                 {r.source === 'analyse' && (
-                  <Link href={`/analyses/${r.analyseId}/atelier/1#socle-conformite`} className="text-xs text-ebios-600 hover:text-ebios-800 hover:underline flex-shrink-0">
+                  <Link href={`/analyses/${r.analyseId}/atelier/1#socle-conformite`} className="text-xs text-ebios-600 hover:text-ebios-800 hover:underline shrink-0">
                     {t.dashboard.conformiteModify} →
                   </Link>
                 )}
@@ -141,7 +141,7 @@ export default function ConformiteTrackingCard({ rows, locale }: { rows: Conform
                     <ul className="mt-2 space-y-1.5">
                       {ctrls.map(c => (
                         <li key={c.ref} className="flex items-start gap-2 text-xs">
-                          <span className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${DOT[c.statut]}`} />
+                          <span className={`mt-1 h-2 w-2 rounded-full shrink-0 ${DOT[c.statut]}`} />
                           <span className="flex-1 min-w-0">
                             <span className="text-gray-400 mr-1">{c.ref}</span>
                             <span className="text-gray-700">{c.nom}</span>
@@ -151,7 +151,7 @@ export default function ConformiteTrackingCard({ rows, locale }: { rows: Conform
                               value={c.statut}
                               disabled={busy === `${r.key}:${c.ref}`}
                               onChange={e => changeStatut(r, c.ref, e.target.value as ConformiteStatut)}
-                              className="rounded border border-gray-200 bg-white px-1.5 py-0.5 text-[11px] text-gray-700 flex-shrink-0 disabled:opacity-50"
+                              className="rounded-sm border border-gray-200 bg-white px-1.5 py-0.5 text-[11px] text-gray-700 shrink-0 disabled:opacity-50"
                               aria-label={`${c.ref} — ${t.dashboard.conformiteModify}`}
                             >
                               {CONFORMITE_STATUTS.map(s => (
@@ -159,7 +159,7 @@ export default function ConformiteTrackingCard({ rows, locale }: { rows: Conform
                               ))}
                             </select>
                           ) : (
-                            <span className="text-[11px] text-gray-500 flex-shrink-0">{statutLabels[c.statut]}</span>
+                            <span className="text-[11px] text-gray-500 shrink-0">{statutLabels[c.statut]}</span>
                           )}
                         </li>
                       ))}

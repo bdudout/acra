@@ -97,7 +97,7 @@ export default function ResidualRisksPanel({
       {frozen ? (
         <div className="space-y-3">
           <div className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2">
-            <Lock size={15} className="mt-0.5 flex-shrink-0 text-gray-400" aria-hidden="true" />
+            <Lock size={15} className="mt-0.5 shrink-0 text-gray-400" aria-hidden="true" />
             <span>{r.frozenNotice}</span>
           </div>
           {canReopen && (

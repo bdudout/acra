@@ -197,7 +197,7 @@ export default function PlansActionsView({ items, orgId, initialPriorite = '', i
         <label className="flex flex-col gap-1 text-xs text-gray-500 min-w-0">
           <span className="font-medium">{t.plansActions.filterOrigine}</span>
           <select value={origine} onChange={(e) => setOrigine(e.target.value as ActionOrigine | '')}
-            className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 bg-white min-w-[10rem]">
+            className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 bg-white min-w-40">
             <option value="">{t.plansActions.filterAll}</option>
             {ACTION_ORIGINES.map((o) => <option key={o} value={o}>{t.plansActions.origines[o]}</option>)}
           </select>
@@ -205,7 +205,7 @@ export default function PlansActionsView({ items, orgId, initialPriorite = '', i
         <label className="flex flex-col gap-1 text-xs text-gray-500 min-w-0">
           <span className="font-medium">{t.plansActions.filterPriorite}</span>
           <select value={priorite} onChange={(e) => setPriorite(e.target.value as ActionPriorite | '')}
-            className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 bg-white min-w-[9rem]">
+            className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 bg-white min-w-36">
             <option value="">{t.plansActions.filterAll}</option>
             {ACTION_PRIORITES.map((p) => <option key={p} value={p}>{t.plansActions.priorites[p]}</option>)}
           </select>
@@ -213,7 +213,7 @@ export default function PlansActionsView({ items, orgId, initialPriorite = '', i
         <label className="flex flex-col gap-1 text-xs text-gray-500 min-w-0">
           <span className="font-medium">{t.plansActions.filterStatut}</span>
           <select value={statut} onChange={(e) => setStatut(e.target.value)}
-            className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 bg-white min-w-[9rem]">
+            className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 bg-white min-w-36">
             <option value="">{t.plansActions.filterAll}</option>
             {(['A_FAIRE', 'EN_COURS', 'FAIT', 'EN_RETARD'] as const).map((s) => (
               <option key={s} value={s}>{t.plansActions.statuts[s]}</option>
@@ -223,7 +223,7 @@ export default function PlansActionsView({ items, orgId, initialPriorite = '', i
         <label className="flex flex-col gap-1 text-xs text-gray-500 min-w-0">
           <span className="font-medium">{t.plansActions.filterEcheance}</span>
           <select value={echeance} onChange={(e) => setEcheance(e.target.value)}
-            className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 bg-white min-w-[9rem]">
+            className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 bg-white min-w-36">
             <option value="">{t.plansActions.filterAll}</option>
             <option value="retard">{t.plansActions.echeanceRetard}</option>
             <option value="semaine">{t.plansActions.echeanceSemaine}</option>
@@ -234,9 +234,9 @@ export default function PlansActionsView({ items, orgId, initialPriorite = '', i
         <label className="flex flex-col gap-1 text-xs text-gray-500 min-w-0">
           <span className="font-medium">{t.plansActions.filterPorteur}</span>
           <input value={porteur} onChange={(e) => setPorteur(e.target.value)} type="text"
-            className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 bg-white min-w-[9rem]" />
+            className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 bg-white min-w-36" />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 flex-1 min-w-[12rem]">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 flex-1 min-w-48">
           <span className="font-medium">&nbsp;</span>
           <input value={q} onChange={(e) => setQ(e.target.value)} type="search" placeholder={t.plansActions.searchPh}
             className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 bg-white w-full" />
@@ -260,16 +260,16 @@ export default function PlansActionsView({ items, orgId, initialPriorite = '', i
           const eff = effectiveStatut(it, now)
           const isOrphan = it.origine === 'orpheline'
           const editing = editId === it.sourceId && isOrphan
-          return <div key={it.id} className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+          return <div key={it.id} className="rounded-xl border border-gray-200 bg-white p-3 shadow-xs">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0"><div className="font-medium text-gray-900">{it.titre}</div>{it.description && <div className="mt-0.5 text-xs text-gray-500 line-clamp-2">{it.description}</div>}</div>
               <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full ${PRIORITE_STYLE[it.priorite]}`}>{t.plansActions.priorites[it.priorite]}</span>
             </div>
             <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
-              <span className={`rounded border px-2 py-0.5 ${ORIGINE_STYLE[it.origine]}`}>{t.plansActions.origines[it.origine]}</span>
+              <span className={`rounded-sm border px-2 py-0.5 ${ORIGINE_STYLE[it.origine]}`}>{t.plansActions.origines[it.origine]}</span>
               <span className={`rounded-full px-2 py-0.5 ${STATUT_STYLE[eff]}`}>{t.plansActions.statuts[eff]}</span>
-              <span className="rounded bg-gray-100 px-2 py-0.5 text-gray-600">{it.porteur ?? t.plansActions.sansPorteur}</span>
-              <span className="rounded bg-gray-100 px-2 py-0.5 text-gray-600">{fmtDate(it.echeance)}</span>
+              <span className="rounded-sm bg-gray-100 px-2 py-0.5 text-gray-600">{it.porteur ?? t.plansActions.sansPorteur}</span>
+              <span className="rounded-sm bg-gray-100 px-2 py-0.5 text-gray-600">{fmtDate(it.echeance)}</span>
             </div>
             <div className="mt-3">
               {it.lien ? <Link href={it.lien} className="text-xs font-medium text-blue-600 hover:underline">{t.plansActions.open}</Link>
@@ -314,7 +314,7 @@ export default function PlansActionsView({ items, orgId, initialPriorite = '', i
                     {it.description && <div className="text-xs text-gray-500 line-clamp-1">{it.description}</div>}
                   </td>
                   <td className="px-3 py-2">
-                    <span className={`inline-block text-xs px-2 py-0.5 rounded border ${ORIGINE_STYLE[it.origine]}`}>
+                    <span className={`inline-block text-xs px-2 py-0.5 rounded-sm border ${ORIGINE_STYLE[it.origine]}`}>
                       {it.origine === 'orpheline' && <span aria-hidden="true">⚠ </span>}
                       {t.plansActions.origines[it.origine]}
                     </span>

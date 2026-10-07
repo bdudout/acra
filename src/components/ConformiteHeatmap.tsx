@@ -76,7 +76,7 @@ export default function ConformiteHeatmap({ rows, refs, orgCol, emptyLabel, empt
                         <Link
                           href={viewHrefFor ? viewHrefFor(row.orgId, r.id) : hrefFor ? hrefFor(row.orgId, r.id) : '/analyses'}
                           title={cellTitleFor ? cellTitleFor(c) : `${c.evalues}/${c.total}`}
-                          className={`flex flex-col items-center justify-center rounded-md px-3 py-2 min-w-[72px] leading-tight cursor-pointer transition hover:ring-2 hover:ring-gray-400/50 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${cellStyle(c.taux)}`}
+                          className={`flex flex-col items-center justify-center rounded-md px-3 py-2 min-w-[72px] leading-tight cursor-pointer transition hover:ring-2 hover:ring-gray-400/50 hover:shadow-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-gray-500 ${cellStyle(c.taux)}`}
                         >
                           <span className="text-base font-bold">{c.taux}%</span>
                           <span className="text-[10px] opacity-70 mt-0.5">{c.evalues}/{c.total}</span>

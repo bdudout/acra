@@ -399,7 +399,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
   const onColToggle = (key: string, value: string) => setColFilters((f) => toggleColumnValue(f, key, value, distinctInc(key)))
   const onColOnly = (key: string, value: string) => setColFilters((f) => onlyColumnValue(f, key, value))
   const onColClear = (key: string) => setColFilters((f) => clearColumnFilter(f, key))
-  const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+  const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
   // Suggestions d'entités à partir des incidents déjà saisis (org courante).
   const entiteSug = suggestionsFromValues(incidents.map(i => i.entite))
   const defaultEntite = mostFrequentString(incidents.map(i => i.entite))
@@ -539,7 +539,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
               : visibleIncidents.length === 0 ? <tr><td colSpan={9} className="px-4 py-6 text-center text-gray-400 italic">{n.empty}</td></tr>
               : visibleIncidents.map(i => (
                 <tr key={i.id} className="border-b border-gray-100 dark:border-gray-800 align-top">
-                  <td className="min-w-[14rem] max-w-[24rem] px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
+                  <td className="min-w-56 max-w-[24rem] px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
                     {i.intitule}
                     {i.doublons && i.doublons.length > 0 && (
                       <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 px-1.5 py-px text-[10px] font-medium align-middle"
@@ -561,7 +561,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
                   <td className="hidden px-3 py-3 text-gray-500 dark:text-gray-400 2xl:table-cell">{taxoLabel(i.taxonomieCode)}</td>
                   <td className="hidden px-3 py-3 text-gray-500 dark:text-gray-400 2xl:table-cell">{i.processusNom ?? '—'}</td>
                   <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-200 whitespace-nowrap">{euros(i.perteNette)}</td>
-                  <td className="min-w-[10rem] px-3 py-3 text-xs text-gray-500 dark:text-gray-400">
+                  <td className="min-w-40 px-3 py-3 text-xs text-gray-500 dark:text-gray-400">
                     {(i.risques ?? []).length === 0 ? '—' : (
                       <ul className="space-y-0.5">
                         {(i.risques ?? []).slice(0, 2).map(r => <li key={r.id} className="text-gray-700 dark:text-gray-200">{r.intitule}</li>)}
@@ -590,8 +590,8 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
                         <span className="text-xs text-gray-400">…</span>
                       ) : (
                         <details className="relative inline-block text-left">
-                          <summary className="cursor-pointer list-none rounded border border-gray-200 px-2 py-1 text-xs font-medium text-ebios-700 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">{n.actionsMenu}</summary>
-                        <div className="absolute right-0 z-20 mt-1 flex min-w-[12rem] flex-col items-start gap-1.5 rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                          <summary className="cursor-pointer list-none rounded-sm border border-gray-200 px-2 py-1 text-xs font-medium text-ebios-700 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">{n.actionsMenu}</summary>
+                        <div className="absolute right-0 z-20 mt-1 flex min-w-48 flex-col items-start gap-1.5 rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-900">
                           <button onClick={() => startQual(i)} className="text-xs text-ebios-600 hover:underline">{n.qualify}</button>
                           <button onClick={() => { setAssocId(i.id); setAssocIds((i.risques ?? []).map(r => r.id)); setError(null) }} className="text-xs text-ebios-600 hover:underline">{n.associer}</button>
                           {!i.riskItemId && (i.risques ?? []).length === 0 && (

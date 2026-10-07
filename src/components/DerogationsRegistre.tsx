@@ -200,7 +200,7 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{d.subtitle}</p>
 
-      {error && <div className="mb-3 p-2 rounded bg-red-50 border border-red-200 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</div>}
+      {error && <div className="mb-3 p-2 rounded-sm bg-red-50 border border-red-200 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</div>}
 
       {/* Création d'une dérogation autonome (niveau organisation) — MODALE, ne pousse plus le tableau. */}
       {creating && canCreate && (
@@ -211,17 +211,17 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
               <button onClick={() => setCreating(false)} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" aria-label={d.cancel}><X size={18} /></button>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">{d.orgLevelHint}</p>
-            {error && <div className="p-2 rounded bg-red-50 border border-red-200 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</div>}
+            {error && <div className="p-2 rounded-sm bg-red-50 border border-red-200 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</div>}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <label className="block min-w-0 text-xs text-gray-600 dark:text-gray-300">
                 <span className="block mb-1 font-medium">{d.referentiel}</span>
                 {refs.length > 0 ? (
-                  <select value={form.referentiel} onChange={e => setForm(f => ({ ...f, referentiel: e.target.value, ref: '' }))} className="w-full min-w-0 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+                  <select value={form.referentiel} onChange={e => setForm(f => ({ ...f, referentiel: e.target.value, ref: '' }))} className="w-full min-w-0 px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
                     <option value="">{d.referentiel}…</option>
                     {refs.map(r => <option key={r.code} value={r.code}>{r.nom}</option>)}
                   </select>
                 ) : (
-                  <input value={form.referentiel} onChange={e => setForm(f => ({ ...f, referentiel: e.target.value }))} placeholder={d.referentiel} className="w-full min-w-0 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+                  <input value={form.referentiel} onChange={e => setForm(f => ({ ...f, referentiel: e.target.value }))} placeholder={d.referentiel} className="w-full min-w-0 px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
                 )}
               </label>
               <label className="block min-w-0 text-xs text-gray-600 dark:text-gray-300">
@@ -229,35 +229,35 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
                 {exigences.length > 0 ? (
                   <select value={form.ref}
                     onChange={e => { const ex = exigences.find(x => x.ref === e.target.value); setForm(f => ({ ...f, ref: e.target.value, intitule: f.intitule || (ex ? `[${ex.ref}] ${ex.nom}` : f.intitule) })) }}
-                    className="w-full min-w-0 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+                    className="w-full min-w-0 px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
                     <option value="">{d.controle}…</option>
                     {exigences.map(ex => <option key={ex.ref} value={ex.ref}>[{ex.ref}] {ex.nom}</option>)}
                   </select>
                 ) : (
-                  <input value={form.ref} onChange={e => setForm(f => ({ ...f, ref: e.target.value }))} placeholder={d.controle} className="w-full min-w-0 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+                  <input value={form.ref} onChange={e => setForm(f => ({ ...f, ref: e.target.value }))} placeholder={d.controle} className="w-full min-w-0 px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
                 )}
               </label>
             </div>
             <label className="block text-xs text-gray-600 dark:text-gray-300">
               <span className="block mb-1 font-medium">{d.intitule}</span>
               <AutocompleteInput field="mesure" lang={locale} value={form.intitule} onChange={v => setForm(f => ({ ...f, intitule: v }))}
-                placeholder={d.intitulePlaceholder} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+                placeholder={d.intitulePlaceholder} className="w-full px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
             </label>
             <ExampleChips items={d.examples.map((e, i) => ({ id: String(i), label: e.label }))}
               onPick={id => { const e = d.examples[Number(id)]; if (e) setForm(f => ({ ...f, motif: e.motif, mesures: e.mesures })) }} />
             <label className="block text-xs text-gray-600 dark:text-gray-300">
               <span className="block mb-1 font-medium">{d.motif}</span>
-              <textarea value={form.motif} onChange={e => setForm(f => ({ ...f, motif: e.target.value }))} placeholder={d.motifPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+              <textarea value={form.motif} onChange={e => setForm(f => ({ ...f, motif: e.target.value }))} placeholder={d.motifPlaceholder} rows={2} className="w-full px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
             </label>
             <label className="block text-xs text-gray-600 dark:text-gray-300">
               <span className="block mb-1 font-medium">{d.mesuresCompensatoires}</span>
-              <textarea value={form.mesures} onChange={e => setForm(f => ({ ...f, mesures: e.target.value }))} placeholder={d.mesuresPlaceholder} rows={2} className="w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+              <textarea value={form.mesures} onChange={e => setForm(f => ({ ...f, mesures: e.target.value }))} placeholder={d.mesuresPlaceholder} rows={2} className="w-full px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
             </label>
             <div className="flex items-center gap-2 flex-wrap text-xs text-gray-600 dark:text-gray-300">
               <span className="font-medium">{d.dureeLabel}</span>
               <input type="number" min={1} max={dureeMax} value={form.dureeJours}
                 onChange={e => setForm(f => ({ ...f, dureeJours: e.target.value }))}
-                placeholder={String(dureeDefaut)} className="w-24 px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+                placeholder={String(dureeDefaut)} className="w-24 px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
               <span className="text-gray-400">{d.dureeMaxHint?.replace('{max}', String(dureeMax))}</span>
               {dateFinCalc && <span className="ml-1">→ {d.dateFinLabel} : <strong className="text-gray-800 dark:text-gray-100">{dateFinCalc}</strong></span>}
             </div>

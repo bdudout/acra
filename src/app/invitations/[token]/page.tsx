@@ -50,7 +50,7 @@ export default function InvitationPage({ params }: { params: Promise<{ token: st
   const valid = preview?.state === 'VALID' ? preview : null
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-ebios-950 to-ebios-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-ebios-950 to-ebios-800 flex items-center justify-center p-4">
       <main className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
         <div className="text-center mb-6">
           <MailCheck size={32} className="mx-auto mb-3 text-ebios-600" aria-hidden="true" />

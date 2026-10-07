@@ -9,7 +9,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import { TYPES_CONTROLE, MODES_CONTROLE, METHODES_ECHANTILLON, tailleEchantillonSuggeree, type MethodeEchantillon } from '@/lib/controle-l3'
 
 export interface L3FormValue { typeControle: string; modeControle: string; cle: boolean; methodeEchantillon: string }
-const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
 
 export default function ControleL3Fields({ value, onChange, onApplySuggestion }: { value: L3FormValue; onChange: (v: L3FormValue) => void; onApplySuggestion?: (n: number) => void }) {
   const { t } = useTranslation()
@@ -47,7 +47,7 @@ export default function ControleL3Fields({ value, onChange, onApplySuggestion }:
             <input type="number" min="1" aria-label={c.ctl_population} value={population} onChange={e => setPopulation(e.target.value)} className={`${inp} block w-32 mt-1`} />
           </label>
           {suggestion != null && (
-            <button type="button" onClick={() => onApplySuggestion?.(suggestion)} className="rounded border border-ebios-300 px-2 py-1 text-ebios-700 hover:bg-ebios-50 dark:border-ebios-700 dark:hover:bg-gray-800">
+            <button type="button" onClick={() => onApplySuggestion?.(suggestion)} className="rounded-sm border border-ebios-300 px-2 py-1 text-ebios-700 hover:bg-ebios-50 dark:border-ebios-700 dark:hover:bg-gray-800">
               {c.ctl_echantillonSuggere.replace('{n}', String(suggestion))}
             </button>
           )}

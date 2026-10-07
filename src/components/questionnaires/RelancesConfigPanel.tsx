@@ -30,7 +30,7 @@ export default function RelancesConfigPanel() {
 
   if (!etat) return error ? <p role="alert" className="text-sm text-red-600">{error}</p> : <p className="text-sm text-gray-500">{q.loading}</p>
   const set = (patch: Partial<RelancesConfig>) => setEtat({ ...etat, config: { ...etat.config, ...patch } })
-  const inp = 'mt-1 w-32 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100'
+  const inp = 'mt-1 w-32 rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100'
   const lbl = 'block text-xs text-gray-600 dark:text-gray-300'
   return <section className="card max-w-2xl space-y-3 p-4" aria-labelledby="relances-titre">
     <h2 id="relances-titre" className="font-semibold text-gray-800 dark:text-gray-100">{r.titre}</h2>

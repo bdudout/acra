@@ -131,7 +131,7 @@ export default async function RisquesPage({ searchParams }: PageProps) {
               href={f.href}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                 activeNiveau === f.key
-                  ? `${f.active} border-transparent shadow-sm`
+                  ? `${f.active} border-transparent shadow-xs`
                   : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
               }`}
             >

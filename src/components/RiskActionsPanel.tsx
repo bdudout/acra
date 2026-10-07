@@ -80,7 +80,7 @@ export default function RiskActionsPanel({ riskId, canEdit, onChange }: { riskId
     await fetch(`/api/risk-items/${riskId}/actions/${id}`, { method: 'DELETE' }); reload(); onChange()
   }
 
-  const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+  const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
   // Autocomplétion du responsable à partir des actions déjà saisies sur ce risque.
   // id scopé par riskId (plusieurs panneaux peuvent coexister sur une même page).
   const respListId = `acra-riskaction-resp-${riskId}`

@@ -133,7 +133,7 @@ export default function QualificationPanel({ analyseId, initial, canEdit = true,
             <span className="text-sm font-medium text-gray-800">{t.qualification.title}</span>
           </div>
           {canEdit && (
-            <button onClick={() => setCollapsed(false)} className="text-xs text-ebios-600 hover:text-ebios-800 font-medium hover:underline flex-shrink-0">
+            <button onClick={() => setCollapsed(false)} className="text-xs text-ebios-600 hover:text-ebios-800 font-medium hover:underline shrink-0">
               {t.qualification.edit}
             </button>
           )}

@@ -67,7 +67,7 @@ export default function BackupManagementPanel() {
           <p className="font-medium">{t.version.backup.agentInstallTitle}</p>
           <p className="text-xs text-gray-600 dark:text-gray-300">{t.version.backup.agentWhy}</p>
           <div className="flex flex-wrap items-center gap-2">
-            <code className="rounded bg-white px-2 py-1 font-mono text-xs dark:bg-gray-900">{AGENT_INSTALL}</code>
+            <code className="rounded-sm bg-white px-2 py-1 font-mono text-xs dark:bg-gray-900">{AGENT_INSTALL}</code>
             <button type="button" className="btn-secondary text-xs" onClick={() => void copyCommand()}>{t.version.backup.copyCommand}</button>
             {copied && <span className="text-xs text-ebios-700">{t.version.backup.copied}</span>}
           </div>

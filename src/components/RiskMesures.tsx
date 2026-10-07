@@ -72,19 +72,19 @@ export default function RiskMesures({ analyseId, riskId, editable, withEfficacit
       {editable && (
         <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto]">
           <input value={nom} onChange={e => setNom(e.target.value)} placeholder={m.mesuresNomPlaceholder}
-            className="min-w-0 w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs" />
+            className="min-w-0 w-full px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs" />
           <label className="text-[10px] text-gray-500 dark:text-gray-400">{m.mesuresStatut}
-            <select value={statut} onChange={e => setStatut(e.target.value)} className="block mt-0.5 px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs">
+            <select value={statut} onChange={e => setStatut(e.target.value)} className="block mt-0.5 px-1.5 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs">
               {MESURE_STATUTS.map(s => <option key={s} value={s}>{statutLabel(s)}</option>)}
             </select>
           </label>
           {withEfficacite && <label className="text-[10px] text-gray-500 dark:text-gray-400">{m.mesuresEfficacite}
-            <select value={efficacite} onChange={e => setEfficacite(Number(e.target.value))} className="block mt-0.5 px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs">
+            <select value={efficacite} onChange={e => setEfficacite(Number(e.target.value))} className="block mt-0.5 px-1.5 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs">
               {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </label>}
           <label className="text-[10px] text-gray-500 dark:text-gray-400">{m.mesuresEcheance}
-            <input type="date" value={echeance} onChange={e => setEcheance(e.target.value)} className="block mt-0.5 px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs" />
+            <input type="date" value={echeance} onChange={e => setEcheance(e.target.value)} className="block mt-0.5 px-1.5 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs" />
           </label>
           <button onClick={ajouter} disabled={busy || !nom.trim()} className="btn-primary text-xs inline-flex items-center gap-1 disabled:opacity-50">
             <Plus size={13} aria-hidden="true" />{m.add}

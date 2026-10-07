@@ -7,7 +7,7 @@
 import { useTranslation } from '@/lib/i18n/context'
 import type { ChampDef, ChampsValeurs } from '@/lib/champs-perso'
 
-const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
 
 export default function ChampsPersonnalisesFields({ defs, values, onChange, readOnly = false }: {
   defs: ChampDef[]; values: ChampsValeurs; onChange: (v: ChampsValeurs) => void; readOnly?: boolean

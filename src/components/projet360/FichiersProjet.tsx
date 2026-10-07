@@ -10,7 +10,7 @@ import { FICHIER_PROJET_TYPES } from '@/lib/fichiers-projet'
 import { MAX_DOCUMENT_SIZE } from '@/lib/document'
 
 interface Fichier { id: string; titre: string; type: string; fichierNom: string; mime: string; taille: number; createdAt: string }
-const field = 'rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
+const field = 'rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
 
 export default function FichiersProjet({ analyseId, editable }: { analyseId: string; editable: boolean }) {
   const { t } = useTranslation()
@@ -71,7 +71,7 @@ export default function FichiersProjet({ analyseId, editable }: { analyseId: str
               {FICHIER_PROJET_TYPES.map(k => <option key={k} value={k}>{types[k]}</option>)}
             </select>
           </label>
-          <label className="min-w-[12rem] flex-1 text-xs text-gray-600 dark:text-gray-300">{f.titre}
+          <label className="min-w-48 flex-1 text-xs text-gray-600 dark:text-gray-300">{f.titre}
             <input aria-label={f.titre} value={titre} maxLength={200} onChange={e => setTitre(e.target.value)} className={`${field} mt-1 block w-full`} />
           </label>
           <label className="text-xs text-gray-600 dark:text-gray-300">{f.fichier}

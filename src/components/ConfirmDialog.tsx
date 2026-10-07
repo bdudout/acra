@@ -92,7 +92,7 @@ export default function ConfirmDialog({ message, onConfirm, onCancel, title, con
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs"
       onClick={onCancel}
     >
       <div
@@ -104,7 +104,7 @@ export default function ConfirmDialog({ message, onConfirm, onCancel, title, con
         onKeyDown={handleKeyDown}
       >
         <div className="flex items-start gap-3 mb-5">
-          <span className="flex-shrink-0 text-gray-500" aria-hidden="true">{icon ?? <Trash2 size={24} aria-hidden="true" />}</span>
+          <span className="shrink-0 text-gray-500" aria-hidden="true">{icon ?? <Trash2 size={24} aria-hidden="true" />}</span>
           <div>
             <h3 id={titleId} className="font-semibold text-gray-900 mb-1">
               {title ?? t.deleteDialog.title}
@@ -124,7 +124,7 @@ export default function ConfirmDialog({ message, onConfirm, onCancel, title, con
               onChange={e => setTyped(e.target.value)}
               autoComplete="off"
               spellCheck={false}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:border-red-500"
             />
           </div>
         )}

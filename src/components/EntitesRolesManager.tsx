@@ -111,7 +111,7 @@ export default function EntitesRolesManager({ orgId }: { orgId: string }) {
             <input value={newNom} onChange={ev => setNewNom(ev.target.value)} placeholder={e.nomPh}
               className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white text-gray-800" />
           </label>
-          <label className="text-xs text-gray-500 min-w-[14rem]">
+          <label className="text-xs text-gray-500 min-w-56">
             <span className="block font-medium mb-1">{e.parentLabel}</span>
             <select value={newParent} onChange={ev => setNewParent(ev.target.value)}
               className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white text-gray-800">
@@ -138,7 +138,7 @@ export default function EntitesRolesManager({ orgId }: { orgId: string }) {
                     className={`w-full text-left rounded-md px-2 py-1.5 text-sm flex items-center gap-1.5 transition ${selId === x.id ? 'bg-ebios-50 ring-1 ring-ebios-300 text-ebios-900' : 'hover:bg-gray-50 text-gray-800'}`}>
                     {x.depth > 0 && <CornerDownRight size={13} className="text-gray-300 shrink-0" aria-hidden="true" />}
                     <span className="font-medium truncate">{x.nom}</span>
-                    {x.isRoot && <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 shrink-0">{e.rootBadge}</span>}
+                    {x.isRoot && <span className="rounded-sm bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 shrink-0">{e.rootBadge}</span>}
                     <span className="ml-auto text-[11px] text-gray-400 shrink-0">{e.membresN.replace('{n}', String(x.membres))}</span>
                   </button>
                 </li>
@@ -177,14 +177,14 @@ export default function EntitesRolesManager({ orgId }: { orgId: string }) {
                     className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white text-gray-800" />
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  <label className="text-xs text-gray-500 flex-1 min-w-[9rem]">
+                  <label className="text-xs text-gray-500 flex-1 min-w-36">
                     <span className="block font-medium mb-1">{e.roleLabel}</span>
                     <select value={mRole} onChange={ev => setMRole(ev.target.value as AssignableRole)}
                       className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white text-gray-800">
                       {ASSIGNABLE_ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
                     </select>
                   </label>
-                  <label className="text-xs text-gray-500 flex-1 min-w-[9rem]">
+                  <label className="text-xs text-gray-500 flex-1 min-w-36">
                     <span className="block font-medium mb-1">{e.scopeLabel}</span>
                     <select value={mScope} onChange={ev => setMScope(ev.target.value as 'NODE' | 'SUBTREE')}
                       className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white text-gray-800">

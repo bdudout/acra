@@ -11,7 +11,7 @@ import { RISQUES_PROJET_SOCLE, sanitizeSocleConfig, type SocleConfig } from '@/l
 import { DOMAINES_360 } from '@/lib/projet360'
 
 const IDX = { fr: 0, en: 1, de: 2, es: 3, it: 4 } as const
-const field = 'rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
+const field = 'rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
 
 export default function RisquesProjetDefautEditor({ isAdmin }: { isAdmin: boolean }) {
   const { t, locale } = useTranslation()
@@ -89,7 +89,7 @@ export default function RisquesProjetDefautEditor({ isAdmin }: { isAdmin: boolea
         )}
         {isAdmin && (
           <div className="flex flex-wrap items-end gap-2">
-            <label className="flex-1 min-w-[14rem] text-xs text-gray-600 dark:text-gray-300">{r.intitule}
+            <label className="flex-1 min-w-56 text-xs text-gray-600 dark:text-gray-300">{r.intitule}
               <input aria-label={r.intitule} value={nom} maxLength={200} onChange={e => setNom(e.target.value)} className={`${field} mt-1 block w-full`} />
             </label>
             <label className="text-xs text-gray-600 dark:text-gray-300">{r.domaine}

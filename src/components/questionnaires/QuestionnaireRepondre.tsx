@@ -65,7 +65,7 @@ export default function QuestionnaireRepondre() {
   }
 
   const jour = (d: string | null) => (d ? new Date(d).toLocaleDateString(locale) : q.none)
-  const inp = 'mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100'
+  const inp = 'mt-1 w-full rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100'
 
   if (detail) return <section className="card p-4 space-y-4">
     <div className="flex items-start justify-between gap-3">
@@ -90,12 +90,12 @@ export default function QuestionnaireRepondre() {
         <label className="mt-2 block text-xs text-gray-600 dark:text-gray-300">{q.commentaire}
           <textarea className={inp} rows={2} disabled={!editable} value={r?.commentaire ?? ''} onChange={e => set(qu.id, { commentaire: e.target.value })} /></label>
         <div className="mt-2 text-xs text-gray-600 dark:text-gray-300">{q.preuves} :
-          {(r?.preuves ?? []).map((p, k) => <span key={k} className="ml-2 inline-flex items-center gap-1 rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-800">📎 {p.nom}
+          {(r?.preuves ?? []).map((p, k) => <span key={k} className="ml-2 inline-flex items-center gap-1 rounded-sm bg-gray-100 px-1.5 py-0.5 dark:bg-gray-800">📎 {p.nom}
             {editable && <button type="button" aria-label={`${q.retirer} ${p.nom}`} onClick={() => set(qu.id, { preuves: (r?.preuves ?? []).filter((_, j) => j !== k) })}>×</button>}</span>)}
           {editable && (r?.preuves.length ?? 0) < MAX_PREUVES_PAR_QUESTION && <label className="ml-2 cursor-pointer text-ebios-700 underline dark:text-ebios-300">{q.ajouterPreuve}
             <input type="file" className="sr-only" accept=".pdf,.png,.jpg,.jpeg,.txt,.csv" multiple onChange={async e => { const lues = await lirePreuves(e.target.files, MAX_PREUVES_PAR_QUESTION); set(qu.id, { preuves: [...(r?.preuves ?? []), ...lues].slice(0, MAX_PREUVES_PAR_QUESTION) }); e.target.value = '' }} /></label>}
         </div>
-        {r?.revue && <p className={`mt-2 rounded px-2 py-1 text-xs ${r.revue.statut === 'ACCEPTEE' ? 'bg-green-50 text-green-800 dark:bg-green-500/10 dark:text-green-200' : 'bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200'}`}>
+        {r?.revue && <p className={`mt-2 rounded-sm px-2 py-1 text-xs ${r.revue.statut === 'ACCEPTEE' ? 'bg-green-50 text-green-800 dark:bg-green-500/10 dark:text-green-200' : 'bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200'}`}>
           {q.revueDu} : {q.revueStatuts[r.revue.statut]}{r.revue.commentaire ? ` — ${r.revue.commentaire}` : ''}</p>}
       </div>
     })}

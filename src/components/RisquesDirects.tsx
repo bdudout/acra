@@ -252,7 +252,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
     const L = LEVELS[level]
     const c = cotations(r)[level]
     const borne = bornesCotation(r)[level]
-    const sel = 'w-[7.75rem] px-1 py-1 rounded border border-gray-300 text-xs dark:bg-gray-900 dark:border-gray-600 disabled:opacity-60'
+    const sel = 'w-31 px-1 py-1 rounded-sm border border-gray-300 text-xs dark:bg-gray-900 dark:border-gray-600 disabled:opacity-60'
     // Valeur saisie avant un passage de l'échelle de 5 à 4 niveaux : conservée affichable.
     const opts = (cur: number) => (echelle.includes(cur) ? echelle : [...echelle, cur])
     const option = (n: number, max: number, lib: string | undefined) => (
@@ -322,7 +322,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
         aria-label={`${m.colProprietaire} — ${r.nom}`}
         onBlur={e => { const v = e.target.value.trim(); if (v !== (r.proprietaire ?? '')) maj(r.id, { proprietaire: v || null }) }}
         onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
-        className="mt-1 w-full max-w-[16rem] rounded border border-transparent bg-transparent px-1 py-0.5 text-xs font-normal text-gray-600 placeholder:italic placeholder:text-gray-400 hover:border-gray-300 focus:border-ebios-400 focus:bg-white dark:text-gray-300 dark:focus:bg-gray-900" />
+        className="mt-1 w-full max-w-[16rem] rounded-sm border border-transparent bg-transparent px-1 py-0.5 text-xs font-normal text-gray-600 placeholder:italic placeholder:text-gray-400 hover:border-gray-300 focus:border-ebios-400 focus:bg-white dark:text-gray-300 dark:focus:bg-gray-900" />
     : <span className="mt-0.5 block text-xs font-normal text-gray-500 dark:text-gray-400">{r.proprietaire ?? <span className="italic">{m.ownerMissing}</span>}</span>
 
   return (
@@ -332,22 +332,22 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
 
       {editable && showAdd && (
         <div className="flex flex-wrap items-end gap-3 mb-4">
-          <label className="text-xs text-gray-500 dark:text-gray-400 flex-1 min-w-[12rem]">{m.colNom}
+          <label className="text-xs text-gray-500 dark:text-gray-400 flex-1 min-w-48">{m.colNom}
             <input value={nom} onChange={e => setNom(e.target.value)} placeholder={m.nomPlaceholder}
-              className="block mt-1 w-full px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+              className="block mt-1 w-full px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
           </label>
           {showAddScoring && <label className="text-xs text-gray-500 dark:text-gray-400">{m.colGravite}
-            <select value={gravite} onChange={e => setGravite(Number(e.target.value))} className="block mt-1 px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+            <select value={gravite} onChange={e => setGravite(Number(e.target.value))} className="block mt-1 px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
               {echelle.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </label>}
           {showAddScoring && <label className="text-xs text-gray-500 dark:text-gray-400">{m.colVraisemblance}
-            <select value={vraisemblance} onChange={e => setVraisemblance(Number(e.target.value))} className="block mt-1 px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+            <select value={vraisemblance} onChange={e => setVraisemblance(Number(e.target.value))} className="block mt-1 px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
               {echelle.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </label>}
           {p360 && <label className="text-xs text-gray-500 dark:text-gray-400">{p360.colDomaine}
-            <select aria-label={p360.newRiskDomain} value={newDomaine} onChange={e => setNewDomaine(e.target.value)} className="block mt-1 px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+            <select aria-label={p360.newRiskDomain} value={newDomaine} onChange={e => setNewDomaine(e.target.value)} className="block mt-1 px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
               <option value="">{p360.domaineNone}</option>
               {DOMAINES_360.map(d => <option key={d} value={d}>{domaineLabel(d)}</option>)}
             </select>
@@ -372,7 +372,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                 className="inline-flex items-center gap-1.5 rounded-full border border-ebios-200 dark:border-ebios-900/50 bg-ebios-50/70 dark:bg-ebios-900/10 px-2.5 py-1 text-xs text-ebios-800 dark:text-ebios-200 hover:bg-ebios-100 dark:hover:bg-ebios-900/20 disabled:opacity-50">
                 <Plus size={12} aria-hidden="true" />
                 <span>{ex.intitule}</span>
-                {p360 && ex.source === 'REGISTRE' && <span className="rounded bg-white/70 px-1 text-[10px] text-ebios-600 dark:bg-gray-900/40">{p360.fromRegistre}</span>}
+                {p360 && ex.source === 'REGISTRE' && <span className="rounded-sm bg-white/70 px-1 text-[10px] text-ebios-600 dark:bg-gray-900/40">{p360.fromRegistre}</span>}
                 {p360 && ex.domaine && <span className="text-[10px] text-ebios-500">{domaineLabel(ex.domaine)}</span>}
                 <span className="text-ebios-500 dark:text-ebios-400 tabular-nums">G{ex.gravite}·V{ex.vraisemblance}</span>
               </button>
@@ -385,13 +385,13 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
         <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
           <label htmlFor={`${datalistId}-filter`}>{m.colProprietaire}</label>
           <select id={`${datalistId}-filter`} value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)}
-            className="rounded border border-gray-300 px-1.5 py-1 text-xs dark:border-gray-600 dark:bg-gray-900">
+            className="rounded-sm border border-gray-300 px-1.5 py-1 text-xs dark:border-gray-600 dark:bg-gray-900">
             <option value="">{m.filterOwnerAll}</option>
             <option value={OWNER_NONE}>{m.filterOwnerNone}</option>
             {ownerOptions.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
           {p360 && <select aria-label={p360.filterDomain} value={domaineFilter} onChange={e => setDomaineFilter(e.target.value)}
-            className="rounded border border-gray-300 px-1.5 py-1 text-xs dark:border-gray-600 dark:bg-gray-900">
+            className="rounded-sm border border-gray-300 px-1.5 py-1 text-xs dark:border-gray-600 dark:bg-gray-900">
             <option value="">{p360.filterDomainAll}</option>
             {DOMAINES_360.map(d => <option key={d} value={d}>{domaineLabel(d)}</option>)}
           </select>}
@@ -450,7 +450,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                 (libellés affichés dans les cellules) — même markup, pas de duplication. */}
             <table className="block w-full text-sm md:table">
               <thead className="hidden md:table-header-group"><tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                <th className="px-3 py-2 min-w-[12rem]">{m.colNom}</th>
+                <th className="px-3 py-2 min-w-48">{m.colNom}</th>
                 {col.brut && <th className="px-3 py-2">{m.colBrutSansMesure}</th>}
                 {col.actuel && <th className="px-3 py-2">{m.colActuelMesures}</th>}
                 {col.strategie && <th className="px-3 py-2">{m.colTraitement}</th>}
@@ -463,7 +463,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                   <tr key={r.id} className={`block rounded-lg border border-gray-200 dark:border-gray-700 md:table-row md:rounded-none md:border-0 md:border-b md:border-gray-100 md:dark:border-gray-800 ${r.id === justAddedId ? 'bg-ebios-50 dark:bg-ebios-900/20 transition-colors' : ''}`}>
                     <td className="block px-3 py-2 font-medium text-gray-800 dark:text-gray-100 md:table-cell">
                       <div className="flex items-center gap-2">
-                        <span className="min-w-0 flex-1 break-words">{r.nom}
+                        <span className="min-w-0 flex-1 wrap-break-word">{r.nom}
                           {p360 && r.sourceAnalyseId && <span className="ml-2 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200">{p360.importedBadge}</span>}
                           {r.suppressionDemandeeLe && (
                             <span className="mt-1 block text-xs font-normal">
@@ -478,7 +478,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                           {ownerField(r)}
                           {p360 && (editable
                             ? <select aria-label={`${p360.colDomaine} — ${r.nom}`} value={r.domaine ?? ''} onChange={e => maj(r.id, { domaine: e.target.value || null })}
-                                className="mt-1 block rounded border border-gray-200 px-1 py-0.5 text-xs font-normal text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                                className="mt-1 block rounded-sm border border-gray-200 px-1 py-0.5 text-xs font-normal text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
                                 <option value="">{p360.domaineNone}</option>
                                 {DOMAINES_360.map(d => <option key={d} value={d}>{domaineLabel(d)}</option>)}
                               </select>
@@ -497,7 +497,7 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                       {!col.strategie && detailsButton(r)}
                     </div>)}
                     {col.strategie && cell(m.colTraitement, <div className="flex flex-col items-start gap-1">
-                      <select aria-label={`${m.colStrategie} — ${r.nom}`} disabled={!editable} value={r.strategie} onChange={e => maj(r.id, { strategie: e.target.value })} className="px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm disabled:opacity-60">
+                      <select aria-label={`${m.colStrategie} — ${r.nom}`} disabled={!editable} value={r.strategie} onChange={e => maj(r.id, { strategie: e.target.value })} className="px-1.5 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm disabled:opacity-60">
                         {STRATEGIES.map(s => <option key={s} value={s}>{(m.strategies as Record<string, string>)[s]}</option>)}
                       </select>
                       {detailsButton(r)}

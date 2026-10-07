@@ -30,7 +30,7 @@ const EMPTY: Form = { intitule: '', type: 'VULNERABILITY', perimetre: '', foncti
 const day = (iso: string | null) => (iso ? iso.slice(0, 10) : '')
 const asConstats = (v: unknown): Constat[] => (Array.isArray(v) ? (v as Constat[]) : [])
 const asIds = (v: unknown): string[] => (Array.isArray(v) ? (v as string[]) : [])
-const input = 'mt-1 block w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
+const input = 'mt-1 block w-full rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
 
 export default function TestsResilienceManager() {
   const { t, locale } = useTranslation()
@@ -180,8 +180,8 @@ export default function TestsResilienceManager() {
             <ul className="mt-2 space-y-2">
               {form.constats.map((c, i) => (
                 <li key={i} className="flex flex-wrap items-center gap-2">
-                  <input aria-label={r.constatDesc} value={c.description} onChange={e => setForm({ ...form, constats: form.constats.map((x, j) => j === i ? { ...x, description: e.target.value } : x) })} className="flex-1 min-w-[12rem] rounded border border-gray-300 px-2 py-1 text-sm dark:bg-gray-800 dark:border-gray-600" />
-                  <select aria-label={r.severite} value={c.severite} onChange={e => setForm({ ...form, constats: form.constats.map((x, j) => j === i ? { ...x, severite: Number(e.target.value) } : x) })} className="rounded border border-gray-300 px-1 py-1 text-sm dark:bg-gray-800 dark:border-gray-600">
+                  <input aria-label={r.constatDesc} value={c.description} onChange={e => setForm({ ...form, constats: form.constats.map((x, j) => j === i ? { ...x, description: e.target.value } : x) })} className="flex-1 min-w-48 rounded-sm border border-gray-300 px-2 py-1 text-sm dark:bg-gray-800 dark:border-gray-600" />
+                  <select aria-label={r.severite} value={c.severite} onChange={e => setForm({ ...form, constats: form.constats.map((x, j) => j === i ? { ...x, severite: Number(e.target.value) } : x) })} className="rounded-sm border border-gray-300 px-1 py-1 text-sm dark:bg-gray-800 dark:border-gray-600">
                     {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                   <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={c.corrige} onChange={e => setForm({ ...form, constats: form.constats.map((x, j) => j === i ? { ...x, corrige: e.target.checked } : x) })} />{r.corrige}</label>

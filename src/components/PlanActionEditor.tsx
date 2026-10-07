@@ -46,12 +46,12 @@ export default function PlanActionEditor({ orgId, action, onSaved, onCancel }: {
     onSaved()
   }
 
-  const inp = 'border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-xs bg-white dark:bg-gray-800'
+  const inp = 'border border-gray-300 dark:border-gray-600 rounded-sm px-2 py-1.5 text-xs bg-white dark:bg-gray-800'
   return (
     <div className="mt-2 rounded-lg border border-ebios-200 bg-ebios-50/50 dark:border-ebios-500/30 dark:bg-ebios-500/10 p-2 flex flex-wrap items-end gap-1.5">
       {error && <p className="w-full text-[11px] text-red-600">{pa.editError}</p>}
-      <input value={titre} onChange={e => setTitre(e.target.value)} placeholder={pa.colTitre} className={`${inp} flex-1 min-w-[12rem]`} />
-      <input value={porteur} onChange={e => setPorteur(e.target.value)} placeholder={pa.colPorteur} className={`${inp} min-w-[8rem]`} />
+      <input value={titre} onChange={e => setTitre(e.target.value)} placeholder={pa.colTitre} className={`${inp} flex-1 min-w-48`} />
+      <input value={porteur} onChange={e => setPorteur(e.target.value)} placeholder={pa.colPorteur} className={`${inp} min-w-32`} />
       <input type="date" value={echeance} onChange={e => setEcheance(e.target.value)} title={pa.colEcheance} className={inp} />
       <select value={priorite} onChange={e => setPriorite(e.target.value)} title={pa.colPriorite} className={inp}>
         {ACTION_PRIORITES.map(p => <option key={p} value={p}>{pa.priorites[p]}</option>)}
@@ -60,7 +60,7 @@ export default function PlanActionEditor({ orgId, action, onSaved, onCancel }: {
         {RISK_ACTION_STATUTS.map(s => <option key={s} value={s}>{pa.statuts[s as keyof typeof pa.statuts] ?? s}</option>)}
       </select>
       <button type="button" disabled={busy || !titre.trim()} onClick={save}
-        className="text-xs px-3 py-1.5 rounded bg-ebios-600 text-white font-medium disabled:opacity-50">{pa.save}</button>
+        className="text-xs px-3 py-1.5 rounded-sm bg-ebios-600 text-white font-medium disabled:opacity-50">{pa.save}</button>
       <button type="button" onClick={onCancel} className="text-xs px-2 py-1.5 text-gray-500 hover:text-gray-700">{pa.clear}</button>
     </div>
   )

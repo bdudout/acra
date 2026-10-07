@@ -27,8 +27,8 @@ export default function VueAnalyseProjet({ active, projet, analyses }: { active:
           : (
             <details className="relative">
               <summary className={`${inactif} cursor-pointer list-none`}>{v.analyse} ({analyses.length})</summary>
-              <ul aria-label={v.choisir} className="absolute left-0 z-20 mt-1 min-w-[14rem] rounded-lg border border-gray-200 bg-white p-1 shadow-lg dark:border-gray-700 dark:bg-gray-900">
-                {analyses.map(a => <li key={a.id}><Link href={`/analyses/${a.id}`} className="block rounded px-2 py-1 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800">{a.nom}</Link></li>)}
+              <ul aria-label={v.choisir} className="absolute left-0 z-20 mt-1 min-w-56 rounded-lg border border-gray-200 bg-white p-1 shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                {analyses.map(a => <li key={a.id}><Link href={`/analyses/${a.id}`} className="block rounded-sm px-2 py-1 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800">{a.nom}</Link></li>)}
               </ul>
             </details>
           )}

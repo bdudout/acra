@@ -60,7 +60,7 @@ export default function NotificationsPanel({ horloges, canQualify, busy, onMark,
                       <>
                         <input aria-label={n.notifReference} placeholder={n.notifReference} value={refs[key] ?? ''} maxLength={120}
                           onChange={e => setRefs(r => ({ ...r, [key]: e.target.value }))}
-                          className="px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs w-44" />
+                          className="px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs w-44" />
                         <button type="button" disabled={busy} onClick={() => onMark(h.regime, p.code, refs[key] ?? '')} className="btn-secondary text-[11px] disabled:opacity-50">{n.notifMarquer}</button>
                       </>
                     )}

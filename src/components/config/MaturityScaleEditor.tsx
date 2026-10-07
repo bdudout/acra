@@ -76,12 +76,12 @@ export default function MaturityScaleEditor({ isAdmin }: { isAdmin: boolean }) {
                 <td className="py-2 pr-3">
                   <input aria-label={`${m.scale.level} ${l.niveau} — ${m.scale.label}`} value={l.libelle} readOnly={!isAdmin} maxLength={80}
                     onChange={e => update(l.niveau, 'libelle', e.target.value)}
-                    className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm read-only:bg-gray-50" />
+                    className="w-full rounded-sm border border-gray-300 px-2 py-1.5 text-sm read-only:bg-gray-50" />
                 </td>
                 <td className="py-2">
                   <input aria-label={`${m.scale.level} ${l.niveau} — ${m.scale.definition}`} value={l.definition} readOnly={!isAdmin} maxLength={500}
                     onChange={e => update(l.niveau, 'definition', e.target.value)}
-                    className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm read-only:bg-gray-50" />
+                    className="w-full rounded-sm border border-gray-300 px-2 py-1.5 text-sm read-only:bg-gray-50" />
                 </td>
               </tr>
             ))}

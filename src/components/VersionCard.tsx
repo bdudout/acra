@@ -168,16 +168,16 @@ export default function VersionCard() {
           <div className="mt-2 space-y-2">
             <p>{v.commandsIntro}</p>
             <p className="font-medium">{v.commandStable}</p>
-            <pre className="overflow-x-auto rounded bg-white p-2 font-mono text-[11px]">scripts/update.sh stable</pre>
+            <pre className="overflow-x-auto rounded-sm bg-white p-2 font-mono text-[11px]">scripts/update.sh stable</pre>
             <p className="font-medium">{v.commandBeta}</p>
-            <pre className="overflow-x-auto rounded bg-white p-2 font-mono text-[11px]">scripts/update.sh beta</pre>
+            <pre className="overflow-x-auto rounded-sm bg-white p-2 font-mono text-[11px]">scripts/update.sh beta</pre>
             <p>{v.commandsGit}</p>
-            <pre className="overflow-x-auto rounded bg-white p-2 font-mono text-[11px]">{'git checkout stable && git pull && docker compose up -d --build'}</pre>
+            <pre className="overflow-x-auto rounded-sm bg-white p-2 font-mono text-[11px]">{'git checkout stable && git pull && docker compose up -d --build'}</pre>
             {info && !info.agentAvailable && (
               <div>
                 <p className="font-medium">{v.agentTitle}</p>
                 <p>{v.agentIntro}</p>
-                <pre className="overflow-x-auto rounded bg-white p-2 font-mono text-[11px]">scripts/update-agent.sh --install</pre>
+                <pre className="overflow-x-auto rounded-sm bg-white p-2 font-mono text-[11px]">scripts/update-agent.sh --install</pre>
               </div>
             )}
           </div>

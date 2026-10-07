@@ -369,11 +369,11 @@ export default function AdminUsersPage() {
                   <div><span className="text-gray-500">{t.admin.createEmail}:</span> <span className="font-medium">{createdCreds.email}</span></div>
                   <div className="mt-1 flex items-center gap-2">
                     <span className="text-gray-500">{t.admin.tempPwdLabel}:</span>
-                    <code className="px-2 py-1 bg-white border border-amber-200 rounded font-mono text-sm select-all">{createdCreds.password}</code>
+                    <code className="px-2 py-1 bg-white border border-amber-200 rounded-sm font-mono text-sm select-all">{createdCreds.password}</code>
                     <button
                       type="button"
                       onClick={async () => { await navigator.clipboard?.writeText(createdCreds.password); setCopied(true) }}
-                      className="text-xs px-2 py-1 rounded border border-amber-300 text-amber-700 hover:bg-amber-100"
+                      className="text-xs px-2 py-1 rounded-sm border border-amber-300 text-amber-700 hover:bg-amber-100"
                     >
                       {copied ? t.admin.tempPwdCopied : t.admin.tempPwdCopy}
                     </button>
@@ -518,7 +518,7 @@ export default function AdminUsersPage() {
                           <tr key={i} className="border-b border-gray-50">
                             <td className="py-1 pr-3">{r.email || `(ligne ${r.line})`}</td>
                             <td className="py-1 pr-3">
-                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${r.status === 'created' ? 'bg-green-100 text-green-700' : r.status === 'exists' ? 'bg-gray-100 text-gray-600' : 'bg-red-100 text-red-700'}`}>
+                              <span className={`px-1.5 py-0.5 rounded-sm text-[10px] font-medium ${r.status === 'created' ? 'bg-green-100 text-green-700' : r.status === 'exists' ? 'bg-gray-100 text-gray-600' : 'bg-red-100 text-red-700'}`}>
                                 {r.status === 'created' ? t.admin.bulkImport.stCreated : r.status === 'exists' ? t.admin.bulkImport.stExists : t.admin.bulkImport.stInvalid}
                               </span>
                             </td>
@@ -556,7 +556,7 @@ export default function AdminUsersPage() {
                   type="button"
                   onClick={() => setStatusFilter(opt.key)}
                   className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${
-                    statusFilter === opt.key ? 'bg-white text-ebios-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                    statusFilter === opt.key ? 'bg-white text-ebios-700 shadow-xs' : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
                   {opt.label}

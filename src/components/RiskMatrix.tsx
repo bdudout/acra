@@ -22,7 +22,7 @@ function RiskBadge({ refId, couleur, title }: { refId: string; couleur: string; 
   return (
     <span
       title={title}
-      className="inline-flex items-center justify-center min-w-[1.4rem] h-5 px-1 rounded text-[10px] font-bold leading-none"
+      className="inline-flex items-center justify-center min-w-[1.4rem] h-5 px-1 rounded-sm text-[10px] font-bold leading-none"
       style={{ backgroundColor: couleur, color: readableTextColor(couleur) }}
     >
       {refId}
@@ -125,7 +125,7 @@ export default function RiskMatrix({
       <div className="flex items-center gap-3 flex-wrap mt-2" role="list" aria-label={t.matrix.legendAria}>
         {legend.map(({ couleur, label }) => (
           <div key={label} role="listitem" className="flex items-center gap-1 text-xs text-gray-500">
-            <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: couleur }} aria-hidden="true" />
+            <span className="inline-block w-3 h-3 rounded-xs" style={{ backgroundColor: couleur }} aria-hidden="true" />
             {trL(label)}
           </div>
         ))}

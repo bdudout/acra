@@ -61,7 +61,7 @@ export default function RopaCataloguePanel({ onImported }: { onImported: () => v
       {report !== null && <p role="status" className="text-sm text-green-800 dark:text-green-300">{c.report.replace('{n}', String(report))}</p>}
       <div className="max-h-96 overflow-y-auto space-y-1">
         {(items ?? []).map(item => (
-          <label key={item.key} data-key={item.key} className="flex gap-2 rounded px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800">
+          <label key={item.key} data-key={item.key} className="flex gap-2 rounded-sm px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800">
             <input type="checkbox" className="mt-1" checked={selected.includes(item.key)} disabled={item.status === 'ALREADY_IMPORTED'} onChange={() => toggle(item.key)} aria-label={item.nom} />
             <span className="min-w-0 text-sm">
               <span className="font-medium text-gray-900 dark:text-gray-100">{item.nom}</span>

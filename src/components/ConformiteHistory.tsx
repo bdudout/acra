@@ -73,7 +73,7 @@ export default function ConformiteHistory({ orgId, referentiel, entite = '', loc
                 {[...series].reverse().map((p, i) => (
                   <li key={p.id + i} className="flex items-center justify-between gap-2 text-[11px] text-gray-600">
                     <span className="truncate">{p.label || formatDate(p.createdAt, locale)}</span>
-                    <span className="text-gray-400 flex-shrink-0">{formatDate(p.createdAt, locale)} · <span className="font-semibold text-gray-700">{p.taux}%</span></span>
+                    <span className="text-gray-400 shrink-0">{formatDate(p.createdAt, locale)} · <span className="font-semibold text-gray-700">{p.taux}%</span></span>
                   </li>
                 ))}
               </ul>
@@ -85,7 +85,7 @@ export default function ConformiteHistory({ orgId, referentiel, entite = '', loc
               type="button"
               onClick={freeze}
               disabled={busy}
-              className="mt-2 text-[11px] rounded border border-indigo-200 bg-indigo-50 px-2 py-0.5 font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+              className="mt-2 text-[11px] rounded-sm border border-indigo-200 bg-indigo-50 px-2 py-0.5 font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
             >
               <Pin size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {d.conformiteFreeze}
             </button>

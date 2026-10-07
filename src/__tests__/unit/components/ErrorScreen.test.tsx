@@ -9,7 +9,7 @@ describe('ErrorScreen', () => {
     expect(screen.getByText('404')).toBeInTheDocument()
     const home = screen.getByRole('link')
     expect(home).toHaveAttribute('href', '/')
-    expect(home).toHaveClass('!bg-white', '!text-slate-950')
+    expect(home).toHaveClass('bg-white!', 'text-slate-950!')
   })
 
   it('propose de réessayer après une erreur applicative', () => {

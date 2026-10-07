@@ -262,14 +262,14 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
           )}
           {manageTiersHref && (
             <a href={manageTiersHref}
-              className="rounded border border-ebios-200 bg-ebios-50 px-2 py-1 text-[11px] font-medium text-ebios-700 hover:bg-ebios-100 dark:border-ebios-700 dark:bg-ebios-900/30 dark:text-ebios-300">
+              className="rounded-sm border border-ebios-200 bg-ebios-50 px-2 py-1 text-[11px] font-medium text-ebios-700 hover:bg-ebios-100 dark:border-ebios-700 dark:bg-ebios-900/30 dark:text-ebios-300">
               {r.manageTiers}
             </a>
           )}
           <button type="button" onClick={exportPNG}
-            className="rounded border border-gray-200 px-2 py-1 text-[11px] text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">{r.exportPng}</button>
+            className="rounded-sm border border-gray-200 px-2 py-1 text-[11px] text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">{r.exportPng}</button>
           <button type="button" onClick={exportSVG}
-            className="rounded border border-gray-200 px-2 py-1 text-[11px] text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">{r.exportSvg}</button>
+            className="rounded-sm border border-gray-200 px-2 py-1 text-[11px] text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">{r.exportSvg}</button>
         </div>
       </div>
 
@@ -278,12 +278,12 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
         {zoomable && (
           <div className="absolute right-2 top-2 z-10 flex flex-col gap-1">
             <button type="button" onClick={() => stepZoom(ZOOM_STEP)} aria-label={r.zoomIn ?? 'Zoom +'} title={r.zoomIn ?? 'Zoom +'}
-              className="rounded border border-gray-300 bg-white/90 p-1 text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800/90 dark:text-gray-200"><ZoomIn size={16} /></button>
+              className="rounded-sm border border-gray-300 bg-white/90 p-1 text-gray-700 shadow-xs hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800/90 dark:text-gray-200"><ZoomIn size={16} /></button>
             <button type="button" onClick={() => stepZoom(1 / ZOOM_STEP)} aria-label={r.zoomOut ?? 'Zoom −'} title={r.zoomOut ?? 'Zoom −'}
-              className="rounded border border-gray-300 bg-white/90 p-1 text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800/90 dark:text-gray-200"><ZoomOut size={16} /></button>
+              className="rounded-sm border border-gray-300 bg-white/90 p-1 text-gray-700 shadow-xs hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800/90 dark:text-gray-200"><ZoomOut size={16} /></button>
             <button type="button" onClick={resetView} disabled={zoom === ZOOM_MIN && pan.x === 0 && pan.y === 0}
               aria-label={r.zoomReset ?? 'Réinitialiser'} title={r.zoomReset ?? 'Réinitialiser'}
-              className="rounded border border-gray-300 bg-white/90 p-1 text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800/90 dark:text-gray-200"><Maximize2 size={16} /></button>
+              className="rounded-sm border border-gray-300 bg-white/90 p-1 text-gray-700 shadow-xs hover:bg-gray-50 disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800/90 dark:text-gray-200"><Maximize2 size={16} /></button>
           </div>
         )}
         <svg
@@ -319,7 +319,7 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
             const parent = p.parentCle ? byCle.get(p.parentCle) : undefined
             if (!parent) return null
             return <line key={`lnk-${p.id}`} x1={parent.x} y1={parent.y} x2={p.x} y2={p.y}
-              className="[stroke:#6366f1] dark:[stroke:#a5b4fc]"
+              className="stroke-ebios-500 dark:stroke-[#a5b4fc]"
               strokeOpacity={0.9} strokeWidth={1.6} strokeLinecap="round" strokeDasharray="0.1 4" />
           })}
 
@@ -414,7 +414,7 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
                     x={labelX} y={p.y + 3.5} textAnchor={labelAnchor}
                     fontSize={isActive ? 11 : 9.5} fontWeight={700}
                     strokeWidth={2.5} paintOrder="stroke"
-                    className="fill-gray-900 [stroke:#fff] dark:fill-gray-50 dark:[stroke:#0f172a]"
+                    className="fill-gray-900 stroke-white dark:fill-gray-50 dark:stroke-[#0f172a]"
                     onClick={editable ? (e => { e.stopPropagation(); setEditing(p.id) }) : undefined}
                     style={{ cursor: editable ? 'text' : 'default', pointerEvents: editable ? 'auto' : 'none' }}
                   >
@@ -446,7 +446,7 @@ export default function EcosystemRadar({ parties, onSelect, showRefs = true, hid
               <foreignObject x={tx} y={ty} width={tipW} height={tipH} pointerEvents="none" style={{ pointerEvents: 'none', overflow: 'visible' }}>
                 <div style={{ pointerEvents: 'none' }} className="inline-block rounded-md border border-gray-200 bg-white/95 p-2 text-[10px] leading-snug shadow-md dark:border-gray-700 dark:bg-gray-800/95">
                   <div className="flex items-center gap-1">
-                    <span className="rounded bg-gray-200 px-1 py-px text-[9px] font-bold text-gray-700 dark:bg-gray-700 dark:text-gray-200">{active.nomCourt || active.ref}</span>
+                    <span className="rounded-sm bg-gray-200 px-1 py-px text-[9px] font-bold text-gray-700 dark:bg-gray-700 dark:text-gray-200">{active.nomCourt || active.ref}</span>
                     <span className="text-gray-500 dark:text-gray-400">{typeLabel(active.type)}</span>
                   </div>
                   <div className="mt-0.5 font-semibold text-gray-800 dark:text-gray-100">{active.nom}</div>

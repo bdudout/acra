@@ -146,7 +146,7 @@ export default function ConformiteTrendChart({ points, locale, granLabels, now: 
                 className="cursor-pointer" onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} />
               <text x={cx} y={cy - 8} textAnchor="middle" fontSize={9} fontWeight={700}
                 strokeWidth={2.5} paintOrder="stroke"
-                className="fill-gray-800 [stroke:#fff] dark:fill-gray-100 dark:[stroke:#0f172a] tabular-nums pointer-events-none">{p.taux}%</text>
+                className="fill-gray-800 stroke-white dark:fill-gray-100 dark:stroke-[#0f172a] tabular-nums pointer-events-none">{p.taux}%</text>
             </g>
           )
         })}

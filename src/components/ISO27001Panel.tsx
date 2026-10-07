@@ -50,7 +50,7 @@ export default function ISO27001Panel({ onSelect, actionLabel = 'Ajouter' }: Pro
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-semibold text-gray-800">ISO/IEC 27001:2022 — Annexe A</span>
-            <span className="text-xs px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 font-mono">93 contrôles</span>
+            <span className="text-xs px-1.5 py-0.5 rounded-sm bg-gray-200 text-gray-600 font-mono">93 contrôles</span>
           </div>
           <p className="text-xs text-gray-500">Cliquez sur un contrôle pour l'ajouter. Les références sont celles de l'Annexe A normative.</p>
         </div>
@@ -112,8 +112,8 @@ export default function ISO27001Panel({ onSelect, actionLabel = 'Ajouter' }: Pro
                       title={c.description}
                     >
                       <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                        <span className="text-xs font-bold font-mono text-gray-500 min-w-[2.5rem]">{c.ref}</span>
-                        <span className={`text-xs px-1 py-0.5 rounded font-medium ${TYPE_COLORS[c.type]}`}>
+                        <span className="text-xs font-bold font-mono text-gray-500 min-w-10">{c.ref}</span>
+                        <span className={`text-xs px-1 py-0.5 rounded-sm font-medium ${TYPE_COLORS[c.type]}`}>
                           {c.type === 'ORGANISATIONNELLE' ? 'Org.' :
                            c.type === 'HUMAINE' ? 'RH' :
                            c.type === 'PHYSIQUE' ? 'Phys.' : 'Tech.'}

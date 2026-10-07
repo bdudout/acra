@@ -380,7 +380,7 @@ export default async function AtelierPage({
             className="flex gap-1 mb-6 overflow-x-auto pb-1 list-none p-0"
           >
             {meta.etapes.map((e, i) => (
-              <li key={i} className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs text-gray-600">
+              <li key={i} className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs text-gray-600">
                 <span aria-hidden="true" className="text-gray-500">{i + 1}.</span>
                 <span className="sr-only">Étape {i + 1} : </span>{e}
               </li>
@@ -417,7 +417,7 @@ export default async function AtelierPage({
               <ul className="space-y-1.5">
                 {nonConfItems.map(it => (
                   <li key={it.ref} className="text-sm text-gray-700 flex gap-2">
-                    <span className={`mt-1.5 h-2 w-2 rounded-full flex-shrink-0 ${it.statut === 'non_conforme' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                    <span className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${it.statut === 'non_conforme' ? 'bg-red-500' : 'bg-amber-500'}`} />
                     <span>
                       <span className="text-gray-400 mr-1">{it.ref}</span>{it.nom}
                       <span className="ml-1 text-xs text-gray-400">({(t.conformite.statuts as Record<string, string>)[it.statut]})</span>

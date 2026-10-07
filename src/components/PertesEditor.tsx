@@ -12,7 +12,7 @@ interface TypeItem { code: string; labelKey?: string; label?: string; actif: boo
 export interface PertesConfig { deviseReference: string; taux: Record<string, number>; typesPerte: TypeItem[] }
 export interface PertesValue { pertes: LignePerte[]; recups: LigneRecuperation[] }
 
-const inp = 'px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+const inp = 'px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
 
 export default function PertesEditor({ pertes, recups, config, onChange, readOnly = false }: {
   pertes: LignePerte[]; recups: LigneRecuperation[]; config: PertesConfig; onChange: (v: PertesValue) => void; readOnly?: boolean

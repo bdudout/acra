@@ -69,7 +69,7 @@ export default function TaxonomieEditor({ initial, disabled = false }: { initial
               onChange={e => setLabel(r.code, e.target.value)}
               disabled={disabled}
               placeholder={t.taxonomie.categoryPlaceholder}
-              className="flex-1 px-2 py-1.5 rounded border border-gray-300 text-sm"
+              className="flex-1 px-2 py-1.5 rounded-sm border border-gray-300 text-sm"
             />
             <span className="text-[10px] font-mono text-gray-400 w-16 truncate" title={r.code}>{r.code}</span>
             {!disabled && (

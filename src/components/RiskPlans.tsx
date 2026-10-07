@@ -72,7 +72,7 @@ export default function RiskPlans({ analyseId, riskId, editable }: { analyseId: 
                 {r.echeance && <span className="text-gray-400 tabular-nums">{r.echeance.slice(0, 10)}</span>}
                 {editable
                   ? <select value={r.statut} onChange={e => majStatut(r.id, e.target.value)} aria-label={m.plansStatut}
-                      className="px-1.5 py-0.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-[10px]">
+                      className="px-1.5 py-0.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-[10px]">
                       {PLAN_STATUTS.map(s => <option key={s} value={s}>{statutLabel(s)}</option>)}
                     </select>
                   : <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-200">{statutLabel(r.statut)}</span>}
@@ -84,19 +84,19 @@ export default function RiskPlans({ analyseId, riskId, editable }: { analyseId: 
       {editable && (
         <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
           <input value={titre} onChange={e => setTitre(e.target.value)} placeholder={m.plansTitrePlaceholder}
-            className="min-w-0 w-full px-2 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs" />
+            className="min-w-0 w-full px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs" />
           <label className="text-[10px] text-gray-500 dark:text-gray-400">{m.plansStatut}
-            <select value={statut} onChange={e => setStatut(e.target.value)} className="block mt-0.5 px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs">
+            <select value={statut} onChange={e => setStatut(e.target.value)} className="block mt-0.5 px-1.5 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs">
               {PLAN_STATUTS.map(s => <option key={s} value={s}>{statutLabel(s)}</option>)}
             </select>
           </label>
           <label className="text-[10px] text-gray-500 dark:text-gray-400">{m.plansPriorite}
-            <select value={priorite} onChange={e => setPriorite(e.target.value)} className="block mt-0.5 px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs">
+            <select value={priorite} onChange={e => setPriorite(e.target.value)} className="block mt-0.5 px-1.5 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs">
               {PLAN_PRIORITES.map(p => <option key={p} value={p}>{prioriteLabel(p)}</option>)}
             </select>
           </label>
           <label className="text-[10px] text-gray-500 dark:text-gray-400">{m.plansEcheance}
-            <input type="date" value={echeance} onChange={e => setEcheance(e.target.value)} className="block mt-0.5 px-1.5 py-1 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs" />
+            <input type="date" value={echeance} onChange={e => setEcheance(e.target.value)} className="block mt-0.5 px-1.5 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs" />
           </label>
           <button onClick={ajouter} disabled={busy || !titre.trim()} className="btn-primary text-xs inline-flex items-center gap-1 disabled:opacity-50">
             <Plus size={13} aria-hidden="true" />{m.add}

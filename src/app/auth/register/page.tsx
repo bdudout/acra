@@ -83,7 +83,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-ebios-950 to-ebios-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-ebios-950 to-ebios-800 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
         <div className="text-center mb-8">
           <Image src="/logo-mark.png" alt="" width={334} height={384} priority className="h-16 w-auto mx-auto mb-3" />
@@ -125,7 +125,7 @@ export default function RegisterPage() {
               type="text" required minLength={2}
               value={form.name}
               onChange={e => setForm({ ...form, name: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ebios-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-ebios-500"
               placeholder={t.auth.register.namePh}
             />
           </div>
@@ -135,7 +135,7 @@ export default function RegisterPage() {
               <label htmlFor="organization-name" className="block text-sm font-medium text-gray-700 mb-1">{t.auth.register.organizationName}</label>
               <input id="organization-name" type="text" required minLength={2} value={form.organizationName}
                 onChange={e => setForm({ ...form, organizationName: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ebios-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-ebios-500"
                 placeholder={t.auth.register.organizationNamePh} />
             </div>
           )}
@@ -146,7 +146,7 @@ export default function RegisterPage() {
               type="email" required
               value={form.email}
               onChange={e => setForm({ ...form, email: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ebios-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-ebios-500"
               placeholder={t.auth.emailPh}
             />
           </div>
@@ -157,7 +157,7 @@ export default function RegisterPage() {
               type="password" required
               value={form.password}
               onChange={e => setForm({ ...form, password: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ebios-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-ebios-500"
               placeholder={t.auth.passwordPh}
             />
             {/* Règles affichées uniquement quand l'utilisateur commence à taper */}
@@ -187,7 +187,7 @@ export default function RegisterPage() {
               type="password" required
               value={form.confirm}
               onChange={e => setForm({ ...form, confirm: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ebios-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-ebios-500"
               placeholder={t.auth.register.confirmPh}
             />
           </div>

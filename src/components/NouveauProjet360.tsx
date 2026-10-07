@@ -17,7 +17,7 @@ import PatternsArchiPicker from '@/components/PatternsArchiPicker'
 import SousSecteursPicker from '@/components/SousSecteursPicker'
 
 const qualifHref = (id: string) => `/analyses/${id}/atelier/1?phase=qualification`
-const field = 'mt-1 block w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
+const field = 'mt-1 block w-full rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
 
 export default function NouveauProjet360({ maxPatterns, hiddenPatterns, hiddenSecteurs = [], analyseSourceId }: {
   maxPatterns: number; hiddenPatterns?: readonly string[]
@@ -81,7 +81,7 @@ export default function NouveauProjet360({ maxPatterns, hiddenPatterns, hiddenSe
           <span className="mt-0.5 block text-[11px] text-gray-400">{p.objectifsHint}</span>
         </label>
         <label className="block text-xs text-gray-600 dark:text-gray-300">{p.miseEnService}
-          <input type="date" aria-label={p.miseEnService} value={miseEnService} onChange={e => setMiseEnService(e.target.value)} className={`${field} max-w-[12rem]`} />
+          <input type="date" aria-label={p.miseEnService} value={miseEnService} onChange={e => setMiseEnService(e.target.value)} className={`${field} max-w-48`} />
           <span className="mt-0.5 block text-[11px] text-gray-400">{p.miseEnServiceHint}</span>
         </label>
         <label htmlFor="projet-secteur" className="block text-xs text-gray-600 dark:text-gray-300">{t.newAnalysis.sector} <span className="text-red-500">*</span>

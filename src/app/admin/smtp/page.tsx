@@ -111,7 +111,7 @@ export default function SmtpConfigPage() {
                 onClick={() => set('enabled', !cfg.enabled)}
                 className={`relative w-11 h-6 rounded-full transition-colors ${cfg.enabled ? 'bg-ebios-500' : 'bg-gray-500 dark:bg-gray-400'}`}
               >
-                <span className={`absolute top-1 left-1 w-4 h-4 bg-[white] rounded-full shadow transition-transform ${cfg.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                <span className={`absolute top-1 left-1 w-4 h-4 bg-[white] rounded-full shadow-sm transition-transform ${cfg.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
               </div>
               <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{t.smtp.enableLabel}</span>
             </label>
@@ -130,9 +130,9 @@ export default function SmtpConfigPage() {
             <label className="flex items-start gap-3 cursor-pointer select-none group">
               <div
                 onClick={() => set('secure', !cfg.secure)}
-                className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 mt-0.5 ${cfg.secure ? 'bg-ebios-500' : 'bg-gray-500 dark:bg-gray-400'}`}
+                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 mt-0.5 ${cfg.secure ? 'bg-ebios-500' : 'bg-gray-500 dark:bg-gray-400'}`}
               >
-                <span className={`absolute top-1 left-1 w-4 h-4 bg-[white] rounded-full shadow transition-transform ${cfg.secure ? 'translate-x-5' : 'translate-x-0'}`} />
+                <span className={`absolute top-1 left-1 w-4 h-4 bg-[white] rounded-full shadow-sm transition-transform ${cfg.secure ? 'translate-x-5' : 'translate-x-0'}`} />
               </div>
               <span>
                 <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 block">{t.smtp.secureLabel}</span>

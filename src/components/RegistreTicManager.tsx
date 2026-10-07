@@ -312,14 +312,14 @@ export default function RegistreTicManager({ canManage }: { canManage: boolean }
                             <div className="flex items-center gap-2">
                               <select value={qDraft[q.id]?.reponse ?? ''} disabled={!canManage}
                                 onChange={e => setQDraft(d => ({ ...d, [q.id]: { reponse: e.target.value, commentaire: d[q.id]?.commentaire ?? '' } }))}
-                                className="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+                                className="text-xs px-2 py-1 rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100">
                                 <option value="">{r.qualif.reponses.VIDE}</option>
                                 {REPONSES_TIC.map(rep => <option key={rep} value={rep}>{(r.qualif.reponses as Record<string, string>)[rep]}</option>)}
                               </select>
                               <input type="text" value={qDraft[q.id]?.commentaire ?? ''} disabled={!canManage}
                                 onChange={e => setQDraft(d => ({ ...d, [q.id]: { reponse: d[q.id]?.reponse ?? '', commentaire: e.target.value } }))}
                                 placeholder={r.qualif.commentaire}
-                                className="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 w-40" />
+                                className="text-xs px-2 py-1 rounded-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 w-40" />
                             </div>
                           </div>
                         ))}

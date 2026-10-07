@@ -15,7 +15,7 @@ import RapportsGabaritsEditor from '@/components/RapportsGabaritsEditor'
 import { PERIODE_PRESETS, periodePreset } from '@/lib/rapport-model'
 
 interface EditionRow { id: string; code: string; statut: string; periodeDebut: string; periodeFin: string; createdAt: string }
-const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
 const LANGS = ['fr', 'en', 'de', 'es', 'it']
 
 export const STATUT_BADGE: Record<string, string> = {

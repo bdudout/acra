@@ -46,7 +46,7 @@ const ACTION_COLORS: Record<string, string> = {
 function ActionBadge({ action }: { action: string }) {
   const cls = ACTION_COLORS[action] ?? 'bg-gray-100 text-gray-700'
   return (
-    <span className={`inline-block px-2 py-0.5 rounded text-xs font-mono font-semibold ${cls}`}>
+    <span className={`inline-block px-2 py-0.5 rounded-sm text-xs font-mono font-semibold ${cls}`}>
       {action}
     </span>
   )
@@ -145,7 +145,7 @@ export default function AuditLogPage() {
           <select
             value={filterAction}
             onChange={e => { setFilterAction(e.target.value); setPage(1) }}
-            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
           >
             <option value="">{t.audit.filterAll}</option>
             {availableActions.map(a => (
@@ -160,7 +160,7 @@ export default function AuditLogPage() {
             type="datetime-local"
             value={filterFrom}
             onChange={e => { setFilterFrom(e.target.value); setPage(1) }}
-            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -170,7 +170,7 @@ export default function AuditLogPage() {
             type="datetime-local"
             value={filterTo}
             onChange={e => { setFilterTo(e.target.value); setPage(1) }}
-            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -267,7 +267,7 @@ export default function AuditLogPage() {
                         </button>
                       ) : <span className="text-gray-500 text-xs">—</span>}
                       {isExpanded && detailsObj && (
-                        <pre className="mt-2 bg-gray-100 rounded p-2 text-xs text-gray-700 whitespace-pre-wrap max-w-xs">
+                        <pre className="mt-2 bg-gray-100 rounded-sm p-2 text-xs text-gray-700 whitespace-pre-wrap max-w-xs">
                           {JSON.stringify(detailsObj, null, 2)}
                         </pre>
                       )}

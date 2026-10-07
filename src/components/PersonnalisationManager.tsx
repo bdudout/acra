@@ -12,7 +12,7 @@ import { CHAMPS_MODULES, CHAMP_TYPES, ROLES_CHAMP, MAX_CHAMPS_PAR_MODULE, type C
 import { GABARITS } from '@/lib/gabarits'
 
 interface Changement { type: string; cle: string; avant: boolean | string | null; apres: boolean | string | null }
-const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
 const slug = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 30) || 'champ'
 
 export default function PersonnalisationManager() {

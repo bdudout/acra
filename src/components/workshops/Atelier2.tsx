@@ -284,13 +284,13 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode, e
       <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
         <button
           onClick={() => setActiveTab('saisie')}
-          className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'saisie' ? 'bg-white shadow-sm text-ebios-700' : 'text-gray-600 hover:text-gray-900'}`}
+          className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'saisie' ? 'bg-white shadow-xs text-ebios-700' : 'text-gray-600 hover:text-gray-900'}`}
         >
           <VenetianMask size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" />{t.workshop.a2.tabSR}
         </button>
         <button
           onClick={() => setActiveTab('synthese')}
-          className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'synthese' ? 'bg-white shadow-sm text-ebios-700' : 'text-gray-600 hover:text-gray-900'}`}
+          className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'synthese' ? 'bg-white shadow-xs text-ebios-700' : 'text-gray-600 hover:text-gray-900'}`}
         >
           <BarChart3 size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" />{t.workshop.a2.tabCouples}
         </button>
@@ -305,7 +305,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode, e
             </div>
           )}
           {/* [IA — désactivé] Bloc de suggestions IA à réactiver quand l'intégration sera prête.
-          <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200 rounded-xl">
+          <div className="flex items-center gap-3 p-4 bg-linear-to-r from-violet-50 to-indigo-50 border border-violet-200 rounded-xl">
             <span className="text-2xl"><Bot size={24} aria-hidden="true" /></span>
             <div className="flex-1">
               <p className="text-sm font-medium text-violet-900">{t.workshop.a2.aiTitle}</p>
@@ -402,14 +402,14 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode, e
                         onChange={e => { e.stopPropagation(); updateSource(s.id, 'retenu', e.target.checked) }}
                         className="w-4 h-4 accent-ebios-600" title="Retenir cette source"
                       />
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${cat?.color}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${cat?.color}`}>
                         {cat?.label}
                       </span>
                       <span className="font-medium text-gray-800 dark:text-gray-100 flex-1">
                         {s.nom || <em className="text-gray-500 dark:text-gray-400">{t.workshop.a2.srNoName}</em>}
                       </span>
                       <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <span title={t.workshop.a2.pertGlobalLabel} className="px-2 py-0.5 bg-gray-100 rounded font-medium dark:bg-gray-700 dark:text-gray-200">
+                        <span title={t.workshop.a2.pertGlobalLabel} className="px-2 py-0.5 bg-gray-100 rounded-sm font-medium dark:bg-gray-700 dark:text-gray-200">
                           {t.workshop.a2.srPertLabel} {s.pertinence}/4
                         </span>
                         <span>{s.objectifsVises?.length || 0} OV
@@ -670,7 +670,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode, e
 
       {flashMode && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-          <span className="text-xl flex-shrink-0"><Zap size={20} aria-hidden="true" /></span>
+          <span className="text-xl shrink-0"><Zap size={20} aria-hidden="true" /></span>
           <div>
             <p className="text-sm font-semibold text-amber-900">{t.analyses.expressTitle} — {t.analyses.expressSubtitle}</p>
             <p className="text-xs text-amber-700 mt-0.5">{t.analyses.expressInfo}</p>
@@ -702,7 +702,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode, e
 function ScoreCell({ value, big = false }: { value: number, big?: boolean }) {
   const colors = ['', 'text-green-600 bg-green-50', 'text-yellow-600 bg-yellow-50', 'text-orange-600 bg-orange-50', 'text-red-600 bg-red-50']
   return (
-    <span className={`inline-block px-2 py-0.5 rounded font-bold ${big ? 'text-base' : 'text-xs'} ${colors[value] || colors[2]}`}>
+    <span className={`inline-block px-2 py-0.5 rounded-sm font-bold ${big ? 'text-base' : 'text-xs'} ${colors[value] || colors[2]}`}>
       {value}/4
     </span>
   )

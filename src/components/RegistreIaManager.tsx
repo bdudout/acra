@@ -27,7 +27,7 @@ const CLASSE_STYLE: Record<Classe, string> = {
   RISQUE_LIMITE: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
   A_QUALIFIER: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200',
 }
-const field = 'mt-1 block w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800'
+const field = 'mt-1 block w-full rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800'
 
 export default function RegistreIaManager() {
   const { t, locale } = useTranslation()
@@ -103,7 +103,7 @@ export default function RegistreIaManager() {
           <button type="button" className="btn-primary text-sm" onClick={() => { setErreur(null); setEdition({ id: null, form: VIDE }) }}>{r.ajouter}</button>
         </div>}
       </div>
-      <p className="rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">{r.avertissement}</p>
+      <p className="rounded-sm border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">{r.avertissement}</p>
       {erreur && <p role="alert" className="text-sm text-red-700">{erreur}</p>}
       {info && <p role="status" className="text-sm text-green-700">{info}</p>}
 

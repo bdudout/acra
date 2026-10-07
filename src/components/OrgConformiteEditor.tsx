@@ -164,14 +164,14 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
           {lockRef ? (
             <div className="text-xs text-gray-500">
               <span className="block font-medium mb-1">{c.referentiel}</span>
-              <span className="inline-block border border-gray-200 dark:border-gray-700 rounded-md px-2.5 py-1.5 text-sm font-medium text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 min-w-[12rem]">
+              <span className="inline-block border border-gray-200 dark:border-gray-700 rounded-md px-2.5 py-1.5 text-sm font-medium text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 min-w-48">
                 {referentiels.find(r => r.code === ref)?.nom ?? ref}
               </span>
             </div>
           ) : (
             <label className="text-xs text-gray-500">
               <span className="block font-medium mb-1">{c.referentiel}</span>
-              <select value={ref} onChange={e => setRef(e.target.value)} className="border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white text-gray-800 min-w-[12rem]">
+              <select value={ref} onChange={e => setRef(e.target.value)} className="border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white text-gray-800 min-w-48">
                 {referentiels.map(r => <option key={r.code} value={r.code}>{r.nom}</option>)}
               </select>
             </label>
@@ -194,14 +194,14 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
         <div className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5">
           <label className="text-xs text-gray-500">
             <span className="block font-medium mb-1">{c.suiviLabel}</span>
-            <select value={entite} onChange={e => setEntite(e.target.value)} className="border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white text-gray-800 min-w-[14rem]">
+            <select value={entite} onChange={e => setEntite(e.target.value)} className="border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white text-gray-800 min-w-56">
               <option value="">{c.suiviOrg}</option>
               {suivis.filter(s => s.entite).map(s => (
                 <option key={s.entite} value={s.entite}>{(s.nom || s.entite)} — {s.taux}%</option>
               ))}
             </select>
           </label>
-          <label className="text-xs text-gray-500 flex-1 min-w-[12rem]">
+          <label className="text-xs text-gray-500 flex-1 min-w-48">
             <span className="block font-medium mb-1">{c.suiviNew}</span>
             <div className="flex gap-2">
               <input value={newSuivi} onChange={e => setNewSuivi(e.target.value)} placeholder={c.suiviNewPh}
@@ -217,7 +217,7 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
       {analysesDispo.length > 0 && stats.evalues === 0 && (
         <div className="flex flex-wrap items-center gap-2 text-sm rounded-lg border border-ebios-200 bg-ebios-50/60 px-4 py-2.5 dark:border-ebios-500/30 dark:bg-ebios-500/10">
           <span className="text-ebios-800 dark:text-ebios-200">{c.importLabel}</span>
-          <select value={importFrom} onChange={e => setImportFrom(e.target.value)} className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 text-sm bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 min-w-[12rem]">
+          <select value={importFrom} onChange={e => setImportFrom(e.target.value)} className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 text-sm bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 min-w-48">
             <option value="">{c.importSelect}</option>
             {analysesDispo.map(a => <option key={a.id} value={a.id}>{a.nom} ({a.count})</option>)}
           </select>

@@ -24,13 +24,13 @@ export default function MentionsLegalesPage() {
               Ces informations sont à compléter par l'organisation qui déploie et opère cette instance d'ACRA.
             </p>
             <div className="space-y-2">
-              <div className="flex gap-2"><span className="font-medium w-40 flex-shrink-0">Raison sociale :</span><span className="text-gray-500">{m.toFill}</span></div>
-              <div className="flex gap-2"><span className="font-medium w-40 flex-shrink-0">Forme juridique :</span><span className="text-gray-500">{m.toFill}</span></div>
-              <div className="flex gap-2"><span className="font-medium w-40 flex-shrink-0">Siège social :</span><span className="text-gray-500">{m.toFill}</span></div>
-              <div className="flex gap-2"><span className="font-medium w-40 flex-shrink-0">N° SIRET :</span><span className="text-gray-500">{m.toFill}</span></div>
-              <div className="flex gap-2"><span className="font-medium w-40 flex-shrink-0">Capital social :</span><span className="text-gray-500">{m.toFill}</span></div>
-              <div className="flex gap-2"><span className="font-medium w-40 flex-shrink-0">Email de contact :</span><span className="text-gray-500">{m.toFill}</span></div>
-              <div className="flex gap-2"><span className="font-medium w-40 flex-shrink-0">Responsable de publication :</span><span className="text-gray-500">{m.toFill}</span></div>
+              <div className="flex gap-2"><span className="font-medium w-40 shrink-0">Raison sociale :</span><span className="text-gray-500">{m.toFill}</span></div>
+              <div className="flex gap-2"><span className="font-medium w-40 shrink-0">Forme juridique :</span><span className="text-gray-500">{m.toFill}</span></div>
+              <div className="flex gap-2"><span className="font-medium w-40 shrink-0">Siège social :</span><span className="text-gray-500">{m.toFill}</span></div>
+              <div className="flex gap-2"><span className="font-medium w-40 shrink-0">N° SIRET :</span><span className="text-gray-500">{m.toFill}</span></div>
+              <div className="flex gap-2"><span className="font-medium w-40 shrink-0">Capital social :</span><span className="text-gray-500">{m.toFill}</span></div>
+              <div className="flex gap-2"><span className="font-medium w-40 shrink-0">Email de contact :</span><span className="text-gray-500">{m.toFill}</span></div>
+              <div className="flex gap-2"><span className="font-medium w-40 shrink-0">Responsable de publication :</span><span className="text-gray-500">{m.toFill}</span></div>
             </div>
           </section>
 
@@ -40,9 +40,9 @@ export default function MentionsLegalesPage() {
               À compléter par l'organisation hébergeant l'application.
             </p>
             <div className="space-y-2">
-              <div className="flex gap-2"><span className="font-medium w-40 flex-shrink-0">Hébergeur :</span><span className="text-gray-500">[{m.toFill} — ex. hébergement interne, OVH, AWS…]</span></div>
-              <div className="flex gap-2"><span className="font-medium w-40 flex-shrink-0">Adresse :</span><span className="text-gray-500">{m.toFill}</span></div>
-              <div className="flex gap-2"><span className="font-medium w-40 flex-shrink-0">Localisation :</span><span className="text-gray-500">[{m.toFill} — ex. France, UE]</span></div>
+              <div className="flex gap-2"><span className="font-medium w-40 shrink-0">Hébergeur :</span><span className="text-gray-500">[{m.toFill} — ex. hébergement interne, OVH, AWS…]</span></div>
+              <div className="flex gap-2"><span className="font-medium w-40 shrink-0">Adresse :</span><span className="text-gray-500">{m.toFill}</span></div>
+              <div className="flex gap-2"><span className="font-medium w-40 shrink-0">Localisation :</span><span className="text-gray-500">[{m.toFill} — ex. France, UE]</span></div>
             </div>
           </section>
 

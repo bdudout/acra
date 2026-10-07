@@ -238,7 +238,7 @@ function Fiche({ h, membres, userId, role, busy, onClose, onUpdate, onTransition
               {reserves.map((r, i) => (
                 <div key={i} className="flex flex-wrap gap-2">
                   <input aria-label={`${th.reserveTexte} ${i + 1}`} placeholder={th.reserveTexte} className={`${INPUT} max-w-md`} value={r.texte} onChange={e => setReserves(rs => rs.map((x, k) => (k === i ? { ...x, texte: e.target.value } : x)))} />
-                  <input aria-label={`${th.reserveEcheance} ${i + 1}`} type="date" className={`${INPUT} max-w-[11rem]`} value={r.echeance ?? ''} onChange={e => setReserves(rs => rs.map((x, k) => (k === i ? { ...x, echeance: e.target.value || undefined } : x)))} />
+                  <input aria-label={`${th.reserveEcheance} ${i + 1}`} type="date" className={`${INPUT} max-w-44`} value={r.echeance ?? ''} onChange={e => setReserves(rs => rs.map((x, k) => (k === i ? { ...x, echeance: e.target.value || undefined } : x)))} />
                 </div>
               ))}
               <button type="button" className="text-sm text-blue-600 hover:underline" onClick={() => setReserves(rs => [...rs, { texte: '' }])}>{th.reserveAdd}</button>

@@ -149,12 +149,12 @@ export default function AdminInstancePage() {
               <label className="text-sm text-gray-700 dark:text-gray-300 flex-1 min-w-[180px]">
                 <span className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t.branding.nameLabel}</span>
                 <input value={brandName} onChange={e => setBrandName(e.target.value)} placeholder={t.auth.appName} maxLength={120}
-                  className="w-full px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+                  className="w-full px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
               </label>
               <label className="text-sm text-gray-700 dark:text-gray-300 flex-1 min-w-[220px]">
                 <span className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t.branding.baselineLabel}</span>
                 <input value={brandBaseline} onChange={e => setBrandBaseline(e.target.value)} placeholder={t.auth.appSubtitle} maxLength={120}
-                  className="w-full px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+                  className="w-full px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
               </label>
               <button onClick={saveBranding} className="btn-primary text-sm">{brandSaved ? t.config.savedLabel : t.config.saveShort}</button>
             </div>
@@ -171,7 +171,7 @@ export default function AdminInstancePage() {
                 <div key={m.key} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                   <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{m.label}</span>
                   <select value={modulesPolicy[m.key] ?? 'PER_ORG'} onChange={e => saveModulesPolicy(m.key, e.target.value)}
-                    className="px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+                    className="px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
                     <option value="PER_ORG">{t.modulesPolicy.perOrg}</option>
                     <option value="FORCE_ON">{t.modulesPolicy.forceOn}</option>
                     <option value="FORCE_OFF">{t.modulesPolicy.forceOff}</option>
@@ -199,7 +199,7 @@ export default function AdminInstancePage() {
                   </div>
                   <label className="inline-flex items-center gap-2 shrink-0 cursor-pointer">
                     <input type="checkbox" checked={row.value} onChange={e => saveInterfaceToggle(row.key, e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300 dark:border-gray-600" />
+                      className="h-4 w-4 rounded-sm border-gray-300 dark:border-gray-600" />
                     <span className="text-sm text-gray-700 dark:text-gray-300">{row.value ? t.interfacesConfig.enabled : t.interfacesConfig.disabled}</span>
                   </label>
                 </div>
@@ -236,7 +236,7 @@ export default function AdminInstancePage() {
                     )}
                     <label className={`inline-flex items-center gap-2 shrink-0 ${locked ? 'opacity-60' : 'cursor-pointer'}`}>
                       <input type="checkbox" checked={on} disabled={locked} onChange={e => toggleMethode(mk, e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 dark:border-gray-600" />
+                        className="h-4 w-4 rounded-sm border-gray-300 dark:border-gray-600" />
                       <span className="text-sm text-gray-700 dark:text-gray-300">{on ? t.interfacesConfig.enabled : t.interfacesConfig.disabled}</span>
                     </label>
                   </div>
@@ -269,7 +269,7 @@ export default function AdminInstancePage() {
             </p>
             <label className="mt-3 inline-flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={membership.notify} onChange={e => saveMembership({ notify: e.target.checked })}
-                className="h-4 w-4 rounded border-gray-300 dark:border-gray-600" />
+                className="h-4 w-4 rounded-sm border-gray-300 dark:border-gray-600" />
               <span className="text-sm text-gray-700 dark:text-gray-300">{t.membershipConfig.notify}</span>
             </label>
             <p className="text-xs text-gray-400 mt-2">{t.membershipConfig.hint}</p>

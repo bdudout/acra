@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { FREQUENCES_PLANIFICATION, type GabaritsRapports, type Planification } from '@/lib/rapport-masquage'
 
-const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm w-full'
+const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm w-full'
 
 export default function RapportsGabaritsEditor({ codes }: { codes: string[] }) {
   const { t } = useTranslation()

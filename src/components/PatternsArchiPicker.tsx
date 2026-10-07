@@ -37,7 +37,7 @@ export default function PatternsArchiPicker({ value, onChange, max, hiddenCodes 
               const checked = selected.includes(pt.code)
               return (
                 <li key={pt.code}>
-                  <label className="flex items-start gap-2 rounded-md border border-gray-200 px-2.5 py-1.5 text-sm has-[:disabled]:opacity-60">
+                  <label className="flex items-start gap-2 rounded-md border border-gray-200 px-2.5 py-1.5 text-sm has-disabled:opacity-60">
                     <input type="checkbox" data-pattern-code={pt.code} className="mt-0.5" checked={checked} disabled={disabled || (!checked && full)} onChange={() => toggle(pt.code)} />
                     <span>
                       <span className="font-medium text-gray-800">{patternLabel(pt.code, locale)}</span>

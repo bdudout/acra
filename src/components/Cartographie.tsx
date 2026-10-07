@@ -250,7 +250,7 @@ export default function Cartographie({ canPublish, scaleConfig }: { canPublish: 
                           return (
                             <div key={v} title={`G${g} × V${v} — ${n}${horsAppetit ? ` · ${c.appetitHorsTile}` : ''}`}
                               style={{ backgroundColor: n === 0 ? withAlpha(couleur, '26') : couleur, color: n === 0 ? undefined : readableTextColor(couleur) }}
-                              className={`aspect-square m-0.5 rounded flex items-center justify-center text-sm font-bold ${n === 0 ? 'text-gray-300 dark:text-gray-600' : ''} ${horsAppetit ? 'ring-2 ring-inset ring-red-600/70 dark:ring-red-400/70' : ''}`}>
+                              className={`aspect-square m-0.5 rounded-sm flex items-center justify-center text-sm font-bold ${n === 0 ? 'text-gray-300 dark:text-gray-600' : ''} ${horsAppetit ? 'ring-2 ring-inset ring-red-600/70 dark:ring-red-400/70' : ''}`}>
                               {n > 0 ? n : ''}
                             </div>
                           )
@@ -281,7 +281,7 @@ export default function Cartographie({ canPublish, scaleConfig }: { canPublish: 
                     <li key={b.key || '__none'} className="flex items-center gap-3">
                       <span className="flex-1 text-sm text-gray-700 dark:text-gray-200 truncate">{dimLabel(b.key, b.label)}</span>
                       <span className="text-xs text-gray-400">{b.count}</span>
-                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium min-w-[2rem] text-center ${b.pireBucket ? BUCKET_BG[b.pireBucket] : 'bg-gray-100 text-gray-400'}`}>{b.maxNiveau ?? '—'}</span>
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium min-w-8 text-center ${b.pireBucket ? BUCKET_BG[b.pireBucket] : 'bg-gray-100 text-gray-400'}`}>{b.maxNiveau ?? '—'}</span>
                     </li>
                   ))}
                 </ul>
@@ -301,7 +301,7 @@ export default function Cartographie({ canPublish, scaleConfig }: { canPublish: 
                     <li key={a.id} className="flex items-center gap-3 py-2">
                       <span className="flex-1 text-sm text-gray-700 dark:text-gray-200 truncate">{a.nom}{a.organisation && <span className="text-xs text-gray-400"> · {a.organisation}</span>}</span>
                       <span className="text-xs text-gray-400">{c.publishCount.replace('{n}', String(a.risquesCount))}</span>
-                      {a.dejaPublies > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300">{c.publishDone.replace('{n}', String(a.dejaPublies))}</span>}
+                      {a.dejaPublies > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300">{c.publishDone.replace('{n}', String(a.dejaPublies))}</span>}
                       <button onClick={() => publier(a.id)} disabled={publishing === a.id} className="btn-secondary text-xs disabled:opacity-50">{publishing === a.id ? '…' : (a.dejaPublies > 0 ? c.publishAgain : c.publishBtn)}</button>
                     </li>
                   ))}

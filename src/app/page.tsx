@@ -59,14 +59,14 @@ export default function HomePage() {
   const ws = WS_TITLES[locale] ?? WS_TITLES.fr
 
   return (
-    <div data-testid="landing-shell" className="min-h-screen bg-[#f7f9fc] bg-[radial-gradient(ellipse_at_top_left,_rgba(224,231,255,0.58),_transparent_42%),radial-gradient(ellipse_at_92%_18%,_rgba(224,242,254,0.5),_transparent_34%)] text-slate-900">
+    <div data-testid="landing-shell" className="min-h-screen bg-[#f7f9fc] bg-[radial-gradient(ellipse_at_top_left,rgba(224,231,255,0.58),transparent_42%),radial-gradient(ellipse_at_92%_18%,rgba(224,242,254,0.5),transparent_34%)] text-slate-900">
       {/* JSON-LD structured data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
       />
       {/* Header */}
-      <header data-testid="landing-header" className="flex items-center justify-between gap-2 px-3 py-3 sm:px-6 sm:py-4 max-w-6xl mx-auto border-x border-b border-indigo-900/30 bg-gradient-to-r from-[#312e81] via-[#4338ca] to-[#075985] rounded-b-2xl shadow-lg shadow-indigo-950/15">
+      <header data-testid="landing-header" className="flex items-center justify-between gap-2 px-3 py-3 sm:px-6 sm:py-4 max-w-6xl mx-auto border-x border-b border-indigo-900/30 bg-linear-to-r from-ebios-900 via-ebios-700 to-[#075985] rounded-b-2xl shadow-lg shadow-indigo-950/15">
         <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
           <Image src="/logo-mark.png" alt="" width={334} height={384} priority className="h-8 w-auto sm:h-10" />
           <div className="min-w-0">
@@ -82,7 +82,7 @@ export default function HomePage() {
             <LogIn size={18} className="sm:hidden" aria-hidden="true" />
             <span className="hidden sm:inline">{t.landing.connect}</span>
           </Link>
-          <Link href="/auth/register" aria-label={t.auth.register.submit} className="inline-flex items-center justify-center rounded-lg bg-white p-2 text-sm font-semibold text-indigo-800 shadow-sm hover:bg-indigo-50 transition-colors sm:px-4">
+          <Link href="/auth/register" aria-label={t.auth.register.submit} className="inline-flex items-center justify-center rounded-lg bg-white p-2 text-sm font-semibold text-indigo-800 shadow-xs hover:bg-indigo-50 transition-colors sm:px-4">
             <UserPlus size={18} className="sm:hidden" aria-hidden="true" />
             <span className="hidden sm:inline">{t.auth.register.submit}</span>
           </Link>
@@ -95,22 +95,22 @@ export default function HomePage() {
         {/* Encart mode démonstration — prioritaire pour tout visiteur non connecté. */}
         {isDemo && (
           <section data-testid="demo-notice" className="max-w-4xl mx-auto mb-10 text-left overflow-hidden rounded-2xl border border-indigo-300 bg-[#f8faff] shadow-md shadow-indigo-900/10">
-            <div className="flex items-center gap-3 bg-gradient-to-r from-[#4338ca] to-[#0369a1] px-5 py-4 text-white sm:px-6">
+            <div className="flex items-center gap-3 bg-linear-to-r from-ebios-700 to-[#0369a1] px-5 py-4 text-white sm:px-6">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/15" aria-hidden="true"><FlaskConical size={20} /></span>
               <div className="font-semibold">{t.demo.homeTitle}</div>
             </div>
             <ul className="grid gap-x-8 gap-y-3 px-5 py-5 text-sm text-slate-700 sm:px-6 md:grid-cols-2">
-              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-[#4f46e5]" aria-hidden="true" />{t.demo.homeRule1}</li>
-              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-[#4f46e5]" aria-hidden="true" />{t.demo.homeRule2}</li>
-              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-[#4f46e5]" aria-hidden="true" />{t.demo.homeRule3}</li>
-              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-[#4f46e5]" aria-hidden="true" />{t.demo.homeRule4}</li>
+              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-ebios-600" aria-hidden="true" />{t.demo.homeRule1}</li>
+              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-ebios-600" aria-hidden="true" />{t.demo.homeRule2}</li>
+              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-ebios-600" aria-hidden="true" />{t.demo.homeRule3}</li>
+              <li className="flex gap-2"><Check size={16} className="mt-0.5 shrink-0 text-ebios-600" aria-hidden="true" />{t.demo.homeRule4}</li>
             </ul>
           </section>
         )}
 
         <h1 className="text-4xl font-bold mb-6 leading-tight sm:text-5xl">
           {t.landing.heroLine1}<br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-ebios-600 to-sky-600">
+          <span className="text-transparent bg-clip-text bg-linear-to-r from-ebios-600 to-sky-600">
             {t.landing.heroLine2}
           </span>
         </h1>
@@ -128,9 +128,9 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div data-testid="method-badge" className="inline-flex items-center gap-2 mt-10 bg-[#f0f4ff] border border-ebios-100 text-[#3730a3] rounded-full px-4 py-1.5 text-sm">
+        <div data-testid="method-badge" className="inline-flex items-center gap-2 mt-10 bg-ebios-50 border border-ebios-100 text-ebios-800 rounded-full px-4 py-1.5 text-sm">
           {locale === 'fr' && (
-            <svg data-testid="fr-method-flag" width="16" height="11" viewBox="0 0 3 2" aria-hidden="true" className="rounded-[1px] flex-shrink-0">
+            <svg data-testid="fr-method-flag" width="16" height="11" viewBox="0 0 3 2" aria-hidden="true" className="rounded-[1px] shrink-0">
               <rect width="1" height="2" x="0" fill="#0055A4" />
               <rect width="1" height="2" x="1" fill="#FFFFFF" />
               <rect width="1" height="2" x="2" fill="#EF4135" />
@@ -149,8 +149,8 @@ export default function HomePage() {
             { Icon: Lock,        f: t.landing.features.secure     },
             { Icon: Layers,      f: t.landing.features.grc        },
           ] as { Icon: LucideIcon; f: { title: string; desc: string } }[]).map(({ Icon, f }, i) => (
-            <div key={i} className="bg-[#ffffff] border border-slate-200 rounded-2xl p-6 shadow-sm">
-              <div className="mb-3 text-[#4f46e5]"><Icon size={28} aria-hidden="true" /></div>
+            <div key={i} className="bg-[#ffffff] border border-slate-200 rounded-2xl p-6 shadow-xs">
+              <div className="mb-3 text-ebios-600"><Icon size={28} aria-hidden="true" /></div>
               <h3 className="font-bold text-lg mb-2">{f.title}</h3>
               <p className="text-slate-600 text-sm leading-relaxed">{f.desc}</p>
             </div>
@@ -163,7 +163,7 @@ export default function HomePage() {
           <div data-testid="landing-workshops" className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-4">
             {WORKSHOPS.map((w, i) => (
               <div key={i} className="flex w-full flex-col items-center sm:flex-1">
-                <div className="w-12 h-12 rounded-xl bg-[#f0f4ff] border border-ebios-100 text-[#4338ca] flex items-center justify-center text-2xl mb-3">
+                <div className="w-12 h-12 rounded-xl bg-ebios-50 border border-ebios-100 text-ebios-700 flex items-center justify-center text-2xl mb-3">
                   <w.Icon size={24} aria-hidden="true" />
                 </div>
                 <div className="text-xs font-bold text-slate-500 mb-1">ATELIER {w.num}</div>
@@ -180,23 +180,23 @@ export default function HomePage() {
           <p className="text-slate-600 mb-12 max-w-2xl mx-auto">{t.landing.examplesSubtitle}</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
             {t.landing.examples.map((ex, i) => (
-              <div key={i} className="bg-[#ffffff] border border-slate-200 rounded-2xl p-6 flex flex-col gap-4 shadow-sm">
+              <div key={i} className="bg-[#ffffff] border border-slate-200 rounded-2xl p-6 flex flex-col gap-4 shadow-xs">
                 {/* En-tête : secteur + profil type (pas une personne réelle) */}
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold uppercase tracking-widest text-[#4f46e5]">{ex.sector}</span>
+                  <span className="text-xs font-bold uppercase tracking-widest text-ebios-600">{ex.sector}</span>
                   <span className="text-xs bg-slate-100 text-slate-700 rounded-full px-3 py-0.5">{t.landing.examplesProfileLabel} : {ex.role}</span>
                 </div>
                 <div className="font-bold text-base">{ex.org}</div>
 
                 {/* Scénario illustratif — description de situation, PAS un témoignage. */}
                 <div className="border-l-2 border-ebios-300 pl-4">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-[#4f46e5] mb-1">{t.landing.examplesScenarioTag}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-ebios-600 mb-1">{t.landing.examplesScenarioTag}</div>
                   <p className="text-sm text-slate-700 leading-relaxed">{ex.quote}</p>
                 </div>
 
                 {/* Résultat */}
                 <div className="mt-auto flex items-start gap-2 bg-[#ecfdf5] rounded-xl p-3">
-                  <Check size={16} className="text-emerald-600 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                  <Check size={16} className="text-emerald-600 mt-0.5 shrink-0" aria-hidden="true" />
                   <p className="text-xs text-slate-700 leading-relaxed">{ex.result}</p>
                 </div>
               </div>
@@ -209,8 +209,8 @@ export default function HomePage() {
           <h2 className="text-3xl font-bold mb-3">{t.landing.facts.title}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-8">
             {t.landing.facts.items.map((fact, i) => (
-              <div key={i} className="bg-[#ffffff] border border-slate-200 rounded-2xl p-6 text-left shadow-sm">
-                <div className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-ebios-600 to-sky-600 mb-2">{fact.value}</div>
+              <div key={i} className="bg-[#ffffff] border border-slate-200 rounded-2xl p-6 text-left shadow-xs">
+                <div className="text-4xl font-bold text-transparent bg-clip-text bg-linear-to-r from-ebios-600 to-sky-600 mb-2">{fact.value}</div>
                 <p className="text-sm text-slate-700 leading-relaxed mb-2">{fact.label}</p>
                 <span className="text-[11px] uppercase tracking-wide text-slate-500">{fact.source}</span>
               </div>
@@ -227,8 +227,8 @@ export default function HomePage() {
             { value: '100%' },
             { value: 'ISO' },
           ].map((s, i) => (
-            <div key={i} className="bg-[#ffffff] border border-slate-200 rounded-2xl p-5 text-center shadow-sm">
-              <div className="text-3xl font-bold text-[#4338ca] mb-1">{s.value}</div>
+            <div key={i} className="bg-[#ffffff] border border-slate-200 rounded-2xl p-5 text-center shadow-xs">
+              <div className="text-3xl font-bold text-ebios-700 mb-1">{s.value}</div>
               <div className="text-xs text-slate-500 leading-snug">{t.landing.statLabels[i]}</div>
             </div>
           ))}
@@ -241,7 +241,7 @@ export default function HomePage() {
             <details key={i} className="group border-b border-slate-200 py-5">
               <summary className="flex items-center justify-between cursor-pointer font-semibold text-slate-800 hover:text-ebios-700 list-none">
                 {item.q}
-                <span className="text-slate-400 group-open:rotate-45 transition-transform text-xl ml-4 flex-shrink-0">+</span>
+                <span className="text-slate-400 group-open:rotate-45 transition-transform text-xl ml-4 shrink-0">+</span>
               </summary>
               <p className="mt-3 text-slate-600 text-sm leading-relaxed">{item.a}</p>
             </details>
@@ -249,7 +249,7 @@ export default function HomePage() {
         </div>
 
         {/* CTA final */}
-        <div className="mt-24 bg-[#f0f4ff] border border-ebios-100 rounded-3xl p-12 text-center">
+        <div className="mt-24 bg-ebios-50 border border-ebios-100 rounded-3xl p-12 text-center">
           <h2 className="text-3xl font-bold mb-4">{t.landing.heroLine1} {t.landing.heroLine2}</h2>
           <p className="text-slate-600 mb-8 max-w-lg mx-auto">{t.landing.description}</p>
           <Link href="/auth/register"

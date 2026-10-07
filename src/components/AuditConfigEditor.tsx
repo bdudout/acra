@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import type { AuditConfig } from '@/lib/audit-config'
 
-const inp = 'px-2 py-1.5 rounded border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm w-24'
+const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm w-24'
 
 export default function AuditConfigEditor({ onSaved }: { onSaved?: () => void }) {
   const { t } = useTranslation()

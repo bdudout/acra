@@ -83,10 +83,10 @@ export default function EbiosGuide() {
                 onClick={() => setOpenIndex(isOpen ? null : i)}
                 aria-expanded={isOpen}
               >
-                <span className="flex-shrink-0 mt-0.5">{(() => { const AtIcon = ATELIER_ICONS[i]; return AtIcon ? <AtIcon size={20} aria-hidden="true" /> : null })()}</span>
+                <span className="shrink-0 mt-0.5">{(() => { const AtIcon = ATELIER_ICONS[i]; return AtIcon ? <AtIcon size={20} aria-hidden="true" /> : null })()}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className={`text-xs px-1.5 py-0.5 rounded font-bold ${colors.badge}`}>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-sm font-bold ${colors.badge}`}>
                       A{a.num}
                     </span>
                     <span className="text-xs font-semibold text-gray-800 truncate">
@@ -97,7 +97,7 @@ export default function EbiosGuide() {
                     {meta.sousTitre ?? a.sousTitre}
                   </p>
                 </div>
-                <span className={`text-gray-400 text-xs mt-1 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}>
+                <span className={`text-gray-400 text-xs mt-1 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}>
                   ▼
                 </span>
               </button>
