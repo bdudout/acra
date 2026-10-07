@@ -735,6 +735,51 @@ The radar, criticality stars and the stakeholder table (4 sub-criteria + *Critic
 
 ACRA handles sensitive data (risk analyses, ecosystem cartography). Deployment should follow the **ANSSI IT hygiene guide** principles: segmentation, defence in depth, least privilege, strong authentication, logging.
 
+### Overview — complete deployment architecture
+
+The diagram below brings together the building blocks of a production deployment: access for users and **AI assistants (MCP)**, federated identity, **centralised logging** to the SIEM and verified **off-site backup**. Cases 1 and 2 then detail network exposure.
+
+```mermaid
+flowchart LR
+  subgraph EXT["Users and tools"]
+    U["Users<br/>(browser)"]
+    IA["AI assistants<br/>local or sovereign<br/>(Claude, Codex, Mistral…)"]
+    IDP["Enterprise IdP<br/>OIDC SSO + MFA"]
+  end
+  subgraph ZONE["Segmented ACRA zone"]
+    RP["TLS reverse proxy<br/>WAF, HSTS"]
+    APP["ACRA (Next.js)<br/>RBAC 12 roles,<br/>audit trail"]
+    MCP["MCP server<br/>/api/mcp"]
+    API["API v1 + webhooks"]
+    DB[("PostgreSQL<br/>private network")]
+    DOC[("Documents<br/>disk or S3")]
+    AG["Host agent<br/>scheduled backups,<br/>updates"]
+    BK[("Restore points<br/>encrypted (age)")]
+  end
+  subgraph SOC["Operations and security"]
+    SIEM["SIEM<br/>Splunk HEC, Elastic,<br/>syslog-HTTP…"]
+    OFF[("Off-site backup<br/>mounted folder, command<br/>or S3 storage")]
+    SOAR["SOAR / ITSM"]
+  end
+  U -->|HTTPS| RP --> APP
+  IA -->|"HTTPS + “mcp” key"| RP --> MCP
+  IDP -.->|"OIDC · SCIM"| APP
+  APP --- MCP
+  APP --- API
+  APP --> DB
+  APP --> DOC
+  APP -->|"JSON audit events<br/>by category"| SIEM
+  API -->|"HMAC-signed webhooks"| SOAR
+  AG -->|"daily / weekly / monthly"| BK
+  BK -->|"verified copy"| OFF
+```
+
+**AI assistants (MCP)** — ACRA embeds no AI. An assistant connects to `/api/mcp` with an organisation key limited to the `mcp` scope, created and **revocable** by the administrator (*MCP activity* page). It reads, relies on recommendations computed by ACRA and **proposes**: nothing is written without human validation. Prefer a **local or sovereign** model for sensitive data: tool responses are sent to the assistant's provider. Guide (in French): [`docs/mcp-clients.md`](docs/mcp-clients.md).
+
+**Centralised logging** — every sensitive action (sign-ins, accounts, configuration, exports, MCP tool calls, decisions on proposals) feeds the **audit trail** and can be forwarded to the **SIEM** as JSON (Splunk HEC, Elastic, syslog-HTTP, ingestion webhook), **log by log** (authentication, accounts, configuration, data, governance). Destinations restricted by allowlist (`SIEM_ALLOWED_HOSTS`); structured application logs on standard output for the host collector.
+
+**Off-site backup** — the host agent creates **restore points** (database + documents), **encrypted** (`ACRA_BACKUP_AGE_RECIPIENT`), on a daily, weekly and monthly schedule and before each update (automatic rollback on failure). Each point is copied **off the server** (`ACRA_OFFSITE_DRIVER`: `fs` mounted folder, `command` enterprise backup software, `s3` S3-compatible storage via rclone), **read back and verified**; an unencrypted point is never sent off the server without explicit consent. Status (last copy, late, failed) is shown in *Administration › Version*. Test restoration every quarter (`scripts/acra-offsite.sh fetch`).
+
 ### Case 1 — Internal *on-premises* hosting (recommended)
 
 Host **in your datacenter**, behind a firewall, with no direct Internet exposure. Preferred scenario for the most sensitive data.
@@ -788,8 +833,11 @@ flowchart LR
 |---|---|
 | Strong authentication | **MFA** email/SMS OTP, `ALL` or `ADMIN_ONLY` scope |
 | Federated identity | **SSO** SAML 2.0 / OIDC with auto-provisioning |
-| Least privilege | **RBAC** 5 roles + per-analysis sharing |
+| Least privilege | **RBAC** 12 roles (3 lines of defence) + per-analysis sharing |
 | Traceability | Full **audit trail**, CSV-exportable |
+| Centralised logging | **SIEM** forwarding log by log, destination allowlist |
+| Off-site backup | **Encrypted** restore points, **verified** external copy (folder, command, S3) |
+| Controlled AI | No embedded AI; **MCP**: dedicated revocable key, human validation, logged calls |
 | Confidentiality in transit | Enforced HTTPS + **security headers** (CSP, HSTS, X-Frame-Options…) |
 | Secret protection | Encrypted secrets (`SECRETS_ENCRYPTION_KEY`), bcrypt (cost 12) |
 | Reversibility / error tolerance | **30-day trash** (soft delete + admin recovery) |

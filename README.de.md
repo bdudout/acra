@@ -743,6 +743,51 @@ Das Radar, die Kritikalitätssterne und die Stakeholder-Tabelle (4 Teilkriterien
 
 ACRA verarbeitet sensible Daten (Risikoanalysen, Ökosystem-Kartierung). Das Deployment sollte den Prinzipien des **ANSSI-IT-Hygieneleitfadens** folgen: Segmentierung, Defence in Depth, geringste Rechte, starke Authentifizierung, Protokollierung.
 
+### Überblick — vollständige Bereitstellungsarchitektur
+
+Das folgende Schema vereint die Bausteine einer Produktivbereitstellung: Zugriff von Benutzern und **KI-Assistenten (MCP)**, föderierte Identität, **zentrale Protokollierung** an das SIEM und geprüfte **externe Sicherung**. Fall 1 und 2 beschreiben anschließend die Netzwerkexposition.
+
+```mermaid
+flowchart LR
+  subgraph EXT["Benutzer und Werkzeuge"]
+    U["Benutzer<br/>(Browser)"]
+    IA["KI-Assistenten<br/>lokal oder souverän<br/>(Claude, Codex, Mistral…)"]
+    IDP["Unternehmens-IdP<br/>OIDC-SSO + MFA"]
+  end
+  subgraph ZONE["Abgeschottete ACRA-Zone"]
+    RP["TLS-Reverse-Proxy<br/>WAF, HSTS"]
+    APP["ACRA (Next.js)<br/>RBAC 12 Rollen,<br/>Audit-Trail"]
+    MCP["MCP-Server<br/>/api/mcp"]
+    API["API v1 + Webhooks"]
+    DB[("PostgreSQL<br/>privates Netz")]
+    DOC[("Dokumente<br/>Datenträger oder S3")]
+    AG["Host-Agent<br/>geplante Sicherungen,<br/>Updates"]
+    BK[("Wiederherstellungspunkte<br/>verschlüsselt (age)")]
+  end
+  subgraph SOC["Betrieb und Sicherheit"]
+    SIEM["SIEM<br/>Splunk HEC, Elastic,<br/>syslog-HTTP…"]
+    OFF[("Externe Sicherung<br/>eingehängter Ordner, Befehl<br/>oder S3-Speicher")]
+    SOAR["SOAR / ITSM"]
+  end
+  U -->|HTTPS| RP --> APP
+  IA -->|"HTTPS + „mcp“-Schlüssel"| RP --> MCP
+  IDP -.->|"OIDC · SCIM"| APP
+  APP --- MCP
+  APP --- API
+  APP --> DB
+  APP --> DOC
+  APP -->|"JSON-Audit-Ereignisse<br/>nach Kategorie"| SIEM
+  API -->|"HMAC-signierte Webhooks"| SOAR
+  AG -->|"täglich / wöchentlich / monatlich"| BK
+  BK -->|"geprüfte Kopie"| OFF
+```
+
+**KI-Assistenten (MCP)** — ACRA enthält keine KI. Ein Assistent verbindet sich mit `/api/mcp` über einen Organisationsschlüssel nur mit dem Recht `mcp`, der vom Administrator erstellt und **widerrufen** werden kann (Seite *MCP-Aktivität*). Er liest, stützt sich auf die von ACRA berechneten Empfehlungen und **schlägt vor**: Nichts wird ohne menschliche Freigabe geschrieben. Für sensible Daten ein **lokales oder souveränes** Modell bevorzugen: Die Antworten der Werkzeuge gehen an den Anbieter des Assistenten. Leitfaden (Französisch): [`docs/mcp-clients.md`](docs/mcp-clients.md).
+
+**Zentrale Protokollierung** — jede sensible Aktion (Anmeldungen, Konten, Konfiguration, Exporte, MCP-Werkzeugaufrufe, Entscheidungen über Vorschläge) speist den **Audit-Trail** und kann als JSON an das **SIEM** weitergeleitet werden (Splunk HEC, Elastic, syslog-HTTP, Ingestion-Webhook), **Protokoll für Protokoll** (Authentifizierung, Konten, Konfiguration, Daten, Governance). Ziele per Positivliste begrenzt (`SIEM_ALLOWED_HOSTS`); strukturierte Anwendungsprotokolle auf der Standardausgabe für den Kollektor des Hosts.
+
+**Externe Sicherung** — der Host-Agent erstellt **Wiederherstellungspunkte** (Datenbank + Dokumente), **verschlüsselt** (`ACRA_BACKUP_AGE_RECIPIENT`), täglich, wöchentlich und monatlich sowie vor jedem Update (automatisches Zurücksetzen bei Fehlschlag). Jeder Punkt wird **außerhalb des Servers** kopiert (`ACRA_OFFSITE_DRIVER`: `fs` eingehängter Ordner, `command` Unternehmens-Sicherungssoftware, `s3` S3-kompatibler Speicher über rclone), **zurückgelesen und geprüft**; ein unverschlüsselter Punkt verlässt den Server nie ohne ausdrückliche Zustimmung. Der Status (letzte Kopie, verspätet, fehlgeschlagen) erscheint unter *Administration › Version*. Wiederherstellung quartalsweise testen (`scripts/acra-offsite.sh fetch`).
+
 ### Fall 1 — Internes *On-Premises*-Hosting (empfohlen)
 
 Hosting **im eigenen Rechenzentrum**, hinter einer Firewall, ohne direkte Internet-Exposition. Bevorzugtes Szenario für die sensibelsten Daten.
@@ -796,8 +841,11 @@ flowchart LR
 |---|---|
 | Starke Authentifizierung | **MFA** E-Mail/SMS-OTP, Bereich `ALL` oder `ADMIN_ONLY` |
 | Föderierte Identität | **SSO** SAML 2.0 / OIDC mit Auto-Provisioning |
-| Geringste Rechte | **RBAC** 5 Rollen + Freigabe pro Analyse |
+| Geringste Rechte | **RBAC** 12 Rollen (3 Verteidigungslinien) + Freigabe pro Analyse |
 | Nachvollziehbarkeit | Vollständiger **Audit-Trail**, CSV-exportierbar |
+| Zentrale Protokollierung | **SIEM**-Weiterleitung Protokoll für Protokoll, Positivliste der Ziele |
+| Externe Sicherung | **Verschlüsselte** Wiederherstellungspunkte, **geprüfte** externe Kopie (Ordner, Befehl, S3) |
+| Beherrschte KI | Keine eingebettete KI; **MCP**: eigener widerrufbarer Schlüssel, menschliche Freigabe, protokollierte Aufrufe |
 | Vertraulichkeit in Transit | Erzwungenes HTTPS + **Security-Header** (CSP, HSTS, X-Frame-Options…) |
 | Geheimnisschutz | Verschlüsselte Secrets (`SECRETS_ENCRYPTION_KEY`), bcrypt (Kosten 12) |
 | Reversibilität / Fehlertoleranz | **30-Tage-Papierkorb** (Soft Delete + Admin-Wiederherstellung) |

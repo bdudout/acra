@@ -816,6 +816,51 @@ curl https://votre-domaine.com/api/health
 
 ACRA traite des données sensibles (analyses de risques, cartographie de l'écosystème). Le déploiement doit suivre les principes du **guide d'hygiène informatique de l'ANSSI** : cloisonnement, défense en profondeur, moindre privilège, authentification forte, journalisation.
 
+### Vue d'ensemble — architecture de déploiement complète
+
+Le schéma ci-dessous réunit les briques d'un déploiement de production : accès des utilisateurs et des **assistants IA (MCP)**, identité fédérée, **journalisation centralisée** vers le SIEM et **sauvegarde externe** vérifiée. Les cas 1 et 2 précisent ensuite l'exposition réseau.
+
+```mermaid
+flowchart LR
+  subgraph EXT["Utilisateurs et outils"]
+    U["Utilisateurs<br/>(navigateur)"]
+    IA["Assistants IA<br/>locaux ou souverains<br/>(Claude, Codex, Mistral…)"]
+    IDP["IdP d'entreprise<br/>SSO OIDC + MFA"]
+  end
+  subgraph ZONE["Zone ACRA cloisonnée"]
+    RP["Reverse proxy TLS<br/>WAF, HSTS"]
+    APP["ACRA (Next.js)<br/>RBAC 12 rôles,<br/>piste d'audit"]
+    MCP["Serveur MCP<br/>/api/mcp"]
+    API["API v1 + webhooks"]
+    DB[("PostgreSQL<br/>réseau privé")]
+    DOC[("Documents<br/>disque ou S3")]
+    AG["Agent hôte<br/>sauvegardes planifiées,<br/>mises à jour"]
+    BK[("Points de restauration<br/>chiffrés (age)")]
+  end
+  subgraph SOC["Exploitation et sécurité"]
+    SIEM["SIEM<br/>Splunk HEC, Elastic,<br/>syslog-HTTP…"]
+    OFF[("Sauvegarde externe<br/>dossier monté, commande<br/>ou stockage S3")]
+    SOAR["SOAR / ITSM"]
+  end
+  U -->|HTTPS| RP --> APP
+  IA -->|"HTTPS + clé « mcp »"| RP --> MCP
+  IDP -.->|"OIDC · SCIM"| APP
+  APP --- MCP
+  APP --- API
+  APP --> DB
+  APP --> DOC
+  APP -->|"événements d'audit JSON<br/>par catégorie"| SIEM
+  API -->|"webhooks signés HMAC"| SOAR
+  AG -->|"quotidien / hebdo / mensuel"| BK
+  BK -->|"copie vérifiée"| OFF
+```
+
+**Assistants IA (MCP)** — ACRA n'embarque aucune IA. Un assistant se connecte au point `/api/mcp` avec une clé d'organisation au seul droit `mcp`, créée et **révocable** par l'administrateur (page *Activité MCP*). Il lit, s'appuie sur les recommandations calculées par ACRA et **propose** : rien n'est écrit sans validation humaine. Privilégier un modèle **local ou souverain** pour les données sensibles : les réponses des outils partent chez l'éditeur de l'assistant. Guide : [`docs/mcp-clients.md`](docs/mcp-clients.md).
+
+**Journalisation centralisée** — chaque action sensible (connexions, comptes, configuration, exports, appels d'outils MCP, décisions sur les propositions) alimente la **piste d'audit** et peut être transférée au **SIEM** en JSON (Splunk HEC, Elastic, syslog-HTTP, webhook d'ingestion), **journal par journal** (authentification, comptes, configuration, données, gouvernance). Destinations limitées par liste blanche (`SIEM_ALLOWED_HOSTS`) ; journaux applicatifs structurés sur la sortie standard pour le collecteur de l'hôte.
+
+**Sauvegarde externe** — l'agent hôte crée des **points de restauration** (base + documents), **chiffrés** (`ACRA_BACKUP_AGE_RECIPIENT`), selon une planification quotidienne, hebdomadaire et mensuelle, et avant chaque mise à jour (retour arrière automatique en cas d'échec). Chaque point est copié **hors du serveur** (`ACRA_OFFSITE_DRIVER` : `fs` dossier monté, `command` logiciel de sauvegarde d'entreprise, `s3` stockage compatible S3 via rclone), **relu et vérifié** ; un point non chiffré n'est jamais envoyé hors du serveur sans accord explicite. L'état (dernier envoi, retard, échec) est visible dans *Administration › Version*. Tester la restauration chaque trimestre (`scripts/acra-offsite.sh fetch`).
+
 ### Cas 1 — Hébergement interne *on-premises* (recommandé)
 
 Hébergement **dans votre datacenter**, derrière un pare-feu, sans exposition directe sur Internet. C'est le scénario à privilégier pour les données les plus sensibles.
@@ -879,8 +924,11 @@ flowchart LR
 |---|---|
 | Authentification forte | **MFA** OTP e-mail/SMS, périmètre `ALL` ou `ADMIN_ONLY` |
 | Identité fédérée | **SSO OIDC** avec provisioning auto (SAML : chantier séparé) |
-| Moindre privilège | **RBAC** 5 rôles + partage par analyse |
+| Moindre privilège | **RBAC** 12 rôles (3 lignes de défense) + partage par analyse |
 | Traçabilité | **Piste d'audit** complète, exportable CSV |
+| Journalisation centralisée | Transfert **SIEM** journal par journal, liste blanche des destinations |
+| Sauvegarde hors site | Points de restauration **chiffrés**, copie externe **vérifiée** (dossier, commande, S3) |
+| IA maîtrisée | Aucune IA embarquée ; **MCP** : clé dédiée révocable, validation humaine, appels journalisés |
 | Confidentialité en transit | HTTPS imposé + **en-têtes de sécurité** (CSP, HSTS, X-Frame-Options…) |
 | Protection des secrets | Secrets chiffrés (`SECRETS_ENCRYPTION_KEY`), bcrypt (coût 12) |
 | Réversibilité / anti-erreur | **Corbeille 30 jours** (suppression douce + récupération admin) |

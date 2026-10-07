@@ -741,6 +741,51 @@ El radar, las estrellas de criticidad y la tabla de partes interesadas (4 subcri
 
 ACRA trata datos sensibles (análisis de riesgos, cartografía del ecosistema). El despliegue debe seguir los principios de la **guía de higiene informática de ANSSI**: segmentación, defensa en profundidad, mínimo privilegio, autenticación fuerte, registro.
 
+### Visión de conjunto — arquitectura de despliegue completa
+
+El esquema siguiente reúne los componentes de un despliegue de producción: acceso de usuarios y de **asistentes de IA (MCP)**, identidad federada, **registro centralizado** hacia el SIEM y **copia de seguridad externa** verificada. Los casos 1 y 2 detallan después la exposición de red.
+
+```mermaid
+flowchart LR
+  subgraph EXT["Usuarios y herramientas"]
+    U["Usuarios<br/>(navegador)"]
+    IA["Asistentes de IA<br/>locales o soberanos<br/>(Claude, Codex, Mistral…)"]
+    IDP["IdP corporativo<br/>SSO OIDC + MFA"]
+  end
+  subgraph ZONE["Zona ACRA aislada"]
+    RP["Proxy inverso TLS<br/>WAF, HSTS"]
+    APP["ACRA (Next.js)<br/>RBAC 12 roles,<br/>pista de auditoría"]
+    MCP["Servidor MCP<br/>/api/mcp"]
+    API["API v1 + webhooks"]
+    DB[("PostgreSQL<br/>red privada")]
+    DOC[("Documentos<br/>disco o S3")]
+    AG["Agente del host<br/>copias planificadas,<br/>actualizaciones"]
+    BK[("Puntos de restauración<br/>cifrados (age)")]
+  end
+  subgraph SOC["Explotación y seguridad"]
+    SIEM["SIEM<br/>Splunk HEC, Elastic,<br/>syslog-HTTP…"]
+    OFF[("Copia externa<br/>carpeta montada, comando<br/>o almacenamiento S3")]
+    SOAR["SOAR / ITSM"]
+  end
+  U -->|HTTPS| RP --> APP
+  IA -->|"HTTPS + clave «mcp»"| RP --> MCP
+  IDP -.->|"OIDC · SCIM"| APP
+  APP --- MCP
+  APP --- API
+  APP --> DB
+  APP --> DOC
+  APP -->|"eventos de auditoría JSON<br/>por categoría"| SIEM
+  API -->|"webhooks firmados HMAC"| SOAR
+  AG -->|"diaria / semanal / mensual"| BK
+  BK -->|"copia verificada"| OFF
+```
+
+**Asistentes de IA (MCP)** — ACRA no incorpora ninguna IA. Un asistente se conecta a `/api/mcp` con una clave de organización limitada al derecho `mcp`, creada y **revocable** por el administrador (página *Actividad MCP*). Lee, se apoya en las recomendaciones calculadas por ACRA y **propone**: nada se escribe sin validación humana. Preferir un modelo **local o soberano** para los datos sensibles: las respuestas de las herramientas se envían al proveedor del asistente. Guía (en francés): [`docs/mcp-clients.md`](docs/mcp-clients.md).
+
+**Registro centralizado** — cada acción sensible (conexiones, cuentas, configuración, exportaciones, llamadas a herramientas MCP, decisiones sobre propuestas) alimenta la **pista de auditoría** y puede transferirse al **SIEM** en JSON (Splunk HEC, Elastic, syslog-HTTP, webhook de ingesta), **registro por registro** (autenticación, cuentas, configuración, datos, gobernanza). Destinos limitados por lista blanca (`SIEM_ALLOWED_HOSTS`); registros de la aplicación estructurados en la salida estándar para el colector del host.
+
+**Copia de seguridad externa** — el agente del host crea **puntos de restauración** (base de datos + documentos), **cifrados** (`ACRA_BACKUP_AGE_RECIPIENT`), con planificación diaria, semanal y mensual y antes de cada actualización (vuelta atrás automática en caso de fallo). Cada punto se copia **fuera del servidor** (`ACRA_OFFSITE_DRIVER`: `fs` carpeta montada, `command` software de copia corporativo, `s3` almacenamiento compatible S3 mediante rclone), **se relee y se verifica**; un punto no cifrado nunca sale del servidor sin consentimiento explícito. El estado (último envío, retraso, fallo) aparece en *Administración › Versión*. Probar la restauración cada trimestre (`scripts/acra-offsite.sh fetch`).
+
 ### Caso 1 — Alojamiento interno *on-premises* (recomendado)
 
 Alojamiento **en su centro de datos**, detrás de un cortafuegos, sin exposición directa a Internet. Escenario preferente para los datos más sensibles.
@@ -794,8 +839,11 @@ flowchart LR
 |---|---|
 | Autenticación fuerte | **MFA** OTP correo/SMS, ámbito `ALL` o `ADMIN_ONLY` |
 | Identidad federada | **SSO** SAML 2.0 / OIDC con aprovisionamiento automático |
-| Mínimo privilegio | **RBAC** 5 roles + compartición por análisis |
+| Mínimo privilegio | **RBAC** 12 roles (3 líneas de defensa) + compartición por análisis |
 | Trazabilidad | **Pista de auditoría** completa, exportable a CSV |
+| Registro centralizado | Transferencia al **SIEM** registro por registro, lista blanca de destinos |
+| Copia externa | Puntos de restauración **cifrados**, copia externa **verificada** (carpeta, comando, S3) |
+| IA controlada | Ninguna IA incorporada; **MCP**: clave dedicada revocable, validación humana, llamadas registradas |
 | Confidencialidad en tránsito | HTTPS forzado + **cabeceras de seguridad** (CSP, HSTS, X-Frame-Options…) |
 | Protección de secretos | Secretos cifrados (`SECRETS_ENCRYPTION_KEY`), bcrypt (coste 12) |
 | Reversibilidad / tolerancia a errores | **Papelera de 30 días** (soft delete + recuperación admin) |
