@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { type UserRole } from '@/lib/permissions'
 import { peutQualifier, loadIncidentInScope } from '@/lib/incident-access.server'
 import {
   validateIncidentInput, cleanIncidentInput, transitionAutorisee,
@@ -15,6 +14,7 @@ import { separerJson } from '@/lib/incident-json'
 import { resolveIncidentsConfig } from '@/lib/incidents-config'
 import { sanitizeChampsConfig, fusionnerChamps, avecChampsVisibles } from '@/lib/champs-perso'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { entiteIdPourTexte } from '@/lib/entites.server'
 
 export const dynamic = 'force-dynamic'
 
@@ -101,6 +101,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     data: {
       ...(risques ? { riskItemId: risques[0] ?? null } : {}),
       ...partielScalaires,
+      // Entité modifiée : lien au référentiel recalculé (texte identique) ou retiré (lot E5).
+      ...('entite' in partielScalaires ? { entiteId: await entiteIdPourTexte(incident.organizationId, typeof partielScalaires.entite === 'string' ? partielScalaires.entite : null) } : {}),
       ...json,
       // Horodatages posés à la transition, jamais réécrits ensuite.
       ...(vers === 'QUALIFIE' && depuis !== 'QUALIFIE' ? { qualifiePar: userId, qualifieLe: now } : {}),

@@ -36,6 +36,9 @@ import ColumnMenu from '@/components/ColumnMenu'
 import PlanActionEditor from '@/components/PlanActionEditor'
 import { nextSort, sortRows, type SortState, type SortDir } from '@/lib/table-sort'
 import { distinctValues, applyColumnFilters, toggleColumnValue, onlyColumnValue, clearColumnFilter, type ColumnFilters } from '@/lib/table-filter'
+import FiltreEntite from '@/components/FiltreEntite'
+import { useReferentielEntites } from '@/lib/use-referentiel-entites'
+import { filtrerParEntite } from '@/lib/entites-filtre'
 
 export interface SerializedActionItem extends Omit<ActionItem, 'echeance'> {
   echeance: string | null
@@ -139,8 +142,11 @@ export default function PlansActionsView({ items, orgId, initialPriorite = '', i
     }
   }
   // Liste après filtres à facettes (barre) — base des valeurs distinctes des colonnes.
-  const facetted = useMemo(() => filterActionItems(hydrated, filtre, now), [hydrated, filtre, now])
-  const distinctFor = (key: string) => distinctValues(facetted, (it) => display(it, key)) // eslint-disable-line react-hooks/exhaustive-deps
+  // Filtre par entité du référentiel (lot E5) : lien ou texte libre identique, sous-entités incluses par défaut.
+  const entitesRef = useReferentielEntites()
+  const [filtreEntite, setFiltreEntite] = useState<{ id: string; sous: boolean }>({ id: '', sous: true })
+  const facetted = useMemo(() => filtrerParEntite(filterActionItems(hydrated, filtre, now), entitesRef, filtreEntite.id, filtreEntite.sous), [hydrated, filtre, now, entitesRef, filtreEntite])
+  const distinctFor = (key: string) => distinctValues(facetted, (it) => display(it, key))
 
   const visibles = useMemo(() => {
     const colFiltered = applyColumnFilters(facetted, colFilters, display)
@@ -194,6 +200,12 @@ export default function PlansActionsView({ items, orgId, initialPriorite = '', i
 
       {/* Filtres */}
       <div className="flex flex-wrap items-end gap-3 mb-4">
+        {entitesRef.length > 0 && (
+          <div className="flex flex-col gap-1 text-xs text-gray-500 min-w-0">
+            <span className="font-medium">{t.entites.filtre.label}</span>
+            <FiltreEntite entites={entitesRef} valeur={filtreEntite.id} sousEntites={filtreEntite.sous} onChange={(id, sous) => setFiltreEntite({ id, sous })} />
+          </div>
+        )}
         <label className="flex flex-col gap-1 text-xs text-gray-500 min-w-0">
           <span className="font-medium">{t.plansActions.filterOrigine}</span>
           <select value={origine} onChange={(e) => setOrigine(e.target.value as ActionOrigine | '')}

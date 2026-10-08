@@ -149,7 +149,7 @@ describe('normalizeIncident', () => {
 
 function mk(partial: Partial<ActionItem>): ActionItem {
   return {
-    id: partial.id ?? 'x', source: partial.source ?? 'MESURE', sourceId: partial.sourceId ?? 'x',
+    id: partial.id ?? 'x', source: partial.source ?? 'MESURE', sourceId: partial.sourceId ?? 'x', entiteId: partial.entiteId ?? null,
     origine: partial.origine ?? 'risque',
     titre: partial.titre ?? 't', description: partial.description ?? null, porteur: partial.porteur ?? null,
     entite: partial.entite ?? null, echeance: partial.echeance ?? null,
@@ -281,5 +281,15 @@ describe('typologie d\'origine', () => {
     expect(it.titre).toBe('Corriger A.5.1')
     expect(it.porteur).toBe('RSSI')
     expect(it.statut).toBe('EN_COURS')
+  })
+})
+
+describe('lien au référentiel des entités (consolidation, lot E5)', () => {
+  it('conserve entiteId (mesure, incident, plan d’action) ; absent → null', () => {
+    expect(normalizeMesure({ id: 'm', nom: 'x', entite: 'DSI', entiteId: 'e1' }).entiteId).toBe('e1')
+    expect(normalizeOrphanPlanAction({ id: 'p', titre: 't', entite: 'DSI', entiteId: 'e2' }).entiteId).toBe('e2')
+    expect(normalizeAnalyseRiskPlanAction({ id: 'p', titre: 't', risqueId: 'r', entiteId: 'e3' }).entiteId).toBe('e3')
+    expect(normalizeIncident({ id: 'i', intitule: 'x', statut: 'DECLARE', entiteId: 'e4' })?.entiteId).toBe('e4')
+    expect(normalizeMesure({ id: 'm', nom: 'x' }).entiteId).toBeNull()
   })
 })

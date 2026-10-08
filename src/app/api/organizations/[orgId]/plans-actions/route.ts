@@ -14,6 +14,7 @@ import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.serve
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { validatePlanActionInput, cleanPlanActionInput, sanitizeLiens, isLienType } from '@/lib/plan-action'
 import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
+import { entiteIdPourTexte } from '@/lib/entites.server'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ orgId: string }> }
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     data: {
       organizationId: orgId,
       titre: clean.titre, description: clean.description, porteur: clean.porteur, entite: clean.entite,
+      entiteId: await entiteIdPourTexte(orgId, clean.entite), // lien au référentiel si texte identique (lot E5)
       echeance: clean.echeance ? new Date(clean.echeance) : null,
       priorite: clean.priorite, statut: clean.statut, createdById: userId,
       liens: { create: liens.map(l => ({ type: l.type, targetId: l.targetId, ref: l.ref ?? null, label: l.label ?? null })) },

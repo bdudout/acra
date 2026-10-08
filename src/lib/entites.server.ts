@@ -11,6 +11,7 @@ import { isAdminRole, type UserRole } from './permissions'
 import { configConnecteur, connecteurConfigure } from './entity-sync.server'
 import { creeraitUnCycle, sourceVeriteDe, type EntiteSaisie, type SourceVerite } from './entites'
 import type { SourceTexte } from './entites-rapprochement'
+import { resoudreEntite } from './entites-filtre'
 
 export interface ContexteEntites { userId: string; email?: string; role: UserRole; orgId: string; orgPath: string; admin: boolean; sourceVerite: SourceVerite; connecteur: boolean }
 
@@ -56,3 +57,16 @@ export function totalReferences(c: Record<keyof typeof COMPTE_REFERENCES, number
 
 /** Périmètre d'une source d'objets rattachables à une entité : l'organisation (les mesures, via leur analyse). */
 export const perimetreSource = (orgId: string, source: SourceTexte) => (source === 'mesures' ? { analyse: { organizationId: orgId } } : { organizationId: orgId })
+
+type LecteurEntites = { entite: { findMany(a: object): Promise<{ id: string; nom: string; type: string; alias: unknown; codeExterne: string | null; parentId: string | null; source: string; valideAu: Date | null }[]> } }
+
+/** Lien automatique à l'écriture (lot E5) : entité ACTIVE dont le nom, un alias ou le code est identique au texte saisi.
+ *  Jamais de lien sur une simple proximité ; une erreur de lecture ne bloque pas la saisie (pas de lien). */
+export async function entiteIdPourTexte(orgId: string, texte: string | null | undefined, db: LecteurEntites = prisma as unknown as LecteurEntites): Promise<string | null> {
+  if (!texte?.trim()) return null
+  try {
+    const rows = await db.entite.findMany({ where: { organizationId: orgId }, select: { id: true, nom: true, type: true, alias: true, codeExterne: true, parentId: true, source: true, valideAu: true } })
+    const actives = rows.filter(r => !r.valideAu || r.valideAu > new Date()).map(r => ({ ...r, alias: Array.isArray(r.alias) ? (r.alias as string[]) : [] }))
+    return resoudreEntite(null, texte, actives)
+  } catch { return null }
+}

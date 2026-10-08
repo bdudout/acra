@@ -8,6 +8,7 @@ vi.mock('@/lib/i18n/context', () => ({
   useTranslation: () => ({
     locale: 'fr',
     t: {
+      entites: { filtre: { label: 'Entité', toutes: 'Toutes les entités', sousEntites: 'avec les sous-entités' } },
       table: { sortAsc: 'A→Z', sortDesc: 'Z→A', sortNone: 'Sans tri', filterTitle: 'Filtrer', search: 'Rechercher', selectAll: 'Tout', selectNone: 'Aucun', onlyThis: 'Uniquement', clear: 'Effacer', menu: 'Trier et filtrer' },
       plansActions: {
         title: 'Plans d\'action', subtitle: 'sous-titre',
@@ -28,7 +29,7 @@ vi.mock('@/lib/i18n/context', () => ({
 }))
 
 const mk = (p: Partial<SerializedActionItem>): SerializedActionItem => ({
-  id: p.id ?? 'x', source: p.source ?? 'MESURE', origine: p.origine ?? 'risque', sourceId: p.sourceId ?? 'x',
+  id: p.id ?? 'x', source: p.source ?? 'MESURE', origine: p.origine ?? 'risque', sourceId: p.sourceId ?? 'x', entiteId: p.entiteId ?? null,
   titre: p.titre ?? 't', description: p.description ?? null, porteur: p.porteur ?? null,
   entite: p.entite ?? null, echeance: p.echeance ?? null, statut: p.statut ?? 'A_FAIRE',
   priorite: p.priorite ?? 'MAJEUR', lien: p.lien ?? '/x', riskItemId: p.riskItemId ?? null,
@@ -120,10 +121,29 @@ describe('PlansActionsView', () => {
     const titre = within(screen.getByTestId('actions-desktop-table')).getByDisplayValue('Action isolée')
     fireEvent.change(titre, { target: { value: 'Action corrigée' } })
     fireEvent.click(within(screen.getByTestId('actions-desktop-table')).getByText('Enregistrer'))
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
-    const [url, opts] = fetchMock.mock.calls[0]
+    // Le premier appel peut être le chargement du référentiel des entités (filtre) : on cible l'enregistrement.
+    await waitFor(() => expect(fetchMock.mock.calls.some(c => c[1]?.method === 'PATCH')).toBe(true))
+    const [url, opts] = fetchMock.mock.calls.find(c => c[1]?.method === 'PATCH')!
     expect(url).toBe('/api/organizations/o1/plans-actions/p7')
     expect(opts.method).toBe('PATCH')
     expect(JSON.parse(opts.body).titre).toBe('Action corrigée')
+  })
+})
+
+describe('PlansActionsView — filtre par entité (consolidation, lot E5)', () => {
+  it('ne garde que les actions de l’entité choisie (lien ou texte identique), sous-entités comprises', async () => {
+    const E = (id: string, nom: string, o = {}) => ({ id, nom, type: 'DIRECTION', alias: [], codeExterne: null, parentId: null, source: 'MANUEL', valideAu: null, ...o })
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => ({ ok: true, json: async () => (url === '/api/referentiel-entites' ? { entites: [E('dsi', 'DSI'), E('ret', 'Réseaux', { parentId: 'dsi' })] } : {}) })))
+    render(<PlansActionsView items={[
+      mk({ id: 'a', titre: 'Segmenter le réseau', entiteId: 'ret' }),
+      mk({ id: 'b', titre: 'Revoir les habilitations', entite: 'dsi' }),
+      mk({ id: 'c', titre: 'Former les acheteurs', entite: 'Achats' }),
+    ]} />)
+    fireEvent.change(await screen.findByLabelText('Entité'), { target: { value: 'dsi' } })
+    const tableau = within(screen.getByTestId('actions-desktop-table'))
+    expect(tableau.getByText('Segmenter le réseau')).toBeTruthy()
+    expect(tableau.getByText('Revoir les habilitations')).toBeTruthy()
+    expect(screen.queryAllByText('Former les acheteurs')).toHaveLength(0)
+    vi.unstubAllGlobals()
   })
 })
