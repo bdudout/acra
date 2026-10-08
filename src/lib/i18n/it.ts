@@ -1400,6 +1400,10 @@ export const it: Translations = {
     monthsUnit: 'mesi',
   },
   ropa: {
+    manque: 'Manca: {champs}',
+    exporter: 'Esporta il registro (Excel)',
+    motifs: { donnees_sensibles_art9: 'Categorie particolari di dati personali (art. 9)', surveillance_systematique_grande_echelle: 'Sorveglianza sistematica su larga scala (art. 35, paragrafo 3, lettera c)' },
+    export: { presentation: 'Presentazione', feuille: 'Registro (art. 30)', organisation: 'Organizzazione', genere: 'Generato il', complet: 'Completo (art. 30)', manquants: 'Campi mancanti', aipd: 'DPIA richiesta', motifsCol: 'Motivi', oui: 'Sì', non: 'No' },
     title: 'Registro dei trattamenti (GDPR)',
     subtitle: 'Registro delle attività di trattamento dei dati personali — art. 30 GDPR. Riservato al DPO.',
     add: 'Aggiungi trattamento',

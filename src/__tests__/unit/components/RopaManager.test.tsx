@@ -49,3 +49,29 @@ describe('RopaManager', () => {
     expect(JSON.parse(post[1].body).nom).toBe('Nouveau')
   })
 })
+
+describe('RopaManager — parcours DPO (lisibilité, export)', () => {
+  beforeEach(() => { vi.restoreAllMocks() })
+  const t = (o: Record<string, unknown>) => ({
+    id: 'x', nom: 'X', finalite: 'F', baseLegale: 'contrat', categoriesPersonnes: ['A'], categoriesDonnees: ['B'], destinataires: ['C'],
+    transfertHorsUE: false, dureeConservation: '1 an', mesuresSecurite: ['M'], evaluation: { complet: true, champsManquants: [], pia: { requis: false, motifs: [] } }, ...o,
+  })
+  it('champs manquants et motifs de l’AIPD affichés en clair (libellés, pas de codes techniques)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({
+      traitements: [
+        t({ id: 'a', nom: 'Hébergement US', evaluation: { complet: false, champsManquants: ['garantiesTransfert', 'dureeConservation'], pia: { requis: false, motifs: [] } } }),
+        t({ id: 'b', nom: 'Médecine du travail', evaluation: { complet: true, champsManquants: [], pia: { requis: true, motifs: ['donnees_sensibles_art9'] } } }),
+      ],
+      synthese: { total: 2, complets: 1, piaRequis: 1 }, canManage: true,
+    }) }))
+    render(<RopaManager />)
+    expect(await screen.findByText(/Garanties \(art\. 44-46\), Durée de conservation/)).toBeInTheDocument()
+    expect(screen.getByText(/Catégories particulières de données à caractère personnel \(art\. 9\)/)).toBeInTheDocument()
+    expect(screen.queryByText(/garantiesTransfert|donnees_sensibles_art9/)).toBeNull()
+  })
+  it('export du registre (art. 30 §4 : mise à disposition de l’autorité de contrôle)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => listResponse }))
+    render(<RopaManager />)
+    expect(await screen.findByRole('link', { name: /Exporter le registre/ })).toHaveAttribute('href', '/api/ropa/export')
+  })
+})

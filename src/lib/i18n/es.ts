@@ -1400,6 +1400,10 @@ export const es: Translations = {
     monthsUnit: 'meses',
   },
   ropa: {
+    manque: 'Falta: {champs}',
+    exporter: 'Exportar el registro (Excel)',
+    motifs: { donnees_sensibles_art9: 'Categorías especiales de datos personales (art. 9)', surveillance_systematique_grande_echelle: 'Observación sistemática a gran escala (art. 35, apartado 3, letra c)' },
+    export: { presentation: 'Presentación', feuille: 'Registro (art. 30)', organisation: 'Organización', genere: 'Generado el', complet: 'Completo (art. 30)', manquants: 'Campos que faltan', aipd: 'EIPD requerida', motifsCol: 'Motivos', oui: 'Sí', non: 'No' },
     title: 'Registro de actividades de tratamiento (RGPD)',
     subtitle: 'Registro de las actividades de tratamiento de datos personales — art. 30 del RGPD. Reservado al DPD.',
     add: 'Añadir tratamiento',

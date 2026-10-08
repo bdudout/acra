@@ -1424,6 +1424,10 @@ export const fr = {
     monthsUnit: 'mois',
   },
   ropa: {
+    manque: 'Manque : {champs}',
+    exporter: 'Exporter le registre (Excel)',
+    motifs: { donnees_sensibles_art9: 'Catégories particulières de données à caractère personnel (art. 9)', surveillance_systematique_grande_echelle: 'Surveillance systématique à grande échelle (art. 35, § 3, c)' },
+    export: { presentation: 'Présentation', feuille: 'Registre (art. 30)', organisation: 'Organisation', genere: 'Généré le', complet: 'Complet (art. 30)', manquants: 'Champs manquants', aipd: 'AIPD requise', motifsCol: 'Motifs', oui: 'Oui', non: 'Non' },
     title: 'Registre des traitements (RGPD)',
     subtitle: 'Registre des activités de traitement de données personnelles — art. 30 du RGPD. Réservé au DPO.',
     add: 'Ajouter un traitement',
