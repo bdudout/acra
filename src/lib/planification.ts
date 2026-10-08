@@ -271,3 +271,9 @@ export function tauxRealisation(statuts: StatutLigne[]): { actives: number; real
   const realisees = actives.filter(s => s === 'REALISEE').length
   return { actives: actives.length, realisees, enRetard: actives.filter(s => s === 'EN_RETARD').length, taux: actives.length ? Math.round((realisees / actives.length) * 100) : null }
 }
+
+/** Année transmise (?annee=AAAA) si valide, sinon l'année en cours. */
+export function anneeOuCourante(v: string | null): number {
+  const n = Number(v)
+  return v && Number.isInteger(n) && n >= 2000 && n <= 2100 ? n : new Date().getUTCFullYear()
+}

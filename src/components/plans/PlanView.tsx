@@ -118,12 +118,18 @@ export default function PlanView({ id }: { id: string }) {
   return (
     <div className="space-y-5">
       <header>
-        <Link href="/plans" className="text-xs text-ebios-600 hover:underline">{p.retour}</Link>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{d.plan.nom}</h1>
+        <Link href="/plans" className="text-xs text-ebios-600 hover:underline print:hidden">{p.retour}</Link>
+        <div className="flex flex-wrap items-start justify-between gap-2 mt-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{d.plan.nom}</h1>
+          <div className="flex gap-2 print:hidden">
+            <a href={`/api/plans/${id}/export?lang=${locale}`} className="btn-secondary text-sm">{p.export.excel}</a>
+            <button type="button" onClick={() => window.print()} className="btn-secondary text-sm">{p.export.imprimer}</button>
+          </div>
+        </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">{[d.plan.type === 'AUDIT' ? t.planification.planAudit : t.planification.planControle, d.plan.equipe, p.prismes[d.plan.prismePrincipal], p.modes[d.plan.mode], `${d.plan.anneeDebut}–${d.plan.anneeFin}`].filter(Boolean).join(' · ')}</p>
       </header>
 
-      <div role="tablist" aria-label={p.annee} className="flex flex-wrap gap-1.5">
+      <div role="tablist" aria-label={p.annee} className="flex flex-wrap gap-1.5 print:hidden">
         {d.annees.map(a => (
           <button key={a.annee} role="tab" aria-selected={a.annee === annee} onClick={() => { setAnnee(a.annee); setEdition(null) }}
             className={`px-3 py-1.5 rounded-lg text-sm border ${a.annee === annee ? 'border-ebios-500 bg-ebios-50 text-ebios-800 dark:bg-ebios-500/15 dark:text-ebios-100' : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300'}`}>
@@ -139,7 +145,7 @@ export default function PlanView({ id }: { id: string }) {
           {!modifiable && d.droits.preparer && <p className="text-xs text-gray-500 mt-1">{p.verrouille}</p>}
           {d.droits.doubleRegard && <p className="text-xs text-gray-500 mt-1">{p.doubleRegardActif}</p>}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 print:hidden">
           {actions.map(a => <button key={a} type="button" onClick={() => transition(a)} className={a === 'VALIDER' || a === 'SOUMETTRE' ? 'btn-primary text-sm' : 'btn-secondary text-sm'}>{p.actions[a]}</button>)}
         </div>
         {message && <p role="alert" className="w-full text-sm text-red-600">{message}</p>}
@@ -150,7 +156,7 @@ export default function PlanView({ id }: { id: string }) {
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{p.lignesTitre.replace('{annee}', String(annee))}</h2>
-          {modifiable && !edition && <button type="button" onClick={() => setEdition({ id: null, saisie: ligneVide(d.plan.prismePrincipal) })} className="btn-secondary text-sm inline-flex items-center gap-1"><Plus size={14} aria-hidden="true" />{p.ajouterLigne}</button>}
+          {modifiable && !edition && <button type="button" onClick={() => setEdition({ id: null, saisie: ligneVide(d.plan.prismePrincipal) })} className="btn-secondary text-sm inline-flex items-center gap-1 print:hidden"><Plus size={14} aria-hidden="true" />{p.ajouterLigne}</button>}
         </div>
         {edition && (options ? <LigneForm key={edition.id ?? 'nouvelle'} initial={edition.saisie} options={options} annee={annee} onSave={enregistrer} onCancel={() => setEdition(null)} /> : <p className="text-sm text-gray-400">…</p>)}
         {lignes.length === 0 ? <p className="text-sm italic text-gray-400">{p.aucuneLigne}</p> : (
@@ -170,11 +176,11 @@ export default function PlanView({ id }: { id: string }) {
                     <td className="px-3 py-2 text-xs">
                       {l.statutCalcule && <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${STATUT_LIGNE_STYLE[l.statutCalcule]}`}>{p.statutsLigne[l.statutCalcule]}</span>}
                       {(l.realisations ?? []).filter(x => x.intitule).map(x => <span key={`${x.type}:${x.id}`} className="block text-gray-500 dark:text-gray-400 mt-0.5">{x.intitule}</span>)}
-                      {d.droits.preparer && <button type="button" onClick={() => setRattachement(rattachement === l.id ? null : l.id)} className="block text-ebios-600 hover:underline mt-0.5">{p.rattachement.rattacher}</button>}
+                      {d.droits.preparer && <button type="button" onClick={() => setRattachement(rattachement === l.id ? null : l.id)} className="block text-ebios-600 hover:underline mt-0.5 print:hidden">{p.rattachement.rattacher}</button>}
                     </td>
                     <td className="px-3 py-2 text-xs">{l.charge ?? '—'}</td>
                     <td className="px-3 py-2 text-xs">{l.responsable ?? '—'}</td>
-                    <td className="px-3 py-2 text-right whitespace-nowrap">
+                    <td className="px-3 py-2 text-right whitespace-nowrap print:hidden">
                       {modifiable && <>
                         <button type="button" aria-label={`${p.modifier} ${l.intitule}`} onClick={() => setEdition({ id: l.id, saisie: versSaisie(l) })} className="p-1 text-gray-400 hover:text-ebios-600"><Pencil size={14} aria-hidden="true" /></button>
                         <button type="button" aria-label={`${p.supprimer} ${l.intitule}`} onClick={() => supprimer(l)} className="p-1 text-gray-400 hover:text-red-600"><Trash2 size={14} aria-hidden="true" /></button>

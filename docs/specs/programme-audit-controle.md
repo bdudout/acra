@@ -1,6 +1,6 @@
 # Programme pluriannuel d'audit et de contrôle — plans annuels validés
 
-**Statut :** en cours de réalisation (lot P1 démarré le 2026-10-07) · **Modules :** audit interne
+**Statut :** lots P1 à P6 réalisés (2026-10-08) ; recette administrateur et auditeur à faire · **Modules :** audit interne
 (3ᵉ ligne), contrôle permanent (2ᵉ ligne)
 
 ## 1. Objectif
@@ -97,7 +97,7 @@ interrupteurs existants (audit interne, contrôle permanent) ; pas d'interrupteu
 | P3 ✅ | Graphique annuel (frise 12 mois) sur un plan ; export |
 | P4 ✅ | Rattachement des réalisations (missions, contrôles, campagnes) et statut calculé ; reprise de l'univers d'audit et du plan annuel de contrôle comme point de départ d'un plan |
 | P5 ✅ | Vue globale : agrégation de tous les plans, frise commune, indicateurs (doublons et chevauchements de sollicitation, angles morts ≥ 3 ans) |
-| P6 | Exports (Excel, PDF pour le comité), i18n ×5, recette par rôle |
+| P6 ✅ | Exports (Excel, PDF pour le comité), i18n ×5, recette par rôle |
 
 ## 8 bis. Définitions retenues pour les indicateurs (lot P5)
 

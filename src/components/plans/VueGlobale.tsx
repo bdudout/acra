@@ -66,13 +66,16 @@ export default function VueGlobale() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 print:hidden">
         <label className="text-sm text-gray-700 dark:text-gray-200">{p.annee}
           <select aria-label={p.annee} value={annee} onChange={e => setAnnee(Number(e.target.value))} className="ml-2 rounded-sm border border-gray-300 bg-white px-2 py-1 text-sm dark:bg-gray-800 dark:border-gray-600">
             {Array.from({ length: 7 }, (_, i) => new Date().getFullYear() - 2 + i).map(a => <option key={a} value={a}>{a}</option>)}
           </select>
         </label>
+        <a href={`/api/plans/vue/export?annee=${annee}&lang=${locale}`} className="btn-secondary text-sm">{p.export.excel}</a>
+        <button type="button" onClick={() => window.print()} className="btn-secondary text-sm">{p.export.imprimer}</button>
       </div>
+      <p className="hidden print:block text-lg font-semibold">{p.titre} — {annee}</p>
       {!d ? <p className="text-sm text-gray-400">…</p> : <>
         <section className="card p-4 overflow-x-auto" aria-label={v.synthese}>
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">{v.synthese}</h2>
