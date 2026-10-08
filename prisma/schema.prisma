@@ -364,6 +364,14 @@ model Traitement {
   surveillanceSystematique Boolean      @default(false)
   // Critères de risque élevé des lignes directrices WP248 rév. 01 cochés par le DPO (lib/ropa CRITERES_AIPD).
   criteresAipd             Json         @default("[]")
+  // Suivi de l'AIPD (art. 35-36) : statut A_REALISER | EN_COURS | REALISEE | NON_RETENUE (lib/ropa-aipd), analyse ACRA
+  // rattachée, date, justification d'une AIPD non retenue, consultation préalable de l'autorité de contrôle.
+  aipdStatut                String?
+  aipdAnalyseId             String?
+  aipdAnalyse               Analyse?     @relation("TraitementAipd", fields: [aipdAnalyseId], references: [id], onDelete: SetNull)
+  aipdDate                  DateTime?    @db.Date
+  aipdJustification         String       @default("")
+  aipdConsultationPrealable Boolean      @default(false)
   // Provenance d'un traitement type du catalogue RoPA (import ligne par ligne idempotent).
   catalogueKey             String?
   catalogueVersion         String?
@@ -1714,6 +1722,7 @@ model Analyse {
   @@index([socleId])
   @@index([projetSourceId])
   @@index([deletedAt])
+  traitementsAipd Traitement[] @relation("TraitementAipd")
   @@index([organizationId])
   systemesIa SystemeIA[]
 }

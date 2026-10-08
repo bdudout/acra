@@ -105,3 +105,27 @@ describe('RopaManager — critères WP248 dans le formulaire', () => {
     expect(corps).toMatchObject({ criteresAipd: ['EVALUATION'], grandeEchelle: true, surveillanceSystematique: false })
   })
 })
+
+describe('RopaManager — suivi de l’AIPD', () => {
+  beforeEach(() => { vi.restoreAllMocks() })
+  it('AIPD requise non engagée : alerte « AIPD à lancer », compteur ; suivi ouvert depuis la ligne ; analyse rattachée affichée', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({
+      traitements: [
+        { id: 'a', nom: 'Scoring', finalite: 'F', baseLegale: 'contrat', categoriesPersonnes: ['A'], categoriesDonnees: ['B'], destinataires: ['C'], transfertHorsUE: false, dureeConservation: '1 an', mesuresSecurite: ['M'],
+          aipdStatut: null, aipdAnalyseId: null, aipdDate: null, aipdJustification: '', aipdConsultationPrealable: false, aipdAnalyse: null,
+          evaluation: { complet: true, champsManquants: [], pia: { requis: true, niveau: 'REQUISE', motifs: ['EVALUATION', 'GRANDE_ECHELLE'] }, alerteAipd: 'A_LANCER' } },
+        { id: 'b', nom: 'Vidéo', finalite: 'F', baseLegale: 'contrat', categoriesPersonnes: ['A'], categoriesDonnees: ['B'], destinataires: ['C'], transfertHorsUE: false, dureeConservation: '1 an', mesuresSecurite: ['M'],
+          aipdStatut: 'REALISEE', aipdAnalyseId: 'x', aipdDate: '2026-09-01T00:00:00.000Z', aipdJustification: '', aipdConsultationPrealable: true, aipdAnalyse: { id: 'x', nom: 'AIPD vidéoprotection' },
+          evaluation: { complet: true, champsManquants: [], pia: { requis: true, niveau: 'REQUISE', motifs: ['SURVEILLANCE', 'GRANDE_ECHELLE'] }, alerteAipd: null } },
+      ],
+      synthese: { total: 2, complets: 2, piaRequis: 2, aipdALancer: 1 }, canManage: true, peutCreerAnalyse: false,
+    }) }))
+    render(<RopaManager />)
+    await screen.findByText('Scoring')
+    expect(screen.getAllByText('AIPD à lancer')).toHaveLength(2) // indicateur + alerte de la ligne
+    expect(screen.getByText(/Réalisée/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'AIPD vidéoprotection' })).toHaveAttribute('href', '/analyses/x')
+    fireEvent.click(screen.getByRole('button', { name: 'Suivre l’AIPD Scoring' }))
+    expect(screen.getByRole('region', { name: 'Suivi de l’AIPD — Scoring' })).toBeInTheDocument()
+  })
+})

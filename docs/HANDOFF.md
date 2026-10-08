@@ -6,6 +6,25 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-09 (100) — Claude : RGPD — suivi effectif de l'AIPD (lot D)
+
+- `lib/ropa-aipd` (pur) : statuts À réaliser / En cours / Réalisée / Non retenue ; alerte « AIPD à lancer » (requise non
+  engagée) et « justification manquante » ; « non retenue » refusée sans justification dès qu'un critère WP248 est
+  présent (décision documentée). Colonnes `Traitement.aipd*` + relation `aipdAnalyse` → `Analyse` (SetNull) — migration
+  `20261009170000_ropa_suivi_aipd`.
+- `PATCH /api/ropa/[id]/aipd` (DPO / ADMIN ; traitement et analyse de l'organisation active ; journalisé) ; `GET /api/ropa`
+  renvoie `evaluation.alerteAipd`, `synthese.aipdALancer`, l'analyse rattachée et `peutCreerAnalyse` (le DPO, en
+  lecture, rattache ; « Créer l'analyse » seulement pour les rôles qui peuvent créer une analyse).
+- UI : `AipdSuiviPanel` (statut, analyse, date, justification, consultation préalable art. 36) ouvert depuis la ligne ;
+  indicateur « AIPD à lancer » ; colonnes de suivi dans l'export.
+- **Vérifié** : tests ; navigateur DPO (requise → « à lancer » ; non retenue sans justification → refus ; en cours +
+  analyse rattachée → alerte levée, panneau prérempli) ; données de test supprimées.
+- CI : le scénario 5 des « Scénarios de mise à jour » (kill -9 pendant MIGRATE) échoue par intermittence (course :
+  la migration fautive du scénario 4 reste sur `main` du dépôt de test, la mise à jour se termine avant le kill) ;
+  relance verte ; correction du script à décider avec l'utilisateur.
+
+---
+
 ## 2026-10-09 (99) — Claude : RGPD — registre du sous-traitant en option (lot C)
 
 - Module `ropaSousTraitant` (champ `ropaSousTraitantActive`, désactivé par défaut) câblé sur les 3 niveaux : défaut,

@@ -26,7 +26,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!canManageRopa(scope.role as UserRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const [rows, org, identite] = await Promise.all([
-    prisma.traitement.findMany({ where: { organizationId: scope.activeOrgId }, orderBy: [{ nom: 'asc' }] }),
+    prisma.traitement.findMany({ where: { organizationId: scope.activeOrgId }, orderBy: [{ nom: 'asc' }], include: { aipdAnalyse: { select: { nom: true } } } }),
     prisma.organization.findUnique({ where: { id: scope.activeOrgId }, select: { nom: true } }),
     lireIdentite(scope.activeOrgId),
   ])
@@ -35,7 +35,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     ? (await prisma.traitementSousTraitance.findMany({ where: { organizationId: scope.activeOrgId }, orderBy: [{ clientNom: 'asc' }] }))
         .map(x => { const st = sanitizeSousTraitance(x); return { ...st, manquants: champsManquantsArt30_2(st) } })
     : undefined
-  const traitements = rows.map(r => { const t = sanitizeTraitement(r); return { ...t, evaluation: evaluerTraitement(t) } })
+  const traitements = rows.map(r => {
+    const t = sanitizeTraitement(r)
+    return { ...t, evaluation: evaluerTraitement(t), aipdStatut: r.aipdStatut, aipdAnalyseNom: r.aipdAnalyse?.nom ?? null, aipdDate: r.aipdDate ? r.aipdDate.toISOString().slice(0, 10) : null, aipdConsultationPrealable: r.aipdConsultationPrealable }
+  })
   const now = new Date()
   const buf = await buildRopaXlsx({ t: getT(await getServerLocale()), now, organisation: org?.nom ?? '', identite: identite.effective, sousTraitances, traitements })
   await auditLog('EXPORT', { userId: user.id, userRole: scope.role, organizationId: scope.activeOrgId, ip: getClientIp(req), targetType: 'ropa', details: { format: 'xlsx', traitements: traitements.length } })

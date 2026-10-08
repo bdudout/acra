@@ -21,7 +21,7 @@ function feuille(wb: ExcelJS.Workbook, nom: string, entetes: string[], lignes: (
   for (const l of lignes) ws.addRow(l.map(v => (typeof v === 'string' ? S(v) : v ?? '')))
 }
 
-export async function buildRopaXlsx(o: { t: Cat; now: Date; organisation: string; identite?: IdentiteEffective; sousTraitances?: (SousTraitance & { manquants: string[] })[]; traitements: (Traitement & { evaluation: TraitementEvaluation })[] }): Promise<Buffer> {
+export async function buildRopaXlsx(o: { t: Cat; now: Date; organisation: string; identite?: IdentiteEffective; sousTraitances?: (SousTraitance & { manquants: string[] })[]; traitements: (Traitement & { evaluation: TraitementEvaluation; aipdStatut?: string | null; aipdAnalyseNom?: string | null; aipdDate?: string | null; aipdConsultationPrealable?: boolean })[] }): Promise<Buffer> {
   const r = o.t.ropa, e = r.export
   const wb = new ExcelJS.Workbook()
   wb.creator = 'ACRA — Augmented Cyber (& Business) Risk Analysis'; wb.created = o.now
@@ -45,15 +45,17 @@ export async function buildRopaXlsx(o: { t: Cat; now: Date; organisation: string
     if (x.dpo.source !== 'AUCUN') pres.addRow([id.dpo, ligne(x.dpo.nom, x.dpo.contact)])
   }
   feuille(wb, e.feuille,
-    [r.fNom, r.fFinalite, r.fBase, r.fPersonnes, r.fDonnees, r.fDestinataires, r.fTransfert, r.fPays, r.fGaranties, r.fDuree, r.fMesures, e.complet, e.manquants, e.aipd, e.motifsCol],
+    [r.fNom, r.fFinalite, r.fBase, r.fPersonnes, r.fDonnees, r.fDestinataires, r.fTransfert, r.fPays, r.fGaranties, r.fDuree, r.fMesures, e.complet, e.manquants, e.aipd, e.motifsCol, r.aipd.statut, r.aipd.analyse, r.aipd.date, r.aipd.consultation.split(' (')[0]],
     o.traitements.map(x => [
       x.nom, x.finalite, x.baseLegale ? (r.bases as Record<string, string>)[x.baseLegale] ?? x.baseLegale : '',
       x.categoriesPersonnes.join(', '), x.categoriesDonnees.join(', '), x.destinataires.join(', '),
       ouiNon(x.transfertHorsUE), x.paysTransfert ?? '', x.garantiesTransfert ?? '', x.dureeConservation, x.mesuresSecurite.join(', '),
       ouiNon(x.evaluation.complet), x.evaluation.champsManquants.map(c => champ[c] ?? c).join(', '),
       (r.niveaux as Record<string, string>)[x.evaluation.pia.niveau] ?? '', x.evaluation.pia.motifs.map(m => (r.criteres as Record<string, string>)[m] ?? m).join(' ; '),
+      // Suivi de l'AIPD (art. 35-36).
+      x.aipdStatut ? (r.aipd.statuts as Record<string, string>)[x.aipdStatut] ?? x.aipdStatut : '', x.aipdAnalyseNom ?? '', x.aipdDate ?? '', x.aipdConsultationPrealable ? e.oui : '',
     ]),
-    [32, 40, 18, 26, 30, 26, 12, 16, 30, 18, 30, 12, 26, 12, 40])
+    [32, 40, 18, 26, 30, 26, 12, 16, 30, 18, 30, 12, 26, 12, 40, 14, 30, 14, 22])
   // Registre du sous-traitant (art. 30 §2) : seulement si le module est actif (lignes fournies).
   if (o.sousTraitances) {
     const st = r.sousTraitance
