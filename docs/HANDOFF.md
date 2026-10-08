@@ -6,6 +6,24 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-09 (96) — Claude : signaler une erreur sur GitHub (demande utilisateur)
+
+- Demande : sur une 500 (ou une autre erreur due au code), bouton pour remonter le problème en issue GitHub avec les
+  éléments utiles, sans données confidentielles, au moins la version installée.
+- `lib/signalement-erreur` (pur) : issue PRÉ-REMPLIE (`github.com/<dépôt>/issues/new?title&body&labels=bug`) — rien
+  n'est envoyé par ACRA, aucun jeton : la personne relit puis envoie avec son compte. Contenu : version / révision
+  (`/api/health`, qui expose aussi `issuesRepo` = `ACRA_ISSUES_REPO` validé, défaut `bdudout/acra`), statut, page et
+  requête d'API aux identifiants masqués (cuid, uuid, nombres, e-mails, jetons ; sans paramètres ni ancre), référence
+  Next.js (`digest`, format contrôlé), minute UTC, navigateur et système en grande famille, langue. Jamais : données
+  saisies, noms, e-mails, organisation, message d'erreur.
+- `ErrorScreen` (error.tsx / global-error.tsx, `digest` transmis) : lien + aperçu « Voir ce qui sera transmis ».
+  `SignalementErreursApi` (layout) : observe `fetch` vers `/api/…` de même origine ; une réponse 5xx affiche un bandeau
+  (4xx = saisie : rien) ; `fetch` d'origine rétabli au démontage ; réponses ni lues ni modifiées.
+- **Vérifié** : tests (lib, écran d'erreur, bandeau) ; navigateur : surveillance active, `/api/health` → `issuesRepo`.
+  Bandeau non déclenché en réel (aucune 500 reproductible sans casser une route).
+
+---
+
 ## 2026-10-09 (95) — Claude : consolidation des entités — tableaux de bord de pilotage
 
 - #239 fusionnée. `RiskFilters` : `entiteId` + `sousEntites` (lien, à défaut texte identique ; sous-entités incluses par
