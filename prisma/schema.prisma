@@ -203,6 +203,8 @@ model Organization {
   analysisImports   AnalysisImport[]
   analysisImportMappings AnalysisImportMapping[]
   testsResilience        TestResilience[]
+  entites                Entite[] @relation("EntiteOrganisation")
+  entitesLiees           Entite[] @relation("EntiteOrganisationLiee")
 
   @@index([parentId])
   @@index([path])
@@ -494,6 +496,9 @@ model RiskItem {
   processusId   String?
   processus     Processus? @relation(fields: [processusId], references: [id], onDelete: SetNull)
   entite        String? // entité concernée (texte libre pour l'instant)
+  // Lien vers le référentiel des entités (consolidation, lot E1) ; le texte libre `entite` est conservé.
+  entiteId       String?
+  entiteRef      Entite?  @relation("EntiteRiskItem", fields: [entiteId], references: [id], onDelete: SetNull)
   proprietaire  String?
 
   // Cotation (mêmes échelles gravité × vraisemblance que le cyber).
@@ -524,6 +529,7 @@ model RiskItem {
   @@unique([organizationId, catalogueKey])
   @@index([processusId])
   @@index([taxonomieCode])
+  @@index([entiteId])
 }
 
 // ─── M1 v2 — Campagnes d'évaluation RCSA ─────────────────────────────────────
@@ -744,6 +750,9 @@ model Incident {
   processusId   String?
   processus     Processus? @relation(fields: [processusId], references: [id], onDelete: SetNull)
   entite        String?
+  // Lien vers le référentiel des entités (consolidation, lot E1) ; le texte libre `entite` est conservé.
+  entiteId       String?
+  entiteRef      Entite?  @relation("EntiteIncident", fields: [entiteId], references: [id], onDelete: SetNull)
 
   // Impact ressenti à la déclaration (échelle courte 1-4 : on signale, on ne cote pas).
   impactEstime Int?
@@ -815,6 +824,7 @@ model Incident {
   @@index([riskItemId])
   @@index([processusId])
   @@index([taxonomieCode])
+  @@index([entiteId])
 }
 
 // ─── Campagne de contrôle de 1er niveau (N1) — orchestration M3 ──────────────
@@ -1302,6 +1312,9 @@ model Conformite {
   // Discriminant permettant PLUSIEURS suivis par référentiel : "" = suivi org-wide,
   // sinon nom d'entité / de socle. Fait partie de la clé d'unicité.
   entite         String               @default("")
+  // Lien vers le référentiel des entités (consolidation, lot E1) ; le texte libre `entite` est conservé.
+  entiteId       String?
+  entiteRef      Entite?  @relation("EntiteConformite", fields: [entiteId], references: [id], onDelete: SetNull)
   // Libellé lisible du suivi (ex. "Socle groupe", "Entité DSI"). Null pour l'org-wide.
   nom            String?
   entries        Json                 @default("[]")
@@ -1317,6 +1330,7 @@ model Conformite {
 
   @@unique([organizationId, referentiel, entite])
   @@index([organizationId])
+  @@index([entiteId])
 }
 
 // Plan d'action UNIFIÉ, objet de premier plan : une chose à faire, portée par
@@ -1331,6 +1345,9 @@ model PlanAction {
   description    String?      @db.Text
   porteur        String?
   entite         String?
+  // Lien vers le référentiel des entités (consolidation, lot E1) ; le texte libre `entite` est conservé.
+  entiteId       String?
+  entiteRef      Entite?  @relation("EntitePlanAction", fields: [entiteId], references: [id], onDelete: SetNull)
   echeance       DateTime?
   // CRITIQUE | MAJEUR | MODERE
   priorite       String       @default("MAJEUR")
@@ -1346,6 +1363,7 @@ model PlanAction {
 
   @@index([organizationId])
   @@index([statut])
+  @@index([entiteId])
 }
 
 // Lien polymorphe entre un plan d'action et une source (analyse, conformité,
@@ -1377,6 +1395,9 @@ model ConformiteTraitement {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   referentiel    String
   entite         String       @default("")
+  // Lien vers le référentiel des entités (consolidation, lot E1) ; le texte libre `entite` est conservé.
+  entiteId       String?
+  entiteRef      Entite?  @relation("EntiteConformiteTraitement", fields: [entiteId], references: [id], onDelete: SetNull)
   // Contrôles couverts (multi-exigences) : liste de refs du référentiel.
   refs           Json         @default("[]")
   // PLAN_ACTION | DEROGATION | ACCEPTATION_RISQUE
@@ -1400,6 +1421,7 @@ model ConformiteTraitement {
   @@index([organizationId, referentiel, entite])
   @@index([type])
   @@index([derogationId])
+  @@index([entiteId])
 }
 
 // Instantané daté de l'état de conformité (tendance dans le temps).
@@ -2026,6 +2048,9 @@ model Mesure {
   statut         StatutMesure @default(A_FAIRE)
   responsable    String?
   entite         String? // Entité responsable (DSI, Métier, Risques…) — liste configurable
+  // Lien vers le référentiel des entités (consolidation, lot E1) ; le texte libre `entite` est conservé.
+  entiteId       String?
+  entiteRef      Entite?  @relation("EntiteMesure", fields: [entiteId], references: [id], onDelete: SetNull)
   echeance       DateTime?
   cout           String?
   efficacite     Int? // 1-4
@@ -2038,6 +2063,7 @@ model Mesure {
   @@index([analyseId])
   @@index([statut])
   @@index([priorite])
+  @@index([entiteId])
 }
 
 enum TypeMesure {
@@ -2819,3 +2845,36 @@ model PlanLigne {
   @@index([planId, annee])
 }
 
+/// Référentiel des entités d'une organisation (consolidation, spec docs/specs/entites-consolidation-besoin.md).
+/// Filiales (éventuellement liées à une organisation ACRA), directions, sites, services responsables des mesures.
+model Entite {
+  id                 String        @id @default(cuid())
+  organizationId     String
+  organization       Organization  @relation("EntiteOrganisation", fields: [organizationId], references: [id], onDelete: Cascade)
+  nom                String
+  type               String // FILIALE | DIRECTION | SITE | SERVICE | AUTRE
+  codeExterne        String? // code RH, code annuaire, LEI…
+  alias              Json          @default("[]")
+  parentId           String?
+  parent             Entite?       @relation("EntiteArbre", fields: [parentId], references: [id], onDelete: SetNull)
+  enfants            Entite[]      @relation("EntiteArbre")
+  // Filiale gérée comme organisation de l'arbre ACRA (ses utilisateurs, sa configuration).
+  organisationLieeId String?
+  organisationLiee   Organization? @relation("EntiteOrganisationLiee", fields: [organisationLieeId], references: [id], onDelete: SetNull)
+  source             String        @default("MANUEL") // MANUEL | IMPORT | ANNUAIRE
+  valideDu           DateTime?     @db.Date
+  valideAu           DateTime?     @db.Date // clôture
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  risques            RiskItem[] @relation("EntiteRiskItem")
+  incidents          Incident[] @relation("EntiteIncident")
+  conformites        Conformite[] @relation("EntiteConformite")
+  plansAction        PlanAction[] @relation("EntitePlanAction")
+  traitementsConformite ConformiteTraitement[] @relation("EntiteConformiteTraitement")
+  mesures            Mesure[] @relation("EntiteMesure")
+
+  @@unique([organizationId, codeExterne])
+  @@index([organizationId])
+  @@index([parentId])
+}

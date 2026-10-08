@@ -6,6 +6,23 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-09 (89) — Claude : consolidation des entités, lot E1 (référentiel)
+
+- Décisions de l'utilisateur consignées (spec § 4) : une filiale peut être une entité (liée ou non à une organisation
+  ACRA) ; les services responsables des mesures sont des entités (type SERVICE) ; avec un annuaire connecté,
+  l'administrateur choisit qui fait foi (ACRA ou l'annuaire) ; historique des réorganisations conservé 5 ans.
+- Modèle `Entite` (migration additive `20261009090000_referentiel_entites`) + `entiteId` optionnel sur 6 modèles ;
+  `lib/entites` (pur), `lib/entites.server`, routes `/api/referentiel-entites/**`, écran dans *Configuration › Entités
+  et rôles* ; choix de la source de vérité dans le connecteur (`entitesSyncConfig.sourceVerite`).
+- **Vérifié** : tests lib / routes / composants ; navigateur en ADMIN de recette (création, doublon → 409,
+  boucle → 400, suppression d'une entité référencée → 409, rendu de l'arbre et du formulaire) ; données de test supprimées.
+- **Piège** : le lanceur du panneau navigateur (`preview_start` par nom) n'a plus accès au dossier Documents (refus
+  macOS) → serveur de dev lancé depuis le terminal, panneau ouvert sur l'URL.
+- **Suite** : E2 import fichier / connecteur vers le référentiel avec aperçu des écarts ; E3 rapprochement des textes
+  libres (`correspondances` est prêt) ; E4 réorganisations + historique 5 ans ; E5 sélecteurs et agrégation.
+
+---
+
 ## 2026-10-08 (88) — Claude : héritage de configuration préservé, dossier de comité sur une page
 
 - `upsertOrgConfig(orgId, data)` (`lib/org-config.server`) : à la **création** d'une ligne `OrganizationConfig`, copie les

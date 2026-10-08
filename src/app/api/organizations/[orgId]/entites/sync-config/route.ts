@@ -13,7 +13,7 @@ import { redactSecrets } from '@/lib/audit-redact'
 import { upsertOrgConfig } from '@/lib/org-config.server'
 
 type Params = { params: Promise<{ orgId: string }> }
-const schema = z.object({ type: z.enum(['REST', 'LDAP']), endpoint: z.string().max(2000), token: z.string().max(2048).optional(), bindDN: z.string().max(512).optional(), password: z.string().max(1024).optional(), baseDN: z.string().max(512).optional(), filter: z.string().max(512).optional() })
+const schema = z.object({ type: z.enum(['REST', 'LDAP']), endpoint: z.string().max(2000), token: z.string().max(2048).optional(), bindDN: z.string().max(512).optional(), password: z.string().max(1024).optional(), baseDN: z.string().max(512).optional(), filter: z.string().max(512).optional(), sourceVerite: z.enum(['ACRA', 'ANNUAIRE']).optional() })
 
 async function guard(orgId: string): Promise<{ user?: { id: string; email?: string | null }; status: 401 | 403 | null }> {
   const session = await getServerSession(authOptions); if (!session?.user) return { status: 401 }

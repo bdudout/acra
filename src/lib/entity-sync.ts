@@ -35,6 +35,8 @@ export type EntitySyncConfig = {
   password?: string
   baseDN?: string
   filter?: string
+  // Choix de l'administrateur : ACRA ou l'annuaire fait foi pour les entités importées (cf. lib/entites).
+  sourceVerite?: 'ACRA' | 'ANNUAIRE'
 }
 
 /** Fusionne la saisie avec la configuration stockée : un champ secret vide
@@ -61,6 +63,7 @@ export function publicEntitySyncConfig(config: EntitySyncConfig): Required<Omit<
     password: config.password ? '[CONFIGURED]' : '',
     baseDN: config.baseDN ?? '',
     filter: config.filter ?? '',
+    sourceVerite: config.sourceVerite === 'ANNUAIRE' ? 'ANNUAIRE' : 'ACRA',
   }
 }
 
