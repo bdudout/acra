@@ -4,8 +4,8 @@
 // n'a été validée (la trace d'un plan validé est conservée).
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { contextePlan, chargerPlan, assurerAnnees } from '@/lib/planification.server'
-import { cleanPlanInput, peutPreparer, peutValider, type TypePlan } from '@/lib/planification'
+import { contextePlan, chargerPlan, assurerAnnees, donneesRealisations, etatRealisation } from '@/lib/planification.server'
+import { cleanPlanInput, cleanRealisations, peutPreparer, peutValider, statutLigne, type TypePlan } from '@/lib/planification'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -21,7 +21,15 @@ export async function GET(_req: NextRequest, { params }: Params): Promise<NextRe
     prisma.planLigne.findMany({ where: { planId: plan.id }, orderBy: [{ annee: 'asc' }, { debut: 'asc' }, { intitule: 'asc' }] }),
   ])
   const type = plan.type as TypePlan
-  return NextResponse.json({ plan, annees, lignes, droits: { preparer: peutPreparer(c.role, type, c.cfg), valider: peutValider(c.role, type, c.cfg), doubleRegard: c.cfg.doubleRegard } })
+  // Statut calculé de chaque ligne (réalisations rattachées, période) et état des réalisations (lot P4).
+  const donnees = await donneesRealisations(c.orgId)
+  const aujourdhui = new Date().toISOString().slice(0, 10)
+  const jour = (x: Date | null) => (x ? x.toISOString().slice(0, 10) : null)
+  const enrichies = lignes.map(l => {
+    const realisations = cleanRealisations(l.realisations).map(r => ({ ...r, ...(etatRealisation(r, l.annee, donnees) ?? { statut: null, intitule: null }) }))
+    return { ...l, realisations, statutCalcule: statutLigne({ debut: jour(l.debut), fin: jour(l.fin), statutManuel: l.statutManuel }, realisations.filter(r => r.statut).map(r => ({ statut: r.statut! })), aujourdhui) }
+  })
+  return NextResponse.json({ plan, annees, lignes: enrichies, droits: { preparer: peutPreparer(c.role, type, c.cfg), valider: peutValider(c.role, type, c.cfg), doubleRegard: c.cfg.doubleRegard } })
 }
 
 export async function PATCH(req: NextRequest, { params }: Params): Promise<NextResponse> {

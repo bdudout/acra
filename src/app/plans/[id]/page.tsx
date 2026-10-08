@@ -27,7 +27,7 @@ export default async function PlanPage({ params }: { params: Promise<{ id: strin
   if (!cfg.auditInterneActive && !cfg.controlePermanentActive) redirect('/dashboard')
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Navbar />
+      <div className="print:hidden"><Navbar /></div>
       <main id="main-content" className="max-w-6xl mx-auto px-4 py-8"><PlanView id={(await params).id} /></main>
     </div>
   )

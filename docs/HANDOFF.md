@@ -6,6 +6,25 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-08 (87) — Claude : programme pluriannuel d'audit et de contrôle (lots P1 à P6)
+
+- #232 (fusionnée) : P1 modèle `PlanProgramme` / `PlanAnnee` / `PlanLigne`, `lib/planification` (cycle figé / dynamique,
+  préparateurs et validateurs configurables, double regard désactivé par défaut), routes `/api/plans/**`, configuration
+  « Planification » ; P2 écrans `/plans` et `/plans/[id]` ; P3 frise annuelle.
+- Cette PR : P5 vue globale (`lib/planification-vue` : sollicitations multiples et simultanées, angles morts ≥ seuil) ;
+  P4 réalisations rattachées (missions, contrôles, campagnes ; statut calculé ; taux par plan) ; P6 exports Excel (plan,
+  vue globale) et impression / PDF. Spec : `docs/specs/programme-audit-controle.md` (définitions des indicateurs § 8 bis).
+- **Vérifié** : `tsc` ; `npm test` 594 fichiers / 4595 tests ; i18n ; build ; navigateur (contrôleur → RSSI : création,
+  lignes, soumission, validation, verrouillage, révision ; rattachement d'une mission ; vue globale 2027 ; exports Excel
+  relus ; rendu d'impression).
+- **Non vérifié en navigateur** : configuration « Planification » et plan d'audit (pas de compte administrateur ni de
+  parcours auditeur de recette).
+- **Piège** : après création d'un nouveau dossier de route, redémarrer `next dev` (sinon 404 sur la nouvelle route).
+- **À traiter** (chantier distinct) : consolidation et import des entités pour un registre qui suit les réorganisations ;
+  `PUT /api/rapports/config` crée une ligne `OrganizationConfig` qui fige l'héritage.
+
+---
+
 ## 2026-10-07 (86) — Claude : Tailwind 4, licence, modules spécifiques activables, vue super-admin
 
 - #228 / #229 : postcss-selector-parser 7.1.6 ; **Tailwind CSS 4** (migration officielle en worktree isolé, fichiers de

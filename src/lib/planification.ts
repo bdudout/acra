@@ -210,3 +210,70 @@ export function positionFrise(debut: string | null, fin: string | null, annee: n
   const largeur = Math.max(1, Math.min(100 - gauche, ((f - d) / total) * 100))
   return { gauche: Math.round(gauche * 10) / 10, largeur: Math.round(largeur * 10) / 10 }
 }
+
+// ─── Réalisations (lot P4) ───────────────────────────────────────────────────
+
+export const TYPES_REALISATION = ['MISSION', 'CONTROLE', 'CAMPAGNE'] as const
+export type TypeRealisation = (typeof TYPES_REALISATION)[number]
+export interface Realisation { type: TypeRealisation; id: string }
+
+/** Rattachements d'une ligne : missions d'audit, contrôles, campagnes de contrôle (dédoublonnés, 50 au plus). */
+export function cleanRealisations(v: unknown): Realisation[] {
+  if (!Array.isArray(v)) return []
+  const vus = new Set<string>()
+  const out: Realisation[] = []
+  for (const r of v) {
+    if (!isObj(r) || !TYPES_REALISATION.includes(r.type as TypeRealisation) || typeof r.id !== 'string' || !r.id.trim()) continue
+    const k = `${r.type}:${r.id}`
+    if (vus.has(k)) continue
+    vus.add(k); out.push({ type: r.type as TypeRealisation, id: r.id.trim().slice(0, 100) })
+  }
+  return out.slice(0, 50)
+}
+
+/** État d'une réalisation rattachée : mission / campagne (PLANIFIEE, EN_COURS, CLOTUREE), contrôle (EXECUTE ou non dans l'année). */
+export type StatutRealisation = 'PLANIFIEE' | 'EN_COURS' | 'CLOTUREE' | 'EXECUTE' | 'NON_EXECUTE'
+export type StatutLigne = 'REALISEE' | 'EN_COURS' | 'EN_RETARD' | 'A_VENIR' | 'REPORTEE' | 'ANNULEE'
+
+/**
+ * Statut calculé d'une ligne : le statut posé à la main (reportée, annulée) prime ; sinon réalisée si toutes les
+ * réalisations rattachées sont terminées, en cours si l'une est entamée, en retard si la période est passée, en cours
+ * pendant la période, à venir avant.
+ */
+export function statutLigne(l: { debut: string | null; fin: string | null; statutManuel: string | null }, etats: { statut: StatutRealisation }[], aujourdhui: string): StatutLigne {
+  if (l.statutManuel === 'ANNULEE' || l.statutManuel === 'REPORTEE') return l.statutManuel
+  const termine = (s: StatutRealisation) => s === 'CLOTUREE' || s === 'EXECUTE'
+  if (etats.length && etats.every(e => termine(e.statut))) return 'REALISEE'
+  if (etats.some(e => e.statut === 'EN_COURS' || termine(e.statut))) return 'EN_COURS'
+  const fin = l.fin ?? l.debut
+  if (fin && fin < aujourdhui) return 'EN_RETARD'
+  if (l.debut && l.debut <= aujourdhui) return 'EN_COURS'
+  return 'A_VENIR'
+}
+
+export interface CandidatRealisation { type: TypeRealisation; id: string; intitule: string; processus: string[]; risques: string[]; debut: string | null; fin: string | null }
+
+/** Réalisations proposées pour une ligne : au moins un processus ou un risque en commun, période dans l'année du plan ; les plus proches d'abord. */
+export function suggererRealisations(ligne: { debut: string | null; fin: string | null; cibles: { processus?: string[]; risques?: string[] } }, annee: number, candidats: CandidatRealisation[]): CandidatRealisation[] {
+  const p = new Set(ligne.cibles.processus ?? []), r = new Set(ligne.cibles.risques ?? [])
+  const dansAnnee = (c: CandidatRealisation) => !!c.debut && Number(c.debut.slice(0, 4)) <= annee && Number((c.fin ?? c.debut).slice(0, 4)) >= annee
+  const ref = Date.parse(`${ligne.debut ?? `${annee}-07-01`}T00:00:00Z`)
+  return candidats
+    .filter(c => dansAnnee(c) && (c.processus.some(x => p.has(x)) || c.risques.some(x => r.has(x))))
+    .map(c => ({ c, communs: c.processus.filter(x => p.has(x)).length + c.risques.filter(x => r.has(x)).length, ecart: Math.abs(Date.parse(`${c.debut}T00:00:00Z`) - ref) }))
+    .sort((a, b) => b.communs - a.communs || a.ecart - b.ecart)
+    .map(x => x.c)
+}
+
+/** Taux de réalisation d'un ensemble de lignes (hors annulées et reportées). */
+export function tauxRealisation(statuts: StatutLigne[]): { actives: number; realisees: number; enRetard: number; taux: number | null } {
+  const actives = statuts.filter(s => s !== 'ANNULEE' && s !== 'REPORTEE')
+  const realisees = actives.filter(s => s === 'REALISEE').length
+  return { actives: actives.length, realisees, enRetard: actives.filter(s => s === 'EN_RETARD').length, taux: actives.length ? Math.round((realisees / actives.length) * 100) : null }
+}
+
+/** Année transmise (?annee=AAAA) si valide, sinon l'année en cours. */
+export function anneeOuCourante(v: string | null): number {
+  const n = Number(v)
+  return v && Number.isInteger(n) && n >= 2000 && n <= 2100 ? n : new Date().getUTCFullYear()
+}

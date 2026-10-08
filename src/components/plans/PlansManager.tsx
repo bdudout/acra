@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { CalendarRange, Plus } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
+import VueGlobale from './VueGlobale'
 import { PRISMES, type ModePlan, type Prisme, type StatutAnnee, type TypePlan } from '@/lib/planification'
 
 interface PlanResume {
@@ -28,6 +29,7 @@ export default function PlansManager() {
   const [data, setData] = useState<Liste | null>(null)
   const [form, setForm] = useState<null | { type: TypePlan; nom: string; equipe: string; prismePrincipal: Prisme; mode: ModePlan; anneeDebut: number; anneeFin: number }>(null)
   const [erreur, setErreur] = useState<string | null>(null)
+  const [onglet, setOnglet] = useState<'plans' | 'vue'>('plans')
 
   const reload = () => fetch('/api/plans').then(r => (r.ok ? r.json() : null)).then(setData).catch(() => {})
   useEffect(() => { reload() }, [])
@@ -56,14 +58,22 @@ export default function PlansManager() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100"><CalendarRange size={24} className="inline align-[-0.16em] mr-2 text-ebios-600" aria-hidden="true" />{p.titre}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{p.sousTitre}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 print:hidden">
           {types.filter(ty => data.peutCreer[ty]).map(ty => (
             <button key={ty} type="button" onClick={() => ouvrir(ty)} className="btn-primary text-sm inline-flex items-center gap-1.5"><Plus size={15} aria-hidden="true" />{p.nouveau[ty]}</button>
           ))}
         </div>
       </header>
 
-      {form && (
+      <div role="tablist" aria-label={p.titre} className="flex gap-1.5 border-b border-gray-200 dark:border-gray-700 print:hidden">
+        {(['plans', 'vue'] as const).map(o => (
+          <button key={o} role="tab" aria-selected={onglet === o} onClick={() => setOnglet(o)}
+            className={`px-3 py-2 text-sm -mb-px border-b-2 ${onglet === o ? 'border-ebios-600 text-ebios-700 dark:text-ebios-300 font-medium' : 'border-transparent text-gray-500'}`}>{p.onglets[o]}</button>
+        ))}
+      </div>
+      {onglet === 'vue' && <VueGlobale />}
+
+      {onglet === 'plans' && form && (
         <section className="card p-4 space-y-3" aria-label={p.nouveau[form.type]}>
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{p.nouveau[form.type]}</h2>
           <div className="grid sm:grid-cols-2 gap-3">
@@ -98,7 +108,7 @@ export default function PlansManager() {
         </section>
       )}
 
-      {types.map(ty => {
+      {onglet === 'plans' && types.map(ty => {
         const plans = data.plans.filter(pl => pl.type === ty)
         return (
           <section key={ty}>
