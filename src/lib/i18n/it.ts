@@ -2189,6 +2189,7 @@ export const it: Translations = {
     err_generic: 'Creazione non riuscita.',
   },
   pilotage: {
+    parEntite: { titre: 'Per entità', aide: 'Entità del registro, sottoentità comprese: rischi che soddisfano i filtri, azioni in ritardo su tali rischi e incidenti della base delle perdite.', entite: 'Entità', risques: 'Rischi', eleves: 'di cui elevati', actionsEnRetard: 'Azioni in ritardo', incidentsOuverts: 'Incidenti aperti', perteNette: 'Perdita netta', nonRattache: 'Non collegato a un’entità', noteFiltre: 'Filtro per entità: rischi, azioni e incidenti; i controlli, l’audit e gli altri indicatori restano a livello di perimetro.' },
     projets: {
       title: 'Monitoraggio dei progetti 360', subtitle: 'Avanzamento, scadenze, validazione CISO + Risk Manager e rischi elevati dei progetti.', total: 'Progetti', enCours: 'In corso', termines: 'Conclusi', enRetard: 'In ritardo', valides: 'Validati',
       colProjet: 'Progetto', colStatut: 'Stato', colRisques: 'Rischi', colEleves: 'Elevati', colValidation: 'Validazione CISO + RM', colEcheance: 'Scadenza',

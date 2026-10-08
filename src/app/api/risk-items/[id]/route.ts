@@ -6,6 +6,7 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { type UserRole } from '@/lib/permissions'
 import { validateRiskItemInput, cleanRiskItem } from '@/lib/risk-item'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { entiteIdPourTexte } from '@/lib/entites.server'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -44,7 +45,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
   // La provenance (traçabilité) ne se modifie pas via l'édition manuelle.
   const { ...rest } = data
-  const updated = await prisma.riskItem.update({ where: { id }, data: rest })
+  // Lien au référentiel recalculé à partir du texte « entité » (identique) ou retiré (consolidation des entités).
+  const updated = await prisma.riskItem.update({ where: { id }, data: { ...rest, entiteId: await entiteIdPourTexte(ctx.orgId, rest.entite) } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: ctx.userId, userRole: ctx.userRole, ip: getClientIp(req), details: { scope: 'risk-item', action: 'update', id } })
   return NextResponse.json(updated)
 }

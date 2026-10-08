@@ -4,12 +4,16 @@
 // est exactement ce qui est exporté.
 
 import { niveauBucket } from './cartographie'
+import { perimetreEntite, resoudreEntite } from './entites-filtre'
+import type { EntiteRef } from './entites'
 
 /** Forme minimale d'un risque exposant les champs filtrables (taxonomie, entité, cotation…). */
 export interface FilterableRisk {
   taxonomieCode: string | null
   processusId: string | null
   entite: string | null
+  /** Lien au référentiel des entités (consolidation des entités), s'il existe. */
+  entiteId?: string | null
   statut: string
   niveauInherent: number | null
   niveauResiduel: number | null
@@ -20,6 +24,9 @@ export interface RiskFilters {
   taxonomieCode?: string | null // '' / null = toutes
   processusId?: string | null
   entite?: string | null
+  /** Entité du référentiel : lien du risque, à défaut texte identique ; sous-entités incluses sauf `sousEntites: false`. */
+  entiteId?: string | null
+  sousEntites?: boolean
   statut?: string | null
   /** Palier de niveau : 'eleve' | 'moyen' | 'faible' | 'nonCote' */
   niveau?: string | null
@@ -38,8 +45,19 @@ export function riskNiveauBucket(r: FilterableRisk, mode: 'inherent' | 'residual
   return niveauBucket(niveau)
 }
 
+/** Référentiel des entités, nécessaire pour résoudre un texte libre et inclure les sous-entités. */
+export interface FilterContext { entites?: EntiteRef[] }
+
+/** Vrai si l'entité du risque est dans le périmètre demandé ; sans référentiel : égalité stricte du lien. */
+function dansEntite(r: FilterableRisk, f: RiskFilters, ctx: FilterContext | undefined, perimetre?: Set<string>): boolean {
+  if (!ctx?.entites?.length) return (r.entiteId ?? '') === f.entiteId
+  const e = resoudreEntite(r.entiteId, r.entite, ctx.entites)
+  return !!e && (perimetre ?? perimetreEntite(ctx.entites, f.entiteId!, f.sousEntites !== false)).has(e)
+}
+
 /** Vrai si le risque satisfait TOUS les critères renseignés (ET logique). */
-export function matchesFilters(r: FilterableRisk, f: RiskFilters): boolean {
+export function matchesFilters(r: FilterableRisk, f: RiskFilters, ctx?: FilterContext, perimetre?: Set<string>): boolean {
+  if (f.entiteId && !dansEntite(r, f, ctx, perimetre)) return false
   if (f.taxonomieCode) { if ((r.taxonomieCode ?? '') !== f.taxonomieCode) return false }
   if (f.processusId) { if ((r.processusId ?? '') !== f.processusId) return false }
   if (f.entite) { if ((r.entite ?? '') !== f.entite) return false }
@@ -49,13 +67,15 @@ export function matchesFilters(r: FilterableRisk, f: RiskFilters): boolean {
 }
 
 /** Applique les filtres partagés (entité, taxonomie, palier…) à une liste de risques ; cœur de carto/pilotage/export. */
-export function applyFilters<T extends FilterableRisk>(risks: T[], f: RiskFilters): T[] {
-  return risks.filter(r => matchesFilters(r, f))
+export function applyFilters<T extends FilterableRisk>(risks: T[], f: RiskFilters, ctx?: FilterContext): T[] {
+  // Périmètre de l'entité calculé une fois pour toute la liste.
+  const perimetre = f.entiteId && ctx?.entites?.length ? perimetreEntite(ctx.entites, f.entiteId, f.sousEntites !== false) : undefined
+  return risks.filter(r => matchesFilters(r, f, ctx, perimetre))
 }
 
 /** Nombre de critères actifs (pour afficher un badge « n filtres »). */
 export function activeFilterCount(f: RiskFilters): number {
-  return [f.taxonomieCode, f.processusId, f.entite, f.statut, f.niveau].filter(Boolean).length
+  return [f.taxonomieCode, f.processusId, f.entite, f.entiteId, f.statut, f.niveau].filter(Boolean).length
 }
 
 /** Normalise des paramètres d'URL en filtres (ignore les valeurs vides). */
@@ -69,6 +89,8 @@ export function parseFilters(params: { get(k: string): string | null }): RiskFil
     taxonomieCode: val('taxonomieCode'),
     processusId: val('processusId'),
     entite: val('entite'),
+    entiteId: val('entiteId'),
+    sousEntites: val('sousEntites') !== '0',
     statut: val('statut'),
     niveau: val('niveau'),
     mode: mode === 'inherent' ? 'inherent' : 'residual',
@@ -81,6 +103,7 @@ export function filtersToQuery(f: RiskFilters): string {
   if (f.taxonomieCode) p.set('taxonomieCode', f.taxonomieCode)
   if (f.processusId) p.set('processusId', f.processusId)
   if (f.entite) p.set('entite', f.entite)
+  if (f.entiteId) { p.set('entiteId', f.entiteId); if (f.sousEntites === false) p.set('sousEntites', '0') }
   if (f.statut) p.set('statut', f.statut)
   if (f.niveau) p.set('niveau', f.niveau)
   if (f.mode === 'inherent') p.set('mode', 'inherent')

@@ -19,6 +19,7 @@ import {
 import { buildRiskMatrixModel, type ScaleConfig } from '@/lib/risk-scale'
 import { readableTextColor } from '@/lib/contrast-color'
 import { applyFilters, distinctEntites, filtersToQuery, type RiskFilters } from '@/lib/risk-filters'
+import { useReferentielEntites } from '@/lib/use-referentiel-entites'
 import { synthetiserAppetit, type AppetitConfig } from '@/lib/appetit'
 import { publicationFailureMessage } from '@/lib/risk-publication'
 import RiskFiltersBar from '@/components/RiskFiltersBar'
@@ -109,7 +110,9 @@ export default function Cartographie({ canPublish, scaleConfig }: { canPublish: 
   useEffect(() => { reload() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Le mode (inhérent/résiduel) pilote aussi l'évaluation du filtre de niveau.
-  const shown = useMemo(() => applyFilters(risks, { ...filters, mode }), [risks, filters, mode])
+  // Référentiel des entités (consolidation) : filtre par entité liée, sous-entités incluses.
+  const referentiel = useReferentielEntites()
+  const shown = useMemo(() => applyFilters(risks, { ...filters, mode }, { entites: referentiel }), [risks, filters, mode, referentiel])
   const entites = useMemo(() => distinctEntites(risks), [risks])
 
   const heat = useMemo(() => buildHeatmap(shown, mode), [shown, mode])
@@ -174,7 +177,7 @@ export default function Cartographie({ canPublish, scaleConfig }: { canPublish: 
         <>
           <RiskFiltersBar
             filters={filters} onChange={setFilters} taxo={taxo} tr={tr}
-            processus={procs} entites={entites} onExport={exportAs}
+            processus={procs} entites={entites} referentiel={referentiel} onExport={exportAs}
           />
 
           {/* Bandeau de synthèse (sur le périmètre filtré) */}

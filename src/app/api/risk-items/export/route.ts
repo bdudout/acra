@@ -61,7 +61,12 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url)
   const filters = parseFilters(searchParams)
-  const filtered = applyFilters(enriched, filters)
+  // Filtre par entité du référentiel (consolidation des entités) : même résolution que le pilotage et la cartographie.
+  const entites = filters.entiteId
+    ? (await prisma.entite.findMany({ where: { organizationId: orgId }, select: { id: true, nom: true, type: true, alias: true, codeExterne: true, parentId: true, source: true, valideAu: true } }))
+        .map(e => ({ ...e, alias: Array.isArray(e.alias) ? (e.alias as string[]) : [] }))
+    : []
+  const filtered = applyFilters(enriched, filters, { entites })
 
   const format = (searchParams.get('format') ?? 'csv').toLowerCase()
   if (!['csv', 'xlsx', 'pdf'].includes(format)) {

@@ -21,6 +21,9 @@ import {
   type CockpitIncident, type CockpitExecution, type CockpitConstat,
 } from '@/lib/grc-cockpit'
 import { applyFilters, parseFilters } from '@/lib/risk-filters'
+import { filtrerParEntite } from '@/lib/entites-filtre'
+import { syntheseParEntite } from '@/lib/entites-synthese'
+import type { EntiteRef } from '@/lib/entites'
 import { synthetiserAppetit, cleanAppetitConfig, type RiskAppetitLite } from '@/lib/appetit'
 import { evaluerKri, synthetiserKri, type KriSens, type KriStatut } from '@/lib/kri'
 import { classifierIncident, estEvalueDora, synthetiserDora, type DoraCriteres, type DoraClasse } from '@/lib/dora'
@@ -66,7 +69,7 @@ export async function GET(req: NextRequest) {
     prisma.riskItem.findMany({
       where: orgFilter,
       select: {
-        id: true, organizationId: true, taxonomieCode: true, processusId: true, entite: true, statut: true,
+        id: true, organizationId: true, taxonomieCode: true, processusId: true, entite: true, entiteId: true, statut: true,
         graviteInherente: true, vraisemblanceInherente: true, graviteResiduelle: true, vraisemblanceResiduelle: true,
       },
     }),
@@ -78,7 +81,7 @@ export async function GET(req: NextRequest) {
       },
     }),
     withIncidents
-      ? prisma.incident.findMany({ where: orgFilter, select: { organizationId: true, statut: true, montantBrut: true, recuperations: true } })
+      ? prisma.incident.findMany({ where: orgFilter, select: { organizationId: true, statut: true, montantBrut: true, recuperations: true, entite: true, entiteId: true } })
       : Promise.resolve([]),
     withControles
       ? prisma.controle.findMany({ where: { ...orgFilter, actif: true }, select: { organizationId: true, niveau: true } })
@@ -103,9 +106,13 @@ export async function GET(req: NextRequest) {
       : Promise.resolve([]),
   ])
 
+  // Référentiel des entités du périmètre (consolidation des entités) : filtre par entité et synthèse par entité.
+  const entiteRows = await prisma.entite.findMany({ where: orgFilter, select: { id: true, nom: true, type: true, alias: true, codeExterne: true, parentId: true, source: true, valideAu: true } })
+  const entites: EntiteRef[] = entiteRows.map(e => ({ ...e, alias: Array.isArray(e.alias) ? (e.alias as string[]) : [] }))
+
   // Filtres partagés avec la cartographie (même définition, cf. lib/risk-filters).
-  // Ils ne s'appliquent qu'aux risques et à leurs actions ; les KPI des autres
-  // modules restent à l'échelle du périmètre (leur maille n'est pas filtrable ici).
+  // Ils s'appliquent aux risques et à leurs actions ; le filtre par entité s'applique aussi aux incidents ; les KPI des
+  // autres modules (contrôles, audit, KRI…) restent à l'échelle du périmètre (leur maille n'est pas filtrable ici).
   const { searchParams } = new URL(req.url)
   const filters = parseFilters(searchParams)
   const enriched = riskRows.map(r => ({
@@ -113,7 +120,7 @@ export async function GET(req: NextRequest) {
     niveauInherent: niveauRisque(r.graviteInherente, r.vraisemblanceInherente),
     niveauResiduel: niveauRisque(r.graviteResiduelle, r.vraisemblanceResiduelle),
   }))
-  const kept = applyFilters(enriched, filters)
+  const kept = applyFilters(enriched, filters, { entites })
   const keptIds = new Set(kept.map(r => r.id))
 
   const risks: RiskLite[] = kept.map(r => ({
@@ -127,7 +134,9 @@ export async function GET(req: NextRequest) {
   const now = new Date()
 
   // Normalisation des montants (Prisma Decimal → number) pour la LDC.
-  const incidents: CockpitIncident[] = incidentRows.map(i => ({
+  const incidentsRetenus = filters.entiteId ? filtrerParEntite(incidentRows, entites, filters.entiteId, filters.sousEntites !== false) : incidentRows
+  const incidents: (CockpitIncident & { entite: string | null; entiteId: string | null })[] = incidentsRetenus.map(i => ({
+    entite: i.entite, entiteId: i.entiteId,
     organizationId: i.organizationId,
     statut: i.statut as CockpitIncident['statut'],
     montantBrut: i.montantBrut == null ? null : Number(i.montantBrut),
@@ -228,6 +237,13 @@ export async function GET(req: NextRequest) {
         graviteResiduelle: r.graviteResiduelle, vraisemblanceResiduelle: r.vraisemblanceResiduelle,
       })), 'residual', scaleConfig) },
       actions: summarizeActions(actions, now),
+      // Synthèse par entité du référentiel (sous-entités cumulées), sur les risques et incidents retenus.
+      ...(entites.length ? { parEntite: syntheseParEntite({
+        entites, now,
+        risques: kept.map(r => ({ id: r.id, organizationId: r.organizationId, niveauInherent: r.niveauInherent, niveauResiduel: r.niveauResiduel, entiteId: r.entiteId, entite: r.entite })),
+        actions: actionRows.filter(a => keptIds.has(a.liens[0]?.targetId ?? '')).map(a => ({ risqueId: a.liens[0]!.targetId, statut: a.statut, echeance: a.echeance })),
+        ...(withIncidents ? { incidents } : {}),
+      }) } : {}),
       ...(projets ? { projets } : {}),
       ...(withIncidents ? { incidents: rollupIncidents(incidents) } : {}),
       ...(withControles ? { controles: rollupControles(controleRows, executions) } : {}),

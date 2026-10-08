@@ -2188,6 +2188,7 @@ export const de: Translations = {
     err_generic: 'Erstellung fehlgeschlagen.',
   },
   pilotage: {
+    parEntite: { titre: 'Nach Entität', aide: 'Entitäten des Verzeichnisses einschließlich untergeordneter Entitäten: gefilterte Risiken, überfällige Maßnahmen zu diesen Risiken und Vorfälle aus der Verlustdatenbank.', entite: 'Entität', risques: 'Risiken', eleves: 'davon hoch', actionsEnRetard: 'Überfällige Maßnahmen', incidentsOuverts: 'Offene Vorfälle', perteNette: 'Nettoverlust', nonRattache: 'Keiner Entität zugeordnet', noteFiltre: 'Filter nach Entität: Risiken, Maßnahmen und Vorfälle; Kontrollen, Audit und andere Kennzahlen bleiben auf Ebene des Bereichs.' },
     projets: {
       title: 'Verfolgung der 360-Projekte', subtitle: 'Fortschritt, Fristen, Freigabe durch CISO + Risikomanager und hohe Risiken der Projekte.', total: 'Projekte', enCours: 'In Bearbeitung', termines: 'Abgeschlossen', enRetard: 'Überfällig', valides: 'Freigegeben',
       colProjet: 'Projekt', colStatut: 'Status', colRisques: 'Risiken', colEleves: 'Hoch', colValidation: 'Freigabe CISO + RM', colEcheance: 'Frist',
