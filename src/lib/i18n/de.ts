@@ -1399,6 +1399,10 @@ export const de: Translations = {
     monthsUnit: 'Monate',
   },
   ropa: {
+    manque: 'Fehlt: {champs}',
+    exporter: 'Verzeichnis exportieren (Excel)',
+    motifs: { donnees_sensibles_art9: 'Besondere Kategorien personenbezogener Daten (Art. 9)', surveillance_systematique_grande_echelle: 'Systematische umfangreiche Überwachung (Art. 35 Abs. 3 Buchst. c)' },
+    export: { presentation: 'Übersicht', feuille: 'Verzeichnis (Art. 30)', organisation: 'Organisation', genere: 'Erstellt am', complet: 'Vollständig (Art. 30)', manquants: 'Fehlende Angaben', aipd: 'DSFA erforderlich', motifsCol: 'Gründe', oui: 'Ja', non: 'Nein' },
     title: 'Verzeichnis von Verarbeitungstätigkeiten (DSGVO)',
     subtitle: 'Verzeichnis der Verarbeitungstätigkeiten personenbezogener Daten — Art. 30 DSGVO. Nur für den DSB.',
     add: 'Verarbeitung hinzufügen',

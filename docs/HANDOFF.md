@@ -6,6 +6,20 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-09 (97) — Claude : parcours DPO du registre des traitements (proposition n° 2)
+
+- Rejoué en DPO de recette (navigateur) : menu « Registres › RGPD », catalogue type CNIL, création, complétude art. 30
+  (transfert hors UE sans garanties → incomplet), AIPD (catégories particulières art. 9 ; surveillance systématique à
+  grande échelle) : conformes.
+- Corrigé : infobulles aux codes techniques (« garantiesTransfert », « donnees_sensibles_art9 ») → manques et motifs
+  d'AIPD affichés en clair sous les badges (terminologie officielle du RGPD, 5 langues) ; export Excel du registre
+  (art. 30 §4) : `lib/ropa-xlsx`, `GET /api/ropa/export` (DPO / ADMIN, journalisé `EXPORT`), lien « Exporter le registre ».
+- Lacunes consignées (`.acra-test-memory/ameliorations-proposees.md` n° 5 à 8, décisions utilisateur) : critères AIPD
+  du CEPD (WP248 — « scoring à grande échelle » ne déclenche rien aujourd'hui) ; identité du responsable / DPO
+  (art. 30 §1 a) ; registre du sous-traitant (art. 30 §2) ; lancer / rattacher l'AIPD depuis le badge.
+
+---
+
 ## 2026-10-09 (96) — Claude : signaler une erreur sur GitHub (demande utilisateur)
 
 - Demande : sur une 500 (ou une autre erreur due au code), bouton pour remonter le problème en issue GitHub avec les

@@ -1400,6 +1400,10 @@ export const en: Translations = {
     monthsUnit: 'months',
   },
   ropa: {
+    manque: 'Missing: {champs}',
+    exporter: 'Export the register (Excel)',
+    motifs: { donnees_sensibles_art9: 'Special categories of personal data (Art. 9)', surveillance_systematique_grande_echelle: 'Systematic monitoring on a large scale (Art. 35(3)(c))' },
+    export: { presentation: 'Overview', feuille: 'Register (Art. 30)', organisation: 'Organisation', genere: 'Generated on', complet: 'Complete (Art. 30)', manquants: 'Missing fields', aipd: 'DPIA required', motifsCol: 'Grounds', oui: 'Yes', non: 'No' },
     title: 'Processing register (GDPR)',
     subtitle: 'Record of personal-data processing activities — GDPR Art. 30. Restricted to the DPO.',
     add: 'Add processing',

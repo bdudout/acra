@@ -8,7 +8,7 @@
 // besoin d'AIPD (PIA). Cf. /api/.../ropa.
 
 import { useEffect, useState } from 'react'
-import { ShieldCheck, AlertTriangle, CheckCircle2, Trash2, Plus } from 'lucide-react'
+import { ShieldCheck, AlertTriangle, CheckCircle2, Trash2, Plus, Download } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import { BASES_LEGALES } from '@/lib/ropa'
 import RopaCataloguePanel from '@/components/RopaCataloguePanel'
@@ -39,6 +39,12 @@ const toStr = (a: string[]) => (a ?? []).join(', ')
 export default function RopaManager() {
   const { t } = useTranslation()
   const r = t.ropa
+  // Libellés des champs de l'art. 30 (codes renvoyés par lib/ropa) et des motifs d'AIPD (art. 35).
+  const libelleChamp: Record<string, string> = {
+    nom: r.fNom, finalite: r.fFinalite, categoriesPersonnes: r.fPersonnes, categoriesDonnees: r.fDonnees, destinataires: r.fDestinataires,
+    dureeConservation: r.fDuree, mesuresSecurite: r.fMesures, garantiesTransfert: r.fGaranties,
+  }
+  const libelleMotif = (m: string) => (r.motifs as Record<string, string>)[m] ?? m
   const [items, setItems] = useState<Traitement[]>([])
   const [synthese, setSynthese] = useState({ total: 0, complets: 0, piaRequis: 0 })
   const [loading, setLoading] = useState(true)
@@ -99,6 +105,9 @@ export default function RopaManager() {
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{r.subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Art. 30 §4 : le registre est mis à la disposition de l'autorité de contrôle sur demande. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- téléchargement servi par une route API, pas une page */}
+          {items.length > 0 && <a href="/api/ropa/export" className="btn-secondary text-sm inline-flex items-center gap-1"><Download size={16} aria-hidden="true" />{r.exporter}</a>}
           {!showForm && <button onClick={openCreate} className="btn-primary text-sm inline-flex items-center gap-1"><Plus size={16} />{r.add}</button>}
         </div>
       </div>
@@ -168,9 +177,11 @@ export default function RopaManager() {
                     <td className="px-3 py-2">
                       {x.evaluation.complet
                         ? <span className="text-[11px] inline-flex items-center gap-1 text-green-700 bg-green-100 dark:bg-green-500/15 dark:text-green-300 px-1.5 py-0.5 rounded-full"><CheckCircle2 size={12} />{r.complet}</span>
-                        : <span className="text-[11px] inline-flex items-center gap-1 text-amber-800 bg-amber-100 dark:bg-amber-500/15 dark:text-amber-300 px-1.5 py-0.5 rounded-full" title={x.evaluation.champsManquants.join(', ')}><AlertTriangle size={12} />{r.incomplet} ({x.evaluation.champsManquants.length})</span>}
+                        : <span className="text-[11px] inline-flex items-center gap-1 text-amber-800 bg-amber-100 dark:bg-amber-500/15 dark:text-amber-300 px-1.5 py-0.5 rounded-full" ><AlertTriangle size={12} />{r.incomplet} ({x.evaluation.champsManquants.length})</span>}
+                      {!x.evaluation.complet && <span className="block mt-0.5 text-[11px] text-amber-800 dark:text-amber-300">{r.manque.replace('{champs}', x.evaluation.champsManquants.map(c => libelleChamp[c] ?? c).join(', '))}</span>}
                     </td>
-                    <td className="px-3 py-2">{x.evaluation.pia.requis && <span className="text-[11px] text-red-800 bg-red-100 dark:bg-red-500/20 dark:text-red-300 px-1.5 py-0.5 rounded-full" title={x.evaluation.pia.motifs.join(', ')}>{r.piaRequis}</span>}</td>
+                    <td className="px-3 py-2">{x.evaluation.pia.requis && <span className="text-[11px] text-red-800 bg-red-100 dark:bg-red-500/20 dark:text-red-300 px-1.5 py-0.5 rounded-full" >{r.piaRequis}</span>}
+                      {x.evaluation.pia.requis && <span className="block mt-0.5 text-[11px] text-red-800 dark:text-red-300">{x.evaluation.pia.motifs.map(libelleMotif).join(' ; ')}</span>}</td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">
                       <button onClick={() => openEdit(x)} className="text-xs text-ebios-600 hover:underline mr-2">{r.edit}</button>
                       <button onClick={() => remove(x.id)} className="text-gray-400 hover:text-red-600 p-1" aria-label={r.delete}><Trash2 size={15} aria-hidden="true" /></button>
