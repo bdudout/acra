@@ -4,13 +4,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const m = vi.hoisted(() => ({ session: vi.fn(), scope: vi.fn(), findMany: vi.fn(), org: vi.fn(), audit: vi.fn() }))
+const m = vi.hoisted(() => ({ session: vi.fn(), scope: vi.fn(), findMany: vi.fn(), org: vi.fn(), audit: vi.fn(), config: vi.fn(), sousTraitances: vi.fn() }))
+vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.config }))
 vi.mock('next-auth', () => ({ getServerSession: m.session }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope }))
 vi.mock('@/lib/logger', () => ({ auditLog: m.audit, getClientIp: () => '' }))
 vi.mock('@/lib/i18n', async () => ({ ...(await vi.importActual<object>('@/lib/i18n')), getServerLocale: async () => 'fr' }))
-vi.mock('@/lib/prisma', () => ({ prisma: { traitement: { findMany: m.findMany }, organization: { findUnique: m.org } } }))
+vi.mock('@/lib/ropa-identite.server', () => ({ lireIdentite: async () => ({ effective: { responsable: { nom: 'Banque Exemple SA', adresse: '', contact: 'c@b.fr' }, representant: { nom: '', contact: '' }, dpo: { source: 'AUCUN', nom: '', contact: '' }, manquants: [] } }) }))
+vi.mock('@/lib/prisma', () => ({ prisma: { traitement: { findMany: m.findMany }, organization: { findUnique: m.org }, traitementSousTraitance: { findMany: m.sousTraitances } } }))
 import { GET as GET_ } from '@/app/api/ropa/export/route'
 const GET = () => GET_(new NextRequest('http://x/api/ropa/export'))
 
@@ -19,6 +21,8 @@ beforeEach(() => {
   m.session.mockResolvedValue({ user: { id: 'u1', role: 'ANALYSTE' } })
   m.scope.mockResolvedValue({ activeOrgId: 'o1', role: 'DPO' })
   m.org.mockResolvedValue({ nom: 'Banque Exemple' })
+  m.config.mockResolvedValue({ ropaSousTraitantActive: false })
+  m.sousTraitances.mockResolvedValue([])
   m.findMany.mockResolvedValue([{ id: 't1', nom: 'Paie', finalite: 'Paie', baseLegale: 'obligation_legale', categoriesPersonnes: ['Salariés'], categoriesDonnees: ['Identité'], destinataires: ['DRH'], transfertHorsUE: false, dureeConservation: '5 ans', mesuresSecurite: ['Chiffrement'] }])
 })
 
@@ -30,6 +34,13 @@ describe('GET /api/ropa/export', () => {
     expect(r.headers.get('content-disposition')).toContain('registre-traitements')
     expect(m.findMany.mock.calls[0][0].where).toEqual({ organizationId: 'o1' })
     expect(m.audit).toHaveBeenCalledWith('EXPORT', expect.objectContaining({ organizationId: 'o1', targetType: 'ropa', details: expect.objectContaining({ format: 'xlsx', traitements: 1 }) }))
+  })
+  it('registre du sous-traitant inclus seulement si le module est actif', async () => {
+    await GET()
+    expect(m.sousTraitances).not.toHaveBeenCalled()
+    m.config.mockResolvedValue({ ropaSousTraitantActive: true })
+    await GET()
+    expect(m.sousTraitances.mock.calls[0][0].where).toEqual({ organizationId: 'o1' })
   })
   it('autre rôle → 403 ; sans session → 401 ; sans organisation active → 400', async () => {
     m.scope.mockResolvedValue({ activeOrgId: 'o1', role: 'RSSI' })

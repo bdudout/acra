@@ -87,10 +87,18 @@ has_doc "$C" || fail "document perdu par le retour arrière"
 down "$C"
 
 step "5. kill -9 pendant MIGRATE puis reprise"
-D="$WORK/d"; setup_instance "$D"; before="$(count "$D")"
-( export COMPOSE_PROJECT_NAME="acraci$(basename "$D")"; run_target_update "$D" beta --yes --status-file .acra-update/status.json >/dev/null 2>&1 & echo $! > "$WORK/upd.pid" )
+D="$WORK/d"; setup_instance "$D"; before="$(count "$D")"; P="acraci$(basename "$D")"
+# Même environnement que run_target_update, mais dans son propre groupe de processus (setsid) : la panne simulée doit
+# pouvoir tout arrêter d'un coup.
+( cd "$D"; export COMPOSE_PROJECT_NAME="$P" ACRA_UPDATE_REEXEC=1 ACRA_ROOT="$D" ACRA_UPDATE_LIB_PATH="$SCRIPTS_DIR/update-lib.sh" \
+    ACRA_SNAPSHOT_SCRIPT="$SCRIPTS_DIR/acra-snapshot.sh" ACRA_UPDATE_VERBOSE=1 ACRA_HEALTH_RETRIES=6 ACRA_HEALTH_INTERVAL=1
+  setsid bash "$SCRIPTS_DIR/update.sh" beta --yes --status-file .acra-update/status.json >/dev/null 2>&1 & echo $! > "$WORK/upd.pid" )
 for _ in $(seq 1 600); do grep -q '"state": "MIGRATE"' "$D/.acra-update/run/current.json" 2>/dev/null && break; sleep 1; done
-pkill -9 -P "$(cat "$WORK/upd.pid")" || true; kill -9 "$(cat "$WORK/upd.pid")" || true
+# Panne simulée (coupure) : tout le groupe de processus de la mise à jour (lanceur, compose, construction) et les
+# conteneurs éphémères qu'elle a lancés (compose run : migrateur) s'arrêtent net ; la base et ses volumes restent.
+# Tuer seulement les enfants directs laissait des orphelins appliquer la migration après la restauration (CI instable).
+kill -9 -- "-$(cat "$WORK/upd.pid")" 2>/dev/null || true
+docker ps -q --filter "label=com.docker.compose.project=$P" --filter "label=com.docker.compose.oneoff=True" | xargs -r docker kill >/dev/null 2>&1 || true
 ( cd "$D"; export COMPOSE_PROJECT_NAME="acraci$(basename "$D")"; mkdir -p .acra-update/inbox; bash scripts/update-agent.sh ) || true
 [ "$(status_of "$D" rolledBack)" = true ] || fail "reprise : pas de retour arrière"
 [ "$(count "$D")" = "$before" ] || fail "reprise : comptes différents"

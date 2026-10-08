@@ -6,6 +6,58 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-09 (100) — Claude : RGPD — suivi effectif de l'AIPD (lot D)
+
+- `lib/ropa-aipd` (pur) : statuts À réaliser / En cours / Réalisée / Non retenue ; alerte « AIPD à lancer » (requise non
+  engagée) et « justification manquante » ; « non retenue » refusée sans justification dès qu'un critère WP248 est
+  présent (décision documentée). Colonnes `Traitement.aipd*` + relation `aipdAnalyse` → `Analyse` (SetNull) — migration
+  `20261009170000_ropa_suivi_aipd`.
+- `PATCH /api/ropa/[id]/aipd` (DPO / ADMIN ; traitement et analyse de l'organisation active ; journalisé) ; `GET /api/ropa`
+  renvoie `evaluation.alerteAipd`, `synthese.aipdALancer`, l'analyse rattachée et `peutCreerAnalyse` (le DPO, en
+  lecture, rattache ; « Créer l'analyse » seulement pour les rôles qui peuvent créer une analyse).
+- UI : `AipdSuiviPanel` (statut, analyse, date, justification, consultation préalable art. 36) ouvert depuis la ligne ;
+  indicateur « AIPD à lancer » ; colonnes de suivi dans l'export.
+- **Vérifié** : tests ; navigateur DPO (requise → « à lancer » ; non retenue sans justification → refus ; en cours +
+  analyse rattachée → alerte levée, panneau prérempli) ; données de test supprimées.
+- CI : le scénario 5 des « Scénarios de mise à jour » (kill -9 pendant MIGRATE) échoue par intermittence (course :
+  la migration fautive du scénario 4 reste sur `main` du dépôt de test, la mise à jour se termine avant le kill) ;
+  relance verte ; correction du script à décider avec l'utilisateur.
+
+---
+
+## 2026-10-09 (99) — Claude : RGPD — registre du sous-traitant en option (lot C)
+
+- Module `ropaSousTraitant` (champ `ropaSousTraitantActive`, désactivé par défaut) câblé sur les 3 niveaux : défaut,
+  `OrganizationConfig` (héritage, configuration « Registres »), politique d'instance (`GOVERNABLE_MODULES`, page
+  Instance). Migration additive `20261009160000_ropa_sous_traitant` (colonne + table `TraitementSousTraitance`).
+- `lib/ropa-sous-traitance` (pur : saisie, mentions de l'art. 30 §2 manquantes), `lib/ropa-sous-traitance.server`
+  (contexte : module inactif → 404, DPO / ADMIN), `GET|POST /api/ropa/sous-traitance`, `PATCH|DELETE …/[id]`
+  (journalisés) ; UI `RopaSousTraitanceManager`, onglets `RgpdOnglets` sur `/rgpd` quand le module est actif ; feuille
+  « Registre du sous-traitant » dans l'export.
+- **Vérifié** : tests ; navigateur DPO (module inactif → pas d'onglet, API 404 ; activé en base pour l'essai → onglets,
+  ligne avec manques en clair, export enrichi) ; module remis à « désactivé », données de test supprimées.
+
+---
+
+## 2026-10-09 (98) — Claude : RGPD — critères AIPD WP248 et identité du responsable (lot B)
+
+- #242 (lot A : lisibilité, export) fusionnée. Décisions utilisateur : aligner l'AIPD sur WP248 ; identité du
+  responsable (DPO automatique s'il est désigné, sinon champ libre) ; registre du sous-traitant en option ; suivi
+  effectif de l'AIPD (lots C et D à suivre).
+- `lib/ropa` : `CRITERES_AIPD` (9 critères de WP248 rév. 01, ordre du texte), `criteresAipd()` (cochés + déduits :
+  catégories particulières art. 9, grande échelle, surveillance systématique), `piaRequis` → niveau REQUISE (≥ 2
+  critères, « dans la plupart des cas »), A_EXAMINER (1 critère), NON. **Changement de comportement** : art. 9 seul →
+  « à examiner » (et non plus « requise »). Colonne `Traitement.criteresAipd` (migration `20261009150000`).
+- Libellés : intitulés OFFICIELS des 9 critères repris des versions publiées de WP248 rév. 01 (FR : CNIL ; EN : Commission ;
+  DE : DSK ; ES : AEPD ; IT : archive multilingue de la Commission) — pas de traduction maison.
+- Identité (art. 30 §1 a) : modèle `RopaIdentite` (migration `20261009151000`), `lib/ropa-identite` (pur : DPO désignés =
+  rôle DPO de l'organisation ou d'un ancêtre en portée SUBTREE, sinon saisie), `lib/ropa-identite.server`,
+  `GET|PUT /api/ropa/identite` (DPO / ADMIN, journalisé), `RopaIdentiteCard` en tête du registre, reprise dans l'export.
+- **Vérifié** : tests ; navigateur DPO (scoring à grande échelle → « AIPD requise » ; santé seule → « à examiner » ; DPO
+  de recette repris automatiquement) ; données de test supprimées.
+
+---
+
 ## 2026-10-09 (97) — Claude : parcours DPO du registre des traitements (proposition n° 2)
 
 - Rejoué en DPO de recette (navigateur) : menu « Registres › RGPD », catalogue type CNIL, création, complétude art. 30

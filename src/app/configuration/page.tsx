@@ -200,6 +200,7 @@ export default function ConfigurationPage() {
   const [campagnesRcsaActive, setCampagnesRcsaActive] = useState(false)
   const [appetenceActive, setAppetenceActive] = useState(false)
   const [rapportsGrcActive, setRapportsGrcActive] = useState(false)
+  const [ropaSousTraitantActive, setRopaSousTraitantActive] = useState(false)
   const [mcpActive, setMcpActive] = useState(false)
   // Politique d'instance (SUPER_ADMIN) : { <module>: 'PER_ORG'|'FORCE_ON'|'FORCE_OFF' }.
   const [modulesPolicy, setModulesPolicy] = useState<Record<string, string>>({})
@@ -275,6 +276,7 @@ export default function ConfigurationPage() {
         setCampagnesRcsaActive(data.campagnesRcsaActive === true)
         setAppetenceActive(data.appetenceActive === true)
         setRapportsGrcActive(data.rapportsGrcActive === true)
+        setRopaSousTraitantActive(data.ropaSousTraitantActive === true)
         setMcpActive(data.mcpActive === true)
         if (data.modulesPolicy && typeof data.modulesPolicy === 'object') setModulesPolicy(data.modulesPolicy)
         setTaxonomieRisques(sanitizeTaxonomie(data.taxonomieRisques))
@@ -334,6 +336,7 @@ export default function ConfigurationPage() {
     campagnesRcsaActive: setCampagnesRcsaActive,
     appetenceActive: setAppetenceActive,
     rapportsGrcActive: setRapportsGrcActive,
+    ropaSousTraitantActive: setRopaSousTraitantActive,
     mcpActive: setMcpActive,
   }
   // Intitulés des groupes d'activation : ceux de la barre de navigation (cf. lib/fonctionnalites-menus).
@@ -341,7 +344,7 @@ export default function ConfigurationPage() {
     pilotage: t.nav.grpPilotage, analyses: t.nav.grpAnalyses, registre: t.nav.grpRegistre, controleAudit: t.nav.grpControleAudit,
     conformite: t.nav.grpConformite, reglementaire: t.nav.grpReglementaire, general: t.features.groupeGeneral,
   })[menu]
-  async function saveFeature(field: 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive' | 'campagnesRcsaActive' | 'appetenceActive' | 'rapportsGrcActive', value: boolean) {
+  async function saveFeature(field: 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive' | 'campagnesRcsaActive' | 'appetenceActive' | 'rapportsGrcActive' | 'ropaSousTraitantActive', value: boolean) {
     FEATURE_SETTERS[field]?.(value) // mise à jour optimiste
     setSavingFeatures(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -1392,6 +1395,7 @@ export default function ConfigurationPage() {
                 { field: 'profilsOperationnelsActive' as const, value: profilsOperationnelsActive, title: t.features.profilsOperationnelsTitle, desc: t.features.profilsOperationnelsDesc, href: '/maturite', disabled: modulesPolicy.profilsOperationnels === 'FORCE_ON' || modulesPolicy.profilsOperationnels === 'FORCE_OFF', indent: false, forced: modulesPolicy.profilsOperationnels },
                 { field: 'appetenceActive' as const, value: appetenceActive, title: t.features.appetenceTitle, desc: t.features.appetenceDesc, href: '/appetence', disabled: modulesPolicy.appetence === 'FORCE_ON' || modulesPolicy.appetence === 'FORCE_OFF' || !(registreRisquesActive || kriActive || profilsOperationnelsActive), indent: false, forced: modulesPolicy.appetence },
                 { field: 'rapportsGrcActive' as const, value: rapportsGrcActive, title: t.features.rapportsGrcTitle, desc: t.features.rapportsGrcDesc, href: '/rapports', disabled: modulesPolicy.rapportsGrc === 'FORCE_ON' || modulesPolicy.rapportsGrc === 'FORCE_OFF', indent: false, forced: modulesPolicy.rapportsGrc },
+                { field: 'ropaSousTraitantActive' as const, value: ropaSousTraitantActive, title: t.features.ropaSousTraitantTitle, desc: t.features.ropaSousTraitantDesc, href: '/rgpd', disabled: modulesPolicy.ropaSousTraitant === 'FORCE_ON' || modulesPolicy.ropaSousTraitant === 'FORCE_OFF', indent: false, forced: modulesPolicy.ropaSousTraitant },
                 { field: 'projets360Active' as const, value: projets360Active, title: t.features.projets360Title, desc: t.features.projets360Desc, href: '/projets', disabled: modulesPolicy.projets360 === 'FORCE_ON' || modulesPolicy.projets360 === 'FORCE_OFF', indent: false, forced: modulesPolicy.projets360 },
                 { field: 'homologationsActive' as const, value: homologationsActive, title: t.features.homologationsTitle, desc: t.features.homologationsDesc, href: '/homologations', disabled: modulesPolicy.homologations === 'FORCE_ON' || modulesPolicy.homologations === 'FORCE_OFF', indent: false, forced: modulesPolicy.homologations },
                 { field: 'registreIaActive' as const, value: registreIaActive, title: t.features.registreIaTitle, desc: t.features.registreIaDesc, href: '/registre-ia', disabled: modulesPolicy.registreIa === 'FORCE_ON' || modulesPolicy.registreIa === 'FORCE_OFF', indent: false, forced: modulesPolicy.registreIa },

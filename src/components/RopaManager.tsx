@@ -7,31 +7,38 @@
 // UE, durée de conservation, mesures de sécurité. Évalue la complétude et le
 // besoin d'AIPD (PIA). Cf. /api/.../ropa.
 
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
+import Link from 'next/link'
+import AipdSuiviPanel from '@/components/AipdSuiviPanel'
 import { ShieldCheck, AlertTriangle, CheckCircle2, Trash2, Plus, Download } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
-import { BASES_LEGALES } from '@/lib/ropa'
+import { BASES_LEGALES, CRITERES_AIPD, type CritereAipd } from '@/lib/ropa'
+import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
 import RopaCataloguePanel from '@/components/RopaCataloguePanel'
+import RopaIdentiteCard from '@/components/RopaIdentiteCard'
 
-interface Evaluation { complet: boolean; champsManquants: string[]; pia: { requis: boolean; motifs: string[] } }
+interface Evaluation { complet: boolean; champsManquants: string[]; pia: { requis: boolean; niveau?: 'REQUISE' | 'A_EXAMINER' | 'NON'; motifs: string[] }; alerteAipd?: 'A_LANCER' | 'JUSTIFICATION_REQUISE' | null }
 interface Traitement {
   id: string; nom: string; finalite: string; baseLegale: string
   categoriesPersonnes: string[]; categoriesDonnees: string[]; destinataires: string[]
   transfertHorsUE: boolean; paysTransfert?: string; garantiesTransfert?: string
   dureeConservation: string; mesuresSecurite: string[]
-  grandeEchelle?: boolean; surveillanceSystematique?: boolean
+  grandeEchelle?: boolean; surveillanceSystematique?: boolean; criteresAipd?: string[]
+  // Suivi de l'AIPD (art. 35-36).
+  aipdStatut?: string | null; aipdAnalyseId?: string | null; aipdDate?: string | null; aipdJustification?: string; aipdConsultationPrealable?: boolean
+  aipdAnalyse?: { id: string; nom: string } | null
   evaluation: Evaluation
 }
 type Form = {
   nom: string; finalite: string; baseLegale: string
   categoriesPersonnes: string; categoriesDonnees: string; destinataires: string; mesuresSecurite: string
   dureeConservation: string; transfertHorsUE: boolean; paysTransfert: string; garantiesTransfert: string
-  grandeEchelle: boolean; surveillanceSystematique: boolean
+  grandeEchelle: boolean; surveillanceSystematique: boolean; criteresAipd: string[]
 }
 const EMPTY: Form = {
   nom: '', finalite: '', baseLegale: '', categoriesPersonnes: '', categoriesDonnees: '', destinataires: '',
   mesuresSecurite: '', dureeConservation: '', transfertHorsUE: false, paysTransfert: '', garantiesTransfert: '',
-  grandeEchelle: false, surveillanceSystematique: false,
+  grandeEchelle: false, surveillanceSystematique: false, criteresAipd: [],
 }
 const toArr = (s: string) => s.split(/[,;\n]/).map(x => x.trim()).filter(Boolean)
 const toStr = (a: string[]) => (a ?? []).join(', ')
@@ -44,9 +51,11 @@ export default function RopaManager() {
     nom: r.fNom, finalite: r.fFinalite, categoriesPersonnes: r.fPersonnes, categoriesDonnees: r.fDonnees, destinataires: r.fDestinataires,
     dureeConservation: r.fDuree, mesuresSecurite: r.fMesures, garantiesTransfert: r.fGaranties,
   }
-  const libelleMotif = (m: string) => (r.motifs as Record<string, string>)[m] ?? m
+  const libelleMotif = (m: string) => (r.criteres as Record<string, string>)[m] ?? m
   const [items, setItems] = useState<Traitement[]>([])
-  const [synthese, setSynthese] = useState({ total: 0, complets: 0, piaRequis: 0 })
+  const [synthese, setSynthese] = useState({ total: 0, complets: 0, piaRequis: 0, aipdALancer: 0 })
+  const [suiviId, setSuiviId] = useState<string | null>(null)
+  const [peutCreerAnalyse, setPeutCreerAnalyse] = useState(false)
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState<Form>(EMPTY)
   const [editId, setEditId] = useState<string | null>(null)
@@ -56,7 +65,7 @@ export default function RopaManager() {
 
   async function reload() {
     const d = await fetch('/api/ropa').then(x => x.ok ? x.json() : { traitements: [] }).catch(() => ({ traitements: [] }))
-    setItems(d.traitements ?? []); setSynthese(d.synthese ?? { total: 0, complets: 0, piaRequis: 0 }); setLoading(false)
+    setItems(d.traitements ?? []); setSynthese({ aipdALancer: 0, ...(d.synthese ?? { total: 0, complets: 0, piaRequis: 0 }) }); setPeutCreerAnalyse(!!d.peutCreerAnalyse); setLoading(false)
   }
   useEffect(() => { reload() }, [])
 
@@ -70,8 +79,16 @@ export default function RopaManager() {
       categoriesPersonnes: toStr(x.categoriesPersonnes), categoriesDonnees: toStr(x.categoriesDonnees),
       destinataires: toStr(x.destinataires), mesuresSecurite: toStr(x.mesuresSecurite),
       dureeConservation: x.dureeConservation, transfertHorsUE: !!x.transfertHorsUE, paysTransfert: x.paysTransfert ?? '',
-      garantiesTransfert: x.garantiesTransfert ?? '', grandeEchelle: !!x.grandeEchelle, surveillanceSystematique: !!x.surveillanceSystematique,
+      garantiesTransfert: x.garantiesTransfert ?? '', grandeEchelle: !!x.grandeEchelle, surveillanceSystematique: !!x.surveillanceSystematique, criteresAipd: x.criteresAipd ?? [],
     })
+  }
+
+  // Catégories particulières (art. 9) détectées dans les catégories de données saisies : critère « données sensibles » déduit.
+  const sensiblesDetectees = detectRgpdArt9(toArr(form.categoriesDonnees).map(nom => ({ nom }))).length > 0
+  function basculerCritere(c: CritereAipd, actif: boolean) {
+    if (c === 'GRANDE_ECHELLE') return setForm(f => ({ ...f, grandeEchelle: actif }))
+    if (c === 'SURVEILLANCE') return setForm(f => ({ ...f, surveillanceSystematique: actif }))
+    setForm(f => ({ ...f, criteresAipd: actif ? [...f.criteresAipd.filter(x => x !== c), c] : f.criteresAipd.filter(x => x !== c) }))
   }
 
   async function submit() {
@@ -84,6 +101,8 @@ export default function RopaManager() {
       dureeConservation: form.dureeConservation, transfertHorsUE: form.transfertHorsUE,
       paysTransfert: form.paysTransfert, garantiesTransfert: form.garantiesTransfert,
       grandeEchelle: form.grandeEchelle, surveillanceSystematique: form.surveillanceSystematique,
+      // Grande échelle et surveillance restent portées par leurs champs ; les autres critères WP248 sont listés.
+      criteresAipd: form.criteresAipd.filter(c => c !== 'GRANDE_ECHELLE' && c !== 'SURVEILLANCE'),
     }
     const res = await fetch(editId ? `/api/ropa/${editId}` : '/api/ropa', {
       method: editId ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
@@ -112,13 +131,15 @@ export default function RopaManager() {
         </div>
       </div>
 
+      <RopaIdentiteCard />
       <RopaCataloguePanel onImported={reload} />
 
       {/* Synthèse */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <div className="card p-3"><div className="text-2xl font-bold text-gray-800 dark:text-gray-100">{synthese.total}</div><div className="text-xs text-gray-500">{r.kTotal}</div></div>
         <div className="card p-3"><div className="text-2xl font-bold text-green-600">{synthese.complets}</div><div className="text-xs text-gray-500">{r.kComplets}</div></div>
         <div className="card p-3"><div className="text-2xl font-bold text-amber-600">{synthese.piaRequis}</div><div className="text-xs text-gray-500">{r.kPia}</div></div>
+        <div className="card p-3"><div className={`text-2xl font-bold ${synthese.aipdALancer ? 'text-red-600' : 'text-gray-400'}`}>{synthese.aipdALancer}</div><div className="text-xs text-gray-500">{r.aipd.kALancer}</div></div>
       </div>
 
       {/* Formulaire */}
@@ -144,8 +165,23 @@ export default function RopaManager() {
           </div>
           <div className="flex flex-wrap gap-4 text-xs text-gray-600 dark:text-gray-300">
             <label className="inline-flex items-center gap-1.5"><input type="checkbox" checked={form.transfertHorsUE} onChange={e => setForm(f => ({ ...f, transfertHorsUE: e.target.checked }))} />{r.fTransfert}</label>
-            <label className="inline-flex items-center gap-1.5"><input type="checkbox" checked={form.grandeEchelle} onChange={e => setForm(f => ({ ...f, grandeEchelle: e.target.checked }))} />{r.fGrandeEchelle}</label>
-            <label className="inline-flex items-center gap-1.5"><input type="checkbox" checked={form.surveillanceSystematique} onChange={e => setForm(f => ({ ...f, surveillanceSystematique: e.target.checked }))} />{r.fSurveillance}</label>
+            {/* Critères de risque élevé des lignes directrices WP248 rév. 01 : AIPD en principe requise dès deux critères. */}
+            <fieldset className="w-full">
+              <legend className="text-xs font-medium text-gray-600 dark:text-gray-300">{r.criteresTitre}</legend>
+              <p className="text-[11px] text-gray-500 mb-1">{r.aideCriteres}</p>
+              <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1">
+                {CRITERES_AIPD.map(c => {
+                  const deduit = c === 'DONNEES_SENSIBLES' && sensiblesDetectees
+                  const coche = c === 'GRANDE_ECHELLE' ? form.grandeEchelle : c === 'SURVEILLANCE' ? form.surveillanceSystematique : deduit || form.criteresAipd.includes(c)
+                  return (
+                    <label key={c} className="inline-flex items-start gap-1.5 text-xs text-gray-700 dark:text-gray-200">
+                      <input type="checkbox" className="mt-0.5" aria-label={r.criteres[c]} checked={coche} disabled={deduit} onChange={e => basculerCritere(c, e.target.checked)} />
+                      <span>{r.criteres[c]}{deduit && <span className="text-gray-400"> ({r.deduit})</span>}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </fieldset>
           </div>
           {form.transfertHorsUE && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -171,7 +207,8 @@ export default function RopaManager() {
               </tr></thead>
               <tbody>
                 {items.map(x => (
-                  <tr key={x.id} className="border-b border-gray-100 dark:border-gray-800">
+                  <Fragment key={x.id}>
+                  <tr className="border-b border-gray-100 dark:border-gray-800">
                     <td className="px-3 py-2 font-medium text-gray-800 dark:text-gray-100">{x.nom}</td>
                     <td className="px-3 py-2 text-xs text-gray-500">{(r.bases as Record<string, string>)[x.baseLegale] ?? <span className="text-red-500">{r.baseManquante}</span>}</td>
                     <td className="px-3 py-2">
@@ -180,13 +217,32 @@ export default function RopaManager() {
                         : <span className="text-[11px] inline-flex items-center gap-1 text-amber-800 bg-amber-100 dark:bg-amber-500/15 dark:text-amber-300 px-1.5 py-0.5 rounded-full" ><AlertTriangle size={12} />{r.incomplet} ({x.evaluation.champsManquants.length})</span>}
                       {!x.evaluation.complet && <span className="block mt-0.5 text-[11px] text-amber-800 dark:text-amber-300">{r.manque.replace('{champs}', x.evaluation.champsManquants.map(c => libelleChamp[c] ?? c).join(', '))}</span>}
                     </td>
-                    <td className="px-3 py-2">{x.evaluation.pia.requis && <span className="text-[11px] text-red-800 bg-red-100 dark:bg-red-500/20 dark:text-red-300 px-1.5 py-0.5 rounded-full" >{r.piaRequis}</span>}
-                      {x.evaluation.pia.requis && <span className="block mt-0.5 text-[11px] text-red-800 dark:text-red-300">{x.evaluation.pia.motifs.map(libelleMotif).join(' ; ')}</span>}</td>
+                    <td className="px-3 py-2">{(x.evaluation.pia.niveau ?? (x.evaluation.pia.requis ? 'REQUISE' : 'NON')) !== 'NON' && (() => {
+                      const niveau = x.evaluation.pia.niveau ?? 'REQUISE'
+                      const ton = niveau === 'REQUISE' ? 'text-red-800 bg-red-100 dark:bg-red-500/20 dark:text-red-300' : 'text-amber-800 bg-amber-100 dark:bg-amber-500/15 dark:text-amber-300'
+                      return <>
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${ton}`}>{r.niveaux[niveau]}</span>
+                        <span className="block mt-0.5 text-[11px] text-gray-600 dark:text-gray-300">{x.evaluation.pia.motifs.map(libelleMotif).join(' ; ')}</span>
+                      </>
+                    })()}
+                      {/* Suivi de l'AIPD : statut, analyse rattachée, point d'attention. */}
+                      {x.aipdStatut && <span className="block mt-0.5 text-[11px] text-gray-700 dark:text-gray-200">{(r.aipd.statuts as Record<string, string>)[x.aipdStatut] ?? x.aipdStatut}{x.aipdDate ? ` · ${x.aipdDate.slice(0, 10)}` : ''}{x.aipdConsultationPrealable ? ` · ${r.aipd.consultation.split(' (')[0]}` : ''}</span>}
+                      {x.aipdAnalyse && <Link href={`/analyses/${x.aipdAnalyse.id}`} className="block text-[11px] text-ebios-700 dark:text-ebios-300 underline">{x.aipdAnalyse.nom}</Link>}
+                      {x.evaluation.alerteAipd && <span className="block mt-0.5 text-[11px] font-medium text-red-700 dark:text-red-300">{x.evaluation.alerteAipd === 'A_LANCER' ? r.aipd.alerteALancer : r.aipd.alerteJustification}</span>}
+                      {((x.evaluation.pia.niveau ?? 'NON') !== 'NON' || x.aipdStatut) && <button type="button" onClick={() => setSuiviId(suiviId === x.id ? null : x.id)} aria-label={`${r.aipd.suivre} ${x.nom}`} className="mt-0.5 text-[11px] text-ebios-700 dark:text-ebios-300 hover:underline">{r.aipd.suivre}</button>}
+                    </td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">
                       <button onClick={() => openEdit(x)} className="text-xs text-ebios-600 hover:underline mr-2">{r.edit}</button>
                       <button onClick={() => remove(x.id)} className="text-gray-400 hover:text-red-600 p-1" aria-label={r.delete}><Trash2 size={15} aria-hidden="true" /></button>
                     </td>
                   </tr>
+                  {suiviId === x.id && (
+                    <tr><td colSpan={5} className="px-3 pb-3">
+                      <AipdSuiviPanel peutCreerAnalyse={peutCreerAnalyse} onAnnuler={() => setSuiviId(null)} onEnregistre={() => { setSuiviId(null); reload() }}
+                        traitement={{ id: x.id, nom: x.nom, aipdStatut: x.aipdStatut ?? null, aipdAnalyseId: x.aipdAnalyseId ?? null, aipdDate: x.aipdDate ?? null, aipdJustification: x.aipdJustification ?? '', aipdConsultationPrealable: !!x.aipdConsultationPrealable }} />
+                    </td></tr>
+                  )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>

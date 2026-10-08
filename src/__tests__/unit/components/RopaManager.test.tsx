@@ -7,6 +7,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import RopaManager from '@/components/RopaManager'
 
+// Carte d'identité du responsable : testée à part (RopaIdentiteCard.test.tsx) ; neutralisée ici (son propre fetch).
+vi.mock('@/components/RopaIdentiteCard', () => ({ default: () => null }))
+
 const listResponse = {
   traitements: [
     {
@@ -60,18 +63,69 @@ describe('RopaManager — parcours DPO (lisibilité, export)', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({
       traitements: [
         t({ id: 'a', nom: 'Hébergement US', evaluation: { complet: false, champsManquants: ['garantiesTransfert', 'dureeConservation'], pia: { requis: false, motifs: [] } } }),
-        t({ id: 'b', nom: 'Médecine du travail', evaluation: { complet: true, champsManquants: [], pia: { requis: true, motifs: ['donnees_sensibles_art9'] } } }),
+        t({ id: 'b', nom: 'Médecine du travail', evaluation: { complet: true, champsManquants: [], pia: { requis: true, niveau: 'REQUISE', motifs: ['DONNEES_SENSIBLES', 'GRANDE_ECHELLE'] } } }),
+        t({ id: 'c', nom: 'Badgeuse', evaluation: { complet: true, champsManquants: [], pia: { requis: false, niveau: 'A_EXAMINER', motifs: ['SURVEILLANCE'] } } }),
       ],
       synthese: { total: 2, complets: 1, piaRequis: 1 }, canManage: true,
     }) }))
     render(<RopaManager />)
     expect(await screen.findByText(/Garanties \(art\. 44-46\), Durée de conservation/)).toBeInTheDocument()
-    expect(screen.getByText(/Catégories particulières de données à caractère personnel \(art\. 9\)/)).toBeInTheDocument()
-    expect(screen.queryByText(/garantiesTransfert|donnees_sensibles_art9/)).toBeNull()
+    // Critères WP248 (intitulés officiels) ; niveau « à examiner » pour un seul critère.
+    expect(screen.getByText(/Données sensibles ou données à caractère hautement personnel ; Données traitées à grande échelle/)).toBeInTheDocument()
+    expect(screen.getByText('AIPD à examiner')).toBeInTheDocument()
+    expect(screen.queryByText(/garantiesTransfert|DONNEES_SENSIBLES/)).toBeNull()
   })
   it('export du registre (art. 30 §4 : mise à disposition de l’autorité de contrôle)', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => listResponse }))
     render(<RopaManager />)
     expect(await screen.findByRole('link', { name: /Exporter le registre/ })).toHaveAttribute('href', '/api/ropa/export')
+  })
+})
+
+describe('RopaManager — critères WP248 dans le formulaire', () => {
+  beforeEach(() => { vi.restoreAllMocks() })
+  it('9 critères à cocher ; données sensibles déduites des catégories saisies (case cochée, non modifiable) ; critères envoyés', async () => {
+    const fetchMock = vi.fn()
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ traitements: [], synthese: { total: 0, complets: 0, piaRequis: 0 } }) })
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'n' }) })
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ traitements: [], synthese: { total: 0, complets: 0, piaRequis: 0 } }) })
+    vi.stubGlobal('fetch', fetchMock)
+    render(<RopaManager />)
+    fireEvent.click(await screen.findByRole('button', { name: /Ajouter un traitement/ }))
+    expect(screen.getByText(/Critères de risque élevé \(lignes directrices WP248/)).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Nom du traitement'), { target: { value: 'Scoring clients' } })
+    fireEvent.change(screen.getByLabelText('Catégories de données'), { target: { value: 'Données de santé' } })
+    const sensibles = screen.getByLabelText('Données sensibles ou données à caractère hautement personnel') as HTMLInputElement
+    expect(sensibles.checked).toBe(true); expect(sensibles.disabled).toBe(true)
+    fireEvent.click(screen.getByLabelText('Évaluation ou notation'))
+    fireEvent.click(screen.getByLabelText('Données traitées à grande échelle'))
+    fireEvent.click(screen.getByRole('button', { name: 'Créer' }))
+    await waitFor(() => expect(fetchMock.mock.calls.some(c => c[1]?.method === 'POST')).toBe(true))
+    const corps = JSON.parse(fetchMock.mock.calls.find(c => c[1]?.method === 'POST')![1].body)
+    expect(corps).toMatchObject({ criteresAipd: ['EVALUATION'], grandeEchelle: true, surveillanceSystematique: false })
+  })
+})
+
+describe('RopaManager — suivi de l’AIPD', () => {
+  beforeEach(() => { vi.restoreAllMocks() })
+  it('AIPD requise non engagée : alerte « AIPD à lancer », compteur ; suivi ouvert depuis la ligne ; analyse rattachée affichée', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({
+      traitements: [
+        { id: 'a', nom: 'Scoring', finalite: 'F', baseLegale: 'contrat', categoriesPersonnes: ['A'], categoriesDonnees: ['B'], destinataires: ['C'], transfertHorsUE: false, dureeConservation: '1 an', mesuresSecurite: ['M'],
+          aipdStatut: null, aipdAnalyseId: null, aipdDate: null, aipdJustification: '', aipdConsultationPrealable: false, aipdAnalyse: null,
+          evaluation: { complet: true, champsManquants: [], pia: { requis: true, niveau: 'REQUISE', motifs: ['EVALUATION', 'GRANDE_ECHELLE'] }, alerteAipd: 'A_LANCER' } },
+        { id: 'b', nom: 'Vidéo', finalite: 'F', baseLegale: 'contrat', categoriesPersonnes: ['A'], categoriesDonnees: ['B'], destinataires: ['C'], transfertHorsUE: false, dureeConservation: '1 an', mesuresSecurite: ['M'],
+          aipdStatut: 'REALISEE', aipdAnalyseId: 'x', aipdDate: '2026-09-01T00:00:00.000Z', aipdJustification: '', aipdConsultationPrealable: true, aipdAnalyse: { id: 'x', nom: 'AIPD vidéoprotection' },
+          evaluation: { complet: true, champsManquants: [], pia: { requis: true, niveau: 'REQUISE', motifs: ['SURVEILLANCE', 'GRANDE_ECHELLE'] }, alerteAipd: null } },
+      ],
+      synthese: { total: 2, complets: 2, piaRequis: 2, aipdALancer: 1 }, canManage: true, peutCreerAnalyse: false,
+    }) }))
+    render(<RopaManager />)
+    await screen.findByText('Scoring')
+    expect(screen.getAllByText('AIPD à lancer')).toHaveLength(2) // indicateur + alerte de la ligne
+    expect(screen.getByText(/Réalisée/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'AIPD vidéoprotection' })).toHaveAttribute('href', '/analyses/x')
+    fireEvent.click(screen.getByRole('button', { name: 'Suivre l’AIPD Scoring' }))
+    expect(screen.getByRole('region', { name: 'Suivi de l’AIPD — Scoring' })).toBeInTheDocument()
   })
 })

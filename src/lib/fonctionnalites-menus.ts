@@ -13,8 +13,8 @@ const MENU_DU_CHAMP: Record<string, MenuFonctionnalite> = {
   // Gestion des risques : déroulé des analyses et projets 360.
   qualificationActive: 'analyses', qualificationObligatoire: 'analyses', conseilsAteliersActive: 'analyses',
   acceptationRisquesActive: 'analyses', gelApresAcceptationActive: 'analyses', interdireAutoApprobation: 'analyses', projets360Active: 'analyses',
-  // Registres : risques, campagnes RCSA, incidents, IA.
-  registreRisquesActive: 'registre', campagnesRcsaActive: 'registre', incidentsActive: 'registre', registreIaActive: 'registre',
+  // Registres : risques, campagnes RCSA, incidents, IA, registre du sous-traitant (RGPD).
+  registreRisquesActive: 'registre', campagnesRcsaActive: 'registre', incidentsActive: 'registre', registreIaActive: 'registre', ropaSousTraitantActive: 'registre',
   // Contrôle & audit.
   controlePermanentActive: 'controleAudit', auditInterneActive: 'controleAudit',
   // Conformité : référentiels, dérogations, maturité, homologations, revues d'habilitations.

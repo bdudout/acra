@@ -4,6 +4,8 @@ import {
   sanitizeTraitement,
   champsManquantsArt30,
   piaRequis,
+  criteresAipd,
+  CRITERES_AIPD,
   evaluerTraitement,
   type Traitement,
 } from '@/lib/ropa'
@@ -53,21 +55,22 @@ describe('champsManquantsArt30 (complétude du registre)', () => {
   })
 })
 
-describe('piaRequis (art. 35 — analyse d’impact)', () => {
-  it('données de santé (art. 9) → PIA requis', () => {
-    const t = { ...complet(), categoriesDonnees: ['données de santé des patients', 'diagnostic'] }
-    const r = piaRequis(t)
-    expect(r.requis).toBe(true)
-    expect(r.motifs).toContain('donnees_sensibles_art9')
+describe('AIPD — critères des lignes directrices WP248 rév. 01 (CEPD)', () => {
+  it('9 critères, dans l’ordre des lignes directrices', () => {
+    expect(CRITERES_AIPD).toEqual(['EVALUATION', 'DECISION_AUTOMATISEE', 'SURVEILLANCE', 'DONNEES_SENSIBLES', 'GRANDE_ECHELLE', 'CROISEMENT', 'PERSONNES_VULNERABLES', 'INNOVATION', 'EXCLUSION_DROIT'])
   })
-  it('surveillance systématique à grande échelle → PIA requis', () => {
-    const t = { ...complet(), grandeEchelle: true, surveillanceSystematique: true }
-    const r = piaRequis(t)
-    expect(r.requis).toBe(true)
-    expect(r.motifs).toContain('surveillance_systematique_grande_echelle')
+  it('critères retenus : cochés par le DPO + déduits (catégories particulières art. 9, grande échelle, surveillance), sans doublon', () => {
+    const t = { ...complet(), categoriesDonnees: ['données de santé'], grandeEchelle: true, criteresAipd: ['PERSONNES_VULNERABLES', 'GRANDE_ECHELLE', 'INCONNU'] }
+    expect(criteresAipd(t)).toEqual(['DONNEES_SENSIBLES', 'GRANDE_ECHELLE', 'PERSONNES_VULNERABLES'])
   })
-  it('traitement ordinaire non sensible → PIA non requis', () => {
-    expect(piaRequis(complet()).requis).toBe(false)
+  it('deux critères ou plus → AIPD requise (« dans la plupart des cas ») ; ex. notation de clients à grande échelle', () => {
+    const r = piaRequis({ ...complet(), grandeEchelle: true, criteresAipd: ['EVALUATION'] })
+    expect(r).toEqual({ requis: true, niveau: 'REQUISE', motifs: ['EVALUATION', 'GRANDE_ECHELLE'] })
+    expect(piaRequis({ ...complet(), grandeEchelle: true, surveillanceSystematique: true }).niveau).toBe('REQUISE')
+  })
+  it('un seul critère → AIPD à examiner (un critère peut suffire selon le cas) ; aucun → non requise', () => {
+    expect(piaRequis({ ...complet(), categoriesDonnees: ['données de santé des patients'] })).toEqual({ requis: false, niveau: 'A_EXAMINER', motifs: ['DONNEES_SENSIBLES'] })
+    expect(piaRequis(complet())).toEqual({ requis: false, niveau: 'NON', motifs: [] })
   })
 })
 
@@ -93,7 +96,7 @@ describe('sanitizeTraitement (normalisation d’entrée)', () => {
 
 describe('evaluerTraitement (synthèse pour le DPO)', () => {
   it('assemble complétude + PIA', () => {
-    const r = evaluerTraitement({ ...complet(), categoriesDonnees: ['données de santé'] })
+    const r = evaluerTraitement({ ...complet(), categoriesDonnees: ['données de santé'], grandeEchelle: true })
     expect(r.pia.requis).toBe(true)
     expect(r.complet).toBe(true) // tous les champs art.30 présents
     expect(r.champsManquants).toEqual([])

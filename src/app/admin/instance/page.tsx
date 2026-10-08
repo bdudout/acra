@@ -135,6 +135,7 @@ export default function AdminInstancePage() {
     { key: 'campagnesRcsa', label: t.features.campagnesRcsaTitle },
     { key: 'appetence', label: t.features.appetenceTitle },
     { key: 'rapportsGrc', label: t.features.rapportsGrcTitle },
+    { key: 'ropaSousTraitant', label: t.features.ropaSousTraitantTitle },
   ]
 
   if (status === 'loading' || !isAdmin) {

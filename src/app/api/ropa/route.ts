@@ -3,7 +3,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { canManageRopa, type UserRole } from '@/lib/permissions'
+import { canCreateAnalyse, canManageRopa, type UserRole } from '@/lib/permissions'
+import { optionsStructure } from '@/lib/org-config.server'
+import { alerteAipd, type StatutAipd } from '@/lib/ropa-aipd'
 import { sanitizeTraitement, evaluerTraitement } from '@/lib/ropa'
 import { auditLog, getClientIp } from '@/lib/logger'
 
@@ -27,14 +29,21 @@ export async function GET() {
   if (!orgId) return NextResponse.json({ traitements: [], canManage: false })
   if (!canManageRopa(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
-  const rows = await db.traitement.findMany({ where: { organizationId: orgId }, orderBy: [{ createdAt: 'desc' }] })
-  const traitements = rows.map((r: Record<string, unknown>) => ({ ...r, evaluation: evaluerTraitement(sanitizeTraitement(r)) }))
+  const rows = await prisma.traitement.findMany({ where: { organizationId: orgId }, orderBy: [{ createdAt: 'desc' }], include: { aipdAnalyse: { select: { id: true, nom: true } } } })
+  const traitements = rows.map(r => {
+    const evaluation = evaluerTraitement(sanitizeTraitement(r))
+    // Suivi de l'AIPD (art. 35-36) : point d'attention du DPO (AIPD requise non engagée, AIPD écartée sans justification).
+    return { ...r, evaluation: { ...evaluation, alerteAipd: alerteAipd(evaluation.pia.niveau, r as { aipdStatut: StatutAipd | null; aipdJustification: string }) } }
+  })
   const synthese = {
     total: traitements.length,
-    complets: traitements.filter((t: { evaluation: { complet: boolean } }) => t.evaluation.complet).length,
-    piaRequis: traitements.filter((t: { evaluation: { pia: { requis: boolean } } }) => t.evaluation.pia.requis).length,
+    complets: traitements.filter(t => t.evaluation.complet).length,
+    piaRequis: traitements.filter(t => t.evaluation.pia.requis).length,
+    aipdALancer: traitements.filter(t => t.evaluation.alerteAipd === 'A_LANCER').length,
   }
-  return NextResponse.json({ traitements, synthese, canManage: true })
+  // Créer l'analyse d'une AIPD : proposé aux seuls rôles qui peuvent créer une analyse (le DPO, en lecture, rattache).
+  const peutCreerAnalyse = canCreateAnalyse({ id: '', role: userRole }, await optionsStructure(orgId))
+  return NextResponse.json({ traitements, synthese, canManage: true, peutCreerAnalyse })
 }
 
 // POST /api/ropa — créer un traitement (DPO / ADMIN).

@@ -6,6 +6,8 @@ import ExcelJS from 'exceljs'
 import { sanitizeForSpreadsheet as S } from './spreadsheet-safe'
 import type { getT } from './i18n'
 import type { Traitement, TraitementEvaluation } from './ropa'
+import type { IdentiteEffective } from './ropa-identite'
+import type { SousTraitance } from './ropa-sous-traitance'
 
 type Cat = ReturnType<typeof getT>
 const ENTETE = 'FF4338CA'
@@ -19,7 +21,7 @@ function feuille(wb: ExcelJS.Workbook, nom: string, entetes: string[], lignes: (
   for (const l of lignes) ws.addRow(l.map(v => (typeof v === 'string' ? S(v) : v ?? '')))
 }
 
-export async function buildRopaXlsx(o: { t: Cat; now: Date; organisation: string; traitements: (Traitement & { evaluation: TraitementEvaluation })[] }): Promise<Buffer> {
+export async function buildRopaXlsx(o: { t: Cat; now: Date; organisation: string; identite?: IdentiteEffective; sousTraitances?: (SousTraitance & { manquants: string[] })[]; traitements: (Traitement & { evaluation: TraitementEvaluation; aipdStatut?: string | null; aipdAnalyseNom?: string | null; aipdDate?: string | null; aipdConsultationPrealable?: boolean })[] }): Promise<Buffer> {
   const r = o.t.ropa, e = r.export
   const wb = new ExcelJS.Workbook()
   wb.creator = 'ACRA — Augmented Cyber (& Business) Risk Analysis'; wb.created = o.now
@@ -33,15 +35,34 @@ export async function buildRopaXlsx(o: { t: Cat; now: Date; organisation: string
   pres.addRow([S(r.title)]).font = { bold: true, size: 13 }
   pres.addRow([e.organisation, S(o.organisation)])
   pres.addRow([e.genere, o.now.toISOString().slice(0, 10)])
+  // Identité (art. 30 §1 a) : responsable, représentant, délégué à la protection des données.
+  if (o.identite) {
+    const id = r.identite, x = o.identite
+    const ligne = (...v: string[]) => S(v.filter(Boolean).join(' — '))
+    pres.addRow([id.responsable, S(x.responsable.nom)])
+    pres.addRow([id.coordonnees, ligne(x.responsable.adresse, x.responsable.contact)])
+    if (x.representant.nom || x.representant.contact) pres.addRow([id.representant, ligne(x.representant.nom, x.representant.contact)])
+    if (x.dpo.source !== 'AUCUN') pres.addRow([id.dpo, ligne(x.dpo.nom, x.dpo.contact)])
+  }
   feuille(wb, e.feuille,
-    [r.fNom, r.fFinalite, r.fBase, r.fPersonnes, r.fDonnees, r.fDestinataires, r.fTransfert, r.fPays, r.fGaranties, r.fDuree, r.fMesures, e.complet, e.manquants, e.aipd, e.motifsCol],
+    [r.fNom, r.fFinalite, r.fBase, r.fPersonnes, r.fDonnees, r.fDestinataires, r.fTransfert, r.fPays, r.fGaranties, r.fDuree, r.fMesures, e.complet, e.manquants, e.aipd, e.motifsCol, r.aipd.statut, r.aipd.analyse, r.aipd.date, r.aipd.consultation.split(' (')[0]],
     o.traitements.map(x => [
       x.nom, x.finalite, x.baseLegale ? (r.bases as Record<string, string>)[x.baseLegale] ?? x.baseLegale : '',
       x.categoriesPersonnes.join(', '), x.categoriesDonnees.join(', '), x.destinataires.join(', '),
       ouiNon(x.transfertHorsUE), x.paysTransfert ?? '', x.garantiesTransfert ?? '', x.dureeConservation, x.mesuresSecurite.join(', '),
       ouiNon(x.evaluation.complet), x.evaluation.champsManquants.map(c => champ[c] ?? c).join(', '),
-      ouiNon(x.evaluation.pia.requis), x.evaluation.pia.motifs.map(m => (r.motifs as Record<string, string>)[m] ?? m).join(' ; '),
+      (r.niveaux as Record<string, string>)[x.evaluation.pia.niveau] ?? '', x.evaluation.pia.motifs.map(m => (r.criteres as Record<string, string>)[m] ?? m).join(' ; '),
+      // Suivi de l'AIPD (art. 35-36).
+      x.aipdStatut ? (r.aipd.statuts as Record<string, string>)[x.aipdStatut] ?? x.aipdStatut : '', x.aipdAnalyseNom ?? '', x.aipdDate ?? '', x.aipdConsultationPrealable ? e.oui : '',
     ]),
-    [32, 40, 18, 26, 30, 26, 12, 16, 30, 18, 30, 12, 26, 12, 40])
+    [32, 40, 18, 26, 30, 26, 12, 16, 30, 18, 30, 12, 26, 12, 40, 14, 30, 14, 22])
+  // Registre du sous-traitant (art. 30 §2) : seulement si le module est actif (lignes fournies).
+  if (o.sousTraitances) {
+    const st = r.sousTraitance
+    const champSt: Record<string, string> = { clientNom: st.client, clientContact: st.clientContact, categoriesTraitements: st.categories, mesuresSecurite: st.mesures, garantiesTransfert: st.garanties }
+    feuille(wb, st.feuille, [st.client, st.clientContact, st.clientDpo, st.categories, st.transfert, st.pays, st.garanties, st.mesures, e.manquants],
+      o.sousTraitances.map(x => [x.clientNom, x.clientContact, x.clientDpo, x.categoriesTraitements.join(', '), ouiNon(x.transfertHorsUE), x.paysTransfert, x.garantiesTransfert, x.mesuresSecurite.join(', '), x.manquants.map(c => champSt[c] ?? c).join(', ')]),
+      [30, 26, 26, 36, 12, 16, 30, 30, 26])
+  }
   return Buffer.from(await wb.xlsx.writeBuffer())
 }

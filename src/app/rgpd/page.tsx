@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import { canManageRopa, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import RopaManager from '@/components/RopaManager'
+import RgpdOnglets from '@/components/RgpdOnglets'
+import { getOrgConfig } from '@/lib/org-config.server'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -18,12 +19,14 @@ export default async function RgpdPage() {
 
   const scope = await getAnalyseScope(userId, userRole)
   if (!canManageRopa(scope.role)) redirect('/dashboard')
+  // Registre du sous-traitant (art. 30 §2) : module activable, onglet affiché s'il est actif.
+  const sousTraitant = scope.activeOrgId ? (await getOrgConfig(scope.activeOrgId)).ropaSousTraitantActive : false
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <RopaManager />
+        <RgpdOnglets sousTraitant={sousTraitant} />
       </main>
     </div>
   )

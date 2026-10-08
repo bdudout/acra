@@ -10,19 +10,31 @@ describe('buildRopaXlsx', () => {
   it('présentation (organisation, date) puis une ligne par traitement : champs de l’art. 30, complétude et AIPD en clair ; formule neutralisée', async () => {
     const buf = await buildRopaXlsx({
       t: getT('fr'), now: new Date('2026-10-09T10:00:00Z'), organisation: 'Banque Exemple',
+      identite: { responsable: { nom: 'Banque Exemple SA', adresse: '1 rue X, Paris', contact: 'contact@banque.fr' }, representant: { nom: '', contact: '' }, dpo: { source: 'DESIGNE', nom: 'Alice Martin', contact: 'alice@x.fr' }, manquants: [] },
       traitements: [{
         nom: '=HYPERLINK("x")', finalite: 'Suivi médical', baseLegale: 'obligation_legale', categoriesPersonnes: ['Salariés'], categoriesDonnees: ['Données de santé'],
         destinataires: ['Médecin du travail'], transfertHorsUE: true, paysTransfert: 'Suisse', garantiesTransfert: '', dureeConservation: '50 ans', mesuresSecurite: ['Chiffrement', 'Habilitations'],
-        evaluation: { complet: false, champsManquants: ['garantiesTransfert'], pia: { requis: true, motifs: ['donnees_sensibles_art9'] } },
+        evaluation: { complet: false, champsManquants: ['garantiesTransfert'], pia: { requis: true, niveau: 'REQUISE', motifs: ['DONNEES_SENSIBLES', 'GRANDE_ECHELLE'] } },
+        aipdStatut: 'REALISEE', aipdAnalyseNom: 'AIPD médecine du travail', aipdDate: '2026-09-15', aipdConsultationPrealable: true,
       }],
     })
     const wb = new ExcelJS.Workbook(); await wb.xlsx.load(buf as unknown as ArrayBuffer)
     expect(wb.worksheets.map(w => w.name)).toEqual(['Présentation', 'Registre (art. 30)'])
     expect(valeurs(wb.worksheets[0], 2)).toEqual(['Organisation', 'Banque Exemple'])
+    // Identité (art. 30 §1 a) : responsable et DPO.
+    const pres = [3, 4, 5, 6, 7, 8].map(n => valeurs(wb.worksheets[0], n))
+    expect(pres).toEqual(expect.arrayContaining([['Responsable du traitement', 'Banque Exemple SA'], ['Coordonnées du responsable', '1 rue X, Paris — contact@banque.fr'], ['Délégué à la protection des données', 'Alice Martin — alice@x.fr']]))
     const entetes = valeurs(wb.worksheets[1], 1)
-    expect(entetes).toEqual(expect.arrayContaining(['Nom du traitement', 'Finalité', 'Base légale', 'Catégories de personnes', 'Catégories de données', 'Destinataires', 'Transfert hors UE', 'Pays de transfert', 'Garanties (art. 44-46)', 'Durée de conservation', 'Mesures de sécurité', 'Complet (art. 30)', 'Champs manquants', 'AIPD requise', 'Motifs']))
+    expect(entetes).toEqual(expect.arrayContaining(['Nom du traitement', 'Finalité', 'Base légale', 'Catégories de personnes', 'Catégories de données', 'Destinataires', 'Transfert hors UE', 'Pays de transfert', 'Garanties (art. 44-46)', 'Durée de conservation', 'Mesures de sécurité', 'Complet (art. 30)', 'Champs manquants', 'AIPD', 'Critères WP248', 'Statut', 'Analyse ACRA rattachée', 'Date de réalisation']))
     const l = valeurs(wb.worksheets[1], 2)
     expect(String(l[0]).startsWith('=')).toBe(false) // formule neutralisée
-    expect(l).toEqual(expect.arrayContaining(['Obligation légale', 'Salariés', 'Données de santé', 'Oui', 'Suisse', 'Chiffrement, Habilitations', 'Non', 'Garanties (art. 44-46)', 'Catégories particulières de données à caractère personnel (art. 9)']))
+    expect(l).toEqual(expect.arrayContaining(['Obligation légale', 'Salariés', 'Données de santé', 'Oui', 'Suisse', 'Chiffrement, Habilitations', 'Non', 'Garanties (art. 44-46)', 'AIPD requise', 'Données sensibles ou données à caractère hautement personnel ; Données traitées à grande échelle', 'Réalisée', 'AIPD médecine du travail', '2026-09-15']))
+  })
+  it('registre du sous-traitant (art. 30 §2) : feuille ajoutée quand des lignes sont fournies', async () => {
+    const buf = await buildRopaXlsx({ t: getT('fr'), now: new Date('2026-10-09T10:00:00Z'), organisation: 'ESN', traitements: [],
+      sousTraitances: [{ clientNom: 'Hôpital X', clientContact: 'dpo@h.fr', clientDpo: '', categoriesTraitements: ['Hébergement'], transfertHorsUE: true, paysTransfert: 'Inde', garantiesTransfert: 'Clauses types', mesuresSecurite: ['Chiffrement'], manquants: [] }] })
+    const wb = new ExcelJS.Workbook(); await wb.xlsx.load(buf as unknown as ArrayBuffer)
+    expect(wb.worksheets.map(w => w.name)).toEqual(['Présentation', 'Registre (art. 30)', 'Registre du sous-traitant'])
+    expect(valeurs(wb.worksheets[2], 2)).toEqual(expect.arrayContaining(['Hôpital X', 'dpo@h.fr', 'Hébergement', 'Oui', 'Inde', 'Clauses types', 'Chiffrement']))
   })
 })

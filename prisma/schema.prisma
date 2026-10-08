@@ -206,6 +206,8 @@ model Organization {
   entites                Entite[] @relation("EntiteOrganisation")
   entitesLiees           Entite[] @relation("EntiteOrganisationLiee")
   entiteEvenements       EntiteEvenement[]
+  ropaIdentite           RopaIdentite?
+  sousTraitances         TraitementSousTraitance[]
 
   @@index([parentId])
   @@index([path])
@@ -360,6 +362,16 @@ model Traitement {
   mesuresSecurite          Json         @default("[]")
   grandeEchelle            Boolean      @default(false)
   surveillanceSystematique Boolean      @default(false)
+  // Critères de risque élevé des lignes directrices WP248 rév. 01 cochés par le DPO (lib/ropa CRITERES_AIPD).
+  criteresAipd             Json         @default("[]")
+  // Suivi de l'AIPD (art. 35-36) : statut A_REALISER | EN_COURS | REALISEE | NON_RETENUE (lib/ropa-aipd), analyse ACRA
+  // rattachée, date, justification d'une AIPD non retenue, consultation préalable de l'autorité de contrôle.
+  aipdStatut                String?
+  aipdAnalyseId             String?
+  aipdAnalyse               Analyse?     @relation("TraitementAipd", fields: [aipdAnalyseId], references: [id], onDelete: SetNull)
+  aipdDate                  DateTime?    @db.Date
+  aipdJustification         String       @default("")
+  aipdConsultationPrealable Boolean      @default(false)
   // Provenance d'un traitement type du catalogue RoPA (import ligne par ligne idempotent).
   catalogueKey             String?
   catalogueVersion         String?
@@ -1710,6 +1722,7 @@ model Analyse {
   @@index([socleId])
   @@index([projetSourceId])
   @@index([deletedAt])
+  traitementsAipd Traitement[] @relation("TraitementAipd")
   @@index([organizationId])
   systemesIa SystemeIA[]
 }
@@ -2229,6 +2242,8 @@ model OrganizationConfig {
   campagnesRcsaActive        Boolean       @default(false)
   appetenceActive            Boolean       @default(false)
   rapportsGrcActive          Boolean       @default(false)
+  // Registre du sous-traitant (RGPD art. 30 §2) : module activable (3 niveaux), désactivé par défaut.
+  ropaSousTraitantActive     Boolean       @default(false)
   // Serveur MCP (agents/LLM) pour cette organisation : désactivé par défaut ; exige aussi l'interrupteur d'instance `mcpEnabled`.
   mcpActive                  Boolean       @default(false)
   // Personnalisation de l'échelle de maturité CMMI (niveaux 0–5) :
@@ -2896,4 +2911,40 @@ model EntiteEvenement {
   createdAt      DateTime     @default(now())
 
   @@index([organizationId, dateEffet])
+}
+
+/// Registre des traitements (RGPD art. 30 §1 a) : identité et coordonnées du responsable du traitement, de son
+/// représentant (art. 27) et du DPO saisi librement (le DPO désigné dans ACRA est repris automatiquement : lib/ropa-identite).
+model RopaIdentite {
+  organizationId      String       @id
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  responsableNom      String       @default("")
+  responsableAdresse  String       @default("")
+  responsableContact  String       @default("")
+  representantNom     String       @default("")
+  representantContact String       @default("")
+  dpoNom              String       @default("")
+  dpoContact          String       @default("")
+  updatedAt           DateTime     @updatedAt
+}
+
+/// Registre du sous-traitant (RGPD art. 30 §2) : une ligne par responsable du traitement client — coordonnées (et DPO),
+/// catégories de traitements effectués pour son compte, transferts hors UE et garanties, mesures de sécurité.
+model TraitementSousTraitance {
+  id                    String       @id @default(cuid())
+  organizationId        String
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clientNom             String
+  clientContact         String       @default("")
+  clientDpo             String       @default("")
+  categoriesTraitements Json         @default("[]")
+  transfertHorsUE       Boolean      @default(false)
+  paysTransfert         String       @default("")
+  garantiesTransfert    String       @default("")
+  mesuresSecurite       Json         @default("[]")
+  createdBy             String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  @@index([organizationId])
 }
