@@ -6,6 +6,39 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-09 (92) — Claude : consolidation des entités, lot E4 (réorganisations)
+
+- `lib/entites-reorganisation` (pur) : renommage (ancien nom en alias), fusion (dans une entité existante ou nouvelle ;
+  sources closes, noms absorbés en alias), scission (nouvelles entités au même rattachement ; source conservée ou close
+  avec un repreneur), clôture (successeur facultatif) ; destination refusée si close ou sous une entité qui ferme ;
+  `entiteALaDate` remonte les transferts postérieurs à une date.
+- Modèle `EntiteEvenement` (migration additive `20261009120000_entites_reorganisations`) : sources, résultats, objets
+  déplacés par entité source ; purge des événements de plus de 5 ans à chaque écriture. Route
+  `GET|POST /api/referentiel-entites/reorganisations` (lecture tout membre, écriture ADMIN en transaction verrouillée).
+  UI : bouton « Réorganiser » par entité active (`ReorganisationEntitePanel`), `HistoriqueEntites` sous l'arbre.
+- `perimetreSource` (mesures via leur analyse) déplacé dans `lib/entites.server` (rapprochement + réorganisations).
+- **Vérifié** : tests ; navigateur ADMIN sur la vraie base (rapprochement d'un plan d'action, fusion A + B → C : plan
+  et sous-entité reportés, sources closes, alias, historique affiché) ; données de test supprimées.
+- **Question utilisateur** : incidents et plans d'action ne sont pas encore filtrables par entité → E5 (filtre
+  « Entité » via `entiteId`, sous-entités incluses, à travers les réorganisations).
+
+---
+
+## 2026-10-09 (91) — Claude : consolidation des entités, lot E3 (rapprochement des textes libres)
+
+- #236 (E2) fusionnée. E3 : `lib/entites-rapprochement` (pur) regroupe les valeurs des champs `entite` encore sans lien
+  (risques, incidents, suivis de conformité hors « toute l'organisation », plans d'action, traitements, mesures via leur
+  analyse) sans tenir compte des espaces, de la casse ni des accents ; proposition exacte (présélectionnée), proche
+  (suggérée seulement) ou aucune ; plan : liens, variantes ajoutées en alias, entités créées.
+  Route `GET|POST /api/referentiel-entites/rapprochement` (ADMIN, transaction verrouillée, plan recalculé, seul
+  `entiteId` est écrit : le texte d'origine reste) ; `RapprochementEntitesPanel` (bouton du référentiel).
+- **Vérifié** : tests ; navigateur ADMIN sur la vraie base (4 plans d'action de test « DSI » / « dsi » / « Direction SI »
+  / « Juridique » → 3 valeurs, 4 objets liés, alias ajouté, entité créée) ; données de test supprimées.
+- **Suite** : E4 réorganisations (renommer / fusionner / scinder / clore avec report des références, historique 5 ans) ;
+  E5 sélecteurs d'entité dans les écrans et agrégation des indicateurs.
+
+---
+
 ## 2026-10-09 (90) — Claude : consolidation des entités, lot E2 (import avec aperçu des écarts)
 
 - #235 (E1) fusionnée. E2 : `lib/entites-import` (pur) classe chaque ligne — nouvelle, renommée (même identifiant

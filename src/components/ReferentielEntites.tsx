@@ -5,9 +5,12 @@
 // identifiant externe, organisation ACRA liée et clôture. Écriture ADMIN ; champs verrouillés quand l'annuaire fait foi.
 // API : /api/referentiel-entites. Spec : docs/specs/entites-consolidation-besoin.md.
 import { useEffect, useState } from 'react'
-import { Network, Pencil, Plus, Trash2, Archive, ArchiveRestore, Upload } from 'lucide-react'
+import { Network, Pencil, Plus, Trash2, Archive, ArchiveRestore, Upload, Link2, GitMerge } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import ImportEntitesPanel from './ImportEntitesPanel'
+import RapprochementEntitesPanel from './RapprochementEntitesPanel'
+import ReorganisationEntitePanel from './ReorganisationEntitePanel'
+import HistoriqueEntites from './HistoriqueEntites'
 import { TYPES_ENTITE, champsVerrouilles, construireArbre, estActive, type EntiteRef, type NoeudEntite, type SourceVerite, type TypeEntite } from '@/lib/entites'
 
 type Compte = Record<'risques' | 'incidents' | 'conformites' | 'plansAction' | 'traitementsConformite' | 'mesures' | 'enfants', number>
@@ -29,6 +32,10 @@ export default function ReferentielEntites() {
   const [erreur, setErreur] = useState<string | null>(null)
   const [doublons, setDoublons] = useState<{ id: string; nom: string }[]>([])
   const [importer, setImporter] = useState(false)
+  const [rapprocher, setRapprocher] = useState(false)
+  const [reorg, setReorg] = useState<{ id: string; nom: string } | null>(null)
+  // Incrémenté après une réorganisation : recharge l'historique.
+  const [version, setVersion] = useState(0)
 
   const recharger = () => fetch('/api/referentiel-entites').then(x => (x.ok ? x.json() : null)).then(setData).catch(() => {})
   useEffect(() => { recharger() }, [])
@@ -95,6 +102,7 @@ export default function ReferentielEntites() {
           {data.peutModifier && (
             <span className="ml-auto flex gap-1">
               <button type="button" onClick={() => editer(e)} aria-label={`${r.modifier} ${e.nom}`} title={r.modifier} className="p-1 text-gray-500 hover:text-ebios-700"><Pencil size={14} aria-hidden="true" /></button>
+              {active && <button type="button" onClick={() => { setForm(null); setReorg({ id: e.id, nom: e.nom }) }} aria-label={`${r.reorganisation.ouvrir} ${e.nom}`} title={r.reorganisation.ouvrir} className="p-1 text-gray-500 hover:text-ebios-700"><GitMerge size={14} aria-hidden="true" /></button>}
               {active
                 ? <button type="button" onClick={() => envoyer(`/api/referentiel-entites/${e.id}`, 'PATCH', { valideAu: new Date().toISOString().slice(0, 10) })} aria-label={`${r.clore} ${e.nom}`} title={r.clore} className="p-1 text-gray-500 hover:text-amber-700"><Archive size={14} aria-hidden="true" /></button>
                 : <button type="button" onClick={() => envoyer(`/api/referentiel-entites/${e.id}`, 'PATCH', { valideAu: null })} aria-label={`${r.rouvrir} ${e.nom}`} title={r.rouvrir} className="p-1 text-gray-500 hover:text-ebios-700"><ArchiveRestore size={14} aria-hidden="true" /></button>}
@@ -118,6 +126,7 @@ export default function ReferentielEntites() {
         </div>
         {data.peutModifier && !form && (
           <span className="flex gap-2">
+            {!rapprocher && <button type="button" onClick={() => setRapprocher(true)} className="btn-secondary text-sm inline-flex items-center gap-1.5"><Link2 size={15} aria-hidden="true" />{r.rapprochement.ouvrir}</button>}
             {!importer && <button type="button" onClick={() => setImporter(true)} className="btn-secondary text-sm inline-flex items-center gap-1.5"><Upload size={15} aria-hidden="true" />{r.import.importer}</button>}
             <button type="button" onClick={() => { setErreur(null); setDoublons([]); setForm({ ...VIDE }) }} className="btn-primary text-sm inline-flex items-center gap-1.5"><Plus size={15} aria-hidden="true" />{r.ajouter}</button>
           </span>
@@ -126,6 +135,9 @@ export default function ReferentielEntites() {
       {!data.peutModifier && <p className="text-xs text-gray-500">{r.lectureSeule}</p>}
       {data.sourceVerite === 'ANNUAIRE' && <p className="text-xs rounded-sm bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200 px-2 py-1.5">{r.annuaireFaitFoi}</p>}
 
+      {rapprocher && data.peutModifier && (
+        <RapprochementEntitesPanel entites={data.entites.filter(e => !e.valideAu || new Date(e.valideAu) > new Date()).map(e => ({ id: e.id, nom: e.nom }))} onTermine={recharger} onFermer={() => setRapprocher(false)} />
+      )}
       {importer && data.peutModifier && (
         <ImportEntitesPanel connecteur={!!data.connecteur} existantes={data.entites.map(e => ({ id: e.id, nom: e.nom }))} onTermine={recharger} onFermer={() => setImporter(false)} />
       )}
@@ -183,10 +195,15 @@ export default function ReferentielEntites() {
       )}
       {!form && erreur && <p role="alert" className="text-sm text-red-600">{erreur}</p>}
 
+      {reorg && data.peutModifier && (
+        <ReorganisationEntitePanel key={reorg.id} entite={reorg} entites={lignes.filter(e => estActive(e)).map(e => ({ id: e.id, nom: e.nom }))}
+          onTermine={() => { setReorg(null); setVersion(v => v + 1); recharger() }} onAnnuler={() => setReorg(null)} />
+      )}
       <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
         <input type="checkbox" checked={closes} onChange={ev => setCloses(ev.target.checked)} aria-label={r.afficherCloses} />{r.afficherCloses}
       </label>
       {arbre.length === 0 ? <p className="text-sm italic text-gray-400">{r.vide}</p> : <ul>{arbre.map(n => rendreNoeud(n, 0))}</ul>}
+      <HistoriqueEntites key={version} />
     </section>
   )
 }

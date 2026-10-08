@@ -37,6 +37,14 @@ describe('ReferentielEntites', () => {
     // Import (lot E2) : le panneau s'ouvre depuis le référentiel.
     fireEvent.click(screen.getByRole('button', { name: 'Importer' }))
     expect(screen.getByRole('region', { name: 'Importer des entités' })).toBeTruthy()
+    // Rapprochement des textes libres (lot E3).
+    fireEvent.click(screen.getByRole('button', { name: 'Rapprocher les textes libres' }))
+    expect(screen.getByRole('region', { name: 'Rapprocher les textes libres' })).toBeTruthy()
+    // Réorganisation (lot E4) : proposée sur les entités actives seulement ; historique affiché.
+    expect(screen.queryByRole('button', { name: 'Réorganiser Ancien site' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Réorganiser DSI' }))
+    expect(screen.getByRole('region', { name: 'Réorganiser « DSI »' })).toBeTruthy()
+    expect(screen.getByText('Historique des réorganisations (5 ans)')).toBeTruthy()
   })
 
   it('hors ADMIN : consultation seule, aucun bouton de modification', async () => {
@@ -45,6 +53,7 @@ describe('ReferentielEntites', () => {
     expect(await screen.findByText(/Consultation seule/)).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Ajouter une entité' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Importer' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Rapprocher les textes libres' })).toBeNull()
     expect(screen.queryByRole('button', { name: /Modifier/ })).toBeNull()
   })
 
