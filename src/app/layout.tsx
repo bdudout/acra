@@ -11,6 +11,7 @@ import { headers } from 'next/headers'
 import { getServerT } from '@/lib/i18n'
 import { getBranding } from '@/lib/branding.server'
 import { BrandingProvider } from '@/components/BrandingProvider'
+import SignalementErreursApi from '@/components/SignalementErreursApi'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -104,6 +105,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               {children}
               <Footer />
               <CookieBanner />
+              {/* Erreurs serveur des appels d'API : proposition de signalement GitHub (rien n'est envoyé par ACRA). */}
+              <SignalementErreursApi />
             </div>
           </BrandingProvider>
         </Providers>

@@ -1,4 +1,5 @@
 import { releaseInfo } from '@/lib/release-info'
+import { depotIssues } from '@/lib/signalement-erreur'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { migrationDrift, type MigrationRow } from '@/lib/migration-drift'
@@ -35,6 +36,8 @@ export async function GET(req: Request) {
         db: 'error',
         schema: 'unknown',
         ...releaseInfo(process.env),
+        // Dépôt où signaler une erreur (écran d'erreur) : ACRA_ISSUES_REPO, sinon le dépôt d'ACRA.
+        issuesRepo: depotIssues(process.env.ACRA_ISSUES_REPO),
         uptime: Math.floor(process.uptime()),
         responseTimeMs: Date.now() - start,
       },
@@ -66,6 +69,7 @@ export async function GET(req: Request) {
       db: dbStatus,
       schema,
       ...releaseInfo(process.env),
+      issuesRepo: depotIssues(process.env.ACRA_ISSUES_REPO),
       uptime: Math.floor(process.uptime()),
       responseTimeMs: Date.now() - start,
       ...(migrations ? { migrations } : {}),
