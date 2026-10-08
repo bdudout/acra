@@ -12,6 +12,7 @@ import { auditLog } from '@/lib/logger'
 import { sendEmail } from '@/lib/email'
 import { emailLayout } from '@/lib/email-html'
 import { resolveScaleConfig } from '@/lib/risk-scale'
+import { upsertOrgConfig } from './org-config.server'
 
 /**
  * Réglages démo EFFECTIFS : surcharges persistées (Configuration.demoConfig, éditables
@@ -188,11 +189,7 @@ export async function createDemoOrgForUser(userId: string, displayName: string):
   })
   // Parcours démo cyber : conformité (déjà active par défaut), référentiels/PSSI,
   // documents et dérogations. Les modules GRC plus larges restent désactivés.
-  await prisma.organizationConfig.upsert({
-    where: { id: created.id },
-    create: { id: created.id, derogationsActive: true },
-    update: { derogationsActive: true },
-  })
+  await upsertOrgConfig(created.id, { derogationsActive: true })
   return created
 }
 

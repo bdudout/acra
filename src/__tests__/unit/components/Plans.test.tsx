@@ -28,6 +28,8 @@ describe('PlansManager', () => {
     expect(screen.queryByRole('button', { name: /Nouveau plan de contrôle/ })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: /Nouveau plan d’audit/ }))
     expect((screen.getByLabelText('Mode') as HTMLSelectElement).value).toBe('DYNAMIQUE')
+    // Le choix du mode est expliqué sur le formulaire (verrouillage après validation).
+    expect(screen.getByText(/Figé convient à une organisation qui fait approuver son plan par un comité/)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Créer le plan' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Le nom du plan est requis.')
   })

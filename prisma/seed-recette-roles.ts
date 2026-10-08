@@ -15,7 +15,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 if (process.env.NODE_ENV === 'production') { console.error('Refusé : comptes de recette réservés au développement local.'); process.exit(1) }
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) })
-const ROLES: UserRole[] = ['RSSI', 'RISK_MANAGER', 'CONFORMITE', 'DPO', 'CONTROLEUR', 'AUDITEUR', 'DIRECTION_METIER', 'ANALYSTE', 'METIER', 'LECTEUR']
+const ROLES: UserRole[] = ['ADMIN', 'RSSI', 'RISK_MANAGER', 'CONFORMITE', 'DPO', 'CONTROLEUR', 'AUDITEUR', 'DIRECTION_METIER', 'ANALYSTE', 'METIER', 'LECTEUR']
 const email = (r: UserRole) => `recette-${r.toLowerCase().replace(/_/g, '-')}@acra.test`
 const arg = (n: string) => { const i = process.argv.indexOf(n); return i >= 0 ? process.argv[i + 1] : undefined }
 

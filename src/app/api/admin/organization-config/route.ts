@@ -21,7 +21,7 @@ import { sanitizeEchelles } from '@/lib/ecosystem-echelles'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { sanitizeMaturityScale } from '@/lib/maturity'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { getOrgConfig } from '@/lib/org-config.server'
+import { getOrgConfig, upsertOrgConfig } from '@/lib/org-config.server'
 import { normalizePatterns, PATTERNS_MAX_MAX } from '@/lib/patterns-archi'
 import { sanitizePlanificationConfig } from '@/lib/planification'
 
@@ -289,11 +289,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Aucune donnée à mettre à jour' }, { status: 400 })
   }
 
-  const config = await prisma.organizationConfig.upsert({
-    where: { id: orgId },
-    create: { id: orgId, entitesMesures: [], ...data },
-    update: data,
-  })
+  const config = await upsertOrgConfig(orgId, data)
 
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole,

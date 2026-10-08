@@ -8,7 +8,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { getOrgConfig } from '@/lib/org-config.server'
+import { getOrgConfig, upsertOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { sanitizeProcessusCarto } from '@/lib/processus-carto'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -28,11 +28,7 @@ export async function PUT(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
   const reset = body && typeof body === 'object' && Object.keys(body).length === 0
   const value = reset ? {} : sanitizeProcessusCarto(body)
-  await prisma.organizationConfig.upsert({
-    where: { id: scope.activeOrgId },
-    create: { id: scope.activeOrgId, entitesMesures: [], processusCartographie: value as object },
-    update: { processusCartographie: value as object },
-  })
+  await upsertOrgConfig(scope.activeOrgId, { processusCartographie: value as object })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId, userRole: scope.role, organizationId: scope.activeOrgId, ip: getClientIp(req), details: { fields: ['processusCartographie'], reset } })
   return NextResponse.json({ processus: value })
 }

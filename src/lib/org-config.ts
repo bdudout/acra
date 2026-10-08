@@ -254,9 +254,12 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'secteursMasques' | 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig' | 'planificationConfig' | 'relancesConfig' | 'patternsArchiMasques' | 'risquesProjetDefaut'
-type BoolKey = 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive' | 'campagnesRcsaActive' | 'appetenceActive' | 'rapportsGrcActive' | 'projetSuppressionValidation'
-type StrKey = 'conformiteNiveau' | 'conformiteSnapshotMode' | 'conformiteSnapshotPeriode' | 'derogationWorkflow'
-type IntKey = 'derogationDureeDefautJours' | 'derogationAlerteJours' | 'derogationDureeMaxJours' | 'archivageMissionsAnnees' | 'patternsArchiMax'
+export const BOOL_KEYS = ['mcpActive', 'qualificationActive', 'qualificationObligatoire', 'conformiteActive', 'conseilsAteliersActive', 'acceptationRisquesActive', 'gelApresAcceptationActive', 'interdireAutoApprobation', 'petiteStructure', 'derogationsActive', 'derogationDoubleRegard', 'derogationSortCatalogue', 'registreRisquesActive', 'incidentsActive', 'controlePermanentActive', 'auditInterneActive', 'kriActive', 'reglementaireActive', 'secondeLigneActive', 'profilsOperationnelsActive', 'projets360Active', 'homologationsActive', 'recertificationActive', 'registreIaActive', 'campagnesRcsaActive', 'appetenceActive', 'rapportsGrcActive', 'projetSuppressionValidation'] as const
+type BoolKey = (typeof BOOL_KEYS)[number]
+export const STR_KEYS = ['conformiteNiveau', 'conformiteSnapshotMode', 'conformiteSnapshotPeriode', 'derogationWorkflow'] as const
+type StrKey = (typeof STR_KEYS)[number]
+export const INT_KEYS = ['derogationDureeDefautJours', 'derogationAlerteJours', 'derogationDureeMaxJours', 'archivageMissionsAnnees', 'patternsArchiMax'] as const
+type IntKey = (typeof INT_KEYS)[number]
 
 /**
  * Résout la configuration effective d'une organisation à partir de la chaîne de ses
@@ -362,3 +365,16 @@ export function campagnesRcsaActives(cfg: { registreRisquesActive?: boolean; cam
 export function appetenceDisponible(m: { actif: boolean; registre: boolean; kri: boolean; maturite: boolean }): boolean {
   return m.actif && (m.registre || m.kri || m.maturite)
 }
+
+/**
+ * Colonnes recopiées quand une ligne OrganizationConfig est créée pour une organisation qui n'en avait pas : les colonnes
+ * non nullables (interrupteurs, choix, nombres) prendraient sinon leur valeur par défaut et figeraient la filiale hors
+ * de l'héritage de son groupe. Les champs JSON et nullables (patternsArchiMax…) restent vides : ils continuent d'hériter.
+ */
+export const COLONNES_COPIEES_A_LA_CREATION = [...BOOL_KEYS, ...STR_KEYS, ...INT_KEYS.filter(k => k !== 'patternsArchiMax')] as const
+
+/** Valeurs héritées à recopier à la création (cf. COLONNES_COPIEES_A_LA_CREATION). */
+export function valeursACopierALaCreation(herite: OrgConfigResolved): Record<string, boolean | string | number> {
+  return Object.fromEntries(COLONNES_COPIEES_A_LA_CREATION.map(k => [k, (herite as unknown as Record<string, boolean | string | number>)[k]]))
+}
+

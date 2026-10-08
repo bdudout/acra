@@ -29,31 +29,32 @@ const VERDICT_COLOR: Record<VerdictNiveau, string> = {
 }
 
 const s = StyleSheet.create({
-  page: { padding: 36, fontSize: 9, color: '#111827' },
+  page: { padding: 28, fontSize: 9, color: '#111827' },
   h1: { fontSize: 18, fontWeight: 'bold', color: COLORS.primary, marginBottom: 4 },
-  sub: { fontSize: 9, color: COLORS.muted, marginBottom: 12 },
-  h2: { fontSize: 12, fontWeight: 'bold', marginTop: 14, marginBottom: 6 },
-  hlBox: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 4, padding: 8, marginBottom: 8 },
+  sub: { fontSize: 9, color: COLORS.muted, marginBottom: 8 },
+  h2: { fontSize: 11, fontWeight: 'bold', marginTop: 8, marginBottom: 4 },
+  hlBox: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 4, padding: 6, marginBottom: 6 },
   hlItem: { flexDirection: 'row', marginBottom: 2 },
   hlDot: { width: 7, fontSize: 10, fontWeight: 'bold' },
   hlText: { fontSize: 8 },
   okBox: { backgroundColor: COLORS.okBg, borderWidth: 1, borderColor: '#A7F3D0', borderRadius: 4, padding: 8, marginBottom: 8 },
   kpiRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 4 },
-  kpi: { width: '25%', padding: 4 },
-  kpiInner: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 4, padding: 6 },
+  kpi: { width: '20%', padding: 3 },
+  kpiInner: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 4, padding: 5 },
   kpiLabel: { fontSize: 7, color: COLORS.muted, marginBottom: 2 },
-  kpiValue: { fontSize: 13, fontWeight: 'bold' },
-  verdictBox: { borderRadius: 4, padding: 10, marginBottom: 12, flexDirection: 'row', alignItems: 'baseline' },
+  kpiValue: { fontSize: 12, fontWeight: 'bold' },
+  kpiCible: { fontSize: 7, color: COLORS.muted, marginTop: 1 },
+  verdictBox: { borderRadius: 4, padding: 8, marginBottom: 8, flexDirection: 'row', alignItems: 'baseline' },
   verdictLabel: { fontSize: 14, fontWeight: 'bold', color: '#FFFFFF' },
   verdictSub: { fontSize: 8, color: '#FFFFFF', marginLeft: 8 },
-  footer: { position: 'absolute', bottom: 20, left: 36, right: 36, fontSize: 7, color: COLORS.muted, textAlign: 'center' },
+  footer: { position: 'absolute', bottom: 14, left: 28, right: 28, fontSize: 7, color: COLORS.muted, textAlign: 'center' },
 })
 
 type Dict = Record<string, string>
 type Strings = {
   docTitle: string; comiteType: Dict; section: Dict; metric: Dict; highlight: Dict
   highlightsTitle: string; noAlert: string; generatedOn: string
-  verdictTitle: string; verdict: Record<VerdictNiveau, string>; verdictAlertes: string
+  verdictTitle: string; verdict: Record<VerdictNiveau, string>; verdictAlertes: string; cible: string; minimum: string
 }
 
 const COMMON_METRIC = {
@@ -65,6 +66,7 @@ const COMMON_METRIC = {
 
 const STRINGS: Record<string, Strings> = {
   fr: {
+    cible: 'cible', minimum: 'minimum',
     docTitle: 'Dossier de comité',
     comiteType: { RISQUES: 'Comité des risques', CONFORMITE: 'Comité de conformité', INCIDENTS: 'Comité incidents & sécurité' },
     section: { risques: 'Cartographie des risques', appetit: 'Appétit au risque', incidents: 'Incidents & pertes', controles: 'Contrôle permanent', audit: 'Audit interne', regulateur: 'Suivi régulateur', kri: 'Indicateurs clés (KRI)', dora: 'Résilience TIC (DORA)' },
@@ -74,6 +76,7 @@ const STRINGS: Record<string, Strings> = {
     verdictTitle: 'Niveau de risque global', verdict: { ELEVE: 'ÉLEVÉ', MODERE: 'MODÉRÉ', MAITRISE: 'MAÎTRISÉ' }, verdictAlertes: 'point(s) d\'alerte',
   },
   en: {
+    cible: 'target', minimum: 'minimum',
     docTitle: 'Committee pack',
     comiteType: { RISQUES: 'Risk committee', CONFORMITE: 'Compliance committee', INCIDENTS: 'Incidents & security committee' },
     section: { risques: 'Risk map', appetit: 'Risk appetite', incidents: 'Incidents & losses', controles: 'Permanent control', audit: 'Internal audit', regulateur: 'Regulator tracking', kri: 'Key risk indicators (KRI)', dora: 'ICT resilience (DORA)' },
@@ -83,6 +86,7 @@ const STRINGS: Record<string, Strings> = {
     verdictTitle: 'Overall risk level', verdict: { ELEVE: 'HIGH', MODERE: 'MODERATE', MAITRISE: 'UNDER CONTROL' }, verdictAlertes: 'alert(s)',
   },
   de: {
+    cible: 'Ziel', minimum: 'Minimum',
     docTitle: 'Ausschussunterlage',
     comiteType: { RISQUES: 'Risikoausschuss', CONFORMITE: 'Compliance-Ausschuss', INCIDENTS: 'Vorfall- & Sicherheitsausschuss' },
     section: { risques: 'Risikokarte', appetit: 'Risikoappetit', incidents: 'Vorfälle & Verluste', controles: 'Permanente Kontrolle', audit: 'Interne Revision', regulateur: 'Aufsichtsverfolgung', kri: 'Schlüsselindikatoren (KRI)', dora: 'IKT-Resilienz (DORA)' },
@@ -92,6 +96,7 @@ const STRINGS: Record<string, Strings> = {
     verdictTitle: 'Gesamtrisikoniveau', verdict: { ELEVE: 'HOCH', MODERE: 'MITTEL', MAITRISE: 'BEHERRSCHT' }, verdictAlertes: 'Alarm(e)',
   },
   es: {
+    cible: 'objetivo', minimum: 'mínimo',
     docTitle: 'Expediente de comité',
     comiteType: { RISQUES: 'Comité de riesgos', CONFORMITE: 'Comité de cumplimiento', INCIDENTS: 'Comité de incidentes y seguridad' },
     section: { risques: 'Mapa de riesgos', appetit: 'Apetito de riesgo', incidents: 'Incidentes y pérdidas', controles: 'Control permanente', audit: 'Auditoría interna', regulateur: 'Seguimiento regulador', kri: 'Indicadores clave (KRI)', dora: 'Resiliencia TIC (DORA)' },
@@ -101,6 +106,7 @@ const STRINGS: Record<string, Strings> = {
     verdictTitle: 'Nivel de riesgo global', verdict: { ELEVE: 'ALTO', MODERE: 'MODERADO', MAITRISE: 'CONTROLADO' }, verdictAlertes: 'alerta(s)',
   },
   it: {
+    cible: 'obiettivo', minimum: 'minimo',
     docTitle: 'Fascicolo di comitato',
     comiteType: { RISQUES: 'Comitato rischi', CONFORMITE: 'Comitato conformità', INCIDENTS: 'Comitato incidenti e sicurezza' },
     section: { risques: 'Mappatura dei rischi', appetit: 'Propensione al rischio', incidents: 'Incidenti e perdite', controles: 'Controllo permanente', audit: 'Audit interno', regulateur: 'Monitoraggio regolatore', kri: 'Indicatori chiave (KRI)', dora: 'Resilienza TIC (DORA)' },
@@ -146,28 +152,32 @@ function ComitePackPDF({ pack, locale, orgNom, dateStr }: { pack: ComitePack; lo
         )}
 
         {/* Sections par module */}
+        {/* Sections : pleine largeur au-delà de 3 indicateurs, sinon deux par ligne (le dossier tient sur une page). */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
         {pack.sections.map((sec, si) => (
-          <View key={`s-${si}`} wrap={false}>
+          <View key={`s-${si}`} wrap={false} style={{ width: sec.metrics.length > 3 ? '100%' : '50%', paddingRight: sec.metrics.length > 3 ? 0 : 4 }}>
             <Text style={s.h2}>{S.section[sec.id] ?? sec.id}</Text>
             {sec.id === 'risques' && pack.heatmap ? (
               <View style={{ marginBottom: 6 }}>
-                <HeatmapGrid grid={pack.heatmap} axisLabel={HEATMAP_AXIS[locale] ?? HEATMAP_AXIS.fr} cellWidth={26} cellHeight={18} />
+                <HeatmapGrid grid={pack.heatmap} axisLabel={HEATMAP_AXIS[locale] ?? HEATMAP_AXIS.fr} cellWidth={24} cellHeight={15} />
               </View>
             ) : null}
             <View style={s.kpiRow}>
               {sec.metrics.map((mt, mi) => (
-                <View key={`m-${si}-${mi}`} style={s.kpi}>
+                <View key={`m-${si}-${mi}`} style={[s.kpi, sec.metrics.length > 3 ? {} : { width: `${100 / 3}%` }]}>
                   <View style={s.kpiInner}>
                     <Text style={s.kpiLabel}>{S.metric[mt.key] ?? mt.key}</Text>
                     <Text style={[s.kpiValue, mt.alerte ? { color: COLORS.danger } : mt.positif ? { color: COLORS.ok } : {}]}>
                       {mt.key === 'perteNette' && typeof mt.value === 'number' ? `${formatNumber(mt.value, locale).replace(/[\u202f\u00a0]/g, ' ')} €` : String(mt.value)}
                     </Text>
+                    {mt.cible ? <Text style={s.kpiCible}>{`${S.cible} ${mt.cible}${mt.cibleMinimum ? ` ${S.minimum}` : ''}`}</Text> : null}
                   </View>
                 </View>
               ))}
             </View>
           </View>
         ))}
+        </View>
 
         <Text style={s.footer} fixed>{`ACRA — ${S.generatedOn} ${dateStr}`}</Text>
       </Page>

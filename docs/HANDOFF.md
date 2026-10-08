@@ -6,6 +6,21 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-08 (88) — Claude : héritage de configuration préservé, dossier de comité sur une page
+
+- `upsertOrgConfig(orgId, data)` (`lib/org-config.server`) : à la **création** d'une ligne `OrganizationConfig`, copie les
+  valeurs héritées (booléens, chaînes, entiers non nuls, sans la politique d'instance) ; JSON et champs nullables restent
+  vides et continuent d'hériter. Les 14 écritures de configuration passent par lui → une filiale ne perd plus les
+  réglages de son groupe quand on modifie un seul réglage. Test `org-config-creation.test.ts`.
+- `d8fbcb97` : dossier de comité PDF sur une page A4 avec la cible de chaque indicateur ; aide du mode (figé /
+  dynamique) à la création d'un plan. `8c70e716` : compte de recette ADMIN. `4df29cc5` : besoin « consolidation des
+  entités » (`docs/specs/entites-consolidation-besoin.md`, 4 questions ouvertes à trancher avant E1).
+- Propositions de la tâche planifiée : #1 et #3 corrigées, #4 écartée (lecture du programme voulue), #2 (parcours DPO
+  RoPA) reste à vérifier en navigateur.
+- **Non vérifié en navigateur** : disque à ~96 % (`.next` 17 Go, suppression non autorisée) → serveur de dev arrêté.
+
+---
+
 ## 2026-10-08 (87) — Claude : programme pluriannuel d'audit et de contrôle (lots P1 à P6)
 
 - #232 (fusionnée) : P1 modèle `PlanProgramme` / `PlanAnnee` / `PlanLigne`, `lib/planification` (cycle figé / dynamique,
