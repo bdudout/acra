@@ -25,6 +25,17 @@ describe('buildComitePack', () => {
     expect(pack.type).toBe('RISQUES')
   })
 
+  it('chaque indicateur à cible affiche sa cible (taux de conformité 80 % minimum, compteurs d’alerte à 0) ; les autres n’en ont pas', () => {
+    const pack = buildComitePack('RISQUES', base, MODULES_ON)
+    const m = (sec: string, key: string) => pack.sections.find(x => x.id === sec)!.metrics.find(x => x.key === key)!
+    expect(m('controles', 'tauxConformite')).toMatchObject({ value: '72%', cible: '80%', cibleMinimum: true, alerte: true })
+    expect(m('risques', 'actionsEnRetard').cible).toBe('0')
+    expect(m('appetit', 'horsAppetit').cible).toBe('0')
+    expect(m('kri', 'critique').cible).toBe('0')
+    expect(m('risques', 'total').cible).toBeUndefined()
+    expect(m('incidents', 'perteNette').cible).toBeUndefined()
+  })
+
   it('omet les sections dont le module est inactif', () => {
     const pack = buildComitePack('RISQUES', base, { risques: true, appetit: false, incidents: false, controles: false, audit: false, regulateur: false, kri: false, dora: false })
     const ids = pack.sections.map(s => s.id)

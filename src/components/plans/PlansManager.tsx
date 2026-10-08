@@ -92,6 +92,8 @@ export default function PlansManager() {
               <select aria-label={p.mode} value={form.mode} onChange={e => setForm({ ...form, mode: e.target.value as ModePlan })} className={champ}>
                 <option value="FIGE">{p.modes.FIGE}</option><option value="DYNAMIQUE">{p.modes.DYNAMIQUE}</option>
               </select>
+              {/* Le mode décide du verrouillage après validation : on l'explique ici, pas seulement dans la configuration. */}
+              <span className="block mt-1 text-[11px] text-gray-500 dark:text-gray-400">{t.planification.modesAide}</span>
             </label>
             <label className="text-xs text-gray-600 dark:text-gray-300">{p.anneeDebut}
               <input aria-label={p.anneeDebut} type="number" value={form.anneeDebut} onChange={e => setForm({ ...form, anneeDebut: Number(e.target.value) })} className={champ} />

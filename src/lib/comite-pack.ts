@@ -35,7 +35,8 @@ export interface ComiteModules {
 }
 
 /** Une métrique d'un pack comité (clé i18n + valeur, avec drapeaux alerte/positif). */
-export interface ComiteMetric { key: string; value: number | string; alerte?: boolean; positif?: boolean }
+/** `cible` : valeur visée affichée à côté de l'indicateur (« 80% », « 0 ») ; `cibleMinimum` : la cible est un plancher. Absente sans cible. */
+export interface ComiteMetric { key: string; value: number | string; alerte?: boolean; positif?: boolean; cible?: string; cibleMinimum?: boolean }
 /** Une section d'un pack comité : un groupe de métriques identifié. */
 export interface ComiteSection { id: string; metrics: ComiteMetric[] }
 /** Un point saillant d'un pack comité (signal d'alerte ou d'information chiffré). */
@@ -76,7 +77,7 @@ export function buildComitePack(type: ComiteType, c: ComiteConsolide, m: ComiteM
       metrics.push(
         { key: 'actionsTotal', value: c.actions.total },
         { key: 'avancement', value: `${c.actions.tauxAvancement}%` },
-        { key: 'actionsEnRetard', value: c.actions.enRetard, alerte: c.actions.enRetard > 0 },
+        { key: 'actionsEnRetard', value: c.actions.enRetard, alerte: c.actions.enRetard > 0, cible: '0' },
       )
     }
     sectionsById.set('risques', { id: 'risques', metrics })
@@ -84,7 +85,7 @@ export function buildComitePack(type: ComiteType, c: ComiteConsolide, m: ComiteM
 
   if (m.appetit && c.appetit) {
     sectionsById.set('appetit', { id: 'appetit', metrics: [
-      { key: 'horsAppetit', value: c.appetit.horsAppetit, alerte: c.appetit.horsAppetit > 0 },
+      { key: 'horsAppetit', value: c.appetit.horsAppetit, alerte: c.appetit.horsAppetit > 0, cible: '0' },
       { key: 'dansAppetit', value: c.appetit.dansAppetit, positif: c.appetit.dansAppetit > 0 },
       { key: 'evalues', value: c.appetit.evalues },
     ] })
@@ -101,35 +102,35 @@ export function buildComitePack(type: ComiteType, c: ComiteConsolide, m: ComiteM
   if (m.controles && c.controles) {
     const taux = c.controles.tauxConformite
     sectionsById.set('controles', { id: 'controles', metrics: [
-      { key: 'tauxConformite', value: taux == null ? '—' : `${taux}%`, alerte: taux != null && taux < CONFORMITE_SEUIL, positif: taux != null && taux >= CONFORMITE_SEUIL },
-      { key: 'anomalies', value: c.controles.anomalies, alerte: c.controles.anomalies > 0 },
+      { key: 'tauxConformite', value: taux == null ? '—' : `${taux}%`, alerte: taux != null && taux < CONFORMITE_SEUIL, positif: taux != null && taux >= CONFORMITE_SEUIL, cible: `${CONFORMITE_SEUIL}%`, cibleMinimum: true },
+      { key: 'anomalies', value: c.controles.anomalies, alerte: c.controles.anomalies > 0, cible: '0' },
     ] })
   }
 
   if (m.audit && c.audit) {
     sectionsById.set('audit', { id: 'audit', metrics: [
-      { key: 'critiques', value: c.audit.critiques, alerte: c.audit.critiques > 0 },
-      { key: 'recosEnRetard', value: c.audit.recosEnRetard, alerte: c.audit.recosEnRetard > 0 },
+      { key: 'critiques', value: c.audit.critiques, alerte: c.audit.critiques > 0, cible: '0' },
+      { key: 'recosEnRetard', value: c.audit.recosEnRetard, alerte: c.audit.recosEnRetard > 0, cible: '0' },
     ] })
   }
 
   if (m.regulateur && c.regulateur) {
     sectionsById.set('regulateur', { id: 'regulateur', metrics: [
-      { key: 'echues', value: c.regulateur.echues, alerte: c.regulateur.echues > 0 },
+      { key: 'echues', value: c.regulateur.echues, alerte: c.regulateur.echues > 0, cible: '0' },
       { key: 'sous30j', value: c.regulateur.sous30j },
     ] })
   }
 
   if (m.kri && c.kri) {
     sectionsById.set('kri', { id: 'kri', metrics: [
-      { key: 'enAlerte', value: c.kri.enAlerte, alerte: c.kri.enAlerte > 0 },
-      { key: 'critique', value: c.kri.critique, alerte: c.kri.critique > 0 },
+      { key: 'enAlerte', value: c.kri.enAlerte, alerte: c.kri.enAlerte > 0, cible: '0' },
+      { key: 'critique', value: c.kri.critique, alerte: c.kri.critique > 0, cible: '0' },
     ] })
   }
 
   if (m.dora && c.dora) {
     sectionsById.set('dora', { id: 'dora', metrics: [
-      { key: 'majeurs', value: c.dora.majeurs, alerte: c.dora.majeurs > 0 },
+      { key: 'majeurs', value: c.dora.majeurs, alerte: c.dora.majeurs > 0, cible: '0' },
       { key: 'evalues', value: c.dora.evalues },
     ] })
   }
