@@ -16,6 +16,7 @@ vi.mock('@/lib/prisma', () => ({ prisma: {
   organization: { findUnique: async () => ({ nom: 'Mutuelle', path: '/o1/' }), findMany: async () => [] },
   tierOrganization: { findMany: async () => [] }, riskItem: { findMany: async () => [{ id: 'r1', intitule: 'Fraude' }] }, processus: { findMany: async () => [] },
   auditMission: { findMany: async () => [] }, controle: { findMany: async () => [] }, campagneControle: { findMany: async () => [] },
+  entite: { findMany: async () => [] }, entiteEvenement: { findMany: async () => [] },
 } }))
 import { GET as EXPORT_PLAN } from '@/app/api/plans/[id]/export/route'
 

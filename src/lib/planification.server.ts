@@ -10,7 +10,7 @@ import { getOrgConfig } from './org-config.server'
 import { voitTousLesResultats } from './acces-resultats'
 import { sanitizePlanificationConfig, TYPES_PLAN, cleanRealisations, statutLigne, tauxRealisation, type CandidatRealisation, type PlanificationConfig, type Realisation, type StatutRealisation, type TypePlan } from './planification'
 import type { UserRole } from './permissions'
-import { anglesMorts, sollicitationsMultiples, type LigneVue } from './planification-vue'
+import { anglesMorts, carteSuccesseurs, entitesSollicitees, sollicitationsMultiples, type LigneVue } from './planification-vue'
 
 export interface ContextePlan { userId: string; role: UserRole; orgId: string; cfg: PlanificationConfig; modules: Record<TypePlan, boolean> }
 
@@ -92,6 +92,9 @@ export function candidatsRealisation(annee: number, d: DonneesRealisations): Can
 // ─── Vue globale (lot P5), partagée par l'écran et l'export ─────────────────
 const jour = jourIso
 const liste = ids
+/** `[{ id, nom }]` stocké en JSON (événements de réorganisation) → identifiants. */
+const refs = (v: unknown): { id: string }[] => (Array.isArray(v) ? v.filter((x): x is { id: string } => !!x && typeof (x as { id?: unknown }).id === 'string') : [])
+
 /** Vue globale de l'année (lot P5) : plans, lignes, sollicitations, angles morts, taux de réalisation. */
 export async function calculerVueGlobale(c: ContextePlan, annee: number) {
   const maintenant = new Date()
@@ -111,13 +114,16 @@ export async function calculerVueGlobale(c: ContextePlan, annee: number) {
   const cibles = (k: 'risques' | 'processus') => [...new Set(prevues.flatMap(l => liste((l.cibles as Record<string, unknown>)?.[k])))]
 
   const org = await prisma.organization.findUnique({ where: { id: c.orgId }, select: { path: true } })
-  const [organisations, tiers, risques, processus, missions, controles] = await Promise.all([
+  const [organisations, tiers, risques, processus, missions, controles, entites, evenements] = await Promise.all([
     prisma.organization.findMany({ where: { path: { startsWith: org?.path ?? `/${c.orgId}/` } }, select: { id: true, nom: true } }),
     prisma.tierOrganization.findMany({ where: { organizationId: c.orgId }, select: { tier: { select: { id: true, nom: true } } } }),
-    prisma.riskItem.findMany({ where: { organizationId: c.orgId }, select: { id: true, intitule: true, graviteInherente: true, vraisemblanceInherente: true, graviteResiduelle: true, vraisemblanceResiduelle: true } }),
+    prisma.riskItem.findMany({ where: { organizationId: c.orgId }, select: { id: true, intitule: true, entiteId: true, graviteInherente: true, vraisemblanceInherente: true, graviteResiduelle: true, vraisemblanceResiduelle: true } }),
     prisma.processus.findMany({ where: { organizationId: c.orgId }, select: { id: true, nom: true, criticite: true, criticiteDora: true } }),
     prisma.auditMission.findMany({ where: { organizationId: c.orgId }, select: { dateDebut: true, dateFin: true, processusIds: true } }),
     prisma.controle.findMany({ where: { organizationId: c.orgId }, select: { riskItemId: true, processusId: true, executions: { select: { dateRealisation: true }, orderBy: { dateRealisation: 'desc' }, take: 1 } } }),
+    // Référentiel des entités et réorganisations (consolidation, lot E5) : sollicitations par entité.
+    prisma.entite.findMany({ where: { organizationId: c.orgId }, select: { id: true, nom: true } }),
+    prisma.entiteEvenement.findMany({ where: { organizationId: c.orgId }, select: { type: true, sources: true, cibles: true }, orderBy: [{ dateEffet: 'asc' }, { createdAt: 'asc' }] }),
   ])
 
   // Dernière couverture réelle (passée) par risque et par processus.
@@ -137,7 +143,10 @@ export async function calculerVueGlobale(c: ContextePlan, annee: number) {
     cleanRealisations(l.realisations).flatMap(r => { const e = etatRealisation(r, annee, donnees); return e ? [{ statut: e.statut }] : [] }),
     aujourdhui,
   )] as const)))
-  const noms = Object.fromEntries([...organisations.map(o => [o.id, o.nom]), ...tiers.map(t => [t.tier.id, t.tier.nom])])
+  const noms = Object.fromEntries([...organisations.map(o => [o.id, o.nom]), ...entites.map(e => [e.id, e.nom]), ...tiers.map(t => [t.tier.id, t.tier.nom])])
+  // Une ligne sollicite une entité visée directement ou via un risque lié ; entité close → celle qui la remplace.
+  const successeurs = carteSuccesseurs(evenements.map(e => ({ type: e.type, sources: refs(e.sources), cibles: refs(e.cibles) })))
+  const lignesEntites = entitesSollicitees(lignes, Object.fromEntries(risques.map(r => [r.id, r.entiteId])), successeurs)
   return {
     annee,
     seuilAnglesMortsAns: c.cfg.seuilAnglesMortsAns,
@@ -146,7 +155,7 @@ export async function calculerVueGlobale(c: ContextePlan, annee: number) {
       return { id: p.id, nom: p.nom, type: p.type, equipe: p.equipe, statut: p.annees[0]?.statut ?? null, lignes: ls.length, annulees: ls.filter(l => l.statutManuel === 'ANNULEE').length, reportees: ls.filter(l => l.statutManuel === 'REPORTEE').length, realisation: tauxRealisation(ls.map(l => statutDe.get(l.ligneId) ?? 'A_VENIR')) }
     }),
     lignes,
-    sollicitations: sollicitationsMultiples(lignes, noms),
+    sollicitations: sollicitationsMultiples(lignesEntites, noms),
     anglesMorts: anglesMorts({ maintenant, seuilAns: c.cfg.seuilAnglesMortsAns, risques, processus, dernieresCouvertures: derniere, prevus: { risques: cibles('risques'), processus: cibles('processus') } }),
   }
 }
@@ -154,14 +163,15 @@ export async function calculerVueGlobale(c: ContextePlan, annee: number) {
 /** Noms des cibles possibles (organisations du sous-arbre, tiers rattachés, risques, processus) pour les exports. */
 export async function nomsCibles(orgId: string): Promise<Record<string, string>> {
   const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { path: true } })
-  const [organisations, tiers, risques, processus] = await Promise.all([
+  const [organisations, tiers, risques, processus, entites] = await Promise.all([
     prisma.organization.findMany({ where: { path: { startsWith: org?.path ?? `/${orgId}/` } }, select: { id: true, nom: true } }),
     prisma.tierOrganization.findMany({ where: { organizationId: orgId }, select: { tier: { select: { id: true, nom: true } } } }),
     prisma.riskItem.findMany({ where: { organizationId: orgId }, select: { id: true, intitule: true } }),
     prisma.processus.findMany({ where: { organizationId: orgId }, select: { id: true, nom: true } }),
+    prisma.entite.findMany({ where: { organizationId: orgId }, select: { id: true, nom: true } }),
   ])
   return Object.fromEntries([
-    ...organisations.map(o => [o.id, o.nom]), ...tiers.map(t => [t.tier.id, t.tier.nom]),
+    ...organisations.map(o => [o.id, o.nom]), ...entites.map(e => [e.id, e.nom]), ...tiers.map(t => [t.tier.id, t.tier.nom]),
     ...risques.map(r => [r.id, r.intitule]), ...processus.map(p => [p.id, p.nom]),
   ])
 }

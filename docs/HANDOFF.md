@@ -6,6 +6,22 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-09 (94) — Claude : consolidation des entités, E5 — agrégation dans le programme d'audit et de contrôle
+
+- #238 (filtre par entité) fusionnée. Lignes de plan : nouvelle cible `entites` (référentiel ; `cleanLigneInput`,
+  `LigneForm` dès que le référentiel n'est pas vide, `/api/plans/options` en ordre d'arbre). Libellé « Entités et
+  filiales » renommé « Filiales (organisations) » (5 langues) pour le distinguer des « Entités du référentiel ».
+- Vue globale : `entitesSollicitees` (entité visée directement ou via un risque ciblé lié `RiskItem.entiteId`, comptée
+  une fois par ligne, ramenée au successeur unique après fusion / clôture — `carteSuccesseurs` depuis `EntiteEvenement` ;
+  scission ambiguë ignorée) → `sollicitations.entites` ; section « Entités du référentiel » dans `VueGlobale` ;
+  exports Excel (colonne du plan, sollicitations de la vue).
+- **Vérifié** : tests ; navigateur ADMIN (2 lignes de test dans 2 plans 2027 sur « Trésorerie E5 » → « 2 fois, 2 plans,
+  en même temps ») ; lignes insérées en base pour l'essai (l'ADMIN ne prépare pas de plan), supprimées ensuite.
+- Écritures de lignes : identifiants de cibles opaques non contrôlés (comme les autres cibles) ; noms résolus dans
+  l'organisation active seulement.
+
+---
+
 ## 2026-10-09 (93) — Claude : consolidation des entités, lot E5 (filtre par entité, lien automatique)
 
 - Demande utilisateur : filtrer incidents et plans d'action par entité. `lib/entites-filtre` (pur) : entité d'un objet =

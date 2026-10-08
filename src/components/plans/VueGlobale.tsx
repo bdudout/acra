@@ -17,7 +17,7 @@ interface Vue {
   annee: number; seuilAnglesMortsAns: number
   plans: { id: string; nom: string; type: 'AUDIT' | 'CONTROLE'; equipe: string | null; statut: StatutAnnee | null; lignes: number; annulees: number; reportees: number; realisation?: { actives: number; realisees: number; enRetard: number; taux: number | null } }[]
   lignes: LigneVue[]
-  sollicitations: { organisations: Sollicitation[]; tiers: Sollicitation[] }
+  sollicitations: { organisations: Sollicitation[]; entites?: Sollicitation[]; tiers: Sollicitation[] }
   anglesMorts: { risques: AngleMortRisque[]; processus: AngleMortProcessus[] }
 }
 
@@ -108,6 +108,7 @@ export default function VueGlobale() {
           <p className="text-xs text-gray-500 dark:text-gray-400">{v.sollicitationsAide}</p>
           <div className="grid md:grid-cols-2 gap-4">
             <ListeSollicitations titre={p.organisations} items={d.sollicitations.organisations} v={v} periode={periode} />
+            {!!d.sollicitations.entites?.length && <ListeSollicitations titre={p.entites} items={d.sollicitations.entites} v={v} periode={periode} />}
             <ListeSollicitations titre={p.tiers} items={d.sollicitations.tiers} v={v} periode={periode} />
           </div>
         </section>

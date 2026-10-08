@@ -21,7 +21,7 @@ export function periodesSeChevauchent(a: Periode, b: Periode): boolean {
 export interface LigneVue {
   ligneId: string; planId: string; planNom: string; type: 'AUDIT' | 'CONTROLE'; intitule: string
   debut: string | null; fin: string | null; statutManuel: string | null; priorite?: number | null
-  cibles: { organisations?: string[]; tiers?: string[]; risques?: string[]; processus?: string[] }
+  cibles: { organisations?: string[]; entites?: string[]; tiers?: string[]; risques?: string[]; processus?: string[] }
 }
 export interface Sollicitation {
   id: string; nom: string; nombre: number; plans: number; simultanee: boolean
@@ -30,7 +30,7 @@ export interface Sollicitation {
 
 const actives = (lignes: LigneVue[]) => lignes.filter(l => l.statutManuel !== 'ANNULEE' && l.statutManuel !== 'REPORTEE')
 
-function regrouper(lignes: LigneVue[], cle: 'organisations' | 'tiers', noms: Record<string, string>): Sollicitation[] {
+function regrouper(lignes: LigneVue[], cle: 'organisations' | 'entites' | 'tiers', noms: Record<string, string>): Sollicitation[] {
   const parCible = new Map<string, LigneVue[]>()
   for (const l of actives(lignes)) for (const id of new Set(l.cibles[cle] ?? [])) parCible.set(id, [...(parCible.get(id) ?? []), l])
   return [...parCible.entries()]
@@ -43,9 +43,39 @@ function regrouper(lignes: LigneVue[], cle: 'organisations' | 'tiers', noms: Rec
     .sort((a, b) => Number(b.simultanee) - Number(a.simultanee) || b.nombre - a.nombre || a.nom.localeCompare(b.nom))
 }
 
-/** Entités, filiales et tiers sollicités plusieurs fois dans l'année (simultanément en tête). */
+/** Filiales (organisations), entités du référentiel et tiers sollicités plusieurs fois dans l'année (simultanément en
+ *  tête). Les entités doivent avoir été résolues au préalable (`entitesSollicitees`). */
 export function sollicitationsMultiples(lignes: LigneVue[], noms: Record<string, string>) {
-  return { organisations: regrouper(lignes, 'organisations', noms), tiers: regrouper(lignes, 'tiers', noms) }
+  return { organisations: regrouper(lignes, 'organisations', noms), entites: regrouper(lignes, 'entites', noms), tiers: regrouper(lignes, 'tiers', noms) }
+}
+
+// ─── Entités sollicitées (consolidation des entités, lot E5) ──────────────────
+/** Successeur unique de chaque entité close par une réorganisation (fusion, clôture avec successeur) ; une scission vers
+ *  plusieurs entités est ambiguë et ignorée ; un renommage garde l'identifiant. */
+export function carteSuccesseurs(evenements: { type: string; sources: { id: string }[]; cibles: { id: string }[] }[]): Record<string, string> {
+  const carte: Record<string, string> = {}
+  for (const ev of evenements) {
+    if (ev.type === 'RENOMMAGE' || ev.cibles.length !== 1) continue
+    const cible = ev.cibles[0].id
+    for (const s of ev.sources) if (s.id !== cible) carte[s.id] = cible
+  }
+  return carte
+}
+
+function entiteCourante(id: string, successeurs: Record<string, string>): string {
+  const vus = new Set<string>()
+  let courant = id
+  while (successeurs[courant] && !vus.has(courant)) { vus.add(courant); courant = successeurs[courant] }
+  return courant
+}
+
+/** Entités sollicitées par chaque ligne : visées directement, ou via les risques ciblés liés à une entité ; ramenées à
+ *  l'entité qui les remplace après une réorganisation ; comptées une fois par ligne. */
+export function entitesSollicitees(lignes: LigneVue[], entiteDuRisque: Record<string, string | null>, successeurs: Record<string, string>): LigneVue[] {
+  return lignes.map(l => {
+    const ids = [...(l.cibles.entites ?? []), ...(l.cibles.risques ?? []).map(r => entiteDuRisque[r]).filter((x): x is string => !!x)]
+    return { ...l, cibles: { ...l.cibles, entites: [...new Set(ids.map(id => entiteCourante(id, successeurs)))] } }
+  })
 }
 
 export interface RisqueSource { id: string; intitule?: string; graviteInherente?: number | null; vraisemblanceInherente?: number | null; graviteResiduelle?: number | null; vraisemblanceResiduelle?: number | null }

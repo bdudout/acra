@@ -8,18 +8,18 @@ import { useTranslation } from '@/lib/i18n/context'
 import { METHODES_ECHANTILLON, PRISMES, STATUTS_MANUELS, type Prisme } from '@/lib/planification'
 
 export interface Options {
-  organisations: { id: string; nom: string }[]; tiers: { id: string; nom: string }[]; risques: { id: string; intitule: string }[]
+  organisations: { id: string; nom: string }[]; entites?: { id: string; nom: string }[]; tiers: { id: string; nom: string }[]; risques: { id: string; intitule: string }[]
   processus: { id: string; nom: string; criticite: number | null; criticiteDora: string | null }[]; referentiels: { code: string; nom: string }[]
 }
 export interface LigneSaisie {
   intitule: string; prisme: Prisme; debut: string; fin: string; charge: string; priorite: string; responsable: string; statutManuel: string
-  cibles: { organisations: string[]; tiers: string[]; risques: string[]; processus: string[]; referentiel: { code: string; exigences: string[] } | null }
+  cibles: { organisations: string[]; entites: string[]; tiers: string[]; risques: string[]; processus: string[]; referentiel: { code: string; exigences: string[] } | null }
   echantillon: { methode: string; population: string; taille: string }
 }
 
 export const ligneVide = (prisme: Prisme): LigneSaisie => ({
   intitule: '', prisme, debut: '', fin: '', charge: '', priorite: '', responsable: '', statutManuel: '',
-  cibles: { organisations: [], tiers: [], risques: [], processus: [], referentiel: null }, echantillon: { methode: '', population: '', taille: '' },
+  cibles: { organisations: [], entites: [], tiers: [], risques: [], processus: [], referentiel: null }, echantillon: { methode: '', population: '', taille: '' },
 })
 
 /** Liste à cocher filtrable (cibles multiples). */
@@ -57,7 +57,7 @@ export default function LigneForm({ initial, options, annee, onSave, onCancel }:
     fetch(`/api/plans/options?referentiel=${encodeURIComponent(code)}`).then(r => (r.ok ? r.json() : { exigences: [] })).then(d => setExigences(d.exigences ?? [])).catch(() => setExigences([]))
   }, [code])
 
-  const cible = (k: 'organisations' | 'tiers' | 'risques' | 'processus') => (v: string[]) => setL(x => ({ ...x, cibles: { ...x.cibles, [k]: v } }))
+  const cible = (k: 'organisations' | 'entites' | 'tiers' | 'risques' | 'processus') => (v: string[]) => setL(x => ({ ...x, cibles: { ...x.cibles, [k]: v } }))
   const champ = 'mt-1 block w-full rounded-sm border border-gray-300 bg-white px-2 py-1.5 text-sm dark:bg-gray-800 dark:border-gray-600'
   const borne = { min: `${annee}-01-01`, max: `${annee}-12-31` }
 
@@ -77,6 +77,8 @@ export default function LigneForm({ initial, options, annee, onSave, onCancel }:
         <legend className="text-xs font-medium text-gray-700 dark:text-gray-200">{p.cibles}</legend>
         <div className="grid sm:grid-cols-2 gap-2">
           <Multi label={p.organisations} items={options.organisations} valeur={l.cibles.organisations} onChange={cible('organisations')} />
+          {/* Entités du référentiel (consolidation, lot E5) : proposées dès que le référentiel n'est pas vide. */}
+          {!!options.entites?.length && <Multi label={p.entites} items={options.entites} valeur={l.cibles.entites} onChange={cible('entites')} />}
           <Multi label={p.tiers} items={options.tiers} valeur={l.cibles.tiers} onChange={cible('tiers')} />
           <Multi label={p.risques} items={options.risques.map(r => ({ id: r.id, nom: r.intitule }))} valeur={l.cibles.risques} onChange={cible('risques')} />
           <Multi label={p.processus} items={options.processus.map(pr => ({ id: pr.id, nom: pr.criticite ? `${pr.nom} (${pr.criticite}/4)` : pr.nom }))} valeur={l.cibles.processus} onChange={cible('processus')} />

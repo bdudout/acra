@@ -23,7 +23,7 @@ function feuille(wb: ExcelJS.Workbook, nom: string, entetes: string[], lignes: (
 
 export interface LigneExport {
   annee: number; intitule: string; prisme: string
-  cibles: { organisations?: string[]; tiers?: string[]; risques?: string[]; processus?: string[]; referentiel?: { code: string; exigences: string[] } | null }
+  cibles: { organisations?: string[]; entites?: string[]; tiers?: string[]; risques?: string[]; processus?: string[]; referentiel?: { code: string; exigences: string[] } | null }
   echantillon: { methode: string; population: number | null; taille: number | null } | null
   debut: string | null; fin: string | null; charge: number | null; priorite: number | null; responsable: string | null
   statutCalcule?: string | null; realisations?: { intitule: string | null }[]
@@ -46,17 +46,17 @@ export async function buildPlanXlsx(o: {
     [p.prisme, (p.prismes as Record<string, string>)[o.plan.prismePrincipal] ?? o.plan.prismePrincipal], [p.mode, (p.modes as Record<string, string>)[o.plan.mode] ?? o.plan.mode],
     [e.horizon, `${o.plan.anneeDebut}–${o.plan.anneeFin}`], [e.genere, o.now.toISOString().slice(0, 10)],
   ], [28, 70])
-  const entetes = [p.intitule, p.prisme, p.organisations, p.tiers, p.risques, p.processus, p.referentiel, p.echantillon, p.debut, p.fin, p.charge, p.priorite, p.responsable, p.rattachement.colonne, e.realisations]
+  const entetes = [p.intitule, p.prisme, p.organisations, p.entites, p.tiers, p.risques, p.processus, p.referentiel, p.echantillon, p.debut, p.fin, p.charge, p.priorite, p.responsable, p.rattachement.colonne, e.realisations]
   for (const a of o.annees) {
     feuille(wb, String(a.annee), entetes, o.lignes.filter(l => l.annee === a.annee).map(l => [
       l.intitule, (p.prismes as Record<string, string>)[l.prisme] ?? l.prisme,
-      nom(l.cibles.organisations), nom(l.cibles.tiers), nom(l.cibles.risques), nom(l.cibles.processus),
+      nom(l.cibles.organisations), nom(l.cibles.entites), nom(l.cibles.tiers), nom(l.cibles.risques), nom(l.cibles.processus),
       l.cibles.referentiel ? `${l.cibles.referentiel.code}${l.cibles.referentiel.exigences.length ? ` : ${l.cibles.referentiel.exigences.join(', ')}` : ''}` : '',
       l.echantillon ? `${(p.methodes as Record<string, string>)[l.echantillon.methode] ?? l.echantillon.methode}${l.echantillon.taille ? ` · ${l.echantillon.taille}/${l.echantillon.population ?? '?'}` : ''}` : '',
       l.debut, l.fin, l.charge, l.priorite ? (p.priorites as Record<string, string>)[String(l.priorite)] : '', l.responsable,
       l.statutCalcule ? (p.statutsLigne as Record<string, string>)[l.statutCalcule] ?? l.statutCalcule : '',
       (l.realisations ?? []).map(r => r.intitule).filter(Boolean).join(', '),
-    ]), [40, 18, 26, 22, 30, 26, 30, 22, 12, 12, 10, 12, 20, 14, 30])
+    ]), [40, 18, 26, 26, 22, 30, 26, 30, 22, 12, 12, 10, 12, 20, 14, 30])
   }
   feuille(wb, e.historique, [p.annee, e.statut, e.valideLeCol, e.revision, e.motif, e.commentaire], o.annees.map(a => [
     a.annee, (p.statuts as Record<string, string>)[a.statut] ?? a.statut, a.valideLe ? a.valideLe.slice(0, 10) : '', a.revision, a.motifRevision ?? '', a.commentaire ?? '',
@@ -68,7 +68,7 @@ export async function buildVueXlsx(o: {
   t: Cat; now: Date; organisation: string; annee: number; seuil: number
   plans: { nom: string; type: string; statut: string | null; lignes: number; realisation?: { taux: number | null; enRetard: number; actives?: number; realisees?: number } }[]
   lignes: { planNom: string; intitule: string; debut: string | null; fin: string | null; statutManuel: string | null }[]
-  sollicitations: { organisations: { nom: string; nombre: number; plans: number; simultanee: boolean }[]; tiers: { nom: string; nombre: number; plans: number; simultanee: boolean }[] }
+  sollicitations: { organisations: { nom: string; nombre: number; plans: number; simultanee: boolean }[]; entites?: { nom: string; nombre: number; plans: number; simultanee: boolean }[]; tiers: { nom: string; nombre: number; plans: number; simultanee: boolean }[] }
   anglesMorts: { risques: { nom: string; niveau: number; derniere: string | null; prevu: boolean }[]; processus: { nom: string; criticite?: number | null; derniere: string | null; prevu: boolean }[] }
 }): Promise<Buffer> {
   const p = o.t.plans, e = p.export, v = p.vue
@@ -84,6 +84,7 @@ export async function buildVueXlsx(o: {
   ]), [34, 40, 12, 12, 14])
   feuille(wb, e.sollicitations, [e.nature, e.cible, e.nombre, e.plans, v.simultanee], [
     ...o.sollicitations.organisations.map(s => [p.organisations, s.nom, s.nombre, s.plans, ouiNon(s.simultanee)]),
+    ...(o.sollicitations.entites ?? []).map(s => [p.entites, s.nom, s.nombre, s.plans, ouiNon(s.simultanee)]),
     ...o.sollicitations.tiers.map(s => [p.tiers, s.nom, s.nombre, s.plans, ouiNon(s.simultanee)]),
   ], [22, 36, 10, 10, 16])
   feuille(wb, e.anglesMorts, [e.nature, e.cible, e.niveau, e.derniere, v.prevu], [
