@@ -5,13 +5,14 @@
 // identifiant externe, organisation ACRA liée et clôture. Écriture ADMIN ; champs verrouillés quand l'annuaire fait foi.
 // API : /api/referentiel-entites. Spec : docs/specs/entites-consolidation-besoin.md.
 import { useEffect, useState } from 'react'
-import { Network, Pencil, Plus, Trash2, Archive, ArchiveRestore } from 'lucide-react'
+import { Network, Pencil, Plus, Trash2, Archive, ArchiveRestore, Upload } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
+import ImportEntitesPanel from './ImportEntitesPanel'
 import { TYPES_ENTITE, champsVerrouilles, construireArbre, estActive, type EntiteRef, type NoeudEntite, type SourceVerite, type TypeEntite } from '@/lib/entites'
 
 type Compte = Record<'risques' | 'incidents' | 'conformites' | 'plansAction' | 'traitementsConformite' | 'mesures' | 'enfants', number>
 interface EntiteApi extends Omit<EntiteRef, 'valideAu'> { organisationLieeId: string | null; valideDu: string | null; valideAu: string | null; _count: Compte }
-interface Donnees { entites: EntiteApi[]; organisations: { id: string; nom: string }[]; peutModifier: boolean; sourceVerite: SourceVerite }
+interface Donnees { entites: EntiteApi[]; organisations: { id: string; nom: string }[]; peutModifier: boolean; sourceVerite: SourceVerite; connecteur?: boolean }
 type Ligne = EntiteRef & { api: EntiteApi }
 interface Formulaire { id?: string; nom: string; type: TypeEntite; codeExterne: string; alias: string; parentId: string; organisationLieeId: string; valideDu: string; valideAu: string; source: string }
 
@@ -27,6 +28,7 @@ export default function ReferentielEntites() {
   const [form, setForm] = useState<Formulaire | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const [doublons, setDoublons] = useState<{ id: string; nom: string }[]>([])
+  const [importer, setImporter] = useState(false)
 
   const recharger = () => fetch('/api/referentiel-entites').then(x => (x.ok ? x.json() : null)).then(setData).catch(() => {})
   useEffect(() => { recharger() }, [])
@@ -115,12 +117,18 @@ export default function ReferentielEntites() {
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{r.desc}</p>
         </div>
         {data.peutModifier && !form && (
-          <button type="button" onClick={() => { setErreur(null); setDoublons([]); setForm({ ...VIDE }) }} className="btn-primary text-sm inline-flex items-center gap-1.5"><Plus size={15} aria-hidden="true" />{r.ajouter}</button>
+          <span className="flex gap-2">
+            {!importer && <button type="button" onClick={() => setImporter(true)} className="btn-secondary text-sm inline-flex items-center gap-1.5"><Upload size={15} aria-hidden="true" />{r.import.importer}</button>}
+            <button type="button" onClick={() => { setErreur(null); setDoublons([]); setForm({ ...VIDE }) }} className="btn-primary text-sm inline-flex items-center gap-1.5"><Plus size={15} aria-hidden="true" />{r.ajouter}</button>
+          </span>
         )}
       </header>
       {!data.peutModifier && <p className="text-xs text-gray-500">{r.lectureSeule}</p>}
       {data.sourceVerite === 'ANNUAIRE' && <p className="text-xs rounded-sm bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200 px-2 py-1.5">{r.annuaireFaitFoi}</p>}
 
+      {importer && data.peutModifier && (
+        <ImportEntitesPanel connecteur={!!data.connecteur} existantes={data.entites.map(e => ({ id: e.id, nom: e.nom }))} onTermine={recharger} onFermer={() => setImporter(false)} />
+      )}
       {form && (
         <div className="rounded-sm border border-gray-200 dark:border-gray-700 p-3 space-y-3">
           <div className="grid sm:grid-cols-2 gap-3">

@@ -8,9 +8,10 @@ import { prisma } from './prisma'
 import { getAnalyseScope } from './org-context.server'
 import { isInSubtree } from './org-context'
 import { isAdminRole, type UserRole } from './permissions'
+import { configConnecteur, connecteurConfigure } from './entity-sync.server'
 import { creeraitUnCycle, sourceVeriteDe, type EntiteSaisie, type SourceVerite } from './entites'
 
-export interface ContexteEntites { userId: string; email?: string; role: UserRole; orgId: string; orgPath: string; admin: boolean; sourceVerite: SourceVerite }
+export interface ContexteEntites { userId: string; email?: string; role: UserRole; orgId: string; orgPath: string; admin: boolean; sourceVerite: SourceVerite; connecteur: boolean }
 
 /** Lecture : tout membre de l'organisation active (le sélecteur d'entité en a besoin) ; écriture : ADMIN. */
 export async function contexteEntites(): Promise<ContexteEntites | { error: NextResponse }> {
@@ -25,7 +26,7 @@ export async function contexteEntites(): Promise<ContexteEntites | { error: Next
   ])
   if (!org) return { error: NextResponse.json({ error: 'Organisation introuvable' }, { status: 404 }) }
   const role = scope.role as UserRole
-  return { userId: user.id, email: user.email ?? undefined, role, orgId: scope.activeOrgId, orgPath: org.path, admin: isAdminRole(role), sourceVerite: sourceVeriteDe(cfg?.entitesSyncConfig) }
+  return { userId: user.id, email: user.email ?? undefined, role, orgId: scope.activeOrgId, orgPath: org.path, admin: isAdminRole(role), sourceVerite: sourceVeriteDe(cfg?.entitesSyncConfig), connecteur: connecteurConfigure(configConnecteur(cfg?.entitesSyncConfig)) }
 }
 
 /** Parent dans la même organisation, sans boucle ; organisation liée dans le sous-arbre de l'organisation active. */

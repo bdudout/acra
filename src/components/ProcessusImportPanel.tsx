@@ -7,29 +7,13 @@
 import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { checkTabularUpload } from '@/lib/import-file-format'
+import { readBytes, toBase64 } from '@/lib/fichier-base64'
 
 type Line = { line: number; status: 'READY' | 'ALREADY_IMPORTED' | 'POSSIBLE_DUPLICATE' | 'REJECTED'; reason?: string; nom: string; ref?: string; parentLine?: number; duplicateOfId?: string; duplicateOfLine?: number }
 type Counts = { ready: number; alreadyImported: number; possibleDuplicate: number; rejected: number }
 type Result = { sheet: string; lines: Line[]; counts: Counts; created?: number }
 
 const TEMPLATE = '﻿Ref;Parent;Name;Description;Owner\nP1;;Gérer les achats;Consultation, commande et suivi des fournisseurs;\nP1.1;P1;Passer les commandes;;\nP2;;Gérer les ressources humaines;;\n'
-
-/** Lecture d'un fichier ou d'un fragment : `arrayBuffer()` si disponible, sinon FileReader (anciens navigateurs). */
-function readBytes(blob: Blob): Promise<Uint8Array> {
-  if (typeof blob.arrayBuffer === 'function') return blob.arrayBuffer().then(b => new Uint8Array(b))
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer)); reader.onerror = () => reject(reader.error)
-    reader.readAsArrayBuffer(blob)
-  })
-}
-
-async function toBase64(file: File): Promise<string> {
-  const bytes = await readBytes(file)
-  let binary = ''
-  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
-  return btoa(binary)
-}
 
 export default function ProcessusImportPanel({ onImported }: { onImported: () => void }) {
   const { t } = useTranslation()

@@ -19,7 +19,7 @@ export async function GET(): Promise<NextResponse> {
     // Organisations du sous-arbre auxquelles une filiale peut être liée (administration seulement).
     c.admin ? prisma.organization.findMany({ where: { path: { startsWith: c.orgPath }, id: { not: c.orgId } }, select: { id: true, nom: true }, orderBy: { nom: 'asc' }, take: 500 }) : Promise.resolve([]),
   ])
-  return NextResponse.json({ entites, organisations, peutModifier: c.admin, sourceVerite: c.sourceVerite })
+  return NextResponse.json({ entites, organisations, peutModifier: c.admin, sourceVerite: c.sourceVerite, connecteur: c.admin && c.connecteur })
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {

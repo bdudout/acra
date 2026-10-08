@@ -6,6 +6,20 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-09 (90) — Claude : consolidation des entités, lot E2 (import avec aperçu des écarts)
+
+- #235 (E1) fusionnée. E2 : `lib/entites-import` (pur) classe chaque ligne — nouvelle, renommée (même identifiant
+  externe), inchangée (nom / alias / code), doublon probable (créé seulement sur confirmation), rejetée (nom manquant,
+  code en double, parent inconnu, boucle, parent rejeté) ; « disparues » si la liste est complète (connecteur : toujours),
+  clôture proposée jamais automatique. Route `POST /api/referentiel-entites/import` (aperçu `dryRun`, application en
+  transaction verrouillée, plan recalculé) ; `ImportEntitesPanel` (bouton « Importer » du référentiel).
+- Refactor : lecture du connecteur → `lib/entity-sync.server` (route de synchronisation historique allégée) ; lecture
+  base64 d'un fichier → `lib/fichier-base64` (partagée avec l'import de processus).
+- **Vérifié** : tests lib / route / composants ; navigateur ADMIN sur la vraie base (import, rejet, réimport → renommage,
+  disparue → clôture, rendu du panneau) ; données de test supprimées.
+
+---
+
 ## 2026-10-09 (89) — Claude : consolidation des entités, lot E1 (référentiel)
 
 - Décisions de l'utilisateur consignées (spec § 4) : une filiale peut être une entité (liée ou non à une organisation
