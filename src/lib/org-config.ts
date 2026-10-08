@@ -81,6 +81,7 @@ export interface RawOrgConfig {
   campagnesRcsaActive?: boolean
   appetenceActive?: boolean
   rapportsGrcActive?: boolean
+  ropaSousTraitantActive?: boolean
   mcpActive?: boolean
   echelleMaturite?: unknown
   processusCartographie?: unknown
@@ -161,6 +162,8 @@ export interface OrgConfigResolved {
   appetenceActive: boolean
   /** Rapports GRC (éditions figées incidents, pertes, contrôle, audit, synthèse) ; désactivés par défaut. */
   rapportsGrcActive: boolean
+  /** Registre du sous-traitant (RGPD art. 30 §2), quand l'organisation traite pour le compte de clients ; désactivé par défaut. */
+  ropaSousTraitantActive: boolean
   /** Serveur MCP autorisé pour cette organisation (défaut : non). */
   mcpActive: boolean
   /** Personnalisation de l'échelle CMMI (0–5) ; [] ⇒ libellés par défaut (i18n). Cf. lib/maturity. */
@@ -231,6 +234,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   campagnesRcsaActive: false,
   appetenceActive: false,
   rapportsGrcActive: false,
+  ropaSousTraitantActive: false,
   mcpActive: false,
   echelleMaturite: [],
   processusCartographie: {},
@@ -254,7 +258,7 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'secteursMasques' | 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig' | 'planificationConfig' | 'relancesConfig' | 'patternsArchiMasques' | 'risquesProjetDefaut'
-export const BOOL_KEYS = ['mcpActive', 'qualificationActive', 'qualificationObligatoire', 'conformiteActive', 'conseilsAteliersActive', 'acceptationRisquesActive', 'gelApresAcceptationActive', 'interdireAutoApprobation', 'petiteStructure', 'derogationsActive', 'derogationDoubleRegard', 'derogationSortCatalogue', 'registreRisquesActive', 'incidentsActive', 'controlePermanentActive', 'auditInterneActive', 'kriActive', 'reglementaireActive', 'secondeLigneActive', 'profilsOperationnelsActive', 'projets360Active', 'homologationsActive', 'recertificationActive', 'registreIaActive', 'campagnesRcsaActive', 'appetenceActive', 'rapportsGrcActive', 'projetSuppressionValidation'] as const
+export const BOOL_KEYS = ['mcpActive', 'qualificationActive', 'qualificationObligatoire', 'conformiteActive', 'conseilsAteliersActive', 'acceptationRisquesActive', 'gelApresAcceptationActive', 'interdireAutoApprobation', 'petiteStructure', 'derogationsActive', 'derogationDoubleRegard', 'derogationSortCatalogue', 'registreRisquesActive', 'incidentsActive', 'controlePermanentActive', 'auditInterneActive', 'kriActive', 'reglementaireActive', 'secondeLigneActive', 'profilsOperationnelsActive', 'projets360Active', 'homologationsActive', 'recertificationActive', 'registreIaActive', 'campagnesRcsaActive', 'appetenceActive', 'rapportsGrcActive', 'ropaSousTraitantActive', 'projetSuppressionValidation'] as const
 type BoolKey = (typeof BOOL_KEYS)[number]
 export const STR_KEYS = ['conformiteNiveau', 'conformiteSnapshotMode', 'conformiteSnapshotPeriode', 'derogationWorkflow'] as const
 type StrKey = (typeof STR_KEYS)[number]
@@ -341,6 +345,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     campagnesRcsaActive: pickBool('campagnesRcsaActive', defaults.campagnesRcsaActive),
     appetenceActive: pickBool('appetenceActive', defaults.appetenceActive),
     rapportsGrcActive: pickBool('rapportsGrcActive', defaults.rapportsGrcActive),
+    ropaSousTraitantActive: pickBool('ropaSousTraitantActive', defaults.ropaSousTraitantActive),
     mcpActive: pickBool('mcpActive', defaults.mcpActive),
     echelleMaturite: pickJson('echelleMaturite', defaults.echelleMaturite),
     processusCartographie: pickJson('processusCartographie', defaults.processusCartographie),

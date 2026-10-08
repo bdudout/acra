@@ -1400,6 +1400,7 @@ export const en: Translations = {
     monthsUnit: 'months',
   },
   ropa: {
+    sousTraitance: { ongletResponsable: 'Controller record (Art. 30(1))', ongletSousTraitant: 'Processor record (Art. 30(2))', aide: 'Processing carried out on behalf of clients (controllers): one row per client.', ajouter: 'Add a client controller', client: 'Controller (client)', clientContact: 'Controller contact details', clientDpo: 'Client’s data protection officer', categories: 'Categories of processing carried out on its behalf', transfert: 'Transfer to a third country', pays: 'Third country', garanties: 'Appropriate safeguards', mesures: 'Security measures', vide: 'No processing carried out on behalf of clients.', complet: 'Complete', manque: 'Missing: {champs}', enregistrer: 'Save', annuler: 'Cancel', modifier: 'Edit', supprimer: 'Delete', confirmer: 'Delete this row from the processor record?', erreur: 'Unable to save.', feuille: 'Processor record' },
     identite: { titre: 'Identity of the controller (Art. 30(1)(a))', aide: 'Name and contact details of the controller, its representative (Art. 27) and the data protection officer. They appear at the top of the exported record.', responsable: 'Controller', adresse: 'Address', contact: 'Contact details (e-mail, phone)', coordonnees: 'Controller contact details', representant: 'Representative (Art. 27)', representantContact: 'Representative contact details', dpo: 'Data protection officer', dpoContact: 'DPO contact details', dpoDesigne: 'Designated in ACRA (DPO role): {noms}', dpoLibre: 'No DPO designated in ACRA for this organisation: enter it below.', enregistrer: 'Save identity', enregistre: 'Identity saved.', manque: 'To complete: name and contact details of the controller.' },
     manque: 'Missing: {champs}',
     exporter: 'Export the register (Excel)',
@@ -4417,6 +4418,8 @@ export const en: Translations = {
     campagnesRcsaDesc: "Risk and control self-assessment (RCSA) campaigns by business lines, on the risk register. Requires the risk register.",
     appetenceTitle: "Risk appetite (RAS / RAD)",
     appetenceDesc: "Risk appetite statement (RAS) and risk appetite dashboard (RAD), monthly snapshots and RAS document for the committee. Requires the risk register, KRIs or maturity. Appetite thresholds remain visible on the register heat map.",
+    ropaSousTraitantTitle: "Processor record (GDPR)",
+    ropaSousTraitantDesc: "Record of processing activities carried out on behalf of clients (Art. 30(2)): controller, categories of processing, transfers and security measures. For organisations acting as processor.",
     rapportsGrcTitle: "GRC reports",
     rapportsGrcDesc: "Frozen, validated editions of incident and loss, permanent control, internal audit and management summary reports.",
     sectionTitle:  'Optional features',

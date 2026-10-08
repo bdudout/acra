@@ -6,6 +6,20 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-09 (99) — Claude : RGPD — registre du sous-traitant en option (lot C)
+
+- Module `ropaSousTraitant` (champ `ropaSousTraitantActive`, désactivé par défaut) câblé sur les 3 niveaux : défaut,
+  `OrganizationConfig` (héritage, configuration « Registres »), politique d'instance (`GOVERNABLE_MODULES`, page
+  Instance). Migration additive `20261009160000_ropa_sous_traitant` (colonne + table `TraitementSousTraitance`).
+- `lib/ropa-sous-traitance` (pur : saisie, mentions de l'art. 30 §2 manquantes), `lib/ropa-sous-traitance.server`
+  (contexte : module inactif → 404, DPO / ADMIN), `GET|POST /api/ropa/sous-traitance`, `PATCH|DELETE …/[id]`
+  (journalisés) ; UI `RopaSousTraitanceManager`, onglets `RgpdOnglets` sur `/rgpd` quand le module est actif ; feuille
+  « Registre du sous-traitant » dans l'export.
+- **Vérifié** : tests ; navigateur DPO (module inactif → pas d'onglet, API 404 ; activé en base pour l'essai → onglets,
+  ligne avec manques en clair, export enrichi) ; module remis à « désactivé », données de test supprimées.
+
+---
+
 ## 2026-10-09 (98) — Claude : RGPD — critères AIPD WP248 et identité du responsable (lot B)
 
 - #242 (lot A : lisibilité, export) fusionnée. Décisions utilisateur : aligner l'AIPD sur WP248 ; identité du

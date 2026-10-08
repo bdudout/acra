@@ -10,6 +10,8 @@ import { canManageRopa, type UserRole } from '@/lib/permissions'
 import { evaluerTraitement, sanitizeTraitement } from '@/lib/ropa'
 import { buildRopaXlsx } from '@/lib/ropa-xlsx'
 import { lireIdentite } from '@/lib/ropa-identite.server'
+import { getOrgConfig } from '@/lib/org-config.server'
+import { champsManquantsArt30_2, sanitizeSousTraitance } from '@/lib/ropa-sous-traitance'
 import { getServerLocale, getT } from '@/lib/i18n'
 import { auditLog, getClientIp } from '@/lib/logger'
 
@@ -28,9 +30,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     prisma.organization.findUnique({ where: { id: scope.activeOrgId }, select: { nom: true } }),
     lireIdentite(scope.activeOrgId),
   ])
+  // Registre du sous-traitant (art. 30 §2) : inclus si le module est actif.
+  const sousTraitances = (await getOrgConfig(scope.activeOrgId)).ropaSousTraitantActive
+    ? (await prisma.traitementSousTraitance.findMany({ where: { organizationId: scope.activeOrgId }, orderBy: [{ clientNom: 'asc' }] }))
+        .map(x => { const st = sanitizeSousTraitance(x); return { ...st, manquants: champsManquantsArt30_2(st) } })
+    : undefined
   const traitements = rows.map(r => { const t = sanitizeTraitement(r); return { ...t, evaluation: evaluerTraitement(t) } })
   const now = new Date()
-  const buf = await buildRopaXlsx({ t: getT(await getServerLocale()), now, organisation: org?.nom ?? '', identite: identite.effective, traitements })
+  const buf = await buildRopaXlsx({ t: getT(await getServerLocale()), now, organisation: org?.nom ?? '', identite: identite.effective, sousTraitances, traitements })
   await auditLog('EXPORT', { userId: user.id, userRole: scope.role, organizationId: scope.activeOrgId, ip: getClientIp(req), targetType: 'ropa', details: { format: 'xlsx', traitements: traitements.length } })
   return new NextResponse(new Uint8Array(buf), { headers: {
     'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

@@ -207,6 +207,7 @@ model Organization {
   entitesLiees           Entite[] @relation("EntiteOrganisationLiee")
   entiteEvenements       EntiteEvenement[]
   ropaIdentite           RopaIdentite?
+  sousTraitances         TraitementSousTraitance[]
 
   @@index([parentId])
   @@index([path])
@@ -2232,6 +2233,8 @@ model OrganizationConfig {
   campagnesRcsaActive        Boolean       @default(false)
   appetenceActive            Boolean       @default(false)
   rapportsGrcActive          Boolean       @default(false)
+  // Registre du sous-traitant (RGPD art. 30 §2) : module activable (3 niveaux), désactivé par défaut.
+  ropaSousTraitantActive     Boolean       @default(false)
   // Serveur MCP (agents/LLM) pour cette organisation : désactivé par défaut ; exige aussi l'interrupteur d'instance `mcpEnabled`.
   mcpActive                  Boolean       @default(false)
   // Personnalisation de l'échelle de maturité CMMI (niveaux 0–5) :
@@ -2914,4 +2917,25 @@ model RopaIdentite {
   dpoNom              String       @default("")
   dpoContact          String       @default("")
   updatedAt           DateTime     @updatedAt
+}
+
+/// Registre du sous-traitant (RGPD art. 30 §2) : une ligne par responsable du traitement client — coordonnées (et DPO),
+/// catégories de traitements effectués pour son compte, transferts hors UE et garanties, mesures de sécurité.
+model TraitementSousTraitance {
+  id                    String       @id @default(cuid())
+  organizationId        String
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clientNom             String
+  clientContact         String       @default("")
+  clientDpo             String       @default("")
+  categoriesTraitements Json         @default("[]")
+  transfertHorsUE       Boolean      @default(false)
+  paysTransfert         String       @default("")
+  garantiesTransfert    String       @default("")
+  mesuresSecurite       Json         @default("[]")
+  createdBy             String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  @@index([organizationId])
 }

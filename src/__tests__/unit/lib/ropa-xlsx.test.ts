@@ -29,4 +29,11 @@ describe('buildRopaXlsx', () => {
     expect(String(l[0]).startsWith('=')).toBe(false) // formule neutralisée
     expect(l).toEqual(expect.arrayContaining(['Obligation légale', 'Salariés', 'Données de santé', 'Oui', 'Suisse', 'Chiffrement, Habilitations', 'Non', 'Garanties (art. 44-46)', 'AIPD requise', 'Données sensibles ou données à caractère hautement personnel ; Données traitées à grande échelle']))
   })
+  it('registre du sous-traitant (art. 30 §2) : feuille ajoutée quand des lignes sont fournies', async () => {
+    const buf = await buildRopaXlsx({ t: getT('fr'), now: new Date('2026-10-09T10:00:00Z'), organisation: 'ESN', traitements: [],
+      sousTraitances: [{ clientNom: 'Hôpital X', clientContact: 'dpo@h.fr', clientDpo: '', categoriesTraitements: ['Hébergement'], transfertHorsUE: true, paysTransfert: 'Inde', garantiesTransfert: 'Clauses types', mesuresSecurite: ['Chiffrement'], manquants: [] }] })
+    const wb = new ExcelJS.Workbook(); await wb.xlsx.load(buf as unknown as ArrayBuffer)
+    expect(wb.worksheets.map(w => w.name)).toEqual(['Présentation', 'Registre (art. 30)', 'Registre du sous-traitant'])
+    expect(valeurs(wb.worksheets[2], 2)).toEqual(expect.arrayContaining(['Hôpital X', 'dpo@h.fr', 'Hébergement', 'Oui', 'Inde', 'Clauses types', 'Chiffrement']))
+  })
 })

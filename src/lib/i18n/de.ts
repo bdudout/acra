@@ -1399,6 +1399,7 @@ export const de: Translations = {
     monthsUnit: 'Monate',
   },
   ropa: {
+    sousTraitance: { ongletResponsable: 'Verzeichnis des Verantwortlichen (Art. 30 Abs. 1)', ongletSousTraitant: 'Verzeichnis des Auftragsverarbeiters (Art. 30 Abs. 2)', aide: 'Im Auftrag von Kunden (Verantwortlichen) durchgeführte Verarbeitungen: eine Zeile pro Kunde.', ajouter: 'Verantwortlichen (Kunde) hinzufügen', client: 'Verantwortlicher (Kunde)', clientContact: 'Kontaktdaten des Verantwortlichen', clientDpo: 'Datenschutzbeauftragter des Kunden', categories: 'Kategorien von Verarbeitungen, die in seinem Auftrag durchgeführt werden', transfert: 'Übermittlung an ein Drittland', pays: 'Drittland', garanties: 'Geeignete Garantien', mesures: 'Sicherheitsmaßnahmen', vide: 'Keine im Auftrag von Kunden durchgeführte Verarbeitung.', complet: 'Vollständig', manque: 'Fehlt: {champs}', enregistrer: 'Speichern', annuler: 'Abbrechen', modifier: 'Bearbeiten', supprimer: 'Löschen', confirmer: 'Diese Zeile aus dem Verzeichnis des Auftragsverarbeiters löschen?', erreur: 'Speichern nicht möglich.', feuille: 'Verzeichnis Auftragsverarbeiter' },
     identite: { titre: 'Identität des Verantwortlichen (Art. 30 Abs. 1 Buchst. a)', aide: 'Name und Kontaktdaten des Verantwortlichen, seines Vertreters (Art. 27) und des Datenschutzbeauftragten. Sie stehen am Anfang des exportierten Verzeichnisses.', responsable: 'Verantwortlicher', adresse: 'Anschrift', contact: 'Kontaktdaten (E-Mail, Telefon)', coordonnees: 'Kontaktdaten des Verantwortlichen', representant: 'Vertreter (Art. 27)', representantContact: 'Kontaktdaten des Vertreters', dpo: 'Datenschutzbeauftragter', dpoContact: 'Kontaktdaten des Datenschutzbeauftragten', dpoDesigne: 'In ACRA benannt (Rolle DPO): {noms}', dpoLibre: 'Für diese Organisation ist in ACRA kein Datenschutzbeauftragter benannt: bitte unten angeben.', enregistrer: 'Identität speichern', enregistre: 'Identität gespeichert.', manque: 'Zu ergänzen: Name und Kontaktdaten des Verantwortlichen.' },
     manque: 'Fehlt: {champs}',
     exporter: 'Verzeichnis exportieren (Excel)',
@@ -4416,6 +4417,8 @@ export const de: Translations = {
     campagnesRcsaDesc: "Kampagnen zur Selbstbewertung von Risiken und Kontrollen (RCSA) durch die Fachbereiche, auf Basis des Risikoregisters. Erfordert das Risikoregister.",
     appetenceTitle: "Risikobereitschaft (RAS / RAD)",
     appetenceDesc: "Erklärung zur Risikobereitschaft (RAS) und Dashboard zur Risikobereitschaft (RAD), monatliche Momentaufnahmen und RAS-Dokument für den Ausschuss. Erfordert das Risikoregister, KRIs oder den Reifegrad. Die Schwellenwerte bleiben in der Risikokarte des Registers sichtbar.",
+    ropaSousTraitantTitle: "Verzeichnis des Auftragsverarbeiters (DSGVO)",
+    ropaSousTraitantDesc: "Verzeichnis der im Auftrag von Kunden durchgeführten Verarbeitungstätigkeiten (Art. 30 Abs. 2): Verantwortlicher, Kategorien von Verarbeitungen, Übermittlungen und Sicherheitsmaßnahmen. Für Organisationen, die als Auftragsverarbeiter tätig sind.",
     rapportsGrcTitle: "GRC-Berichte",
     rapportsGrcDesc: "Festgeschriebene und freigegebene Ausgaben der Berichte zu Vorfällen und Verlusten, permanenter Kontrolle, interner Revision und der Zusammenfassung für die Geschäftsleitung.",
     sectionTitle:  'Optionale Funktionen',

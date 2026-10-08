@@ -1424,6 +1424,7 @@ export const fr = {
     monthsUnit: 'mois',
   },
   ropa: {
+    sousTraitance: { ongletResponsable: 'Registre du responsable du traitement (art. 30, § 1)', ongletSousTraitant: 'Registre du sous-traitant (art. 30, § 2)', aide: 'Traitements effectués pour le compte de clients (responsables du traitement) : une ligne par client.', ajouter: 'Ajouter un responsable du traitement client', client: 'Responsable du traitement (client)', clientContact: 'Coordonnées du responsable du traitement', clientDpo: 'Délégué à la protection des données du client', categories: 'Catégories de traitements effectués pour son compte', transfert: 'Transfert vers un pays tiers', pays: 'Pays tiers', garanties: 'Garanties appropriées', mesures: 'Mesures de sécurité', vide: 'Aucun traitement effectué pour le compte de clients.', complet: 'Complet', manque: 'Manque : {champs}', enregistrer: 'Enregistrer', annuler: 'Annuler', modifier: 'Modifier', supprimer: 'Supprimer', confirmer: 'Supprimer cette ligne du registre du sous-traitant ?', erreur: 'Enregistrement impossible.', feuille: 'Registre du sous-traitant' },
     identite: { titre: 'Identité du responsable du traitement (art. 30, § 1, a)', aide: 'Nom et coordonnées du responsable du traitement, de son représentant (art. 27) et du délégué à la protection des données. Elles figurent en tête du registre exporté.', responsable: 'Responsable du traitement', adresse: 'Adresse', contact: 'Coordonnées (e-mail, téléphone)', coordonnees: 'Coordonnées du responsable', representant: 'Représentant (art. 27)', representantContact: 'Coordonnées du représentant', dpo: 'Délégué à la protection des données', dpoContact: 'Coordonnées du délégué', dpoDesigne: 'Désigné dans ACRA (rôle DPO) : {noms}', dpoLibre: 'Aucun DPO désigné dans ACRA pour cette organisation : renseignez-le ci-dessous.', enregistrer: 'Enregistrer l’identité', enregistre: 'Identité enregistrée.', manque: 'À compléter : nom et coordonnées du responsable du traitement.' },
     manque: 'Manque : {champs}',
     exporter: 'Exporter le registre (Excel)',
@@ -4466,6 +4467,8 @@ export const fr = {
     campagnesRcsaDesc: "Campagnes d’auto-évaluation des risques et des contrôles (RCSA) par les métiers, sur le registre des risques. Nécessite le registre des risques.",
     appetenceTitle: "Appétence au risque (RAS / RAD)",
     appetenceDesc: "Déclaration d’appétence (RAS) et tableau de bord d’appétence (RAD), instantanés mensuels et document RAS pour le comité. Nécessite le registre des risques, les KRI ou la maturité. Les seuils d’appétit restent visibles sur la cartographie du registre.",
+    ropaSousTraitantTitle: "Registre du sous-traitant (RGPD)",
+    ropaSousTraitantDesc: "Registre des activités de traitement effectuées pour le compte de clients (art. 30, § 2) : responsable du traitement, catégories de traitements, transferts et mesures de sécurité. Pour les organisations qui agissent en sous-traitant.",
     rapportsGrcTitle: "Rapports GRC",
     rapportsGrcDesc: "Éditions figées et validées des rapports d’incidents et de pertes, de contrôle permanent, d’audit interne et de synthèse pour la direction.",
     sectionTitle:  'Fonctionnalités optionnelles',

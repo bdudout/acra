@@ -1400,6 +1400,7 @@ export const es: Translations = {
     monthsUnit: 'meses',
   },
   ropa: {
+    sousTraitance: { ongletResponsable: 'Registro del responsable del tratamiento (art. 30, apartado 1)', ongletSousTraitant: 'Registro del encargado del tratamiento (art. 30, apartado 2)', aide: 'Tratamientos efectuados por cuenta de clientes (responsables del tratamiento): una fila por cliente.', ajouter: 'Añadir un responsable del tratamiento cliente', client: 'Responsable del tratamiento (cliente)', clientContact: 'Datos de contacto del responsable del tratamiento', clientDpo: 'Delegado de protección de datos del cliente', categories: 'Categorías de tratamientos efectuados por su cuenta', transfert: 'Transferencia a un tercer país', pays: 'Tercer país', garanties: 'Garantías adecuadas', mesures: 'Medidas de seguridad', vide: 'Ningún tratamiento efectuado por cuenta de clientes.', complet: 'Completo', manque: 'Falta: {champs}', enregistrer: 'Guardar', annuler: 'Cancelar', modifier: 'Modificar', supprimer: 'Eliminar', confirmer: '¿Eliminar esta fila del registro del encargado del tratamiento?', erreur: 'No se puede guardar.', feuille: 'Registro del encargado' },
     identite: { titre: 'Identidad del responsable del tratamiento (art. 30, apartado 1, letra a)', aide: 'Nombre y datos de contacto del responsable del tratamiento, de su representante (art. 27) y del delegado de protección de datos. Figuran al inicio del registro exportado.', responsable: 'Responsable del tratamiento', adresse: 'Dirección', contact: 'Datos de contacto (correo, teléfono)', coordonnees: 'Datos de contacto del responsable', representant: 'Representante (art. 27)', representantContact: 'Datos de contacto del representante', dpo: 'Delegado de protección de datos', dpoContact: 'Datos de contacto del delegado', dpoDesigne: 'Designado en ACRA (rol DPO): {noms}', dpoLibre: 'Ningún DPO designado en ACRA para esta organización: indíquelo a continuación.', enregistrer: 'Guardar la identidad', enregistre: 'Identidad guardada.', manque: 'Por completar: nombre y datos de contacto del responsable del tratamiento.' },
     manque: 'Falta: {champs}',
     exporter: 'Exportar el registro (Excel)',
@@ -4417,6 +4418,8 @@ export const es: Translations = {
     campagnesRcsaDesc: "Campañas de autoevaluación de riesgos y controles (RCSA) por las áreas de negocio, sobre el registro de riesgos. Requiere el registro de riesgos.",
     appetenceTitle: "Apetito de riesgo (RAS / RAD)",
     appetenceDesc: "Declaración de apetito de riesgo (RAS) y cuadro de mando de apetito (RAD), instantáneas mensuales y documento RAS para el comité. Requiere el registro de riesgos, los KRI o la madurez. Los umbrales de apetito siguen visibles en el mapa del registro.",
+    ropaSousTraitantTitle: "Registro del encargado del tratamiento (RGPD)",
+    ropaSousTraitantDesc: "Registro de las actividades de tratamiento efectuadas por cuenta de clientes (art. 30, apartado 2): responsable del tratamiento, categorías de tratamientos, transferencias y medidas de seguridad. Para las organizaciones que actúan como encargado del tratamiento.",
     rapportsGrcTitle: "Informes GRC",
     rapportsGrcDesc: "Ediciones congeladas y validadas de los informes de incidentes y pérdidas, control permanente, auditoría interna y síntesis para la dirección.",
     sectionTitle:  'Funcionalidades opcionales',

@@ -60,6 +60,7 @@ export const CONFIG_SELECT = {
   campagnesRcsaActive: true,
   appetenceActive: true,
   rapportsGrcActive: true,
+  ropaSousTraitantActive: true,
   mcpActive: true,
   echelleMaturite: true,
   processusCartographie: true,
@@ -148,6 +149,7 @@ async function applyInstancePolicy(cfg: OrgConfigResolved): Promise<OrgConfigRes
       campagnesRcsaActive: resolveModuleActivation(policy.campagnesRcsa, cfg.campagnesRcsaActive),
       appetenceActive: resolveModuleActivation(policy.appetence, cfg.appetenceActive),
       rapportsGrcActive: resolveModuleActivation(policy.rapportsGrc, cfg.rapportsGrcActive),
+      ropaSousTraitantActive: resolveModuleActivation(policy.ropaSousTraitant, cfg.ropaSousTraitantActive),
     }
   } catch {
     return cfg

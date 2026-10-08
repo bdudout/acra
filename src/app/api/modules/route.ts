@@ -29,5 +29,6 @@ export async function GET() {
     campagnesRcsaActive: cfg.campagnesRcsaActive,
     appetenceActive: cfg.appetenceActive,
     rapportsGrcActive: cfg.rapportsGrcActive,
+    ropaSousTraitantActive: cfg.ropaSousTraitantActive,
   })
 }
