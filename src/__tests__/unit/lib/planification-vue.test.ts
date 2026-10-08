@@ -1,7 +1,7 @@
 // Vue globale des plans d'audit et de contrôle (lot P5) : sollicitations multiples (et simultanées) des entités, filiales
 // et tiers ; angles morts (risques critiques ou majeurs, processus critiques ou importants non couverts depuis N ans).
 import { describe, expect, it } from 'vitest'
-import { sollicitationsMultiples, anglesMorts, risqueCritiqueOuMajeur, processusCritiqueOuImportant, periodesSeChevauchent } from '@/lib/planification-vue'
+import { sollicitationsMultiples, entitesSollicitees, carteSuccesseurs, anglesMorts, risqueCritiqueOuMajeur, processusCritiqueOuImportant, periodesSeChevauchent } from '@/lib/planification-vue'
 
 const L = (id: string, plan: string, debut: string | null, fin: string | null, cibles: { organisations?: string[]; tiers?: string[] }) =>
   ({ ligneId: id, planId: plan, planNom: `Plan ${plan}`, type: 'AUDIT' as const, intitule: `Ligne ${id}`, debut, fin, statutManuel: null, cibles })
@@ -28,6 +28,36 @@ describe('sollicitations multiples', () => {
     expect(s.organisations.map(o => [o.id, o.nombre, o.simultanee])).toEqual([['f1', 2, true], ['f2', 2, false]])
     expect(s.organisations[0]).toMatchObject({ nom: 'Filiale 1', plans: 2 })
     expect(s.tiers).toEqual([expect.objectContaining({ id: 't1', nom: 'Hébergeur', nombre: 2, simultanee: false })])
+  })
+})
+
+describe('sollicitations par entité (consolidation des entités, lot E5)', () => {
+  it('entités visées directement ou via un risque lié, après réorganisation (entité close → successeur)', () => {
+    const lignes = [
+      { ...L('1', 'A', '2027-03-01', '2027-03-31', {}), cibles: { entites: ['achats'] } },        // achats fusionnée dans « ach-appro »
+      { ...L('2', 'B', '2027-03-15', '2027-04-10', {}), cibles: { risques: ['r1'] } },            // r1 lié à ach-appro
+      { ...L('3', 'B', '2027-09-01', null, {}), cibles: { entites: ['dsi'], risques: ['r2'] } }, // r2 lié aussi à dsi : compté une fois
+      { ...L('4', 'A', '2027-10-01', null, {}), cibles: { entites: ['dsi'] } },
+      { ...L('5', 'A', '2027-11-01', null, {}), cibles: { entites: ['rh'] } },
+    ]
+    const succ = carteSuccesseurs([
+      { type: 'FUSION', sources: [{ id: 'achats' }, { id: 'appro' }], cibles: [{ id: 'ach-appro' }] },
+      { type: 'SCISSION', sources: [{ id: 'x' }], cibles: [{ id: 'y' }, { id: 'z' }] }, // ambiguë : ignorée
+      { type: 'RENOMMAGE', sources: [{ id: 'rh' }], cibles: [{ id: 'rh' }] },
+    ])
+    expect(succ).toEqual({ achats: 'ach-appro', appro: 'ach-appro' })
+    const enrichies = entitesSollicitees(lignes, { r1: 'ach-appro', r2: 'dsi' }, succ)
+    expect(enrichies.map(l => l.cibles.entites)).toEqual([['ach-appro'], ['ach-appro'], ['dsi'], ['dsi'], ['rh']])
+    const s = sollicitationsMultiples(enrichies, { 'ach-appro': 'Achats et appro', dsi: 'DSI', rh: 'RH' })
+    expect(s.entites.map(e => [e.id, e.nom, e.nombre, e.simultanee])).toEqual([['ach-appro', 'Achats et appro', 2, true], ['dsi', 'DSI', 2, false]])
+  })
+  it('chaîne de successeurs suivie (A → B → C), sans boucle infinie', () => {
+    const succ = carteSuccesseurs([
+      { type: 'CLOTURE', sources: [{ id: 'a' }], cibles: [{ id: 'b' }] },
+      { type: 'FUSION', sources: [{ id: 'b' }, { id: 'x' }], cibles: [{ id: 'c' }] },
+      { type: 'CLOTURE', sources: [{ id: 'c' }], cibles: [{ id: 'a' }] },
+    ])
+    expect(entitesSollicitees([{ ...L('1', 'A', null, null, {}), cibles: { entites: ['a'] } }], {}, succ)[0].cibles.entites).toHaveLength(1)
   })
 })
 

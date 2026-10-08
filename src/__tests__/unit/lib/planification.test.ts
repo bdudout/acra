@@ -39,12 +39,12 @@ describe('saisies', () => {
     expect(cleanLigneInput({ intitule: 'A', debut: '2027-06-10', fin: '2027-03-01' }, 2027, 'RISQUE')).toEqual({ ok: false, error: 'dates_inversees' })
     const r = cleanLigneInput({
       intitule: 'Accès privilégiés', prisme: 'PERIMETRE', debut: '2027-03-01', fin: '2027-04-15', charge: 12, priorite: 2,
-      cibles: { organisations: ['f1', 'f1', 'f2'], tiers: ['t1'], risques: ['r1', 'r2'], processus: ['p1'], referentiel: { code: 'ISO27001', exigences: ['A.5.15', 'A.8.2', 'A.5.15'] } },
+      cibles: { organisations: ['f1', 'f1', 'f2'], entites: ['e1', 'e1'], tiers: ['t1'], risques: ['r1', 'r2'], processus: ['p1'], referentiel: { code: 'ISO27001', exigences: ['A.5.15', 'A.8.2', 'A.5.15'] } },
       echantillon: { methode: 'RISQUE', population: 40, taille: 8 },
     }, 2027, 'RISQUE')
     expect(r).toEqual({ ok: true, ligne: {
       intitule: 'Accès privilégiés', prisme: 'PERIMETRE', debut: '2027-03-01', fin: '2027-04-15', charge: 12, priorite: 2, responsable: null,
-      cibles: { organisations: ['f1', 'f2'], tiers: ['t1'], risques: ['r1', 'r2'], processus: ['p1'], referentiel: { code: 'ISO27001', exigences: ['A.5.15', 'A.8.2'] } },
+      cibles: { organisations: ['f1', 'f2'], entites: ['e1'], tiers: ['t1'], risques: ['r1', 'r2'], processus: ['p1'], referentiel: { code: 'ISO27001', exigences: ['A.5.15', 'A.8.2'] } },
       echantillon: { methode: 'RISQUE', population: 40, taille: 8 }, statutManuel: null,
     } })
     // Prisme absent ⇒ celui du plan ; échantillon incohérent (taille > population) refusé.

@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const m = vi.hoisted(() => ({ session: vi.fn(), scope: vi.fn(), config: vi.fn(), plans: vi.fn(), org: vi.fn(), orgs: vi.fn(), tiers: vi.fn(), risques: vi.fn(), processus: vi.fn(), missions: vi.fn(), controles: vi.fn() }))
+const m = vi.hoisted(() => ({ session: vi.fn(), scope: vi.fn(), config: vi.fn(), plans: vi.fn(), org: vi.fn(), orgs: vi.fn(), tiers: vi.fn(), risques: vi.fn(), processus: vi.fn(), missions: vi.fn(), controles: vi.fn(), entites: vi.fn(), evenements: vi.fn() }))
 vi.mock('next-auth', () => ({ getServerSession: m.session }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope }))
@@ -11,6 +11,7 @@ vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.config }))
 vi.mock('@/lib/prisma', () => ({ prisma: {
   planProgramme: { findMany: m.plans }, organization: { findUnique: m.org, findMany: m.orgs }, tierOrganization: { findMany: m.tiers },
   riskItem: { findMany: m.risques }, processus: { findMany: m.processus }, auditMission: { findMany: m.missions }, controle: { findMany: m.controles }, campagneControle: { findMany: async () => [] },
+  entite: { findMany: m.entites }, entiteEvenement: { findMany: m.evenements },
 } }))
 import { GET } from '@/app/api/plans/vue/route'
 
@@ -22,6 +23,8 @@ beforeEach(() => {
   m.org.mockResolvedValue({ path: '/o1/' })
   m.orgs.mockResolvedValue([{ id: 'f1', nom: 'Filiale Nord' }])
   m.tiers.mockResolvedValue([])
+  m.entites.mockResolvedValue([])
+  m.evenements.mockResolvedValue([])
   m.plans.mockResolvedValue([
     { id: 'p1', nom: 'Audit SI', type: 'AUDIT', equipe: null, annees: [{ statut: 'VALIDE' }], lignes: [
       { id: 'l1', annee: 2027, intitule: 'Accès', debut: new Date('2027-03-01'), fin: new Date('2027-03-31'), statutManuel: null, priorite: 1, realisations: [{ type: 'MISSION', id: 'm1' }], cibles: { organisations: ['f1'], risques: ['r2'] } },
@@ -50,6 +53,18 @@ describe('GET /api/plans/vue', () => {
     expect(j.sollicitations.organisations).toEqual([expect.objectContaining({ id: 'f1', nom: 'Filiale Nord', nombre: 2, simultanee: true })])
     expect(j.plans[0]).toMatchObject({ id: 'p1', statut: 'VALIDE', lignes: 1, realisation: { actives: 1, realisees: 1, taux: 100 } })
     expect(j.lignes[0].priorite).toBe(1)
+  })
+  it('sollicitations par entité : visée directement ou via un risque lié, entité fusionnée ramenée à son successeur (lot E5)', async () => {
+    m.risques.mockResolvedValue([{ id: 'r2', intitule: 'Panne', entiteId: 'dsi', graviteInherente: 1, vraisemblanceInherente: 1, graviteResiduelle: null, vraisemblanceResiduelle: null }])
+    m.entites.mockResolvedValue([{ id: 'dsi', nom: 'DSI' }, { id: 'si-old', nom: 'Ancien SI' }])
+    m.evenements.mockResolvedValue([{ type: 'FUSION', sources: [{ id: 'si-old', nom: 'Ancien SI' }, { id: 'dsi', nom: 'DSI' }], cibles: [{ id: 'dsi', nom: 'DSI' }] }])
+    m.plans.mockResolvedValue([
+      { id: 'p1', nom: 'Audit SI', type: 'AUDIT', equipe: null, annees: [], lignes: [{ id: 'l1', annee: 2027, intitule: 'Accès', debut: new Date('2027-03-01'), fin: null, statutManuel: null, realisations: [], cibles: { risques: ['r2'] } }] },
+      { id: 'p2', nom: 'Contrôle', type: 'CONTROLE', equipe: null, annees: [], lignes: [{ id: 'l2', annee: 2027, intitule: 'Sauvegardes', debut: new Date('2027-06-01'), fin: null, statutManuel: null, realisations: [], cibles: { entites: ['si-old'] } }] },
+    ])
+    const j = await (await GET(new NextRequest('http://x/api/plans/vue?annee=2027'))).json()
+    expect(m.entites.mock.calls[0][0].where).toEqual({ organizationId: 'o1' })
+    expect(j.sollicitations.entites).toEqual([expect.objectContaining({ id: 'dsi', nom: 'DSI', nombre: 2, plans: 2, simultanee: false })])
   })
   it('rôle sans lecture globale → 403', async () => {
     m.scope.mockResolvedValue({ activeOrgId: 'o1', role: 'METIER' })

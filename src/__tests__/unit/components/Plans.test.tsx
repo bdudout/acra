@@ -39,7 +39,7 @@ describe('PlanView', () => {
   const PLAN = (statut: string, droits = { preparer: true, valider: false, doubleRegard: false }) => ({
     plan: { id: 'p1', type: 'AUDIT', nom: 'Audit SI', equipe: null, prismePrincipal: 'RISQUE', mode: 'FIGE', anneeDebut: 2027, anneeFin: 2027 },
     annees: [{ annee: 2027, statut, preparePar: 'u1', validePar: null, valideLe: statut === 'VALIDE' ? '2026-12-12T10:00:00Z' : null, commentaire: null, revision: 0, motifRevision: null, historique: [{ action: 'SOUMETTRE', statut: 'SOUMIS', par: 'u1', le: '2026-12-01T10:00:00Z' }] }],
-    lignes: [{ id: 'l1', annee: 2027, intitule: 'Accès privilégiés', prisme: 'RISQUE', cibles: { risques: ['r1', 'r2'], organisations: ['f1'] }, echantillon: { methode: 'RISQUE', population: 40, taille: 8 }, debut: '2027-03-01T00:00:00.000Z', fin: '2027-04-15T00:00:00.000Z', charge: 12, priorite: 2, responsable: 'Équipe SI', statutManuel: null }],
+    lignes: [{ id: 'l1', annee: 2027, intitule: 'Accès privilégiés', prisme: 'RISQUE', cibles: { risques: ['r1', 'r2'], organisations: ['f1'], entites: ['e1'] }, echantillon: { methode: 'RISQUE', population: 40, taille: 8 }, debut: '2027-03-01T00:00:00.000Z', fin: '2027-04-15T00:00:00.000Z', charge: 12, priorite: 2, responsable: 'Équipe SI', statutManuel: null }],
     droits,
   })
   it('brouillon (préparateur) : soumettre, ajouter et modifier des lignes ; frise et cibles résumées', async () => {
@@ -49,7 +49,7 @@ describe('PlanView', () => {
     expect(screen.getByRole('button', { name: 'Soumettre pour validation' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Ajouter une ligne' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Modifier Accès privilégiés' })).toBeTruthy()
-    expect(screen.getByText(/Entités et filiales 1 · Risques 2/)).toBeTruthy()
+    expect(screen.getByText(/Filiales \(organisations\) 1 · Entités du référentiel 1 · Risques 2/)).toBeTruthy()
     expect(within(screen.getByRole('figure')).getByText('Accès privilégiés')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Soumettre pour validation' }))
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/plans/p1/annees/2027', expect.objectContaining({ method: 'PATCH' })))
@@ -79,7 +79,8 @@ describe('VueGlobale', () => {
       annee: 2027, seuilAnglesMortsAns: 3,
       plans: [{ id: 'p1', nom: 'Audit SI', type: 'AUDIT', equipe: null, statut: 'VALIDE', lignes: 2, annulees: 0, reportees: 1 }],
       lignes: [{ ligneId: 'l1', planId: 'p1', planNom: 'Audit SI', type: 'AUDIT', intitule: 'Accès', debut: '2027-03-01', fin: '2027-03-31', statutManuel: null, cibles: {} }],
-      sollicitations: { organisations: [{ id: 'f1', nom: 'Filiale Nord', nombre: 2, plans: 2, simultanee: true, lignes: [{ ligneId: 'l1', planNom: 'Audit SI', intitule: 'Accès', debut: '2027-03-01', fin: '2027-03-31' }] }], tiers: [] },
+      sollicitations: { organisations: [{ id: 'f1', nom: 'Filiale Nord', nombre: 2, plans: 2, simultanee: true, lignes: [{ ligneId: 'l1', planNom: 'Audit SI', intitule: 'Accès', debut: '2027-03-01', fin: '2027-03-31' }] }], tiers: [],
+        entites: [{ id: 'dsi', nom: 'Direction des SI', nombre: 3, plans: 2, simultanee: false, lignes: [] }] },
       anglesMorts: { risques: [{ id: 'r1', nom: 'Fraude au virement', niveau: 12, derniere: null, prevu: true }], processus: [{ id: 'pr1', nom: 'Paie', criticite: 4, criticiteDora: 'CRITIQUE', derniere: '2022-05-01', prevu: false }] },
     }))
     render(<VueGlobale />)
@@ -87,6 +88,9 @@ describe('VueGlobale', () => {
     expect(screen.getByText('1 reportée(s), 0 annulée(s)')).toBeTruthy()
     expect(screen.getByText(/Filiale Nord/)).toBeTruthy()
     expect(screen.getByText('En même temps')).toBeTruthy()
+    // Entités du référentiel (consolidation, lot E5) : sollicitations agrégées par entité.
+    expect(screen.getByText('Entités du référentiel')).toBeTruthy()
+    expect(screen.getByText(/Direction des SI/)).toBeTruthy()
     expect(screen.getByText(/Angles morts : non audités ni contrôlés depuis 3 ans/)).toBeTruthy()
     expect(screen.getByText('Fraude au virement')).toBeTruthy()
     expect(screen.getByText('Dernière couverture : jamais')).toBeTruthy()

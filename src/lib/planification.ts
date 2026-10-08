@@ -87,7 +87,7 @@ export function cleanPlanInput(body: Record<string, unknown>, modeDefaut: ModePl
   } }
 }
 
-export interface Cibles { organisations: string[]; tiers: string[]; risques: string[]; processus: string[]; referentiel: { code: string; exigences: string[] } | null }
+export interface Cibles { organisations: string[]; entites: string[]; tiers: string[]; risques: string[]; processus: string[]; referentiel: { code: string; exigences: string[] } | null }
 export interface Echantillon { methode: MethodeEchantillon; population: number | null; taille: number | null }
 export interface LigneInput {
   intitule: string; prisme: Prisme; cibles: Cibles; echantillon: Echantillon | null
@@ -121,7 +121,7 @@ export function cleanLigneInput(body: Record<string, unknown>, anneePlan: number
   return { ok: true, ligne: {
     intitule,
     prisme: PRISMES.includes(body.prisme as Prisme) ? body.prisme as Prisme : prismePlan,
-    cibles: { organisations: ids(c.organisations), tiers: ids(c.tiers), risques: ids(c.risques), processus: ids(c.processus), referentiel: ref },
+    cibles: { organisations: ids(c.organisations), entites: ids(c.entites), tiers: ids(c.tiers), risques: ids(c.risques), processus: ids(c.processus), referentiel: ref },
     echantillon, debut, fin,
     charge: body.charge != null && body.charge !== '' && Number.isFinite(charge) && charge >= 0 && charge <= 10_000 ? Math.round(charge * 10) / 10 : null,
     priorite: entier(body.priorite, 1, 4),

@@ -115,7 +115,8 @@ interrupteurs existants (audit interne, contrôle permanent) ; pas d'interrupteu
 - **Pas de plafond de charge** par équipe : la charge estimée reste une information, sans alerte.
 - **Questionnaires envoyés aux tiers** : ce sont des contrôles de niveau 1 (CN1), **non comptés** dans les sollicitations
   des plans d'audit et de contrôle.
-- **Entités** : l'indicateur de sollicitations multiples s'appuie sur les organisations du sous-arbre (filiales) et les
-  tiers canoniques. Les entités saisies en texte libre (registre des risques) relèvent d'un **chantier distinct** :
-  consolidation et import des entités pour un registre cohérent qui suit les réorganisations (fusions, scissions,
-  renommages) ; d'ici là, elles ne sont pas comptées.
+- **Entités** : l'indicateur de sollicitations multiples s'appuie sur les organisations du sous-arbre (filiales), les
+  tiers canoniques et, depuis la consolidation des entités (`docs/specs/entites-consolidation-besoin.md`, lot E5), les
+  **entités du référentiel** : visées directement par une ligne, ou indirectement via un risque ciblé lié à une entité ;
+  une entité close par une fusion ou une clôture avec successeur est comptée sur l'entité qui la remplace (une scission
+  vers plusieurs entités est ambiguë et n'est pas reportée). Une ligne compte une fois par entité.

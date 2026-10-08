@@ -15,7 +15,7 @@ import PlanFrise from './PlanFrise'
 import LigneForm, { ligneVide, type LigneSaisie, type Options } from './LigneForm'
 import RealisationsPanel from './RealisationsPanel'
 
-interface Cibles { organisations?: string[]; tiers?: string[]; risques?: string[]; processus?: string[]; referentiel?: { code: string; exigences: string[] } | null }
+interface Cibles { organisations?: string[]; entites?: string[]; tiers?: string[]; risques?: string[]; processus?: string[]; referentiel?: { code: string; exigences: string[] } | null }
 interface Ligne {
   id: string; annee: number; intitule: string; prisme: Prisme; cibles: Cibles; echantillon: { methode: string; population: number | null; taille: number | null } | null
   debut: string | null; fin: string | null; charge: number | null; priorite: number | null; responsable: string | null; statutManuel: string | null
@@ -100,11 +100,11 @@ export default function PlanView({ id }: { id: string }) {
   const versSaisie = (l: Ligne): LigneSaisie => ({
     intitule: l.intitule, prisme: l.prisme, debut: l.debut ?? '', fin: l.fin ?? '', charge: l.charge == null ? '' : String(l.charge),
     priorite: l.priorite == null ? '' : String(l.priorite), responsable: l.responsable ?? '', statutManuel: l.statutManuel ?? '',
-    cibles: { organisations: l.cibles.organisations ?? [], tiers: l.cibles.tiers ?? [], risques: l.cibles.risques ?? [], processus: l.cibles.processus ?? [], referentiel: l.cibles.referentiel ?? null },
+    cibles: { organisations: l.cibles.organisations ?? [], entites: l.cibles.entites ?? [], tiers: l.cibles.tiers ?? [], risques: l.cibles.risques ?? [], processus: l.cibles.processus ?? [], referentiel: l.cibles.referentiel ?? null },
     echantillon: { methode: l.echantillon?.methode ?? '', population: l.echantillon?.population == null ? '' : String(l.echantillon.population), taille: l.echantillon?.taille == null ? '' : String(l.echantillon.taille) },
   })
   const resumeCibles = (c: Cibles) => [
-    c.organisations?.length ? `${p.organisations} ${c.organisations.length}` : null, c.tiers?.length ? `${p.tiers} ${c.tiers.length}` : null,
+    c.organisations?.length ? `${p.organisations} ${c.organisations.length}` : null, c.entites?.length ? `${p.entites} ${c.entites.length}` : null, c.tiers?.length ? `${p.tiers} ${c.tiers.length}` : null,
     c.risques?.length ? `${p.risques} ${c.risques.length}` : null, c.processus?.length ? `${p.processus} ${c.processus.length}` : null,
     c.referentiel ? `${c.referentiel.code}${c.referentiel.exigences.length ? ` (${c.referentiel.exigences.length})` : ''}` : null,
   ].filter(Boolean).join(' · ') || '—'
