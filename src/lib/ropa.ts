@@ -35,7 +35,20 @@ export interface Traitement {
   // Critères PIA (art. 35 §3) — renseignés par le DPO.
   grandeEchelle?: boolean
   surveillanceSystematique?: boolean
+  /** Critères WP248 cochés par le DPO (cf. CRITERES_AIPD). */
+  criteresAipd?: string[]
 }
+
+/**
+ * Critères de risque élevé des lignes directrices du CEPD sur l'AIPD (WP248 rév. 01, adoptées le 4 octobre 2017,
+ * section III.B.a), dans leur ordre : évaluation ou notation ; prise de décisions automatisée avec effet juridique ou
+ * effet similaire significatif ; surveillance systématique ; données sensibles ou à caractère hautement personnel ;
+ * données traitées à grande échelle ; croisement ou combinaison d'ensembles de données ; personnes vulnérables ;
+ * utilisation innovante ou nouvelles solutions technologiques ou organisationnelles ; traitement qui empêche d'exercer
+ * un droit ou de bénéficier d'un service ou d'un contrat. Libellés officiels : catalogue i18n `ropa.criteres`.
+ */
+export const CRITERES_AIPD = ['EVALUATION', 'DECISION_AUTOMATISEE', 'SURVEILLANCE', 'DONNEES_SENSIBLES', 'GRANDE_ECHELLE', 'CROISEMENT', 'PERSONNES_VULNERABLES', 'INNOVATION', 'EXCLUSION_DROIT'] as const
+export type CritereAipd = (typeof CRITERES_AIPD)[number]
 
 const S_MAX = 200
 const T_MAX = 2000
@@ -65,6 +78,7 @@ export function sanitizeTraitement(v: unknown): Traitement {
     mesuresSecurite: strArr(o.mesuresSecurite),
     grandeEchelle: bool(o.grandeEchelle),
     surveillanceSystematique: bool(o.surveillanceSystematique),
+    criteresAipd: Array.isArray(o.criteresAipd) ? CRITERES_AIPD.filter(c => (o.criteresAipd as unknown[]).includes(c)) : [],
   }
 }
 
@@ -87,24 +101,32 @@ export function champsManquantsArt30(t: Traitement): string[] {
   return manquants
 }
 
-/** Verdict sur le besoin d'une AIPD/PIA pour un traitement : requis ou non + motifs déclencheurs. */
+/** Verdict AIPD : requise (≥ 2 critères), à examiner (1 critère), non requise (aucun) ; motifs = critères retenus. */
 export interface PiaVerdict {
   requis: boolean
-  motifs: string[]
+  niveau: 'REQUISE' | 'A_EXAMINER' | 'NON'
+  motifs: CritereAipd[]
+}
+
+/** Critères retenus : ceux cochés par le DPO, plus ceux que les champs du traitement établissent (catégories
+ *  particulières de l'art. 9 détectées, grande échelle, surveillance systématique) ; ordre des lignes directrices. */
+export function criteresAipd(t: Traitement): CritereAipd[] {
+  const retenus = new Set<string>(t.criteresAipd ?? [])
+  if (detectRgpdArt9(t.categoriesDonnees.map(nom => ({ nom }))).length > 0) retenus.add('DONNEES_SENSIBLES')
+  if (t.grandeEchelle) retenus.add('GRANDE_ECHELLE')
+  if (t.surveillanceSystematique) retenus.add('SURVEILLANCE')
+  return CRITERES_AIPD.filter(c => retenus.has(c))
 }
 
 /**
- * Une analyse d'impact (PIA / AIPD, art. 35) est-elle requise ? Modèle simplifié
- * (aide à la décision, pas un avis juridique) : (b) traitement de données sensibles
- * art. 9 → oui ; (c) surveillance systématique à grande échelle → oui. Le DPO reste
- * décisionnaire ; renvoie les motifs pour justification.
+ * Une AIPD (art. 35) est-elle requise ? Lignes directrices WP248 rév. 01 : « dans la plupart des cas », un traitement
+ * qui satisfait à deux critères nécessite une AIPD ; un seul critère peut suffire selon le cas (« à examiner »). Aide à
+ * la décision, pas un avis juridique : le DPO reste décisionnaire et documente sa décision.
  */
 export function piaRequis(t: Traitement): PiaVerdict {
-  const motifs: string[] = []
-  const sensibles = detectRgpdArt9(t.categoriesDonnees.map(nom => ({ nom })))
-  if (sensibles.length > 0) motifs.push('donnees_sensibles_art9')
-  if (t.grandeEchelle && t.surveillanceSystematique) motifs.push('surveillance_systematique_grande_echelle')
-  return { requis: motifs.length > 0, motifs }
+  const motifs = criteresAipd(t)
+  const niveau = motifs.length >= 2 ? 'REQUISE' : motifs.length === 1 ? 'A_EXAMINER' : 'NON'
+  return { requis: niveau === 'REQUISE', niveau, motifs }
 }
 
 /** Évaluation d'un traitement RGPD : complétude (champs manquants) + verdict AIPD. */

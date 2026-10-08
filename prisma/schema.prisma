@@ -206,6 +206,7 @@ model Organization {
   entites                Entite[] @relation("EntiteOrganisation")
   entitesLiees           Entite[] @relation("EntiteOrganisationLiee")
   entiteEvenements       EntiteEvenement[]
+  ropaIdentite           RopaIdentite?
 
   @@index([parentId])
   @@index([path])
@@ -360,6 +361,8 @@ model Traitement {
   mesuresSecurite          Json         @default("[]")
   grandeEchelle            Boolean      @default(false)
   surveillanceSystematique Boolean      @default(false)
+  // Critères de risque élevé des lignes directrices WP248 rév. 01 cochés par le DPO (lib/ropa CRITERES_AIPD).
+  criteresAipd             Json         @default("[]")
   // Provenance d'un traitement type du catalogue RoPA (import ligne par ligne idempotent).
   catalogueKey             String?
   catalogueVersion         String?
@@ -2896,4 +2899,19 @@ model EntiteEvenement {
   createdAt      DateTime     @default(now())
 
   @@index([organizationId, dateEffet])
+}
+
+/// Registre des traitements (RGPD art. 30 §1 a) : identité et coordonnées du responsable du traitement, de son
+/// représentant (art. 27) et du DPO saisi librement (le DPO désigné dans ACRA est repris automatiquement : lib/ropa-identite).
+model RopaIdentite {
+  organizationId      String       @id
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  responsableNom      String       @default("")
+  responsableAdresse  String       @default("")
+  responsableContact  String       @default("")
+  representantNom     String       @default("")
+  representantContact String       @default("")
+  dpoNom              String       @default("")
+  dpoContact          String       @default("")
+  updatedAt           DateTime     @updatedAt
 }

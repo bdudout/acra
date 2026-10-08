@@ -10,6 +10,7 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope }))
 vi.mock('@/lib/logger', () => ({ auditLog: m.audit, getClientIp: () => '' }))
 vi.mock('@/lib/i18n', async () => ({ ...(await vi.importActual<object>('@/lib/i18n')), getServerLocale: async () => 'fr' }))
+vi.mock('@/lib/ropa-identite.server', () => ({ lireIdentite: async () => ({ effective: { responsable: { nom: 'Banque Exemple SA', adresse: '', contact: 'c@b.fr' }, representant: { nom: '', contact: '' }, dpo: { source: 'AUCUN', nom: '', contact: '' }, manquants: [] } }) }))
 vi.mock('@/lib/prisma', () => ({ prisma: { traitement: { findMany: m.findMany }, organization: { findUnique: m.org } } }))
 import { GET as GET_ } from '@/app/api/ropa/export/route'
 const GET = () => GET_(new NextRequest('http://x/api/ropa/export'))

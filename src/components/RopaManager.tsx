@@ -10,28 +10,30 @@
 import { useEffect, useState } from 'react'
 import { ShieldCheck, AlertTriangle, CheckCircle2, Trash2, Plus, Download } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
-import { BASES_LEGALES } from '@/lib/ropa'
+import { BASES_LEGALES, CRITERES_AIPD, type CritereAipd } from '@/lib/ropa'
+import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
 import RopaCataloguePanel from '@/components/RopaCataloguePanel'
+import RopaIdentiteCard from '@/components/RopaIdentiteCard'
 
-interface Evaluation { complet: boolean; champsManquants: string[]; pia: { requis: boolean; motifs: string[] } }
+interface Evaluation { complet: boolean; champsManquants: string[]; pia: { requis: boolean; niveau?: 'REQUISE' | 'A_EXAMINER' | 'NON'; motifs: string[] } }
 interface Traitement {
   id: string; nom: string; finalite: string; baseLegale: string
   categoriesPersonnes: string[]; categoriesDonnees: string[]; destinataires: string[]
   transfertHorsUE: boolean; paysTransfert?: string; garantiesTransfert?: string
   dureeConservation: string; mesuresSecurite: string[]
-  grandeEchelle?: boolean; surveillanceSystematique?: boolean
+  grandeEchelle?: boolean; surveillanceSystematique?: boolean; criteresAipd?: string[]
   evaluation: Evaluation
 }
 type Form = {
   nom: string; finalite: string; baseLegale: string
   categoriesPersonnes: string; categoriesDonnees: string; destinataires: string; mesuresSecurite: string
   dureeConservation: string; transfertHorsUE: boolean; paysTransfert: string; garantiesTransfert: string
-  grandeEchelle: boolean; surveillanceSystematique: boolean
+  grandeEchelle: boolean; surveillanceSystematique: boolean; criteresAipd: string[]
 }
 const EMPTY: Form = {
   nom: '', finalite: '', baseLegale: '', categoriesPersonnes: '', categoriesDonnees: '', destinataires: '',
   mesuresSecurite: '', dureeConservation: '', transfertHorsUE: false, paysTransfert: '', garantiesTransfert: '',
-  grandeEchelle: false, surveillanceSystematique: false,
+  grandeEchelle: false, surveillanceSystematique: false, criteresAipd: [],
 }
 const toArr = (s: string) => s.split(/[,;\n]/).map(x => x.trim()).filter(Boolean)
 const toStr = (a: string[]) => (a ?? []).join(', ')
@@ -44,7 +46,7 @@ export default function RopaManager() {
     nom: r.fNom, finalite: r.fFinalite, categoriesPersonnes: r.fPersonnes, categoriesDonnees: r.fDonnees, destinataires: r.fDestinataires,
     dureeConservation: r.fDuree, mesuresSecurite: r.fMesures, garantiesTransfert: r.fGaranties,
   }
-  const libelleMotif = (m: string) => (r.motifs as Record<string, string>)[m] ?? m
+  const libelleMotif = (m: string) => (r.criteres as Record<string, string>)[m] ?? m
   const [items, setItems] = useState<Traitement[]>([])
   const [synthese, setSynthese] = useState({ total: 0, complets: 0, piaRequis: 0 })
   const [loading, setLoading] = useState(true)
@@ -70,8 +72,16 @@ export default function RopaManager() {
       categoriesPersonnes: toStr(x.categoriesPersonnes), categoriesDonnees: toStr(x.categoriesDonnees),
       destinataires: toStr(x.destinataires), mesuresSecurite: toStr(x.mesuresSecurite),
       dureeConservation: x.dureeConservation, transfertHorsUE: !!x.transfertHorsUE, paysTransfert: x.paysTransfert ?? '',
-      garantiesTransfert: x.garantiesTransfert ?? '', grandeEchelle: !!x.grandeEchelle, surveillanceSystematique: !!x.surveillanceSystematique,
+      garantiesTransfert: x.garantiesTransfert ?? '', grandeEchelle: !!x.grandeEchelle, surveillanceSystematique: !!x.surveillanceSystematique, criteresAipd: x.criteresAipd ?? [],
     })
+  }
+
+  // Catégories particulières (art. 9) détectées dans les catégories de données saisies : critère « données sensibles » déduit.
+  const sensiblesDetectees = detectRgpdArt9(toArr(form.categoriesDonnees).map(nom => ({ nom }))).length > 0
+  function basculerCritere(c: CritereAipd, actif: boolean) {
+    if (c === 'GRANDE_ECHELLE') return setForm(f => ({ ...f, grandeEchelle: actif }))
+    if (c === 'SURVEILLANCE') return setForm(f => ({ ...f, surveillanceSystematique: actif }))
+    setForm(f => ({ ...f, criteresAipd: actif ? [...f.criteresAipd.filter(x => x !== c), c] : f.criteresAipd.filter(x => x !== c) }))
   }
 
   async function submit() {
@@ -84,6 +94,8 @@ export default function RopaManager() {
       dureeConservation: form.dureeConservation, transfertHorsUE: form.transfertHorsUE,
       paysTransfert: form.paysTransfert, garantiesTransfert: form.garantiesTransfert,
       grandeEchelle: form.grandeEchelle, surveillanceSystematique: form.surveillanceSystematique,
+      // Grande échelle et surveillance restent portées par leurs champs ; les autres critères WP248 sont listés.
+      criteresAipd: form.criteresAipd.filter(c => c !== 'GRANDE_ECHELLE' && c !== 'SURVEILLANCE'),
     }
     const res = await fetch(editId ? `/api/ropa/${editId}` : '/api/ropa', {
       method: editId ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
@@ -112,6 +124,7 @@ export default function RopaManager() {
         </div>
       </div>
 
+      <RopaIdentiteCard />
       <RopaCataloguePanel onImported={reload} />
 
       {/* Synthèse */}
@@ -144,8 +157,23 @@ export default function RopaManager() {
           </div>
           <div className="flex flex-wrap gap-4 text-xs text-gray-600 dark:text-gray-300">
             <label className="inline-flex items-center gap-1.5"><input type="checkbox" checked={form.transfertHorsUE} onChange={e => setForm(f => ({ ...f, transfertHorsUE: e.target.checked }))} />{r.fTransfert}</label>
-            <label className="inline-flex items-center gap-1.5"><input type="checkbox" checked={form.grandeEchelle} onChange={e => setForm(f => ({ ...f, grandeEchelle: e.target.checked }))} />{r.fGrandeEchelle}</label>
-            <label className="inline-flex items-center gap-1.5"><input type="checkbox" checked={form.surveillanceSystematique} onChange={e => setForm(f => ({ ...f, surveillanceSystematique: e.target.checked }))} />{r.fSurveillance}</label>
+            {/* Critères de risque élevé des lignes directrices WP248 rév. 01 : AIPD en principe requise dès deux critères. */}
+            <fieldset className="w-full">
+              <legend className="text-xs font-medium text-gray-600 dark:text-gray-300">{r.criteresTitre}</legend>
+              <p className="text-[11px] text-gray-500 mb-1">{r.aideCriteres}</p>
+              <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1">
+                {CRITERES_AIPD.map(c => {
+                  const deduit = c === 'DONNEES_SENSIBLES' && sensiblesDetectees
+                  const coche = c === 'GRANDE_ECHELLE' ? form.grandeEchelle : c === 'SURVEILLANCE' ? form.surveillanceSystematique : deduit || form.criteresAipd.includes(c)
+                  return (
+                    <label key={c} className="inline-flex items-start gap-1.5 text-xs text-gray-700 dark:text-gray-200">
+                      <input type="checkbox" className="mt-0.5" aria-label={r.criteres[c]} checked={coche} disabled={deduit} onChange={e => basculerCritere(c, e.target.checked)} />
+                      <span>{r.criteres[c]}{deduit && <span className="text-gray-400"> ({r.deduit})</span>}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </fieldset>
           </div>
           {form.transfertHorsUE && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -180,8 +208,14 @@ export default function RopaManager() {
                         : <span className="text-[11px] inline-flex items-center gap-1 text-amber-800 bg-amber-100 dark:bg-amber-500/15 dark:text-amber-300 px-1.5 py-0.5 rounded-full" ><AlertTriangle size={12} />{r.incomplet} ({x.evaluation.champsManquants.length})</span>}
                       {!x.evaluation.complet && <span className="block mt-0.5 text-[11px] text-amber-800 dark:text-amber-300">{r.manque.replace('{champs}', x.evaluation.champsManquants.map(c => libelleChamp[c] ?? c).join(', '))}</span>}
                     </td>
-                    <td className="px-3 py-2">{x.evaluation.pia.requis && <span className="text-[11px] text-red-800 bg-red-100 dark:bg-red-500/20 dark:text-red-300 px-1.5 py-0.5 rounded-full" >{r.piaRequis}</span>}
-                      {x.evaluation.pia.requis && <span className="block mt-0.5 text-[11px] text-red-800 dark:text-red-300">{x.evaluation.pia.motifs.map(libelleMotif).join(' ; ')}</span>}</td>
+                    <td className="px-3 py-2">{(x.evaluation.pia.niveau ?? (x.evaluation.pia.requis ? 'REQUISE' : 'NON')) !== 'NON' && (() => {
+                      const niveau = x.evaluation.pia.niveau ?? 'REQUISE'
+                      const ton = niveau === 'REQUISE' ? 'text-red-800 bg-red-100 dark:bg-red-500/20 dark:text-red-300' : 'text-amber-800 bg-amber-100 dark:bg-amber-500/15 dark:text-amber-300'
+                      return <>
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${ton}`}>{r.niveaux[niveau]}</span>
+                        <span className="block mt-0.5 text-[11px] text-gray-600 dark:text-gray-300">{x.evaluation.pia.motifs.map(libelleMotif).join(' ; ')}</span>
+                      </>
+                    })()}</td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">
                       <button onClick={() => openEdit(x)} className="text-xs text-ebios-600 hover:underline mr-2">{r.edit}</button>
                       <button onClick={() => remove(x.id)} className="text-gray-400 hover:text-red-600 p-1" aria-label={r.delete}><Trash2 size={15} aria-hidden="true" /></button>

@@ -9,6 +9,7 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { canManageRopa, type UserRole } from '@/lib/permissions'
 import { evaluerTraitement, sanitizeTraitement } from '@/lib/ropa'
 import { buildRopaXlsx } from '@/lib/ropa-xlsx'
+import { lireIdentite } from '@/lib/ropa-identite.server'
 import { getServerLocale, getT } from '@/lib/i18n'
 import { auditLog, getClientIp } from '@/lib/logger'
 
@@ -22,13 +23,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!scope.activeOrgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
   if (!canManageRopa(scope.role as UserRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
-  const [rows, org] = await Promise.all([
+  const [rows, org, identite] = await Promise.all([
     prisma.traitement.findMany({ where: { organizationId: scope.activeOrgId }, orderBy: [{ nom: 'asc' }] }),
     prisma.organization.findUnique({ where: { id: scope.activeOrgId }, select: { nom: true } }),
+    lireIdentite(scope.activeOrgId),
   ])
   const traitements = rows.map(r => { const t = sanitizeTraitement(r); return { ...t, evaluation: evaluerTraitement(t) } })
   const now = new Date()
-  const buf = await buildRopaXlsx({ t: getT(await getServerLocale()), now, organisation: org?.nom ?? '', traitements })
+  const buf = await buildRopaXlsx({ t: getT(await getServerLocale()), now, organisation: org?.nom ?? '', identite: identite.effective, traitements })
   await auditLog('EXPORT', { userId: user.id, userRole: scope.role, organizationId: scope.activeOrgId, ip: getClientIp(req), targetType: 'ropa', details: { format: 'xlsx', traitements: traitements.length } })
   return new NextResponse(new Uint8Array(buf), { headers: {
     'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

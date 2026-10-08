@@ -6,6 +6,25 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-09 (98) — Claude : RGPD — critères AIPD WP248 et identité du responsable (lot B)
+
+- #242 (lot A : lisibilité, export) fusionnée. Décisions utilisateur : aligner l'AIPD sur WP248 ; identité du
+  responsable (DPO automatique s'il est désigné, sinon champ libre) ; registre du sous-traitant en option ; suivi
+  effectif de l'AIPD (lots C et D à suivre).
+- `lib/ropa` : `CRITERES_AIPD` (9 critères de WP248 rév. 01, ordre du texte), `criteresAipd()` (cochés + déduits :
+  catégories particulières art. 9, grande échelle, surveillance systématique), `piaRequis` → niveau REQUISE (≥ 2
+  critères, « dans la plupart des cas »), A_EXAMINER (1 critère), NON. **Changement de comportement** : art. 9 seul →
+  « à examiner » (et non plus « requise »). Colonne `Traitement.criteresAipd` (migration `20261009150000`).
+- Libellés : intitulés OFFICIELS des 9 critères repris des versions publiées de WP248 rév. 01 (FR : CNIL ; EN : Commission ;
+  DE : DSK ; ES : AEPD ; IT : archive multilingue de la Commission) — pas de traduction maison.
+- Identité (art. 30 §1 a) : modèle `RopaIdentite` (migration `20261009151000`), `lib/ropa-identite` (pur : DPO désignés =
+  rôle DPO de l'organisation ou d'un ancêtre en portée SUBTREE, sinon saisie), `lib/ropa-identite.server`,
+  `GET|PUT /api/ropa/identite` (DPO / ADMIN, journalisé), `RopaIdentiteCard` en tête du registre, reprise dans l'export.
+- **Vérifié** : tests ; navigateur DPO (scoring à grande échelle → « AIPD requise » ; santé seule → « à examiner » ; DPO
+  de recette repris automatiquement) ; données de test supprimées.
+
+---
+
 ## 2026-10-09 (97) — Claude : parcours DPO du registre des traitements (proposition n° 2)
 
 - Rejoué en DPO de recette (navigateur) : menu « Registres › RGPD », catalogue type CNIL, création, complétude art. 30
