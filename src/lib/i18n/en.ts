@@ -2189,6 +2189,7 @@ export const en: Translations = {
     err_generic: 'Creation failed.',
   },
   pilotage: {
+    parEntite: { titre: 'By entity', aide: 'Register entities, sub-entities included: risks matching the filters, overdue actions on these risks and incidents from the loss database.', entite: 'Entity', risques: 'Risks', eleves: 'of which high', actionsEnRetard: 'Overdue actions', incidentsOuverts: 'Open incidents', perteNette: 'Net loss', nonRattache: 'Not linked to an entity', noteFiltre: 'Entity filter: risks, actions and incidents; controls, audit and other indicators remain at scope level.' },
     projets: {
       title: '360 project tracking', subtitle: 'Progress, deadlines, CISO + Risk Manager sign-off and high risks of the projects.', total: 'Projects', enCours: 'In progress', termines: 'Completed', enRetard: 'Overdue', valides: 'Signed off',
       colProjet: 'Project', colStatut: 'Status', colRisques: 'Risks', colEleves: 'High', colValidation: 'CISO + RM sign-off', colEcheance: 'Due date',

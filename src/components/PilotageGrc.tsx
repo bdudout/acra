@@ -18,6 +18,7 @@ import { verdictDispositif, verdictSignauxActifs, type VerdictSignalKey } from '
 import HeatmapGridHtml from '@/components/HeatmapGridHtml'
 import type { HeatGrid } from '@/lib/carto-export'
 import RiskFiltersBar from '@/components/RiskFiltersBar'
+import { useReferentielEntites } from '@/lib/use-referentiel-entites'
 import ProjetsSuivi from '@/components/ProjetsSuivi'
 import type { ProjetsSynthese } from '@/lib/projet360'
 
@@ -29,6 +30,7 @@ interface AuditTotals { missions: number; constats: number; critiques: number; r
 interface AppetitSynthese { total: number; evalues: number; horsAppetit: number; dansAppetit: number; sansSeuil: number }
 interface KriSynthese { total: number; normal: number; alerte: number; critique: number; inconnu: number; enAlerte: number }
 interface DoraSynthese { evalues: number; majeurs: number; significatifs: number; mineurs: number }
+interface LigneEntite { id: string; nom: string; niveau: number; risques: RiskTotals; actionsEnRetard: number; incidents?: IncidentTotals }
 interface RegulateurSynthese { total: number; ouverts: number; echues: number; critiques: number }
 interface NiveauSuivi { niveau: 'N1' | 'N2' | 'N3' | 'N4'; activite: number; attention: number; enRetard: number }
 interface OrgPosture {
@@ -38,7 +40,7 @@ interface OrgPosture {
 interface Rollup {
   active: boolean; orgCount: number
   modules: { incidents: boolean; controles: boolean; audit: boolean; appetit: boolean; ras?: boolean; kri: boolean; reglementaire: boolean }
-  consolide: { risques: RiskTotals; actions: ActionsSummary; projets?: ProjetsSynthese; incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; appetit?: AppetitSynthese; kri?: KriSynthese; dora?: DoraSynthese; regulateur?: RegulateurSynthese; quatreNiveaux?: NiveauSuivi[] }
+  consolide: { risques: RiskTotals; actions: ActionsSummary; projets?: ProjetsSynthese; incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; appetit?: AppetitSynthese; kri?: KriSynthese; dora?: DoraSynthese; regulateur?: RegulateurSynthese; quatreNiveaux?: NiveauSuivi[]; parEntite?: { lignes: LigneEntite[]; nonRattache: Omit<LigneEntite, 'id' | 'nom' | 'niveau'> } }
   parOrg: OrgPosture[]
 }
 
@@ -75,6 +77,8 @@ export default function PilotageGrc({ canCreateAnalyse = false, projets360 = fal
   const [procs, setProcs] = useState<{ id: string; nom: string }[]>([])
   const [entites, setEntites] = useState<string[]>([])
   const [showAlertes, setShowAlertes] = useState(false)
+  // Référentiel des entités (consolidation) : filtre par entité liée et tableau « Par entité ».
+  const referentiel = useReferentielEntites()
 
   const tr = useMemo(() => (key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string ?? '', [t])
 
@@ -225,8 +229,9 @@ export default function PilotageGrc({ canCreateAnalyse = false, projets360 = fal
 
       <RiskFiltersBar
         filters={filters} onChange={setFilters} taxo={taxo} tr={tr}
-        processus={procs} entites={entites} onExport={exportAs}
+        processus={procs} entites={entites} referentiel={referentiel} onExport={exportAs}
       />
+      {filters.entiteId && <p className="-mt-3 mb-5 text-xs text-gray-500 dark:text-gray-400">{p.parEntite.noteFiltre}</p>}
 
       {/* Synthèse consolidée */}
       {cr.grid && (cr.grid.gravites?.length ?? 0) > 0 && (
@@ -356,6 +361,40 @@ export default function PilotageGrc({ canCreateAnalyse = false, projets360 = fal
           </tbody>
         </table>
       </div>
+
+      {/* Par entité du référentiel (sous-entités cumulées) : risques retenus, actions en retard, incidents. */}
+      {data.consolide.parEntite && (
+        <section aria-labelledby="pilotage-par-entite" className="card overflow-x-auto mt-5">
+          <div className="px-4 pt-4">
+            <h2 id="pilotage-par-entite" className="text-sm font-semibold text-gray-700 dark:text-gray-200">{p.parEntite.titre}</h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{p.parEntite.aide}</p>
+          </div>
+          <table className="w-full text-sm mt-2">
+            <thead>
+              <tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                <th className="px-4 py-2">{p.parEntite.entite}</th>
+                <th className="px-4 py-2 text-right">{p.parEntite.risques}</th>
+                <th className="px-4 py-2 text-right">{p.parEntite.eleves}</th>
+                <th className="px-4 py-2 text-right">{p.parEntite.actionsEnRetard}</th>
+                {mod.incidents && <th className="px-4 py-2 text-right">{p.parEntite.incidentsOuverts}</th>}
+                {mod.incidents && <th className="px-4 py-2 text-right">{p.parEntite.perteNette}</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {[...data.consolide.parEntite.lignes, { id: '', nom: p.parEntite.nonRattache, niveau: 0, ...data.consolide.parEntite.nonRattache }].map(l => (
+                <tr key={l.id || 'aucune'} className={`border-b border-gray-100 dark:border-gray-700 ${l.id ? '' : 'italic text-gray-500'}`}>
+                  <td className="px-4 py-2" style={{ paddingLeft: `${1 + l.niveau * 1.25}rem` }}>{l.nom}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{l.risques.total}</td>
+                  <td className={`px-4 py-2 text-right tabular-nums ${l.risques.eleve > 0 ? 'text-red-600 dark:text-red-400 font-semibold' : ''}`}>{l.risques.eleve}</td>
+                  <td className={`px-4 py-2 text-right tabular-nums ${l.actionsEnRetard > 0 ? 'text-red-600 dark:text-red-400 font-semibold' : ''}`}>{l.actionsEnRetard}</td>
+                  {mod.incidents && <td className="px-4 py-2 text-right tabular-nums">{l.incidents?.ouverts ?? 0}</td>}
+                  {mod.incidents && <td className="px-4 py-2 text-right tabular-nums">{euros(l.incidents?.perteNette ?? 0)}</td>}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
 
       <p className="text-xs text-gray-400 mt-4">
         {p.links}{' '}

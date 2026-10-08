@@ -13,6 +13,7 @@ import { suggestCalibration, type IncidentLite } from '@/lib/incident'
 import { evaluerEfficacite } from '@/lib/controle'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { emitWebhookEvent } from '@/lib/webhook.server'
+import { entiteIdPourTexte } from '@/lib/entites.server'
 
 export const dynamic = 'force-dynamic'
 
@@ -107,7 +108,8 @@ export async function POST(req: NextRequest) {
     const p = await prisma.processus.findFirst({ where: { id: data.processusId, organizationId: orgId }, select: { id: true } })
     if (!p) return NextResponse.json({ error: 'processus_invalide' }, { status: 400 })
   }
-  const risk = await prisma.riskItem.create({ data: { ...data, organizationId: orgId, provenance: 'MANUEL' } })
+  // Lien au référentiel des entités si le texte saisi y est identique (consolidation des entités).
+  const risk = await prisma.riskItem.create({ data: { ...data, organizationId: orgId, provenance: 'MANUEL', entiteId: await entiteIdPourTexte(orgId, data.entite) } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId, userRole, ip: getClientIp(req), details: { scope: 'risk-item', action: 'create', id: risk.id, intitule: data.intitule } })
   await emitWebhookEvent(orgId, 'risk.created', { id: risk.id, intitule: risk.intitule })
   return NextResponse.json(risk, { status: 201 })

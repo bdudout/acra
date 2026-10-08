@@ -2213,6 +2213,7 @@ export const fr = {
     err_generic: 'Échec de la création.',
   },
   pilotage: {
+    parEntite: { titre: 'Par entité', aide: 'Entités du référentiel, sous-entités comprises : risques retenus par les filtres, actions de ces risques en retard et incidents de la base de pertes.', entite: 'Entité', risques: 'Risques', eleves: 'dont élevés', actionsEnRetard: 'Actions en retard', incidentsOuverts: 'Incidents ouverts', perteNette: 'Perte nette', nonRattache: 'Non rattaché à une entité', noteFiltre: 'Filtre par entité : risques, actions et incidents ; les contrôles, l’audit et les autres indicateurs restent à l’échelle du périmètre.' },
     projets: {
       title: 'Suivi des projets 360', subtitle: 'Avancement, échéances, validation RSSI + Risk Manager et risques élevés des projets.', total: 'Projets', enCours: 'En cours', termines: 'Terminés', enRetard: 'En retard', valides: 'Validés',
       colProjet: 'Projet', colStatut: 'Statut', colRisques: 'Risques', colEleves: 'Élevés', colValidation: 'Validation RSSI + RM', colEcheance: 'Échéance',

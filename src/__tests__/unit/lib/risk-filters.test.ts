@@ -100,3 +100,28 @@ describe('distinctEntites', () => {
       .toEqual(['DAF', 'DSI'])
   })
 })
+
+describe('filtre par entité du référentiel (consolidation des entités, tableaux de bord)', () => {
+  const E = (id: string, nom: string, o: Record<string, unknown> = {}) => ({ id, nom, type: 'DIRECTION', alias: [] as string[], codeExterne: null, parentId: null, source: 'MANUEL', valideAu: null, ...o })
+  const entites = [E('dsi', 'DSI'), E('ret', 'Réseaux', { parentId: 'dsi' }), E('rh', 'RH')]
+  const risques = [
+    { ...mk({}), id: 'a', entiteId: 'ret' },
+    { ...mk({ entite: 'dsi' }), id: 'b', entiteId: null },     // texte identique, sans lien
+    { ...mk({ entite: 'Achats' }), id: 'c', entiteId: null },
+    { ...mk({}), id: 'd', entiteId: 'rh' },
+  ]
+  it('lien ou texte identique, sous-entités incluses par défaut, exclues sur demande', () => {
+    expect(applyFilters(risques, { entiteId: 'dsi' }, { entites }).map(r => r.id)).toEqual(['a', 'b'])
+    expect(applyFilters(risques, { entiteId: 'dsi', sousEntites: false }, { entites }).map(r => r.id)).toEqual(['b'])
+  })
+  it('sans référentiel fourni : égalité stricte du lien', () => {
+    expect(applyFilters(risques, { entiteId: 'rh' }).map(r => r.id)).toEqual(['d'])
+  })
+  it('compté comme filtre actif ; aller-retour dans l’URL (sous-entités exclues → sousEntites=0)', () => {
+    expect(activeFilterCount({ entiteId: 'dsi' })).toBe(1)
+    const q = filtersToQuery({ entiteId: 'dsi', sousEntites: false })
+    expect(q).toContain('entiteId=dsi'); expect(q).toContain('sousEntites=0')
+    expect(parseFilters(new URLSearchParams(q))).toMatchObject({ entiteId: 'dsi', sousEntites: false })
+    expect(parseFilters(new URLSearchParams('entiteId=dsi')).sousEntites).toBe(true)
+  })
+})

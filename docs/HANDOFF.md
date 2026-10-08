@@ -6,6 +6,21 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-09 (95) — Claude : consolidation des entités — tableaux de bord de pilotage
+
+- #239 fusionnée. `RiskFilters` : `entiteId` + `sousEntites` (lien, à défaut texte identique ; sous-entités incluses par
+  défaut ; sans référentiel fourni : égalité stricte du lien) ; `applyFilters(risks, f, { entites })` dans
+  `/api/grc/rollup`, `/api/risk-items/export` (référentiel chargé seulement si le filtre est actif) et `Cartographie`.
+  `RiskFiltersBar` : `FiltreEntite` quand le référentiel n'est pas vide, sinon liste historique des textes libres.
+- Rollup : le filtre par entité s'applique aussi aux incidents (note de portée affichée : contrôles, audit, KRI restent
+  au périmètre) ; `consolide.parEntite` (`syntheseParEntite` : risques / élevés, actions en retard, incidents ouverts /
+  perte nette ; sous-entités cumulées ; ancêtre clos traversé ; « non rattaché ») → tableau « Par entité » du cockpit.
+- Lien automatique au référentiel ajouté à la création / modification d'un risque du registre (`entiteIdPourTexte`).
+- **Vérifié** : tests ; navigateur ADMIN (risque « dsi tb » lié à « DSI TB », tableau Groupe TB / DSI TB / non rattaché,
+  filtre Groupe TB → 1 risque sur 6) ; données de test supprimées.
+
+---
+
 ## 2026-10-09 (94) — Claude : consolidation des entités, E5 — agrégation dans le programme d'audit et de contrôle
 
 - #238 (filtre par entité) fusionnée. Lignes de plan : nouvelle cible `entites` (référentiel ; `cleanLigneInput`,

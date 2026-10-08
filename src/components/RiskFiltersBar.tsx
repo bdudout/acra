@@ -4,10 +4,12 @@ import { useTranslation } from '@/lib/i18n/context'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
 import { RISK_STATUTS } from '@/lib/risk-item'
 import { activeFilterCount, type RiskFilters } from '@/lib/risk-filters'
+import FiltreEntite from '@/components/FiltreEntite'
+import type { EntiteRef } from '@/lib/entites'
 
 // Barre de filtres partagée (cartographie / pilotage) — pilotée par le parent.
 export default function RiskFiltersBar({
-  filters, onChange, taxo, tr, processus, entites, onExport,
+  filters, onChange, taxo, tr, processus, entites, referentiel = [], onExport,
 }: {
   filters: RiskFilters
   onChange: (f: RiskFilters) => void
@@ -15,6 +17,8 @@ export default function RiskFiltersBar({
   tr: (key: string) => string
   processus: { id: string; nom: string }[]
   entites: string[]
+  /** Référentiel des entités : s'il n'est pas vide, le filtre porte sur l'entité liée (sous-entités incluses). */
+  referentiel?: EntiteRef[]
   /** Déclenche le téléchargement dans le format demandé. */
   onExport?: (format: 'csv' | 'xlsx' | 'pdf') => void
 }) {
@@ -42,10 +46,13 @@ export default function RiskFiltersBar({
           {processus.map(p => <option key={p.id} value={p.id}>{p.nom}</option>)}
         </select>
 
-        <select value={filters.entite ?? ''} onChange={e => set({ entite: e.target.value || null })} className={sel} aria-label={f.allEntities}>
-          <option value="">{f.allEntities}</option>
-          {entites.map(e => <option key={e} value={e}>{e}</option>)}
-        </select>
+        {referentiel.length > 0
+          ? <FiltreEntite entites={referentiel} valeur={filters.entiteId ?? ''} sousEntites={filters.sousEntites !== false}
+              onChange={(id, sous) => set({ entite: null, entiteId: id || null, sousEntites: sous })} />
+          : <select value={filters.entite ?? ''} onChange={e => set({ entite: e.target.value || null })} className={sel} aria-label={f.allEntities}>
+              <option value="">{f.allEntities}</option>
+              {entites.map(e => <option key={e} value={e}>{e}</option>)}
+            </select>}
 
         <select value={filters.statut ?? ''} onChange={e => set({ statut: e.target.value || null })} className={sel} aria-label={r.colStatut}>
           <option value="">{f.allStatuses}</option>
