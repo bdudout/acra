@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react'
 import { CloudDownload } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 
-type Connector = { type: 'REST' | 'LDAP'; endpoint: string; token: string; bindDN: string; password: string; baseDN: string; filter: string }
-const empty: Connector = { type: 'REST', endpoint: '', token: '', bindDN: '', password: '', baseDN: '', filter: '' }
+type Connector = { type: 'REST' | 'LDAP'; endpoint: string; token: string; bindDN: string; password: string; baseDN: string; filter: string; sourceVerite: 'ACRA' | 'ANNUAIRE' }
+const empty: Connector = { type: 'REST', endpoint: '', token: '', bindDN: '', password: '', baseDN: '', filter: '', sourceVerite: 'ACRA' }
 
 /** Administration d'un connecteur : configuration chiffrée, aperçu, puis import choisi. */
 export default function EntitySyncManager({ orgId }: { orgId: string }) {
@@ -54,6 +54,8 @@ export default function EntitySyncManager({ orgId }: { orgId: string }) {
         <label className="text-xs text-gray-600"><span className="block mb-1">{e.syncBaseDn}</span><input value={config.baseDN} onChange={ev => change('baseDN', ev.target.value)} className="w-full input" /></label>
         <label className="text-xs text-gray-600"><span className="block mb-1">{e.syncFilter}</span><input value={config.filter} onChange={ev => change('filter', ev.target.value)} className="w-full input" /></label>
       </>}
+      {/* Toutes les organisations ne gèrent pas leurs entités dans l'annuaire : l'administrateur choisit qui fait foi. */}
+      <label className="text-xs text-gray-600 md:col-span-2"><span className="block mb-1">{e.syncSourceVerite}</span><select aria-label={e.syncSourceVerite} value={config.sourceVerite} onChange={ev => change('sourceVerite', ev.target.value)} className="w-full input"><option value="ACRA">{e.syncSourceAcra}</option><option value="ANNUAIRE">{e.syncSourceAnnuaire}</option></select><span className="block mt-1 text-[11px] text-gray-500">{e.syncSourceVeriteAide}</span></label>
     </div>
     <div className="flex flex-wrap gap-2"><button type="button" onClick={save} disabled={busy || !config.endpoint.trim()} className="btn-secondary text-sm">{e.syncSave}</button><button type="button" onClick={preview} disabled={busy || !config.endpoint.trim()} className="btn-primary text-sm">{e.syncPreview}</button></div>
     {entities.length > 0 && <div className="rounded-sm border border-gray-200 p-3 space-y-2"><button type="button" onClick={() => setSelected(entities)} className="text-xs text-ebios-700 underline">{e.syncSelectAll}</button>{entities.map(name => <label key={name} className="block text-sm text-gray-700"><input type="checkbox" checked={selected.includes(name)} onChange={() => toggle(name)} className="mr-2" />{name}</label>)}<button type="button" onClick={importSelection} disabled={busy || !selected.length} className="btn-primary text-sm">{e.syncImport}</button></div>}

@@ -34,7 +34,12 @@ describe('entity-sync', () => {
     )
     expect(saved.token).toBe('enc:v1:already-encrypted')
     expect(publicEntitySyncConfig(saved)).toEqual({
-      type: 'REST', endpoint: 'https://directory.example.test/v2/entities', token: '[CONFIGURED]', password: '', bindDN: '', baseDN: '', filter: '',
+      type: 'REST', endpoint: 'https://directory.example.test/v2/entities', token: '[CONFIGURED]', password: '', bindDN: '', baseDN: '', filter: '', sourceVerite: 'ACRA',
     })
+  })
+
+  it('expose le choix de la source de vérité (ACRA par défaut, annuaire si l’administrateur l’a choisi)', () => {
+    const saved = mergeEntitySyncConfig({}, { type: 'LDAP', endpoint: 'ldaps://d.example.test', sourceVerite: 'ANNUAIRE' })
+    expect(publicEntitySyncConfig(saved).sourceVerite).toBe('ANNUAIRE')
   })
 })

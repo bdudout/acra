@@ -1,6 +1,6 @@
 # Consolidation des entités — registre cohérent qui suit les réorganisations
 
-**Statut :** expression de besoin (2026-10-08), non développée · **Origine :** programme d'audit et de contrôle — les
+**Statut :** expression de besoin (2026-10-08), décisions prises le 2026-10-08 (§ 4), lot E1 livré (modèle, référentiel, écran de configuration, choix de la source de vérité) · **Origine :** programme d'audit et de contrôle — les
 sollicitations multiples ne comptent aujourd'hui que les filiales (organisations) et les tiers, pas les entités saisies
 en texte libre (cf. `programme-audit-controle.md` § 8).
 
@@ -40,13 +40,11 @@ en texte libre (cf. `programme-audit-controle.md` § 8).
 | E4 | Réorganisations : renommage, fusion, scission, clôture, avec report des références et historique |
 | E5 | Sélecteur d'entité dans les écrans ; agrégation des indicateurs (sollicitations du programme d'audit et de contrôle, tableaux de bord) |
 
-## 4. Questions à trancher
+## 4. Décisions (2026-10-08)
 
-- Les **filiales** (organisations de l'arbre, avec leurs propres utilisateurs et configuration) et les **entités**
-  (périmètres internes sans configuration propre) restent-elles deux notions distinctes, ou une entité peut-elle être
-  « promue » en organisation ?
-- Les **services responsables** des mesures (DSI, Métier…) entrent-ils dans ce référentiel (type « service ») ou
-  restent-ils une liste à part ?
-- Source de vérité en cas de connecteur : l'annuaire (ACRA en lecture seule sur ces champs) ou ACRA (l'annuaire ne fait
-  que proposer) ?
-- Rétention de l'historique des réorganisations : illimitée, ou alignée sur l'archivage des missions ?
+| Question | Décision |
+|---|---|
+| Filiales et entités | Une **filiale peut être une entité** du référentiel (type `FILIALE`), éventuellement **liée** à une organisation de l'arbre ACRA (`organisationLieeId`) quand elle a ses propres utilisateurs et sa configuration. Ce n'est pas une entité *interne* : le type le dit. |
+| Services responsables des mesures | **Oui**, ils entrent dans le référentiel (type `SERVICE`). La liste `entitesMesures` reste lue tant que le rapprochement (E3) n'est pas fait. |
+| Source de vérité avec un connecteur | **Choix de l'administrateur** quand un annuaire est connecté (`entitesSourceVerite` = `ACRA` ou `ANNUAIRE`), car toutes les organisations ne gèrent pas leurs entités dans l'annuaire. Si l'annuaire fait foi, le nom, l'identifiant externe et le rattachement des entités venues de l'annuaire ne sont pas modifiables dans ACRA ; alias et liens restent modifiables. |
+| Rétention de l'historique des réorganisations | **5 ans** (purge des événements plus anciens ; les entités closes restent tant qu'elles sont référencées). |
