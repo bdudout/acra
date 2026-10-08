@@ -6,6 +6,21 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-09 (93) — Claude : consolidation des entités, lot E5 (filtre par entité, lien automatique)
+
+- Demande utilisateur : filtrer incidents et plans d'action par entité. `lib/entites-filtre` (pur) : entité d'un objet =
+  son lien `entiteId`, à défaut texte libre identique (nom / alias / code) — jamais une simple proximité ; périmètre
+  avec ou sans sous-entités ; options hiérarchiques. `FiltreEntite` (masqué si le référentiel est vide) dans
+  `IncidentsManager` et `PlansActionsView` ; `ActionItem.entiteId` propagé (mesures, incidents, plans d'action).
+- Lien automatique à l'écriture : `entiteIdPourTexte` (entité active, texte identique ; erreur → pas de lien) sur
+  création / modification d'incident et de plan d'action ; `/api/suggestions?field=entite` propose d'abord le référentiel.
+- **Vérifié** : tests ; navigateur ADMIN (« réseaux e5 » lié à « Réseaux E5 », filtre sur la DSI parente → 1 action sur
+  135, l'action « Achats » écartée) ; données de test supprimées.
+- **Reste E5** : agrégation des indicateurs par entité (sollicitations du programme d'audit et de contrôle, tableaux
+  de bord) — les lignes de plan ciblent aujourd'hui des organisations / tiers / risques / processus, pas des entités.
+
+---
+
 ## 2026-10-09 (92) — Claude : consolidation des entités, lot E4 (réorganisations)
 
 - `lib/entites-reorganisation` (pur) : renommage (ancien nom en alias), fusion (dans une entité existante ou nouvelle ;

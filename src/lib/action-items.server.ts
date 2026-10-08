@@ -56,7 +56,7 @@ export async function gatherActionItems(
       where: { analyseId: { in: analyseIds } },
       select: {
         id: true, nom: true, description: true, statut: true, priorite: true,
-        responsable: true, entite: true, echeance: true, analyseId: true,
+        responsable: true, entite: true, entiteId: true, echeance: true, analyseId: true,
       },
     }),
     // Mesures d'écosystème (Atelier 3) — stockées en JSON sur les scénarios stratégiques.
@@ -80,7 +80,7 @@ export async function gatherActionItems(
     prisma.planAction.findMany({
       where: { ...orgFilter, liens: { some: { type: 'RISQUE_ANALYSE', ref: { in: analyseIds } } } },
       select: {
-        id: true, titre: true, description: true, porteur: true, entite: true,
+        id: true, titre: true, description: true, porteur: true, entite: true, entiteId: true,
         echeance: true, statut: true, priorite: true,
         liens: { where: { type: 'RISQUE_ANALYSE', ref: { in: analyseIds } }, select: { targetId: true, ref: true }, take: 1 },
       },
@@ -129,20 +129,20 @@ export async function gatherActionItems(
           where: { ...orgFilter, statut: { not: 'REJETE' } },
           select: {
             id: true, intitule: true, description: true, statut: true,
-            impactEstime: true, entite: true, riskItemId: true,
+            impactEstime: true, entite: true, entiteId: true, riskItemId: true,
           },
         })
       : Promise.resolve([]),
     // Actions ORPHELINES : PlanAction sans aucun lien source (à signaler/éditer).
     prisma.planAction.findMany({
       where: { ...orgFilter, liens: { none: {} } },
-      select: { id: true, titre: true, description: true, porteur: true, entite: true, echeance: true, statut: true, priorite: true },
+      select: { id: true, titre: true, description: true, porteur: true, entite: true, entiteId: true, echeance: true, statut: true, priorite: true },
     }),
     // Actions issues d'un test de résilience ou d'une préconisation (pas de liste propre).
     prisma.planAction.findMany({
       where: { ...orgFilter, liens: { some: { type: { in: ['TEST_RESILIENCE', 'PRECONISATION'] } } } },
       select: {
-        id: true, titre: true, description: true, porteur: true, entite: true, echeance: true, statut: true, priorite: true,
+        id: true, titre: true, description: true, porteur: true, entite: true, entiteId: true, echeance: true, statut: true, priorite: true,
         liens: { where: { type: { in: ['TEST_RESILIENCE', 'PRECONISATION'] } }, select: { type: true, targetId: true }, take: 1 },
       },
     }),
@@ -182,7 +182,7 @@ export async function gatherActionItems(
     items.push(normalizeAnalyseRiskPlanAction(
       {
         id: p.id, titre: p.titre, description: p.description, porteur: p.porteur,
-        entite: p.entite, echeance: p.echeance, statut: p.statut, priorite: p.priorite,
+        entite: p.entite, entiteId: p.entiteId, echeance: p.echeance, statut: p.statut, priorite: p.priorite,
         risqueId: lien.targetId,
       },
       { lien: lien.ref ? `/analyses/${encodeURIComponent(lien.ref)}/atelier/1` : null },

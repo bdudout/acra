@@ -41,6 +41,7 @@ export interface ActionItem {
   description: string | null
   porteur: string | null // personne/équipe responsable
   entite: string | null // direction/entité de rattachement
+  entiteId: string | null // lien au référentiel des entités (lot E5), si l'objet source en a un
   echeance: Date | null
   statut: RiskActionStatut // canonique A_FAIRE | EN_COURS | FAIT (retard dérivé)
   priorite: ActionPriorite // CRITIQUE | MAJEUR | MODERE
@@ -85,7 +86,7 @@ export function mapCriticitePriorite(n: unknown): ActionPriorite {
 
 export interface MesureRow {
   id: string; nom: string; statut?: unknown; priorite?: unknown
-  responsable?: unknown; entite?: unknown; echeance?: unknown; risqueId?: unknown
+  responsable?: unknown; entite?: unknown; entiteId?: unknown; echeance?: unknown; risqueId?: unknown
   description?: unknown
 }
 /** Mesure de traitement (atelier 5) → ActionItem unifié (origine « risque »). */
@@ -95,7 +96,7 @@ export function normalizeMesure(row: MesureRow, opt: LienOpt = {}): ActionItem {
   return {
     id: `MESURE:${row.id}`, source: 'MESURE', origine: 'risque', sourceId: row.id,
     titre: row.nom, description: str(row.description),
-    porteur: str(row.responsable) ?? str(row.entite), entite: str(row.entite),
+    porteur: str(row.responsable) ?? str(row.entite), entite: str(row.entite), entiteId: str(row.entiteId),
     echeance: toDate(row.echeance), statut, priorite: mapMesurePriorite(row.priorite),
     lien: opt.lien ?? null, riskItemId: null,
   }
@@ -105,7 +106,7 @@ export function normalizeMesure(row: MesureRow, opt: LienOpt = {}): ActionItem {
 export interface RiskActionRow {
   id: string; intitule: string; description?: unknown; responsable?: unknown
   echeance?: unknown; statut?: unknown; priorite?: unknown; riskItemId?: unknown
-  entite?: unknown
+  entite?: unknown; entiteId?: unknown
 }
 /** Action de traitement d'un RiskItem (GRC M2) → ActionItem unifié (origine « risque »). */
 export function normalizeRiskAction(row: RiskActionRow, opt: LienOpt = {}): ActionItem {
@@ -116,7 +117,7 @@ export function normalizeRiskAction(row: RiskActionRow, opt: LienOpt = {}): Acti
   return {
     id: `RISK_ACTION:${row.id}`, source: 'RISK_ACTION', origine: 'risque', sourceId: row.id,
     titre: row.intitule, description: str(row.description),
-    porteur: str(row.responsable), entite: str(row.entite),
+    porteur: str(row.responsable), entite: str(row.entite), entiteId: str(row.entiteId),
     echeance: toDate(row.echeance), statut, priorite,
     lien: opt.lien ?? null, riskItemId: str(row.riskItemId),
   }
@@ -124,7 +125,7 @@ export function normalizeRiskAction(row: RiskActionRow, opt: LienOpt = {}): Acti
 
 /** PlanAction unifié rattaché à un risque d'analyse directe (ISO/NIST) → facette « risque ». */
 export interface AnalyseRiskPlanActionRow {
-  id: string; titre: string; description?: unknown; porteur?: unknown; entite?: unknown
+  id: string; titre: string; description?: unknown; porteur?: unknown; entite?: unknown; entiteId?: unknown
   echeance?: unknown; statut?: unknown; priorite?: unknown; risqueId: string
 }
 export function normalizeAnalyseRiskPlanAction(row: AnalyseRiskPlanActionRow, opt: LienOpt = {}): ActionItem {
@@ -135,7 +136,7 @@ export function normalizeAnalyseRiskPlanAction(row: AnalyseRiskPlanActionRow, op
   return {
     id: `PLAN_ACTION:${row.id}`, source: 'PLAN_ACTION', origine: 'risque', sourceId: row.id,
     titre: row.titre, description: str(row.description),
-    porteur: str(row.porteur), entite: str(row.entite),
+    porteur: str(row.porteur), entite: str(row.entite), entiteId: str(row.entiteId),
     echeance: toDate(row.echeance), statut, priorite,
     lien: opt.lien ?? null, riskItemId: row.risqueId,
   }
@@ -155,7 +156,7 @@ export function normalizeAuditConstat(row: AuditConstatRow, opt: LienOpt = {}): 
   return {
     id: `AUDIT:${row.id}`, source: 'AUDIT', origine: row.source === 'REGULATEUR' ? 'regulateur' : 'audit', sourceId: row.id,
     titre: row.intitule, description: str(row.recommandation),
-    porteur: str(row.responsableAction), entite: null,
+    porteur: str(row.responsableAction), entite: null, entiteId: null,
     echeance: toDate(row.echeance), statut, priorite: mapCriticitePriorite(row.criticite),
     lien: opt.lien ?? null, riskItemId: str(row.riskItemId),
   }
@@ -164,14 +165,14 @@ export function normalizeAuditConstat(row: AuditConstatRow, opt: LienOpt = {}): 
 /** Forme brute d'une anomalie de contrôle permanent, en entrée de normalizeControleAnomalie. */
 export interface ControleAnomalieRow {
   id: string; controleNom: string; constat?: unknown; dateRealisation?: unknown
-  responsable?: unknown; entite?: unknown
+  responsable?: unknown; entite?: unknown; entiteId?: unknown
 }
 /** Anomalie de contrôle permanent (M3) → ActionItem unifié (origine « controle », à faire). */
 export function normalizeControleAnomalie(row: ControleAnomalieRow, opt: LienOpt = {}): ActionItem {
   return {
     id: `CONTROLE:${row.id}`, source: 'CONTROLE', origine: 'controle', sourceId: row.id,
     titre: `${row.controleNom} — anomalie`, description: str(row.constat),
-    porteur: str(row.responsable), entite: str(row.entite),
+    porteur: str(row.responsable), entite: str(row.entite), entiteId: str(row.entiteId),
     echeance: toDate(row.dateRealisation), statut: 'A_FAIRE', priorite: 'MAJEUR',
     lien: opt.lien ?? null, riskItemId: null,
   }
@@ -180,7 +181,7 @@ export function normalizeControleAnomalie(row: ControleAnomalieRow, opt: LienOpt
 /** Forme brute d'un incident, en entrée de normalizeIncident (un incident REJETE est écarté). */
 export interface IncidentRow {
   id: string; intitule: string; statut?: unknown; impactEstime?: unknown
-  entite?: unknown; echeance?: unknown; riskItemId?: unknown; description?: unknown
+  entite?: unknown; entiteId?: unknown; echeance?: unknown; riskItemId?: unknown; description?: unknown
 }
 /** Renvoie null pour un incident REJETE (hors plans d'action). */
 export function normalizeIncident(row: IncidentRow, opt: LienOpt = {}): ActionItem | null {
@@ -190,7 +191,7 @@ export function normalizeIncident(row: IncidentRow, opt: LienOpt = {}): ActionIt
   return {
     id: `INCIDENT:${row.id}`, source: 'INCIDENT', origine: 'incident', sourceId: row.id,
     titre: row.intitule, description: str(row.description),
-    porteur: str(row.entite), entite: str(row.entite),
+    porteur: str(row.entite), entite: str(row.entite), entiteId: str(row.entiteId),
     echeance: toDate(row.echeance), statut, priorite: mapCriticitePriorite(row.impactEstime),
     lien: opt.lien ?? null, riskItemId: str(row.riskItemId),
   }
@@ -214,7 +215,7 @@ export function normalizeEcosystemeMesure(row: EcosystemeMesureRow, opt: LienOpt
   return {
     id: `MESURE:eco-${row.id}`, source: 'MESURE', origine: 'risque', sourceId: `eco-${row.id}`,
     titre: String(row.nom ?? ''), description: str(row.description),
-    porteur: null, entite: str(row.partiePrenante),
+    porteur: null, entite: str(row.partiePrenante), entiteId: null,
     echeance: null, statut, priorite,
     lien: opt.lien ?? null, riskItemId: null,
   }
@@ -222,7 +223,7 @@ export function normalizeEcosystemeMesure(row: EcosystemeMesureRow, opt: LienOpt
 
 /** Forme brute d'un PlanAction ORPHELIN (créé sans lien d'origine), en entrée de normalisation. */
 export interface OrphanPlanActionRow {
-  id: string; titre: string; description?: unknown; porteur?: unknown; entite?: unknown
+  id: string; titre: string; description?: unknown; porteur?: unknown; entite?: unknown; entiteId?: unknown
   echeance?: unknown; statut?: unknown; priorite?: unknown
 }
 /**
@@ -238,7 +239,7 @@ export function normalizeOrphanPlanAction(row: OrphanPlanActionRow, opt: LienOpt
   return {
     id: `PLAN_ACTION:${row.id}`, source: 'PLAN_ACTION', origine: 'orpheline', sourceId: row.id,
     titre: row.titre, description: str(row.description),
-    porteur: str(row.porteur), entite: str(row.entite),
+    porteur: str(row.porteur), entite: str(row.entite), entiteId: str(row.entiteId),
     echeance: toDate(row.echeance), statut, priorite,
     lien: opt.lien ?? null, riskItemId: null,
   }
@@ -269,7 +270,7 @@ export function normalizeConformiteTraitement(row: ConformiteTraitementRow, opt:
   return {
     id: `CONFORMITE:${row.id}`, source: 'CONFORMITE', origine: 'conformite', sourceId: row.id,
     titre: row.intitule, description: str(row.description),
-    porteur: str(row.responsable), entite: null,
+    porteur: str(row.responsable), entite: null, entiteId: null,
     echeance: toDate(row.echeance), statut, priorite: 'MAJEUR',
     lien: opt.lien ?? null, riskItemId: null,
   }

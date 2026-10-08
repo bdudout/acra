@@ -17,7 +17,7 @@ import ColumnMenu from '@/components/ColumnMenu'
 import { nextSort, sortRows, type SortState, type SortDir } from '@/lib/table-sort'
 import { distinctValues, applyColumnFilters, toggleColumnValue, onlyColumnValue, clearColumnFilter, type ColumnFilters } from '@/lib/table-filter'
 import { findIncidentDuplicates } from '@/lib/incident-dedup'
-import { todayInputDate, suggestionsFromValues } from '@/lib/form-defaults'
+import { todayInputDate } from '@/lib/form-defaults'
 import AutocompleteInput from '@/components/AutocompleteInput'
 import { mostFrequentString } from '@/lib/most-frequent'
 import ChampsPersonnalisesFields from '@/components/ChampsPersonnalisesFields'
@@ -33,12 +33,15 @@ import RisquesRegistrePicker from '@/components/RisquesRegistrePicker'
 import IncidentsConfigEditor from '@/components/IncidentsConfigEditor'
 import type { IncidentsConfig, IncidentsConfigRaw } from '@/lib/incidents-config'
 import type { LignePerte, LigneRecuperation } from '@/lib/pertes'
+import FiltreEntite from '@/components/FiltreEntite'
+import { useReferentielEntites } from '@/lib/use-referentiel-entites'
+import { filtrerParEntite } from '@/lib/entites-filtre'
 
 interface Incident {
   id: string; intitule: string; description: string | null
   dateSurvenance: string | null; dateDetection: string | null
   taxonomieCode: string | null; processusId: string | null; processusNom: string | null
-  entite: string | null; impactEstime: number | null
+  entite: string | null; entiteId?: string | null; impactEstime: number | null
   montantBrut: number | null; recuperations: number | null; perteNette: number | null
   delaiDetection: number | null
   riskItemId: string | null; riskItemIntitule: string | null
@@ -104,6 +107,9 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
   const onSort = (key: string) => setSort((s) => nextSort(s, key))
   const onSortDir = (key: string, dir: SortDir) => setSort({ key, dir })
   const [colFilters, setColFilters] = useState<ColumnFilters>({})
+  // Filtre par entité du référentiel (lot E5) : lien ou texte libre identique, sous-entités incluses par défaut.
+  const entitesRef = useReferentielEntites()
+  const [filtreEntite, setFiltreEntite] = useState<{ id: string; sous: boolean }>({ id: '', sous: true })
   const [incidents, setIncidents] = useState<Incident[]>([])
   const [taxo, setTaxo] = useState<TaxonomieNode[]>([])
   const [procs, setProcs] = useState<Proc[]>([])
@@ -392,7 +398,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
       default: return ''
     }
   }
-  const baseIncidents = filtreStatut ? incidents.filter(i => i.statut === filtreStatut) : incidents
+  const baseIncidents = filtrerParEntite(filtreStatut ? incidents.filter(i => i.statut === filtreStatut) : incidents, entitesRef, filtreEntite.id, filtreEntite.sous)
   const distinctInc = (key: string) => distinctValues(baseIncidents, (i) => incDisplay(i, key))
   const incColFiltered = applyColumnFilters(baseIncidents, colFilters, incDisplay)
   const visibleIncidents = sort ? sortRows(incColFiltered, sort, incAccessor) : incColFiltered
@@ -401,7 +407,6 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
   const onColClear = (key: string) => setColFilters((f) => clearColumnFilter(f, key))
   const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
   // Suggestions d'entités à partir des incidents déjà saisis (org courante).
-  const entiteSug = suggestionsFromValues(incidents.map(i => i.entite))
   const defaultEntite = mostFrequentString(incidents.map(i => i.entite))
   const totalPertes = incidents.reduce((s, i) => s + (i.perteNette ?? 0), 0)
   const ouverts = incidents.filter(i => i.statut === 'DECLARE').length
@@ -509,6 +514,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
         </div>
       )}
 
+      <div className="mb-3"><FiltreEntite entites={entitesRef} valeur={filtreEntite.id} sousEntites={filtreEntite.sous} onChange={(id, sous) => setFiltreEntite({ id, sous })} /></div>
       {filtreStatut && (
         <div className="mb-3 flex items-center gap-2 text-sm">
           <span className="px-2 py-0.5 rounded-full bg-ebios-100 text-ebios-800 dark:bg-ebios-500/15 dark:text-ebios-300 font-medium">{(n.statuts as Record<string,string>)[filtreStatut] ?? filtreStatut}</span>

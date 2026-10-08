@@ -16,6 +16,7 @@ import { vueIncidentL1 } from '@/lib/incident-vue'
 import { sanitizeChampsConfig, valeursVisibles, fusionnerChamps, champsRequisManquants } from '@/lib/champs-perso'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { emitWebhookEvent } from '@/lib/webhook.server'
+import { entiteIdPourTexte } from '@/lib/entites.server'
 
 export const dynamic = 'force-dynamic'
 
@@ -133,6 +134,8 @@ export async function POST(req: NextRequest) {
   const incident = await prisma.incident.create({
     data: {
       ...decl, organizationId: orgId, declarantId: userId, statut: 'DECLARE',
+      // Lien au référentiel des entités si le texte saisi y est identique (lot E5).
+      entiteId: await entiteIdPourTexte(orgId, typeof decl.entite === 'string' ? decl.entite : null),
       ...champsJson,
       champs: champs as unknown as Prisma.InputJsonValue,
     },

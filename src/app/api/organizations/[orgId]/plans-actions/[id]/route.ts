@@ -11,6 +11,7 @@ import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { cleanPriorite, RISK_ACTION_STATUTS } from '@/lib/risk-action'
 import { sanitizeLien } from '@/lib/plan-action'
+import { entiteIdPourTexte } from '@/lib/entites.server'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ orgId: string; id: string }> }
@@ -42,7 +43,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (typeof body?.titre === 'string' && body.titre.trim()) data.titre = body.titre.trim().slice(0, 200)
   if (typeof body?.description === 'string') data.description = body.description.trim().slice(0, 4000) || null
   if (typeof body?.porteur === 'string') data.porteur = body.porteur.trim().slice(0, 120) || null
-  if (typeof body?.entite === 'string') data.entite = body.entite.trim().slice(0, 120) || null
+  if (typeof body?.entite === 'string') {
+    const entite = body.entite.trim().slice(0, 120) || null
+    data.entite = entite
+    // Lien au référentiel recalculé (texte identique) ou retiré (lot E5).
+    const entiteId = await entiteIdPourTexte(orgId, entite)
+    data.entiteRef = entiteId ? { connect: { id: entiteId } } : { disconnect: true }
+  }
   if (typeof body?.echeance === 'string') { const d = new Date(body.echeance); data.echeance = body.echeance && !isNaN(d.getTime()) ? d : null }
   if (body?.priorite != null) data.priorite = cleanPriorite(body.priorite)
   if (typeof body?.statut === 'string' && (RISK_ACTION_STATUTS as readonly string[]).includes(body.statut)) data.statut = body.statut

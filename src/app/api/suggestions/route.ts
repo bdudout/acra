@@ -48,14 +48,16 @@ export async function GET(req: NextRequest) {
     // configurées par l'org (OrganizationConfig.entitesMesures), pour proposer des
     // suggestions même sans données saisies.
     if (scope.activeOrgId) {
-      const [risk, inc] = await Promise.all([
+      const [risk, inc, ref] = await Promise.all([
         db.riskItem.findMany({ where: { organizationId: scope.activeOrgId }, select: { entite: true }, take: 1000 }),
         db.incident.findMany({ where: { organizationId: scope.activeOrgId }, select: { entite: true }, take: 1000 }).catch(() => [] as { entite: string | null }[]),
+        // Référentiel des entités (lot E5) : choisir un de ces noms lie l'objet à l'entité à l'enregistrement.
+        db.entite?.findMany({ where: { organizationId: scope.activeOrgId, OR: [{ valideAu: null }, { valideAu: { gt: new Date() } }] }, select: { nom: true }, take: 1000 }).catch(() => [] as { nom: string }[]) ?? [],
       ])
       const { getOrgConfig } = await import('@/lib/org-config.server')
       const cfg = await getOrgConfig(scope.activeOrgId).catch(() => null)
       const configEntites = Array.isArray(cfg?.entitesMesures) ? (cfg!.entitesMesures as unknown[]).map(v => (typeof v === 'string' ? v : null)) : []
-      candidates = [...risk.map((r: { entite: string | null }) => r.entite), ...inc.map((r: { entite: string | null }) => r.entite), ...configEntites]
+      candidates = [...(ref as { nom: string }[]).map(r => r.nom), ...risk.map((r: { entite: string | null }) => r.entite), ...inc.map((r: { entite: string | null }) => r.entite), ...configEntites]
     }
   } else if (field === 'valeurMetier' || field === 'bienSupport') {
     // Champs stockés en JSON dans le Cadrage (tableau d'objets {nom,…}).
