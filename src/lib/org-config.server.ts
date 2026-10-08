@@ -8,7 +8,7 @@
  */
 
 import { prisma } from '@/lib/prisma'
-import { resolveOrgConfig, type RawOrgConfig, type OrgConfigResolved } from '@/lib/org-config'
+import { resolveOrgConfig, valeursACopierALaCreation, type RawOrgConfig, type OrgConfigResolved } from '@/lib/org-config'
 import { resolveModuleActivation, sanitizeModulesPolicy } from '@/lib/module-policy'
 
 export const CONFIG_SELECT = {
@@ -95,6 +95,29 @@ export async function getOrgConfig(orgId: string | null | undefined): Promise<Or
   // Chaîne SELF-first (nœud → racine) pour resolveOrgConfig.
   const chainSelfFirst = idsRootToSelf.slice().reverse().map(id => byId.get(id) ?? null)
   return applyInstancePolicy(resolveOrgConfig(chainSelfFirst))
+}
+
+/** Configuration héritée par l'organisation (arbre), SANS la politique d'instance : les choix réels de l'organisation et de ses ancêtres. */
+async function getOrgConfigSansPolitique(orgId: string): Promise<OrgConfigResolved> {
+  const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { path: true } })
+  const fromPath = org?.path ? org.path.split('/').filter(Boolean) : []
+  const idsRootToSelf = fromPath.length ? fromPath : [orgId]
+  const rows = await prisma.organizationConfig.findMany({ where: { id: { in: idsRootToSelf } }, select: { id: true, ...CONFIG_SELECT } })
+  const byId = new Map(rows.map(r => [r.id, r as unknown as RawOrgConfig]))
+  return resolveOrgConfig(idsRootToSelf.slice().reverse().map(id => byId.get(id) ?? null))
+}
+
+/**
+ * Écrit des champs de configuration d'une organisation. Si sa ligne n'existe pas encore, elle est créée avec les valeurs
+ * HÉRITÉES pour les colonnes non nullables (lib/org-config.valeursACopierALaCreation) : sans cela, créer la ligne pour
+ * enregistrer un seul réglage figerait tous les autres aux valeurs par défaut et la filiale perdrait ceux de son groupe.
+ */
+export async function upsertOrgConfig(orgId: string, data: Record<string, unknown>) {
+  const existe = await prisma.organizationConfig.findUnique({ where: { id: orgId }, select: { id: true } })
+  if (existe) return prisma.organizationConfig.update({ where: { id: orgId }, data })
+  const herite = valeursACopierALaCreation(await getOrgConfigSansPolitique(orgId))
+  // upsert : une création concurrente n'échoue pas (la ligne créée entre-temps est simplement mise à jour).
+  return prisma.organizationConfig.upsert({ where: { id: orgId }, create: { id: orgId, ...herite, ...data } as never, update: data })
 }
 
 /**

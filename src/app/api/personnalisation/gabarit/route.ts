@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { getOrgConfig } from '@/lib/org-config.server'
+import { getOrgConfig, upsertOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { planGabarit, MODULE_KEYS, type ModuleKey } from '@/lib/gabarits'
 import { sanitizeVocabulaire } from '@/lib/vocabulaire'
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     ...raw.regimes.filter(r => !CATALOGUE_REGIMES.some(c => c.code === r.code)),
   ]
   const update = { ...plan.patch.modules, incidentsConfig: { ...raw, regimes } as unknown as Prisma.InputJsonValue, vocabulaire: plan.patch.vocabulaire as Prisma.InputJsonValue }
-  await prisma.organizationConfig.upsert({ where: { id: scope.activeOrgId }, create: { id: scope.activeOrgId, ...update }, update })
+  await upsertOrgConfig(scope.activeOrgId, update)
   if (plan.patch.secteurs) await prisma.organization.update({ where: { id: scope.activeOrgId }, data: { secteursActivite: plan.patch.secteurs } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole: role, organizationId: scope.activeOrgId, targetId: scope.activeOrgId, targetType: 'organization', ip: getClientIp(req),

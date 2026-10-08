@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { getOrgConfig } from '@/lib/org-config.server'
+import { getOrgConfig, upsertOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { sanitizeRelancesConfig } from '@/lib/relances'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -35,7 +35,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
   if (!isAdminRole(c.role)) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   const config = sanitizeRelancesConfig(await req.json().catch(() => null))
   const json = config as unknown as Prisma.InputJsonValue
-  await prisma.organizationConfig.upsert({ where: { id: c.orgId }, create: { id: c.orgId, relancesConfig: json }, update: { relancesConfig: json } })
+  await upsertOrgConfig(c.orgId, { relancesConfig: json })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: c.userId, userRole: c.role, organizationId: c.orgId, ip: getClientIp(req), details: { scope: 'relances', action: 'config', ...config } })
   return NextResponse.json({ config })
 }

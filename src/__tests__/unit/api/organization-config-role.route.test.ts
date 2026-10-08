@@ -14,7 +14,10 @@ vi.mock('@/lib/prisma', () => ({
 vi.mock('@/lib/org-context.server', () => ({
   getAnalyseScope: vi.fn(async () => ({ activeOrgId: 'own-demo-org', role: 'ADMIN' })),
 }))
-vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn() }))
+vi.mock('@/lib/org-config.server', async () => {
+  const { prisma } = await import('@/lib/prisma')
+  return { getOrgConfig: vi.fn(), upsertOrgConfig: (id: string, data: object) => prisma.organizationConfig.upsert({ where: { id }, create: { id, ...data }, update: data } as never) }
+})
 vi.mock('@/lib/logger', () => ({ auditLog: vi.fn() }))
 vi.mock('@/lib/rate-limit', () => ({ LIMIT_SEARCH: { limit: 60, windowMs: 60_000 }, rateLimit: vi.fn(() => ({ allowed: true })), rateLimitHeaders: vi.fn() }))
 

@@ -8,7 +8,7 @@ vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { id:
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/prisma', () => ({ prisma: db }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: vi.fn(async () => ({ role: state.role, activeOrgId: 'org1' })) }))
-vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => ({ registreRisquesActive: state.active, processusCartographie: {} })) }))
+vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => ({ registreRisquesActive: state.active, processusCartographie: {} })), upsertOrgConfig: (id: string, data: object) => db.organizationConfig.upsert({ where: { id }, create: { id, ...data }, update: data }) }))
 vi.mock('@/lib/logger', () => ({ auditLog: (...a: unknown[]) => auditLog(...a), getClientIp: () => '' }))
 
 import { PUT } from '@/app/api/cartographie/processus/route'

@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { getOrgConfig } from '@/lib/org-config.server'
+import { getOrgConfig, upsertOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { resolveIncidentsConfig, sanitizeIncidentsConfig } from '@/lib/incidents-config'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -42,11 +42,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
   const body = await req.json().catch(() => null)
   const incidentsConfig = sanitizeIncidentsConfig(body)
   const json = incidentsConfig as unknown as Prisma.InputJsonValue
-  await prisma.organizationConfig.upsert({
-    where: { id: c.orgId },
-    create: { id: c.orgId, incidentsConfig: json },
-    update: { incidentsConfig: json },
-  })
+  await upsertOrgConfig(c.orgId, { incidentsConfig: json })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: c.userId, userRole: c.role, organizationId: c.orgId, targetId: c.orgId, targetType: 'organization', ip: getClientIp(req),
     details: { scope: 'incidents-config' },

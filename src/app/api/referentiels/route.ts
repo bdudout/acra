@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { getOrgConfig } from '@/lib/org-config.server'
+import { getOrgConfig, upsertOrgConfig } from '@/lib/org-config.server'
 import { getServerLocale } from '@/lib/i18n'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { validateReferentielInput, cleanReferentielInput } from '@/lib/referentiel'
@@ -99,11 +99,7 @@ export async function PATCH(req: NextRequest) {
   if (actif) set.delete(code); else set.add(code)
   const next = [...set]
 
-  await prisma.organizationConfig.upsert({
-    where: { id: orgId },
-    create: { id: orgId, referentielsDesactives: next as unknown as Prisma.InputJsonValue },
-    update: { referentielsDesactives: next as unknown as Prisma.InputJsonValue },
-  })
+  await upsertOrgConfig(orgId, { referentielsDesactives: next as unknown as Prisma.InputJsonValue })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, organizationId: orgId, ip: getClientIp(req),
     details: { scope: 'referentiel', action: actif ? 'activer' : 'desactiver', code },

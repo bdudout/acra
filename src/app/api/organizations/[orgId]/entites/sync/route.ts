@@ -14,6 +14,7 @@ import { safeFetch, resolvePublicAddress } from '@/lib/safe-fetch.server'
 import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { childPath } from '@/lib/org-context'
+import { upsertOrgConfig } from '@/lib/org-config.server'
 
 type Params = { params: Promise<{ orgId: string }> }
 const schema = z.object({ operation: z.enum(['preview', 'import']), destination: z.enum(['MEASURE_OWNERS', 'ORGANIZATION_TREE']).default('MEASURE_OWNERS'), entities: z.array(z.string().min(1).max(120)).max(500).optional() })
@@ -94,7 +95,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
   const existing = normalizeExternalEntities(Array.isArray(row?.entitesMesures) ? row.entitesMesures.map(name => ({ name })) : [])
   const merged = normalizeExternalEntities([...existing, ...selected].map(name => ({ name })))
-  await prisma.organizationConfig.upsert({ where: { id: orgId }, create: { id: orgId, entitesMesures: merged }, update: { entitesMesures: merged } })
+  await upsertOrgConfig(orgId, { entitesMesures: merged })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: access.user.id, userEmail: access.user.email ?? undefined, organizationId: orgId, targetId: orgId, targetType: 'entity-sync-import', ip: getClientIp(req), details: { selected: selected.length, total: merged.length } })
   return NextResponse.json({ imported: selected, total: merged.length }, { headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
 }

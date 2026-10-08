@@ -10,6 +10,7 @@ import { mergeEntitySyncConfig, publicEntitySyncConfig, validateLdapEndpoint, va
 import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 import { auditLog } from '@/lib/logger'
 import { redactSecrets } from '@/lib/audit-redact'
+import { upsertOrgConfig } from '@/lib/org-config.server'
 
 type Params = { params: Promise<{ orgId: string }> }
 const schema = z.object({ type: z.enum(['REST', 'LDAP']), endpoint: z.string().max(2000), token: z.string().max(2048).optional(), bindDN: z.string().max(512).optional(), password: z.string().max(1024).optional(), baseDN: z.string().max(512).optional(), filter: z.string().max(512).optional() })
@@ -44,7 +45,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const merged = mergeEntitySyncConfig(storedConfig(previous?.entitesSyncConfig), data)
   if (data.type === 'LDAP' && (!merged.bindDN?.trim() || !merged.password || !merged.baseDN?.trim())) return NextResponse.json({ error: 'Configuration LDAP incomplète' }, { status: 400 })
   const config = { ...merged, token: encryptSecret(merged.token), password: encryptSecret(merged.password) }
-  await prisma.organizationConfig.upsert({ where: { id: orgId }, create: { id: orgId, entitesSyncConfig: config }, update: { entitesSyncConfig: config } })
+  await upsertOrgConfig(orgId, { entitesSyncConfig: config })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: access.user!.id, userEmail: access.user!.email ?? undefined, organizationId: orgId, targetId: orgId, targetType: 'entity-sync-config', details: redactSecrets(data, ['token', 'password']) })
   return NextResponse.json(publicEntitySyncConfig(config), { headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
 }

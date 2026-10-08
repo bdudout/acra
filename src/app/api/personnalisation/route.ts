@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { getOrgConfig } from '@/lib/org-config.server'
+import { getOrgConfig, upsertOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { sanitizeVocabulaire } from '@/lib/vocabulaire'
 import { sanitizeChampsConfig, defsAccessibles, type ChampsConfig } from '@/lib/champs-perso'
@@ -42,7 +42,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
   const update: Record<string, Prisma.InputJsonValue> = {}
   if ('vocabulaire' in body) update.vocabulaire = sanitizeVocabulaire(body.vocabulaire) as Prisma.InputJsonValue
   if ('champsPersonnalises' in body) update.champsPersonnalises = sanitizeChampsConfig(body.champsPersonnalises) as unknown as Prisma.InputJsonValue
-  await prisma.organizationConfig.upsert({ where: { id: c.orgId }, create: { id: c.orgId, ...update }, update })
+  await upsertOrgConfig(c.orgId, update)
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: c.userId, userRole: c.role, organizationId: c.orgId, targetId: c.orgId, targetType: 'organization', ip: getClientIp(req),
     details: { scope: 'personnalisation', blocs: Object.keys(update) },

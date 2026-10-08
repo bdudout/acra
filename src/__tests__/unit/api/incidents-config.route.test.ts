@@ -7,7 +7,7 @@ vi.mock('next-auth', () => ({ getServerSession: m.session }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/prisma', () => ({ prisma: { organizationConfig: { upsert: m.upsert } } }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope }))
-vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.config }))
+vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.config, upsertOrgConfig: (id: string, data: object) => m.upsert({ where: { id }, create: { id, ...data }, update: data }) }))
 vi.mock('@/lib/logger', () => ({ auditLog: m.audit, getClientIp: () => '127.0.0.1' }))
 
 import { GET, PUT } from '@/app/api/incidents/config/route'

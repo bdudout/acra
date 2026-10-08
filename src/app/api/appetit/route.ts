@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { getOrgConfig } from '@/lib/org-config.server'
+import { getOrgConfig, upsertOrgConfig } from '@/lib/org-config.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { validateAppetitConfig, cleanAppetitConfig, SEUIL_MIN, SEUIL_MAX } from '@/lib/appetit'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -59,11 +59,7 @@ export async function PUT(req: NextRequest) {
   const appetitRisque = cleanAppetitConfig(body)
 
   const orgId = scope.activeOrgId
-  await prisma.organizationConfig.upsert({
-    where: { id: orgId },
-    create: { id: orgId, appetitRisque: appetitRisque as unknown as Prisma.InputJsonValue },
-    update: { appetitRisque: appetitRisque as unknown as Prisma.InputJsonValue },
-  })
+  await upsertOrgConfig(orgId, { appetitRisque: appetitRisque as unknown as Prisma.InputJsonValue })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, organizationId: orgId, targetId: orgId, targetType: 'organization', ip: getClientIp(req),
     details: { scope: 'appetit-risque' },

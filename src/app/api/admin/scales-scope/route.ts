@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { ROOT_ORG_ID } from '@/lib/configuration-server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { requireInstanceAdmin } from '@/lib/route-guard.server'
+import { upsertOrgConfig } from '@/lib/org-config.server'
 
 
 // GET — mode de portée des échelles (SHARED = groupe · PER_ORG = consultant)
@@ -28,11 +29,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Requête invalide' }, { status: 400 })
   }
 
-  await prisma.organizationConfig.upsert({
-    where: { id: ROOT_ORG_ID },
-    create: { id: ROOT_ORG_ID, scalesScope },
-    update: { scalesScope },
-  })
+  await upsertOrgConfig(ROOT_ORG_ID, { scalesScope })
 
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: (auth.session!.user as any).id,
