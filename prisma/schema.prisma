@@ -205,6 +205,7 @@ model Organization {
   testsResilience        TestResilience[]
   entites                Entite[] @relation("EntiteOrganisation")
   entitesLiees           Entite[] @relation("EntiteOrganisationLiee")
+  entiteEvenements       EntiteEvenement[]
 
   @@index([parentId])
   @@index([path])
@@ -2877,4 +2878,22 @@ model Entite {
   @@unique([organizationId, codeExterne])
   @@index([organizationId])
   @@index([parentId])
+}
+
+/// Historique des réorganisations du référentiel des entités (lot E4) : renommage, fusion, scission, clôture.
+/// `objets` garde les objets déplacés par entité source ({ idSource: { risques: [ids], … } }) ; conservé 5 ans.
+model EntiteEvenement {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  type           String // RENOMMAGE | FUSION | SCISSION | CLOTURE
+  dateEffet      DateTime     @db.Date
+  // [{ id, nom }] avant l'opération / après (entités créées comprises)
+  sources        Json         @default("[]")
+  cibles         Json         @default("[]")
+  objets         Json         @default("{}")
+  auteurId       String?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, dateEffet])
 }

@@ -10,6 +10,7 @@ import { isInSubtree } from './org-context'
 import { isAdminRole, type UserRole } from './permissions'
 import { configConnecteur, connecteurConfigure } from './entity-sync.server'
 import { creeraitUnCycle, sourceVeriteDe, type EntiteSaisie, type SourceVerite } from './entites'
+import type { SourceTexte } from './entites-rapprochement'
 
 export interface ContexteEntites { userId: string; email?: string; role: UserRole; orgId: string; orgPath: string; admin: boolean; sourceVerite: SourceVerite; connecteur: boolean }
 
@@ -52,3 +53,6 @@ export const COMPTE_REFERENCES = { risques: true, incidents: true, conformites: 
 export function totalReferences(c: Record<keyof typeof COMPTE_REFERENCES, number>): number {
   return Object.values(c).reduce((a, b) => a + b, 0)
 }
+
+/** Périmètre d'une source d'objets rattachables à une entité : l'organisation (les mesures, via leur analyse). */
+export const perimetreSource = (orgId: string, source: SourceTexte) => (source === 'mesures' ? { analyse: { organizationId: orgId } } : { organizationId: orgId })
