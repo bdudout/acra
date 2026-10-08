@@ -34,6 +34,9 @@ describe('ReferentielEntites', () => {
     expect(screen.queryByText('Ancien site')).toBeNull()
     fireEvent.click(screen.getByLabelText('Afficher les entités closes'))
     expect(screen.getByText('Ancien site')).toBeTruthy()
+    // Import (lot E2) : le panneau s'ouvre depuis le référentiel.
+    fireEvent.click(screen.getByRole('button', { name: 'Importer' }))
+    expect(screen.getByRole('region', { name: 'Importer des entités' })).toBeTruthy()
   })
 
   it('hors ADMIN : consultation seule, aucun bouton de modification', async () => {
@@ -41,6 +44,7 @@ describe('ReferentielEntites', () => {
     render(<ReferentielEntites />)
     expect(await screen.findByText(/Consultation seule/)).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Ajouter une entité' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Importer' })).toBeNull()
     expect(screen.queryByRole('button', { name: /Modifier/ })).toBeNull()
   })
 

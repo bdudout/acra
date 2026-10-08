@@ -1,6 +1,6 @@
 # Consolidation des entités — registre cohérent qui suit les réorganisations
 
-**Statut :** expression de besoin (2026-10-08), décisions prises le 2026-10-08 (§ 4), lot E1 livré (modèle, référentiel, écran de configuration, choix de la source de vérité) · **Origine :** programme d'audit et de contrôle — les
+**Statut :** expression de besoin (2026-10-08), décisions prises le 2026-10-08 (§ 4), lots E1 (modèle, référentiel, écran, choix de la source de vérité) et E2 (import fichier / connecteur avec aperçu des écarts) livrés · **Origine :** programme d'audit et de contrôle — les
 sollicitations multiples ne comptent aujourd'hui que les filiales (organisations) et les tiers, pas les entités saisies
 en texte libre (cf. `programme-audit-controle.md` § 8).
 
