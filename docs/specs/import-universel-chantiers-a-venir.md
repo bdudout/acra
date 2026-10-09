@@ -37,7 +37,10 @@ CSV, JSON libre, profils, mapping par défaut `mapping_mzt`) est décrit dans [`
   traduit ×5 (`previewWarnings`). Les cellules calculées sans valeur enregistrée sont déjà signalées (B-IMP-08).
 - **Critère d'acceptation** : un niveau « 8 » pour gravité 3 × vraisemblance 2 (= 6) produit un avertissement ; un niveau cohérent n'en produit pas.
 
-## 3. API v2 avec profil (B-IMP-72)
+## 3. API v2 avec profil (B-IMP-72) — ✅ livré (2026-10-09)
+> `multipart/form-data` (`file`, `profileRef` prioritaire, `profile`, `idempotencyKey`) sur `preview` et l'import ; même lecture que
+> l'interface (`lib/analysis-import-classeur.server`), profil résolu par `lib/import-v2-profil` (testé), états des lignes de
+> B-IMP-53 dans `lines`. Doc : `docs/api-v2-analysis-imports.md`.
 - **Besoin** : `preview` de l'API v2 accepte le paquet canonique v3 **ou** un fichier + profil ; la réponse reprend les états de B-IMP-53
   (prêt / sans ce champ / à confirmer / non importable) ; `idempotencyKey` et 409 inchangés ; la description OpenAPI documente le paquet v3.
 - **Existant** : l'API v2 accepte déjà le paquet v3 (`/api/v2/analysis-imports/preview`, ateliers résumés). Manque : fichier + profil,

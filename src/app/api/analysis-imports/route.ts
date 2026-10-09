@@ -1,19 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { optionsStructure } from '@/lib/org-config.server'
 import { getServerSession } from 'next-auth'
-import ExcelJS from 'exceljs'
 import { z } from 'zod'
-import { HISTORIC_SHEET_TYPES, splitHistoricMappedColumns } from '@/lib/historic-import'
+import { HISTORIC_SHEET_TYPES } from '@/lib/historic-import'
 import { authOptions } from '@/lib/auth'
 import { canCreateAnalyse, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.server'
-import { applyHistoricRowOverrides, buildHistoricImportPackages, detectHistoricHeaderLayout, detectHistoricImportSheet, partitionHistoricImportSheets, profileHistoricColumn, resolveHistoricImportSheetType, type HistoricColumnMapping, type HistoricFieldTransforms, type HistoricRowOverrides, validateHistoricColumnMapping, validateHistoricImportFormats, validateHistoricImportSelection } from '@/lib/historic-import'
+import { paquetsClasseur, repartirClasseur } from '@/lib/analysis-import-classeur.server'
 import { executeAnalysisImport, parseAnalysisImportRequest, truncateImportRequest } from '@/lib/analysis-import'
 import { buildHistoricExcelIdempotencyKey } from '@/lib/historic-import-idempotency'
-import { excelCellText as cell } from '@/lib/excel-cell'
 import { rateLimit, rateLimitHeaders, LIMIT_EXCEL_PARSE } from '@/lib/rate-limit'
-import { readSheetSample, readDataRows } from '@/lib/excel-grid'
-import { extractKeyValueBlocks, extractTextBlocks } from '@/lib/excel-blocks'
 import { checkTabularUpload } from '@/lib/import-file-format'
 import { describeZodIssues, groupTruncations } from '@/lib/import-truncate'
 import { loadTabularWorkbook } from '@/lib/tabular-workbook'
@@ -46,32 +42,9 @@ export async function POST(req: NextRequest) {
     const loaded = await loadTabularWorkbook(buffer, body.filename)
     if (!loaded.ok) return NextResponse.json({ error: loaded.error, details: loaded.details }, { status: loaded.status })
     const workbook = loaded.workbook
-    const sheets = workbook.worksheets.slice(0, 20).map(sheet => {
-      const layout = detectHistoricHeaderLayout(readSheetSample(sheet, 20, 100)) // même lecture que l'aperçu
-      const headers = layout.columns.map(column => column.key)
-      const detection = detectHistoricImportSheet(sheet.name, headers)
-      const type = resolveHistoricImportSheetType(detection.type, body.sheetTypes[sheet.name])
-      const mapping = (body.mappings[sheet.name] ?? {}) as HistoricColumnMapping
-      if (type !== 'UNKNOWN' && validateHistoricColumnMapping(type, mapping).length) throw new Error(`MAPPING_INCOMPLET:${sheet.name}`)
-      // Colonne de référence du rôle : une ligne dont la référence est une cellule fusionnée esclave prolonge la précédente.
-      const refColumn = splitHistoricMappedColumns(mapping.externalId)[0]
-      const refIndex = layout.columns.find(column => column.key === refColumn)?.index
-      const { rows: dataRows, rowNumbers: dataRowNumbers, truncated } = type === 'CONTEXT' ? { rows: [], rowNumbers: [], truncated: false } : readDataRows(sheet, layout, { refColumnIndex: refIndex })
-      // Plafond de lignes : jamais de troncature silencieuse (une feuille ignorée n'est pas concernée).
-      if (truncated && type !== 'UNKNOWN') throw new Error(`TOO_MANY_ROWS:${sheet.name}`)
-      const rows = dataRows; const rowNumbers = dataRowNumbers
-      const contextRows = type === 'CONTEXT' ? readSheetSample(sheet, 80, 20) : null
-      const blocks = contextRows ? { text: extractTextBlocks(contextRows), kv: extractKeyValueBlocks(contextRows) } : undefined
-      const profiles = Object.fromEntries(headers.map(header => [header, profileHistoricColumn(rows.map(row => row[header] ?? ''))]))
-      return { name: sheet.name, type, mapping, transforms: body.transforms[sheet.name] as HistoricFieldTransforms | undefined, statusMapping: body.statusMappings[sheet.name], scoreMappings: body.scoreMappings[sheet.name], rows, rowNumbers, profiles, blocks, refAliases: body.refAliases[sheet.name], valueMaps: body.valueMaps[sheet.name] }
-    })
-    const correctedSheets = applyHistoricRowOverrides(sheets, body.rowOverrides as HistoricRowOverrides)
-    if (validateHistoricImportSelection(sheets).length || (!body.partialImport && validateHistoricImportFormats(sheets).length)) throw new Error('MAPPING_INCOMPLET:cross_sheet_reference_or_format')
-    const partition = body.partialImport ? partitionHistoricImportSheets(correctedSheets) : { sheets: correctedSheets, decisions: [] }
+    const partition = repartirClasseur(workbook, body)
     if (body.dryRun) return NextResponse.json({ decisions: partition.decisions, requiredValueGaps: partition.decisions.filter(decision => decision.status === 'REJECTED' && decision.reason === 'MISSING_REQUIRED_VALUE') })
-    if (!partition.sheets.some(sheet => sheet.type !== 'UNKNOWN' && (sheet.rows.length > 0 || (sheet.blocks && (sheet.blocks.text.length > 0 || sheet.blocks.kv.length > 0))))) throw new Error('NO_IMPORTABLE_SHEET')
-    const fallback = body.filename.replace(/\.(xlsx|csv)$/i, '')
-    const packageData = buildHistoricImportPackages(partition.sheets, fallback)
+    const packageData = paquetsClasseur(partition, body.filename)
     const key = buildHistoricExcelIdempotencyKey(body.data, { organizationId, mappings: body.mappings, sheetTypes: body.sheetTypes, transforms: body.transforms, statusMappings: body.statusMappings, scoreMappings: body.scoreMappings, partialImport: body.partialImport, rowOverrides: body.rowOverrides, ...(Object.keys(body.refAliases).length ? { refAliases: body.refAliases } : {}), ...(Object.keys(body.valueMaps).length ? { valueMaps: body.valueMaps } : {}) })
     // Un texte plus long que le plafond du schéma est raccourci (et signalé au bilan) au lieu de faire échouer tout l'import.
     const prepared = packageData.map((item, index) => truncateImportRequest({ ...item, idempotencyKey: `${key}:${index}` }))
