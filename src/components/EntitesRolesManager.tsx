@@ -9,9 +9,9 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Building2, UserPlus, Trash2, Plus, CornerDownRight } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
-import { ROLE_LABELS } from '@/lib/permissions'
+import { ROLE_LABELS, ROLES_ATTRIBUABLES } from '@/lib/permissions'
 
-const ASSIGNABLE_ROLES = ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER'] as const
+const ASSIGNABLE_ROLES = ROLES_ATTRIBUABLES
 type AssignableRole = typeof ASSIGNABLE_ROLES[number]
 
 interface Entite { id: string; nom: string; parentId: string | null; actif: boolean; depth: number; isRoot: boolean; membres: number; analyses: number }

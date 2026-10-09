@@ -92,6 +92,23 @@ export function hasGlobalReadDispositif(role: UserRole): boolean {
 // (validation des dérogations, acceptation des risques résiduels) n'est jamais cumulée.
 
 /** Rôles cumulables en petite structure. */
+/**
+ * Rôles attribuables par un administrateur (sous-entités, création de compte, membres d'organisation, SSO, import CSV) :
+ * tous les rôles hors SUPER_ADMIN (réglage d'instance). SOURCE UNIQUE — le contrôle de type ci-dessous échoue si un rôle
+ * est ajouté à UserRole sans être classé ici.
+ */
+export const ROLES_ATTRIBUABLES = [
+  'LECTEUR', 'METIER', 'DPO', 'CONFORMITE', 'CONTROLEUR', 'AUDITEUR',
+  'ANALYSTE', 'DIRECTION_METIER', 'RISK_MANAGER', 'RSSI', 'ADMIN',
+] as const satisfies readonly Exclude<UserRole, 'SUPER_ADMIN'>[]
+export type RoleAttribuable = (typeof ROLES_ATTRIBUABLES)[number]
+type _RolesExhaustifs = Exclude<UserRole, 'SUPER_ADMIN' | RoleAttribuable> extends never ? true : never
+const _rolesExhaustifs: _RolesExhaustifs = true
+void _rolesExhaustifs
+export function estRoleAttribuable(role: unknown): role is RoleAttribuable {
+  return typeof role === 'string' && (ROLES_ATTRIBUABLES as readonly string[]).includes(role)
+}
+
 export const ROLES_CUMULABLES: readonly UserRole[] = ['RSSI', 'RISK_MANAGER']
 export interface OptionsStructure { petiteStructure?: boolean }
 

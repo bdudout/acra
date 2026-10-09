@@ -6,7 +6,7 @@
  * - E-mail invalide ou en doublon (dans le fichier) → ligne marquée non valide.
  * Pur (aucun I/O) → testable et réutilisable client/serveur.
  */
-import type { UserRole } from '@/lib/permissions'
+import { ROLES_ATTRIBUABLES, type UserRole } from '@/lib/permissions'
 
 /** Ligne d'utilisateur parsée depuis un CSV d'import (numéro de ligne + champs + erreurs éventuelles). */
 export interface ParsedUserRow {
@@ -21,13 +21,19 @@ export interface ParsedUserRow {
   error?: 'email_invalid' | 'duplicate'
 }
 
-const VALID_ROLES: readonly string[] = ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER']
+const VALID_ROLES: readonly string[] = ROLES_ATTRIBUABLES
 const ROLE_ALIASES: Record<string, UserRole> = {
   'lecteur': 'LECTEUR', 'reader': 'LECTEUR', 'viewer': 'LECTEUR', 'lecture seule': 'LECTEUR',
   'analyste': 'ANALYSTE', 'analyst': 'ANALYSTE',
   'risk manager': 'RISK_MANAGER', 'riskmanager': 'RISK_MANAGER', 'gestionnaire de risque': 'RISK_MANAGER',
   'rssi': 'RSSI', 'ciso': 'RSSI',
   'admin': 'ADMIN', 'administrateur': 'ADMIN', 'administrator': 'ADMIN',
+  'dpo': 'DPO', 'delegue a la protection des donnees': 'DPO',
+  'conformite': 'CONFORMITE', 'compliance': 'CONFORMITE',
+  'controleur': 'CONTROLEUR', 'controller': 'CONTROLEUR', 'controle permanent': 'CONTROLEUR',
+  'auditeur': 'AUDITEUR', 'auditor': 'AUDITEUR', 'audit interne': 'AUDITEUR',
+  'metier': 'METIER', 'business': 'METIER',
+  'direction metier': 'DIRECTION_METIER',
 }
 // Regex linéaire (anti-ReDoS) : chaque classe exclut son délimiteur (@ et .) pour
 // éviter tout retour-arrière polynomial (js/polynomial-redos). Domaine = labels
@@ -39,9 +45,9 @@ const EMAIL_MAX_LEN = 254
 function normalizeRole(raw: string): UserRole {
   const trimmed = raw.trim()
   if (!trimmed) return 'ANALYSTE'
-  const up = trimmed.toUpperCase().replace(/[\s-]+/g, '_')
+  const up = trimmed.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[\s-]+/g, '_')
   if (VALID_ROLES.includes(up)) return up as UserRole
-  const key = trimmed.toLowerCase().replace(/[\s_-]+/g, ' ')
+  const key = trimmed.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[\s_-]+/g, ' ')
   return ROLE_ALIASES[key] ?? 'ANALYSTE'
 }
 

@@ -12,6 +12,7 @@ import { z } from 'zod'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { maskSecret, resolveSubmittedSecret, SECRET_PLACEHOLDER } from '@/lib/secret-crypto'
 import { cleanRoleMapping } from '@/lib/sso'
+import { ROLES_ATTRIBUABLES } from '@/lib/permissions'
 import { requireInstanceAdmin } from '@/lib/route-guard.server'
 
 // [F005 corrigé] CWE-312 / OWASP A02:2021 — Secrets chiffrés au repos
@@ -38,7 +39,7 @@ const SSOSchema = z.object({
 
   // Common
   autoProvision:  z.boolean().default(true),
-  defaultRole:    z.enum(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER']).default('ANALYSTE'),
+  defaultRole:    z.enum(ROLES_ATTRIBUABLES).default('ANALYSTE'),
   allowedDomains: z.string().max(4096).nullable().optional(),
 
   // RBAC piloté par l'IdP : claim de groupes + mapping groupe→rôle

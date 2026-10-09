@@ -8,7 +8,7 @@ import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import AdminNav from '@/components/AdminNav'
 import VersionCard from '@/components/VersionCard'
-import { ROLE_LABELS, ROLE_COLORS, type UserRole, isAdminRole } from '@/lib/permissions'
+import { ROLE_LABELS, ROLE_COLORS, type UserRole, isAdminRole, ROLES_ATTRIBUABLES } from '@/lib/permissions'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDateTime } from '@/lib/format'
 
@@ -139,7 +139,7 @@ export default function AdminDashboardPage() {
               <Link href="/admin/users" className="text-xs text-ebios-600 hover:underline">{t.adminDashboard.manage} →</Link>
             </div>
             <div className="space-y-2">
-              {(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER'] as UserRole[]).map(role => {
+              {([...ROLES_ATTRIBUABLES] as UserRole[]).map(role => {
                 const count = stats?.byRole[role] ?? 0
                 const total = stats?.totalUsers ?? 1
                 const pct   = total > 0 ? Math.round(count / total * 100) : 0

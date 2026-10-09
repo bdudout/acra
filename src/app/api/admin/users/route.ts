@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { canAdmin, isAdminRole } from '@/lib/permissions'
+import { canAdmin, isAdminRole, ROLES_ATTRIBUABLES } from '@/lib/permissions'
 import type { UserRole } from '@/lib/permissions'
 import { UserRole as PrismaUserRole } from '@prisma/client'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -36,7 +36,7 @@ async function usersScope(userId: string, role: UserRole) {
 const createSchema = z.object({
   name:  z.string().min(2).max(100),
   email: z.string().email(),
-  role:  z.enum(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER']),
+  role:  z.enum(ROLES_ATTRIBUABLES),
 })
 
 async function loadPasswordPolicy(): Promise<PasswordPolicyShape> {

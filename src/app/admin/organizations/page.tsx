@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import AdminNav from '@/components/AdminNav'
 import { useTranslation } from '@/lib/i18n/context'
-import { ROLE_LABELS } from '@/lib/permissions'
+import { ROLE_LABELS, ROLES_ATTRIBUABLES } from '@/lib/permissions'
 import OrgLogo from '@/components/OrgLogo'
 import { Building2, Download, Plus, Save, Trash2, X, Users } from 'lucide-react'
 
@@ -20,7 +20,7 @@ interface Member {
   user: { id: string; name: string | null; email: string }
 }
 
-const ASSIGNABLE_ROLES = ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER'] as const
+const ASSIGNABLE_ROLES = ROLES_ATTRIBUABLES
 
 export default function OrganizationsAdminPage() {
   const { t } = useTranslation()

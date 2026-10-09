@@ -15,7 +15,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { isAdminRole, type UserRole, ROLES_ATTRIBUABLES } from '@/lib/permissions'
 import { isInSubtree } from '@/lib/org-context'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
@@ -57,7 +57,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 // Rôles assignables : rôles d'ORGANISATION uniquement (jamais SUPER_ADMIN).
 const addSchema = z.object({
   email: z.string().email(),
-  role: z.enum(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER']),
+  role: z.enum(ROLES_ATTRIBUABLES),
   scope: z.enum(['NODE', 'SUBTREE']).default('NODE'),
 })
 
