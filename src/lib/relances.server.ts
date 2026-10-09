@@ -27,6 +27,7 @@ import { auditLog } from './logger'
 import { piaRequis } from './ropa'
 import { aipdARelancer, type StatutAipd } from './ropa-aipd'
 import { sanitizePlanificationConfig, soumisDepuis, valideursPlanAnnee, type TypePlan } from './planification'
+import { echeanceRevue } from './revues'
 
 // Gouvernance de l'organisation : repli des éléments sans responsable identifiable, destinataire
 // des contrôles à exécuter et des dérogations arrivant à expiration.
@@ -41,7 +42,7 @@ type Membre = { role: string; user: { id: string; email: string; name: string | 
 type Config = {
   relances: RelancesConfig; controle: boolean; audit: boolean; auditConfig: AuditConfig; derogations: boolean; derogationAlerteJours: number; secondeLigne: boolean
   reglementaire: boolean; kri: boolean; homologations: boolean; conformite: boolean; acceptationRisques: boolean; petiteStructure: boolean
-  mcp: boolean; planification: ReturnType<typeof sanitizePlanificationConfig>
+  mcp: boolean; planification: ReturnType<typeof sanitizePlanificationConfig>; registreIa: boolean
 }
 
 export interface ResultatRelances {
@@ -103,7 +104,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     }),
   ])
   // Sources « à échéance » et décisions complémentaires.
-  const [contrats, tests, kris, documents, campagnes, missions, analysesEcheance, acceptations, invitations, homologations, suppressions, traitementsAipd, plansSoumis, propositionsMcp] = await Promise.all([
+  const [contrats, tests, kris, documents, campagnes, missions, analysesEcheance, acceptations, invitations, homologations, suppressions, traitementsAipd, plansSoumis, propositionsMcp, revuesIa, revuesTraitements, revuesProcessus, revuesTiers] = await Promise.all([
     prisma.arrangementTic.findMany({ where: { dateFin: { not: null } }, select: { id: true, organizationId: true, reference: true, prestataireNom: true, dateFin: true, createdAt: true, rappelLe: true }, take: 10000 }),
     prisma.testResilience.findMany({ where: { statut: { in: ['PLANIFIE', 'EN_COURS'] }, datePrevue: { not: null } }, select: { id: true, organizationId: true, intitule: true, datePrevue: true, createdAt: true, rappelLe: true }, take: 10000 }),
     prisma.kri.findMany({ where: { actif: true }, select: { id: true, organizationId: true, intitule: true, frequence: true, responsable: true, createdAt: true, rappelLe: true, mesures: { orderBy: { dateMesure: 'desc' }, take: 1, select: { dateMesure: true } } }, take: 10000 }),
@@ -121,6 +122,11 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     prisma.planAnnee.findMany({ where: { statut: 'SOUMIS' }, select: { id: true, annee: true, preparePar: true, historique: true, updatedAt: true, rappelLe: true, plan: { select: { id: true, nom: true, type: true, organizationId: true } } }, take: 10000 }),
     // Propositions d'un agent IA (MCP) restées en attente de décision humaine.
     prisma.mcpProposal.findMany({ where: { statut: 'EN_ATTENTE' }, select: { id: true, organizationId: true, type: true, targetType: true, targetId: true, payload: true, createdAt: true, rappelLe: true }, take: 10000 }),
+    // Revues périodiques (lib/revues) : systèmes d'IA en service, traitements RGPD, processus actifs, tiers.
+    prisma.systemeIA.findMany({ where: { statut: 'EN_SERVICE' }, select: { id: true, organizationId: true, nom: true, derniereRevue: true, createdAt: true, revueRappelLe: true, createdBy: true }, take: 10000 }),
+    prisma.traitement.findMany({ select: { id: true, organizationId: true, nom: true, derniereRevue: true, createdAt: true, revueRappelLe: true }, take: 10000 }),
+    prisma.processus.findMany({ where: { actif: true }, select: { id: true, organizationId: true, nom: true, proprietaire: true, derniereRevue: true, createdAt: true, revueRappelLe: true }, take: 10000 }),
+    prisma.tier.findMany({ select: { id: true, rootOrganizationId: true, nom: true, derniereRevue: true, createdAt: true, revueRappelLe: true }, take: 10000 }),
   ])
   // Versions remplacées d'un document : seule la version en vigueur est à revoir.
   const remplaces = new Set((documents.length ? await prisma.document.findMany({ where: { remplaceId: { in: documents.map(d => d.id) } }, select: { remplaceId: true } }) : []).map(d => d.remplaceId))
@@ -137,7 +143,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
         audit: c.auditInterneActive, auditConfig: resolveAuditConfig(c.auditConfig),
         derogations: c.derogationsActive, derogationAlerteJours: c.derogationAlerteJours ?? 30, secondeLigne: c.secondeLigneActive,
         reglementaire: !!c.reglementaireActive, kri: !!c.kriActive, homologations: !!c.homologationsActive, conformite: c.conformiteActive, acceptationRisques: c.acceptationRisquesActive, petiteStructure: c.petiteStructure,
-        mcp: c.mcpActive, planification: sanitizePlanificationConfig(c.planificationConfig),
+        mcp: c.mcpActive, planification: sanitizePlanificationConfig(c.planificationConfig), registreIa: !!c.registreIaActive,
       })
     }
     return cfgCache.get(orgId)!
@@ -188,6 +194,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     contratsTic: [] as string[], testsResilience: [] as string[], kri: [] as string[], documents: [] as string[], campagnes: [] as string[],
     missionsAudit: [] as string[], analysesEcheance: [] as string[], acceptationsRisques: [] as string[], invitations: [] as string[], homologations: [] as string[], suppressions: [] as string[],
     aipd: [] as string[], plansAnnee: [] as string[], propositionsMcp: [] as string[],
+    revuesIa: [] as string[], revuesTraitements: [] as string[], revuesProcessus: [] as string[], revuesTiers: [] as string[],
   }
 
   // ─── Éléments à traiter ───
@@ -439,6 +446,41 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     marques.propositionsMcp.push(p.id)
   }
 
+  // Revues périodiques : prochaine revue 12 mois après la dernière (ou la création) ; relance avant l'échéance puis au retard.
+  const revueDue = (o: { derniereRevue: Date | null; createdAt: Date; revueRappelLe: Date | null }, cfg: Config) =>
+    typeEcheance({ echeance: echeanceRevue(o.derniereRevue, o.createdAt), rappelLe: o.revueRappelLe, createdAt: o.createdAt }, cfg.relances, now)
+  const parRolesOuAdmin = async (orgId: string, roles: string[]) => { const d = await parRoles(orgId, roles); return d.length ? d : parRoles(orgId, ['ADMIN']) }
+  for (const x of revuesIa) {
+    const cfg = await cfgOf(x.organizationId)
+    const type = cfg.registreIa ? revueDue(x, cfg) : null
+    if (!type) continue
+    // Auteur de la fiche s'il est encore membre, sinon conformité et DPO (administrateurs à défaut).
+    const auteur = x.createdBy ? await destsParIds(x.organizationId, [x.createdBy]) : []
+    ajouter(x.organizationId, auteur.length ? auteur : await parRolesOuAdmin(x.organizationId, ['CONFORMITE', 'DPO']), { categorie: 'REVUE_SYSTEME_IA', intitule: x.nom, type, echeance: jour(echeanceRevue(x.derniereRevue, x.createdAt)) })
+    marques.revuesIa.push(x.id)
+  }
+  for (const x of revuesTraitements) {
+    const cfg = await cfgOf(x.organizationId)
+    const type = revueDue(x, cfg)
+    if (!type) continue
+    ajouter(x.organizationId, await parRolesOuAdmin(x.organizationId, ['DPO']), { categorie: 'REVUE_TRAITEMENT', intitule: x.nom, type, echeance: jour(echeanceRevue(x.derniereRevue, x.createdAt)) })
+    marques.revuesTraitements.push(x.id)
+  }
+  for (const x of revuesProcessus) {
+    const cfg = await cfgOf(x.organizationId)
+    const type = revueDue(x, cfg)
+    if (!type) continue
+    ajouter(x.organizationId, await parPorteur(x.organizationId, x.proprietaire), { categorie: 'REVUE_PROCESSUS', intitule: x.nom, type, echeance: jour(echeanceRevue(x.derniereRevue, x.createdAt)) })
+    marques.revuesProcessus.push(x.id)
+  }
+  for (const x of revuesTiers) {
+    const cfg = await cfgOf(x.rootOrganizationId)
+    const type = revueDue(x, cfg)
+    if (!type) continue
+    ajouter(x.rootOrganizationId, await parRolesOuAdmin(x.rootOrganizationId, ['RSSI', 'RISK_MANAGER']), { categorie: 'REVUE_TIERS', intitule: x.nom, type, echeance: jour(echeanceRevue(x.derniereRevue, x.createdAt)) })
+    marques.revuesTiers.push(x.id)
+  }
+
   // ─── Envoi : un e-mail de synthèse par personne ───
   const orgIds = [...new Set([...boite.values()].flatMap(e => e.items.map(i => i.orgId)))]
   const orgs = new Map((orgIds.length ? await prisma.organization.findMany({ where: { id: { in: orgIds } }, select: { id: true, nom: true } }) : []).map(o => [o.id, o.nom]))
@@ -474,11 +516,15 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     maj(marques.aipd, ids => prisma.traitement.updateMany({ where: { id: { in: ids } }, data: { aipdRappelLe: now } })),
     maj(marques.plansAnnee, ids => prisma.planAnnee.updateMany({ where: { id: { in: ids } }, data: { rappelLe: now } })),
     maj(marques.propositionsMcp, ids => prisma.mcpProposal.updateMany({ where: { id: { in: ids } }, data: { rappelLe: now } })),
+    maj(marques.revuesIa, ids => prisma.systemeIA.updateMany({ where: { id: { in: ids } }, data: { revueRappelLe: now } })),
+    maj(marques.revuesTraitements, ids => prisma.traitement.updateMany({ where: { id: { in: ids } }, data: { revueRappelLe: now } })),
+    maj(marques.revuesProcessus, ids => prisma.processus.updateMany({ where: { id: { in: ids } }, data: { revueRappelLe: now } })),
+    maj(marques.revuesTiers, ids => prisma.tier.updateMany({ where: { id: { in: ids } }, data: { revueRappelLe: now } })),
   ])
 
   return {
     checked: reponses.length + preconisations.length + plans.length + aVerifier.length + analyses.length + derogationsRevue.length + constats.length + controles.length + derogationsActives.length
-      + contrats.length + tests.length + kris.length + documents.length + campagnes.length + missions.length + analysesEcheance.length + acceptations.length + invitations.length + homologations.length + suppressions.length + traitementsAipd.length + plansSoumis.length + propositionsMcp.length,
+      + contrats.length + tests.length + kris.length + documents.length + campagnes.length + missions.length + analysesEcheance.length + acceptations.length + invitations.length + homologations.length + suppressions.length + traitementsAipd.length + plansSoumis.length + propositionsMcp.length + revuesIa.length + revuesTraitements.length + revuesProcessus.length + revuesTiers.length,
     reminded: Object.fromEntries(Object.entries(marques).map(([k, v]) => [k, v.length])),
     emailsSent, emailsSkipped,
   }

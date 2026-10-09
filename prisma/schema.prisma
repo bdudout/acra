@@ -380,6 +380,9 @@ model Traitement {
   catalogueKey             String?
   catalogueVersion         String?
   createdBy                String?
+  // Revue périodique (lib/revues : prochaine revue 12 mois après) ; anti-doublon de la relance (cron relances).
+  derniereRevue  DateTime? @db.Date
+  revueRappelLe  DateTime?
   createdAt                DateTime     @default(now())
   updatedAt                DateTime     @updatedAt
 
@@ -410,6 +413,8 @@ model SystemeIA {
   catalogueKey            String?
   catalogueVersion        String?
   createdBy               String?
+  // Anti-doublon de la relance de revue annuelle (cron relances, lib/revues).
+  revueRappelLe           DateTime?
   createdAt               DateTime     @default(now())
   updatedAt               DateTime     @updatedAt
 
@@ -481,6 +486,9 @@ model Processus {
   rpoMinutes   Int?
   ordre        Int      @default(0)
   actif        Boolean  @default(true)
+  // Revue périodique (lib/revues : prochaine revue 12 mois après) ; anti-doublon de la relance (cron relances).
+  derniereRevue  DateTime? @db.Date
+  revueRappelLe  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -1011,6 +1019,9 @@ model Tier {
   lei                String?
   pays               String?
   aliases            Json @default("[]")
+  // Revue périodique (lib/revues : prochaine revue 12 mois après) ; anti-doublon de la relance (cron relances).
+  derniereRevue  DateTime? @db.Date
+  revueRappelLe  DateTime?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

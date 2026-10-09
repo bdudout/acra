@@ -7,6 +7,7 @@ import { canCreateAnalyse, canManageRopa, type UserRole } from '@/lib/permission
 import { optionsStructure } from '@/lib/org-config.server'
 import { alerteAipd, type StatutAipd } from '@/lib/ropa-aipd'
 import { sanitizeTraitement, evaluerTraitement } from '@/lib/ropa'
+import { sanitizeDateRevue } from '@/lib/revues'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -59,7 +60,8 @@ export async function POST(req: NextRequest) {
   if (!t.nom.trim()) return NextResponse.json({ error: 'nom_requis' }, { status: 400 })
 
   const { id: _drop, ...data } = t
-  const created = await db.traitement.create({ data: { ...data, organizationId: orgId, createdBy: userId } })
+  const derniereRevue = sanitizeDateRevue((body as { derniereRevue?: unknown }).derniereRevue, new Date())
+  const created = await db.traitement.create({ data: { ...data, organizationId: orgId, createdBy: userId, ...(derniereRevue ? { derniereRevue } : {}) } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, organizationId: orgId, ip: getClientIp(req),
     details: { scope: 'ropa', action: 'create', id: created.id },

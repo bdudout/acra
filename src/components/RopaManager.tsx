@@ -15,6 +15,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import { BASES_LEGALES, CRITERES_AIPD, type CritereAipd } from '@/lib/ropa'
 import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
 import RopaCataloguePanel from '@/components/RopaCataloguePanel'
+import RevuePeriodiqueChamp from '@/components/RevuePeriodiqueChamp'
 import RopaIdentiteCard from '@/components/RopaIdentiteCard'
 
 interface Evaluation { complet: boolean; champsManquants: string[]; pia: { requis: boolean; niveau?: 'REQUISE' | 'A_EXAMINER' | 'NON'; motifs: string[] }; alerteAipd?: 'A_LANCER' | 'JUSTIFICATION_REQUISE' | null }
@@ -27,6 +28,8 @@ interface Traitement {
   // Suivi de l'AIPD (art. 35-36).
   aipdStatut?: string | null; aipdAnalyseId?: string | null; aipdDate?: string | null; aipdJustification?: string; aipdConsultationPrealable?: boolean
   aipdAnalyse?: { id: string; nom: string } | null
+  // Revue périodique (lib/revues).
+  derniereRevue?: string | null; createdAt?: string
   evaluation: Evaluation
 }
 type Form = {
@@ -34,11 +37,12 @@ type Form = {
   categoriesPersonnes: string; categoriesDonnees: string; destinataires: string; mesuresSecurite: string
   dureeConservation: string; transfertHorsUE: boolean; paysTransfert: string; garantiesTransfert: string
   grandeEchelle: boolean; surveillanceSystematique: boolean; criteresAipd: string[]
+  derniereRevue: string
 }
 const EMPTY: Form = {
   nom: '', finalite: '', baseLegale: '', categoriesPersonnes: '', categoriesDonnees: '', destinataires: '',
   mesuresSecurite: '', dureeConservation: '', transfertHorsUE: false, paysTransfert: '', garantiesTransfert: '',
-  grandeEchelle: false, surveillanceSystematique: false, criteresAipd: [],
+  grandeEchelle: false, surveillanceSystematique: false, criteresAipd: [], derniereRevue: '',
 }
 const toArr = (s: string) => s.split(/[,;\n]/).map(x => x.trim()).filter(Boolean)
 const toStr = (a: string[]) => (a ?? []).join(', ')
@@ -80,6 +84,7 @@ export default function RopaManager() {
       destinataires: toStr(x.destinataires), mesuresSecurite: toStr(x.mesuresSecurite),
       dureeConservation: x.dureeConservation, transfertHorsUE: !!x.transfertHorsUE, paysTransfert: x.paysTransfert ?? '',
       garantiesTransfert: x.garantiesTransfert ?? '', grandeEchelle: !!x.grandeEchelle, surveillanceSystematique: !!x.surveillanceSystematique, criteresAipd: x.criteresAipd ?? [],
+      derniereRevue: x.derniereRevue ? x.derniereRevue.slice(0, 10) : '',
     })
   }
 
@@ -103,6 +108,7 @@ export default function RopaManager() {
       grandeEchelle: form.grandeEchelle, surveillanceSystematique: form.surveillanceSystematique,
       // Grande échelle et surveillance restent portées par leurs champs ; les autres critères WP248 sont listés.
       criteresAipd: form.criteresAipd.filter(c => c !== 'GRANDE_ECHELLE' && c !== 'SURVEILLANCE'),
+      derniereRevue: form.derniereRevue,
     }
     const res = await fetch(editId ? `/api/ropa/${editId}` : '/api/ropa', {
       method: editId ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
@@ -162,6 +168,7 @@ export default function RopaManager() {
             <label className="text-xs text-gray-500">{r.fDestinataires}<input value={form.destinataires} onChange={e => setForm(f => ({ ...f, destinataires: e.target.value }))} placeholder={r.csvHint} className={`${inp} mt-1`} /></label>
             <label className="text-xs text-gray-500">{r.fMesures}<input value={form.mesuresSecurite} onChange={e => setForm(f => ({ ...f, mesuresSecurite: e.target.value }))} placeholder={r.csvHint} className={`${inp} mt-1`} /></label>
             <label className="text-xs text-gray-500">{r.fDuree}<input value={form.dureeConservation} onChange={e => setForm(f => ({ ...f, dureeConservation: e.target.value }))} className={`${inp} mt-1`} /></label>
+            <RevuePeriodiqueChamp valeur={form.derniereRevue} creeLe={items.find(x => x.id === editId)?.createdAt} onChange={v => setForm(f => ({ ...f, derniereRevue: v }))} />
           </div>
           <div className="flex flex-wrap gap-4 text-xs text-gray-600 dark:text-gray-300">
             <label className="inline-flex items-center gap-1.5"><input type="checkbox" checked={form.transfertHorsUE} onChange={e => setForm(f => ({ ...f, transfertHorsUE: e.target.checked }))} />{r.fTransfert}</label>

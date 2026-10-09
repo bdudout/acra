@@ -783,6 +783,7 @@ export const fr = {
   },
 
   // ─── Nouvelle analyse ─────────────────────────────────────────────────────
+  revues: { derniereRevue: 'Dernière revue', prochaineRevue: 'Prochaine revue : {date} (12 mois après la dernière revue ou la création).', enRetard: 'Revue en retard', enregistrer: 'Enregistrer la revue', enregistree: 'Revue enregistrée.', erreur: 'Date de revue invalide (pas de date future).' },
   revisions: {
     title: 'Versions & révisions',
     newRevision: 'Nouvelle révision',
