@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_PLANIFICATION, sanitizePlanificationConfig, cleanPlanInput, cleanLigneInput,
-  peutPreparer, peutValider, peutModifierLignes, transitionPlanAnnee, figerLignes,
+  peutPreparer, peutValider, peutModifierLignes, transitionPlanAnnee, figerLignes, valideursPlanAnnee, soumisDepuis,
 } from '@/lib/planification'
 
 describe('configuration « Planification »', () => {
@@ -141,5 +141,29 @@ describe('réalisations (lot P4)', () => {
     const { tauxRealisation } = await import('@/lib/planification')
     expect(tauxRealisation(['REALISEE', 'REALISEE', 'EN_RETARD', 'A_VENIR', 'ANNULEE', 'REPORTEE'])).toEqual({ actives: 4, realisees: 2, enRetard: 1, taux: 50 })
     expect(tauxRealisation([])).toEqual({ actives: 0, realisees: 0, enRetard: 0, taux: null })
+  })
+})
+
+// Relance du plan annuel soumis (cron `relances`) : aux valideurs configurés du type de plan, jamais le préparateur quand
+// le double regard est actif ; administrateurs à défaut. L'attente court depuis la dernière soumission (historique).
+describe('relance du plan annuel soumis', () => {
+  const membres = [
+    { role: 'DIRECTION_METIER', userId: 'dm' }, { role: 'ADMIN', userId: 'adm' }, { role: 'AUDITEUR', userId: 'aud' },
+    { role: 'RSSI', userId: 'rssi' }, { role: 'RISK_MANAGER', userId: 'rm' },
+  ]
+  it('valideurs du type de plan (défauts : audit → direction métier et admin ; contrôle → RM et RSSI)', () => {
+    expect(valideursPlanAnnee(membres, { type: 'AUDIT', preparePar: 'aud' }, DEFAULT_PLANIFICATION).sort()).toEqual(['adm', 'dm'])
+    expect(valideursPlanAnnee(membres, { type: 'CONTROLE', preparePar: 'x' }, DEFAULT_PLANIFICATION).sort()).toEqual(['rm', 'rssi'])
+  })
+  it('double regard : le préparateur n’est pas relancé ; aucun valideur → administrateurs', () => {
+    const cfg = { ...DEFAULT_PLANIFICATION, doubleRegard: true }
+    expect(valideursPlanAnnee(membres, { type: 'AUDIT', preparePar: 'dm' }, cfg)).toEqual(['adm'])
+    expect(valideursPlanAnnee([{ role: 'ADMIN', userId: 'adm' }, { role: 'AUDITEUR', userId: 'aud' }], { type: 'CONTROLE', preparePar: 'aud' }, cfg)).toEqual(['adm'])
+  })
+  it('soumis depuis : dernière soumission de l’historique, sinon la date de repli', () => {
+    const repli = new Date('2026-10-01T00:00:00Z')
+    const h = [{ action: 'SOUMETTRE', statut: 'SOUMIS', le: '2026-09-01T10:00:00Z' }, { action: 'RENVOYER', statut: 'BROUILLON', le: '2026-09-02T10:00:00Z' }, { action: 'SOUMETTRE', statut: 'SOUMIS', le: '2026-09-05T10:00:00Z' }]
+    expect(soumisDepuis(h, repli).toISOString()).toBe('2026-09-05T10:00:00.000Z')
+    expect(soumisDepuis('n/a', repli)).toBe(repli)
   })
 })

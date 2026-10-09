@@ -26,7 +26,7 @@ beforeAll(async () => {
   const org = await makeOrg('Relances étendues')
   await prisma.organizationConfig.create({ data: {
     id: org.id, reglementaireActive: true, kriActive: true, conformiteActive: true, controlePermanentActive: true,
-    auditInterneActive: true, acceptationRisquesActive: true, secondeLigneActive: true,
+    auditInterneActive: true, acceptationRisquesActive: true, secondeLigneActive: true, mcpActive: true,
   } })
   rssi = await makeUser('ANALYSTE', [{ id: org.id, role: 'RSSI' }])
   dm = await makeUser('ANALYSTE', [{ id: org.id, role: 'DIRECTION_METIER' }])
@@ -49,7 +49,7 @@ beforeAll(async () => {
   await prisma.campagneControle.create({ data: { ...o, intitule: 'Campagne T4', statut: 'EN_COURS', dateDebut: jour(-20), dateFin: jour(4), controleIds: [c1.id, c2.id] } })
   await prisma.campagneControle.create({ data: { ...o, intitule: 'Campagne complète', statut: 'EN_COURS', dateDebut: jour(-20), dateFin: jour(4), controleIds: [c1.id] } })
   await prisma.auditMission.create({ data: { ...o, intitule: 'Audit IAM', statut: 'PLANIFIEE', dateDebut: jour(-7) } })
-  await prisma.analyse.create({ data: { ...o, nom: 'Analyse paiements', userId: auteur.id, statut: 'EN_COURS', dateEcheance: jour(6) } })
+  const paiements = await prisma.analyse.create({ data: { ...o, nom: 'Analyse paiements', userId: auteur.id, statut: 'EN_COURS', dateEcheance: jour(6) } })
   await prisma.analyse.create({ data: { ...o, nom: 'Analyse CRM', userId: auteur.id, statut: 'APPROUVE', approuveLe: jour(-10), risquesResiduelsStatut: 'EN_ATTENTE' } })
   await prisma.orgInvitation.create({ data: { ...o, email: 'nouveau@test.acra', role: 'ANALYSTE', scope: 'NODE', tokenHash: `h-${Date.now()}`, invitedById: rssi.id, expiresAt: jour(2) } })
 
@@ -58,6 +58,12 @@ beforeAll(async () => {
   await prisma.traitement.create({ data: { ...tr, nom: 'Scoring clients', criteresAipd: ['EVALUATION', 'CROISEMENT'] } as never })
   await prisma.traitement.create({ data: { ...tr, nom: 'Paie', grandeEchelle: true } as never })
   await prisma.traitement.create({ data: { ...tr, nom: 'Vidéoprotection', grandeEchelle: true, surveillanceSystematique: true, aipdStatut: 'EN_COURS' } as never })
+
+  // Plan d'audit soumis il y a 10 jours par l'auditeur → valideurs (direction métier) ; proposition MCP ancrée → auteur.
+  const plan = await prisma.planProgramme.create({ data: { ...o, type: 'AUDIT', nom: 'Programme audit 2027-2029', anneeDebut: 2027, anneeFin: 2029 } })
+  const auditeurId = (await prisma.user.findUniqueOrThrow({ where: { email: auditeur.email }, select: { id: true } })).id
+  await prisma.planAnnee.create({ data: { planId: plan.id, annee: 2027, statut: 'SOUMIS', preparePar: auditeurId, historique: [{ action: 'SOUMETTRE', statut: 'SOUMIS', par: auditeurId, le: jour(-10).toISOString() }] } })
+  await prisma.mcpProposal.create({ data: { ...o, type: 'risk', targetType: 'ANALYSE', targetId: paiements.id, payload: { title: 'Fraude au virement' }, createdAt: jour(-10) } })
 
   mail.send.mockClear()
   await executerRelances()
@@ -92,6 +98,11 @@ describe('relances étendues (vraie base)', () => {
     expect(t).toContain('Analyse d’impact relative à la protection des données (AIPD) requise, non engagée — Scoring clients')
     expect(t).not.toContain('Paie')
     expect(t).not.toContain('Vidéoprotection')
+  })
+  it('plan annuel soumis → valideurs ; proposition MCP en attente → auteur de l’analyse d’ancrage', () => {
+    expect(texte(dm)).toContain('Plan annuel d’audit ou de contrôle à valider — Programme audit 2027-2029 — 2027')
+    expect(texte(auditeur)).not.toContain('Programme audit 2027-2029')
+    expect(texte(auteur)).toContain('Proposition d’un agent IA (MCP) à examiner — Fraude au virement')
   })
   it('anti-doublon : rien au second passage', async () => {
     mail.send.mockClear()

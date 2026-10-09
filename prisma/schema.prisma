@@ -336,6 +336,8 @@ model McpProposal {
   reviewedAt     DateTime?
   reviewNote     String?   @db.Text
   appliedId      String? // id de l'objet réel créé à l'acceptation (traçabilité)
+  // Anti-doublon de la relance d'une proposition restée en attente (cron relances).
+  rappelLe       DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -2833,6 +2835,8 @@ model PlanAnnee {
   motifRevision String?       @db.Text
   // Journal des transitions : [{ action, statut, par, le, commentaire? }].
   historique    Json          @default("[]")
+  // Anti-doublon de la relance des valideurs d'une année soumise (cron relances).
+  rappelLe      DateTime?
   updatedAt     DateTime      @updatedAt
 
   @@unique([planId, annee])
