@@ -4,7 +4,18 @@ Mis de côté volontairement (décision du 2026-09-29) : ils restent au backlog 
 [`import-universel-analyses.md`](import-universel-analyses.md) (numéros `B-IMP-…` ci-dessous). Ce qui est **déjà livré** (I1–I7 hors API/MCP,
 CSV, JSON libre, profils, mapping par défaut `mapping_mzt`) est décrit dans [`import-universel-plan-de-test.md`](import-universel-plan-de-test.md).
 
-## 1. Liens biens supports ↔ valeurs métier (B-IMP-41)
+
+> **Décisions (2026-10-09)** — B-IMP-41 : option (b), colonne « valeurs métier liées (références) » dans la feuille des biens
+> supports, **facultative** (jamais bloquante ; sans colonne, import inchangé). B-IMP-72 : transport **multipart** (pérenne) ;
+> profil **inline ou référencé** (les deux acceptés, la référence prioritaire). B-IMP-73 : **oui** — le MCP peut proposer la
+> création d'une analyse, ancrée à l'**organisation** (ancre `ORGANISATION` réservée à ce cas), acceptation soumise au droit
+> de créer une analyse, aucune écriture avant validation humaine.
+
+## 1. Liens biens supports ↔ valeurs métier (B-IMP-41) — ✅ livré (lot I5, vérifié 2026-10-09)
+> Option (b) déjà en place : champ facultatif `businessValueRefs` du rôle `SUPPORT_ASSETS` (colonne « valeur(s) métier » reconnue),
+> références résolues sous forme canonique (`VM02` = `VM_02`), référence inconnue → avertissement `support_asset_business_value_not_found`,
+> jamais de lien inventé (test `analysis-import-ateliers.test.ts`). Le classeur d'exemple n'ayant pas de colonne de liens, l'import
+> reste sans lien pour lui : c'est attendu.
 - **Besoin** : un bien support doit pouvoir être rattaché à une ou plusieurs valeurs métier (`Cadrage.biensSupports[].valeurMetierIds`).
 - **Constat** : le classeur EBIOS RM d'exemple ne porte **aucun lien** dans la feuille « 2 - Biens supports » (colonnes : Réf.BS, Catégorie,
   Bien support, Description, Retenu, Responsable, Commentaires) ; l'import écrit donc les biens sans lien.
