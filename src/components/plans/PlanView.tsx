@@ -142,7 +142,8 @@ export default function PlanView({ id }: { id: string }) {
         <div className="text-sm text-gray-700 dark:text-gray-200">
           <span className={`text-xs px-2 py-0.5 rounded-full ${STATUT_STYLE[statut]}`}>{p.statuts[statut]}</span>
           {courante.valideLe && <span className="ml-2 text-xs text-gray-500">{p.valideLe.replace('{date}', date(courante.valideLe))}{courante.revision ? ` · ${p.revisionN.replace('{n}', String(courante.revision))}` : ''}</span>}
-          {!modifiable && d.droits.preparer && <p className="text-xs text-gray-500 mt-1">{p.verrouille}</p>}
+          {/* Lignes non modifiables : en attente de validation (soumis) ou année validée d'un plan figé. */}
+          {!modifiable && d.droits.preparer && <p className="text-xs text-gray-500 mt-1">{courante.statut === 'SOUMIS' ? p.soumisVerrouille : p.verrouille}</p>}
           {d.droits.doubleRegard && <p className="text-xs text-gray-500 mt-1">{p.doubleRegardActif}</p>}
         </div>
         <div className="flex flex-wrap gap-2 print:hidden">

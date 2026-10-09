@@ -54,6 +54,13 @@ describe('PlanView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Soumettre pour validation' }))
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/plans/p1/annees/2027', expect.objectContaining({ method: 'PATCH' })))
   })
+  it('année soumise : lignes non modifiables, message « en attente de validation » (et non « année validée »)', async () => {
+    fetchMock.mockResolvedValue(json(PLAN('SOUMIS')))
+    render(<PlanView id="p1" />)
+    expect(await screen.findByText(/Plan soumis : en attente de validation/)).toBeTruthy()
+    expect(screen.queryByText(/Année validée/)).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Ajouter une ligne' })).toBeNull()
+  })
   it('année validée d’un plan figé : lignes verrouillées, seule la révision est proposée', async () => {
     fetchMock.mockResolvedValue(json(PLAN('VALIDE')))
     render(<PlanView id="p1" />)
