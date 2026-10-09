@@ -32,6 +32,12 @@ describe('validerSuiviAipd', () => {
     expect(validerSuiviAipd('NON', { aipdStatut: 'NON_RETENUE', aipdJustification: '' })).toBeNull()
     expect(validerSuiviAipd('REQUISE', { aipdStatut: 'EN_COURS', aipdJustification: '' })).toBeNull()
   })
+  it('« Réalisée » exige une trace : date de réalisation ou analyse rattachée (recette n° 10)', () => {
+    expect(validerSuiviAipd('REQUISE', { aipdStatut: 'REALISEE', aipdJustification: '', aipdDate: null, aipdAnalyseId: null })).toBe('trace_requise')
+    expect(validerSuiviAipd('NON', { aipdStatut: 'REALISEE', aipdJustification: '', aipdDate: null, aipdAnalyseId: null })).toBe('trace_requise')
+    expect(validerSuiviAipd('REQUISE', { aipdStatut: 'REALISEE', aipdJustification: '', aipdDate: new Date('2026-10-01'), aipdAnalyseId: null })).toBeNull()
+    expect(validerSuiviAipd('REQUISE', { aipdStatut: 'REALISEE', aipdJustification: '', aipdDate: null, aipdAnalyseId: 'a1' })).toBeNull()
+  })
 })
 
 // Relance par e-mail (cron `relances`) : AIPD requise (≥ 2 critères WP248) mais pas engagée — au DPO, après le délai

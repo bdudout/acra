@@ -32,6 +32,12 @@ export default function AipdSuiviPanel({ traitement, peutCreerAnalyse, onEnregis
       .then((j: { analyses?: { id: string; nom: string }[] } | null) => setAnalyses((j?.analyses ?? []).map(x => ({ id: x.id, nom: x.nom })))).catch(() => setAnalyses([]))
   }, [])
 
+  // « Réalisée » : date du jour proposée (une AIPD réalisée doit laisser une trace) ; un changement de statut efface l'erreur.
+  function changerStatut(v: string) {
+    setStatut(v); setErreur(null)
+    if (v === 'REALISEE' && !date) setDate(new Date().toISOString().slice(0, 10))
+  }
+
   async function enregistrer() {
     setErreur(null)
     const res = await fetch(`/api/ropa/${traitement.id}/aipd`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
@@ -49,7 +55,7 @@ export default function AipdSuiviPanel({ traitement, peutCreerAnalyse, onEnregis
       <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{a.titre.replace('{nom}', traitement.nom)}</p>
       <div className="grid md:grid-cols-3 gap-3">
         <label className={label}>{a.statut}
-          <select aria-label={a.statut} value={statut} onChange={e => setStatut(e.target.value)} className={champ}>
+          <select aria-label={a.statut} value={statut} onChange={e => changerStatut(e.target.value)} className={champ}>
             <option value="">—</option>
             {STATUTS_AIPD.map(s => <option key={s} value={s}>{a.statuts[s]}</option>)}
           </select>

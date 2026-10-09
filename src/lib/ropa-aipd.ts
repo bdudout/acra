@@ -37,9 +37,14 @@ export function alerteAipd(niveau: Niveau, s: Pick<SuiviAipd, 'aipdStatut' | 'ai
   return null
 }
 
-/** Refus d'enregistrement : « non retenue » sans justification alors qu'un critère est présent. */
-export function validerSuiviAipd(niveau: Niveau, s: Pick<SuiviAipd, 'aipdStatut' | 'aipdJustification'>): 'justification_requise' | null {
-  return niveau !== 'NON' && s.aipdStatut === 'NON_RETENUE' && !s.aipdJustification.trim() ? 'justification_requise' : null
+/**
+ * Refus d'enregistrement : « non retenue » sans justification alors qu'un critère est présent ; « réalisée » sans aucune
+ * trace (ni date de réalisation, ni analyse rattachée).
+ */
+export function validerSuiviAipd(niveau: Niveau, s: Pick<SuiviAipd, 'aipdStatut' | 'aipdJustification'> & Partial<Pick<SuiviAipd, 'aipdDate' | 'aipdAnalyseId'>>): 'justification_requise' | 'trace_requise' | null {
+  if (niveau !== 'NON' && s.aipdStatut === 'NON_RETENUE' && !s.aipdJustification.trim()) return 'justification_requise'
+  if (s.aipdStatut === 'REALISEE' && !s.aipdDate && !s.aipdAnalyseId) return 'trace_requise'
+  return null
 }
 
 /**
