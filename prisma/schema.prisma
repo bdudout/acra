@@ -1118,6 +1118,7 @@ model TierServiceUsage {
   useCase           String
   description       String? @db.Text
   criticite         String? // CRITIQUE | IMPORTANTE | NON_CRITIQUE — facultative (cf. lib/tier-offers.ts)
+  evaluation        EvaluationUsageTiers?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -2965,3 +2966,33 @@ model TraitementSousTraitance {
 
   @@index([organizationId])
 }
+
+// ─── Évaluation d'un usage de service tiers (lot T1, docs/specs/evaluation-tiers-par-usage.md) ─────────────────────────
+// Une évaluation par usage (organisation × offre × cas d'usage) : méthode de l'atelier 3 EBIOS RM (dépendance, pénétration,
+// maturité, confiance — lib/tier-evaluation), cotation actuelle et cible, clauses contractuelles, traitements RGPD et
+// risques d'externalisation rattachés ; brouillon → soumise → validée (RSSI) ; réévaluation 12 mois après la validation.
+model EvaluationUsageTiers {
+  id             String           @id @default(cuid())
+  usageId        String           @unique
+  usage          TierServiceUsage @relation(fields: [usageId], references: [id], onDelete: Cascade)
+  organizationId String
+  // { dependance, penetration, maturite, confiance } (null = non coté).
+  actuelle       Json             @default("{}")
+  cible          Json?
+  clauses        Json             @default("[]")
+  traitementIds  Json             @default("[]")
+  risqueIds      Json             @default("[]")
+  justification  String           @default("") @db.Text
+  statut         String           @default("BROUILLON") // BROUILLON | SOUMISE | VALIDEE
+  evaluePar      String?
+  soumisLe       DateTime?
+  validePar      String?
+  valideLe       DateTime?
+  // Anti-doublon des relances (validation en attente, réévaluation échue).
+  rappelLe       DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([organizationId, statut])
+}
+

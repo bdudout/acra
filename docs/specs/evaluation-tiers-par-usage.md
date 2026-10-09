@@ -1,6 +1,6 @@
 # Évaluation des tiers par usage de service — cadrage
 
-> Statut : **cadrage v0.1 (2026-10-09)**, à valider avant tout code. Décisions déjà prises (cadrage du 2026-10-09) :
+> Statut : **cadrage v0.2 (2026-10-09) — validé**, décisions ci-dessous (§ 5). Décisions déjà prises (cadrage du 2026-10-09) :
 > l'évaluation porte sur le **service fourni**, pas sur l'entreprise (« un contrat est pour un service ou un ensemble de
 > services ») ; **évaluation par organisation, synthèse groupe**.
 
@@ -75,7 +75,21 @@ Hors de ce lot (accès externe sans compte à sécuriser) ; à cadrer séparéme
 
 ## 4. Lots proposés (après validation)
 
-1. **T1** — Fiche d'évaluation d'un usage (Q1 b, Q2 a, Q3 b), synthèses offre / tiers / organisation, prochaine évaluation et relance.
+1. **T1** — ✅ livré (2026-10-10) : fiche d'évaluation d'un usage (méthode atelier 3, actuelle / cible, clauses, traitements RGPD, risques d'externalisation), cycle brouillon → soumise → validée (RSSI), synthèses offre / tiers au pire niveau, réévaluation à 12 mois et relances (`lib/tier-evaluation`, `EvaluationUsagePanel`, route `tier-registry/usages/[id]/evaluation`).
 2. **T2** — Vue groupe (pire niveau par filiale, concentration), export Excel.
 3. **T3** — Proposition de risque fournisseur au-delà d'un seuil (Q5 b) ; circuit de validation (Q4 b).
 4. **T4** (option) — Grille fournisseur dédiée (Q2 c).
+
+## 5. Décisions (2026-10-09)
+
+- **Méthode (Q2)** : reprendre les principes de l'atelier 3 d'EBIOS RM, où les tiers sont déjà évalués — 4 critères
+  **dépendance, pénétration, maturité cyber, confiance**, échelles de l'organisation (`echellesEcosysteme`),
+  **menace = (dépendance × pénétration) / (maturité × confiance)**, zones **veille / contrôle / danger** (mêmes seuils que
+  le radar), clauses contractuelles types de l'atelier 3 (RGPD, sécurité, PAS, PCI/PSEE, réversibilité, QoS, SLA).
+- **Cotations (Q3)** : une cotation **actuelle** et une cotation **cible (résiduelle)**, comme pour les parties prenantes.
+- **Évaluation / validation (Q4)** : le **propriétaire du risque ou l'analyste** évalue et soumet ; le **RSSI valide**.
+- **Risques (Q5)** : l'évaluation est **rattachée à un ou plusieurs risques d'externalisation** existants du registre des
+  risques de l'organisation (choisis dans la liste ; chaque organisation a les siens) — aucune création automatique.
+- **Données (Q1)** : processus soutenu (déjà sur l'usage) + traitements RGPD concernés.
+- **Questionnaire de diligence (Q6)** : hors du lot.
+
