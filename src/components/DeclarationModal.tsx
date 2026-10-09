@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
-import { fieldsOfStage, isMandatoryAt, RGPD_FIELDS, type DeclarationValue, type DoraItsField, type DoraStage } from '@/lib/incident-declaration'
+import { fieldsOfStage, isMandatoryAt, NIS2_REPONSES, nis2Rubriques, RGPD_FIELDS, type DeclarationValue, type DoraItsField, type DoraStage } from '@/lib/incident-declaration'
 import type { HorlogeRegimeJson } from '@/components/NotificationsPanel'
 import { incidentTypeByKey } from '@/lib/incident-types-catalogue'
 import RegimeInfoBlock from '@/components/RegimeInfoBlock'
@@ -155,6 +155,34 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
           <section key={h.regime} aria-label={h.label ?? tr(h.labelKey, h.regime)} className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{h.label ?? tr(h.labelKey, h.regime)}</h3>
             <RegimeInfoBlock code={h.regime} />
+            {h.regime === 'NIS2' && canQualify && (
+              <div className="mt-2 rounded-sm border border-gray-100 dark:border-gray-700 p-2">
+                <p className="text-[11px] font-medium text-gray-600 dark:text-gray-300">{d.nis2.title}</p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400">{d.nis2.hint}</p>
+                {(['ALERTE_PRECOCE', 'NOTIFICATION', 'RAPPORT_FINAL'] as const).map(ph => (
+                  <fieldset key={ph} className="mt-2">
+                    <legend className="text-[11px] font-semibold text-gray-700 dark:text-gray-200">{d.nis2.contenu.replace('{phase}', tr(`notifRegimes.NIS2.phases.${ph}`, ph))}</legend>
+                    <div className="mt-1 grid gap-2 sm:grid-cols-2">
+                      {nis2Rubriques(ph).filter(f => f.phase === ph).map(f => {
+                        const label = f.libelles[locale as 'fr' | 'en' | 'de' | 'es' | 'it'] ?? f.libelles.fr
+                        const val = compl[f.id] ?? ''
+                        return (
+                          <label key={f.id} className={`text-[11px] text-gray-600 dark:text-gray-300 ${f.kind === 'text' ? 'sm:col-span-2' : ''}`}>{label} <span className="text-gray-400">({f.art})</span>
+                            {f.kind === 'choice'
+                              ? <select aria-label={label} value={String(val)} onChange={e => setField(f.id, e.target.value)} className="mt-1 block w-full px-2 py-1 rounded-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-xs">
+                                  <option value="">—</option>
+                                  {NIS2_REPONSES.map(r => <option key={r} value={r}>{d.nis2.reponses[r]}</option>)}
+                                </select>
+                              : <textarea aria-label={label} rows={2} maxLength={2000} value={String(val)} placeholder={derived[f.id] ? String(derived[f.id]) : undefined} onChange={e => setField(f.id, e.target.value)} className="mt-1 block w-full px-2 py-1 rounded-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-xs" />}
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </fieldset>
+                ))}
+                <button type="button" className="btn-primary text-xs mt-2" disabled={busy} onClick={() => void saveCompl()}>{d.nis2.save}</button>
+              </div>
+            )}
             {h.regime === 'RGPD_33' && canQualify && (
               <div className="mt-2 rounded-sm border border-gray-100 dark:border-gray-700 p-2">
                 <p className="text-[11px] font-medium text-gray-600 dark:text-gray-300">{d.rgpd.title}</p>

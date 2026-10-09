@@ -192,10 +192,102 @@ export function cleanRgpd(input: unknown): Declaration {
   return out
 }
 
+// ─── NIS2 art. 23 § 4 : contenu de l'alerte précoce, de la notification d'incident et du rapport final (R-INC-3) ──────────
+// Directive (UE) 2022/2555 (NIS2), art. 23 § 4, points a), b) et d) i) à iv). Libellés repris du texte officiel publié sur
+// EUR-Lex dans chaque langue (JO L 333 du 27.12.2022) — à ne pas retraduire. Stockés avec la déclaration sous `nis2.*`.
+// Les questions oui / non de l'alerte précoce ne sont jamais présumées ; les textes du rapport final sont préremplis depuis
+// l'incident (description, cause racine, commentaire de clôture), la saisie l'emportant toujours.
+export type Nis2Phase = 'ALERTE_PRECOCE' | 'NOTIFICATION' | 'RAPPORT_FINAL'
+export const NIS2_REPONSES = ['OUI', 'NON', 'INCONNU'] as const
+type Langue = 'fr' | 'en' | 'de' | 'es' | 'it'
+export interface Nis2Field { id: string; key: string; kind: 'choice' | 'text'; art: string; phase: Nis2Phase; libelles: Record<Langue, string> }
+const n2 = (key: string, kind: Nis2Field['kind'], art: string, phase: Nis2Phase, libelles: Record<Langue, string>): Nis2Field => ({ id: `nis2.${key}`, key, kind, art, phase, libelles })
+export const NIS2_FIELDS: Nis2Field[] = [
+  n2('malveillance', 'choice', '23(4)(a)', 'ALERTE_PRECOCE', {
+    fr: 'L’incident important est suspecté d’avoir été causé par des actes illicites ou malveillants',
+    en: 'The significant incident is suspected of being caused by unlawful or malicious acts',
+    de: 'Verdacht, dass der erhebliche Sicherheitsvorfall auf rechtswidrige oder böswillige Handlungen zurückzuführen ist',
+    es: 'Cabe sospechar que el incidente significativo responde a una acción ilícita o malintencionada',
+    it: 'L’incidente significativo è sospettato di essere il risultato di atti illegittimi o malevoli' }),
+  n2('transfrontiere', 'choice', '23(4)(a)', 'ALERTE_PRECOCE', {
+    fr: 'L’incident important pourrait avoir un impact transfrontière',
+    en: 'The significant incident could have a cross-border impact',
+    de: 'Der erhebliche Sicherheitsvorfall könnte grenzüberschreitende Auswirkungen haben',
+    es: 'El incidente significativo puede tener repercusiones transfronterizas',
+    it: 'L’incidente significativo può avere un impatto transfrontaliero' }),
+  n2('evaluationInitiale', 'text', '23(4)(b)', 'NOTIFICATION', {
+    fr: 'Évaluation initiale de l’incident important, y compris de sa gravité et de son impact',
+    en: 'Initial assessment of the significant incident, including its severity and impact',
+    de: 'Erste Bewertung des erheblichen Sicherheitsvorfalls, einschließlich seines Schweregrads und seiner Auswirkungen',
+    es: 'Evaluación inicial del incidente significativo, incluyendo su gravedad e impacto',
+    it: 'Valutazione iniziale dell’incidente significativo, comprensiva della sua gravità e del suo impatto' }),
+  n2('indicateursCompromission', 'text', '23(4)(b)', 'NOTIFICATION', {
+    fr: 'Indicateurs de compromission, lorsqu’ils sont disponibles',
+    en: 'Indicators of compromise, where available',
+    de: 'Gegebenenfalls die Kompromittierungsindikatoren',
+    es: 'Indicadores de compromiso, cuando estén disponibles',
+    it: 'Indicatori di compromissione, ove disponibili' }),
+  n2('description', 'text', '23(4)(d)(i)', 'RAPPORT_FINAL', {
+    fr: 'Description détaillée de l’incident, y compris de sa gravité et de son impact',
+    en: 'Detailed description of the incident, including its severity and impact',
+    de: 'Ausführliche Beschreibung des Sicherheitsvorfalls, einschließlich seines Schweregrads und seiner Auswirkungen',
+    es: 'Descripción detallada del incidente, incluyendo su gravedad e impacto',
+    it: 'Descrizione dettagliata dell’incidente, comprensiva della sua gravità e del suo impatto' }),
+  n2('menaceCause', 'text', '23(4)(d)(ii)', 'RAPPORT_FINAL', {
+    fr: 'Type de menace ou cause profonde qui a probablement déclenché l’incident',
+    en: 'Type of threat or root cause that is likely to have triggered the incident',
+    de: 'Art der Bedrohung bzw. zugrunde liegende Ursache, die wahrscheinlich den Sicherheitsvorfall ausgelöst hat',
+    es: 'Tipo de amenaza o causa principal que probablemente haya desencadenado el incidente',
+    it: 'Tipo di minaccia o causa di fondo che ha probabilmente innescato l’incidente' }),
+  n2('mesuresAttenuation', 'text', '23(4)(d)(iii)', 'RAPPORT_FINAL', {
+    fr: 'Mesures d’atténuation appliquées et en cours',
+    en: 'Applied and ongoing mitigation measures',
+    de: 'Getroffene und laufende Abhilfemaßnahmen',
+    es: 'Medidas paliativas aplicadas y en curso',
+    it: 'Misure di attenuazione adottate e in corso' }),
+  n2('impactTransfrontiere', 'text', '23(4)(d)(iv)', 'RAPPORT_FINAL', {
+    fr: 'Le cas échéant, impact transfrontière de l’incident',
+    en: 'Where applicable, the cross-border impact of the incident',
+    de: 'Gegebenenfalls die grenzüberschreitenden Auswirkungen des Sicherheitsvorfalls',
+    es: 'Cuando proceda, repercusiones transfronterizas del incidente',
+    it: 'Se opportuno, impatto transfrontaliero dell’incidente' }),
+]
+const NIS2_BY_ID = new Map(NIS2_FIELDS.map(f => [f.id, f]))
+/** Rubriques d'une phase NIS2 : la notification d'incident met aussi à jour celles de l'alerte précoce (art. 23 § 4 b)). */
+export function nis2Rubriques(phase: string): Nis2Field[] {
+  const de = (p: Nis2Phase) => NIS2_FIELDS.filter(f => f.phase === p)
+  if (phase === 'ALERTE_PRECOCE') return de('ALERTE_PRECOCE')
+  if (phase === 'NOTIFICATION') return [...de('ALERTE_PRECOCE'), ...de('NOTIFICATION')]
+  if (phase === 'RAPPORT_FINAL') return de('RAPPORT_FINAL')
+  return []
+}
+/** Rubriques NIS2 saisies : réponse oui / non / inconnu, texte borné ; clés inconnues écartées. */
+export function cleanNis2(input: unknown): Declaration {
+  const out: Declaration = {}
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return out
+  for (const [id, raw] of Object.entries(input as Record<string, unknown>)) {
+    const f = NIS2_BY_ID.get(id)
+    if (!f) continue
+    if (f.kind === 'choice') { if ((NIS2_REPONSES as readonly string[]).includes(raw as string)) out[id] = raw as string }
+    else { const t = String(raw ?? '').trim().slice(0, RGPD_MAX_TEXT); if (t) out[id] = t }
+  }
+  return out
+}
+/** Préremplissage du rapport final depuis l'incident (textes seulement). */
+export function deriveNis2(inc: DeclarationIncident): Declaration {
+  const d: Declaration = {}
+  const description = [inc.intitule, inc.description].filter(Boolean).join(' — ')
+  const cause = [inc.causeRacine, inc.causeDetail].filter(Boolean).join(' — ')
+  if (description) d['nis2.description'] = description
+  if (cause) d['nis2.menaceCause'] = cause
+  if (inc.clotureCommentaire) d['nis2.mesuresAttenuation'] = inc.clotureCommentaire
+  return d
+}
+
 /** Compléments saisis : seuls les champs ITS éditables sont gardés ; chaque valeur est contrôlée selon le type et la liste de valeurs admises du glossaire. */
 export function cleanDeclaration(input: unknown): Declaration {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return {}
-  const out: Declaration = { ...cleanRgpd(input) }
+  const out: Declaration = { ...cleanRgpd(input), ...cleanNis2(input) }
   for (const [id, raw] of Object.entries(input as Record<string, unknown>)) {
     const field = BY_ID.get(id)
     if (!field || !field.editable) continue
@@ -317,6 +409,8 @@ export interface NotificationJson {
   regime: { code: string; label?: string; authority?: string; phase: string; phaseLabel?: string; deadline: string | null; submittedAt: string | null; reference?: string }
   /** Rubriques de l'art. 33 § 3 du RGPD (régime RGPD_33 seulement) : à compléter par l'entité. */
   rgpd?: Record<string, string | number | boolean | string[]>
+  /** Rubriques de l'art. 23 § 4 de NIS2 pour la phase exportée (régime NIS2 seulement) — R-INC-3. */
+  nis2?: Record<string, string | number | boolean | string[]>
   incident: { reference: string; title: string; description?: string; detectedAt?: string; occurredAt?: string; status?: string; eventType?: string; organisation: string; classifiedMajorAt?: string; closedAt?: string; resolutionSummary?: string; rootCause?: string; rootCauseDetail?: string }
 }
 
@@ -334,6 +428,7 @@ export function buildNotificationJson(inc: DeclarationIncident, n: NotificationJ
       ...(iso(inc.doraClasseMajeurLe) ? { classifiedMajorAt: iso(inc.doraClasseMajeurLe) } : {}), ...(iso(inc.clotureLe) ? { closedAt: iso(inc.clotureLe) } : {}),
       ...(inc.clotureCommentaire ? { resolutionSummary: inc.clotureCommentaire } : {}), ...(inc.causeRacine ? { rootCause: inc.causeRacine } : {}), ...(inc.causeDetail ? { rootCauseDetail: inc.causeDetail } : {}),
     },
+    ...(n.code === 'NIS2' ? { nis2: (() => { const derive = deriveNis2(inc); return Object.fromEntries(nis2Rubriques(n.phase.code).map(f => [f.key, declaration[f.id] ?? derive[f.id]]).filter(([, v]) => v !== undefined)) })() } : {}),
     ...(n.code === 'RGPD_33' ? { rgpd: Object.fromEntries(RGPD_FIELDS.map(f => [f.key, declaration[f.id] ?? (f.key === 'nature' ? inc.description ?? undefined : undefined)]).filter(([, v]) => v !== undefined)) } : {}),
   }
 }

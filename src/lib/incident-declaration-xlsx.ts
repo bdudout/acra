@@ -3,7 +3,7 @@
 // il n'est pas au format de dépôt. Toute chaîne est neutralisée contre l'injection de formule (CWE-1236).
 import ExcelJS from 'exceljs'
 import { sanitizeForSpreadsheet as S } from './spreadsheet-safe'
-import { doraFieldRows, itsDatetime, RGPD_FIELDS, type DeclarationIncident, type DeclarationContext, type Declaration, type DeclarationValue, type DoraStage } from './incident-declaration'
+import { deriveNis2, doraFieldRows, itsDatetime, nis2Rubriques, RGPD_FIELDS, type DeclarationIncident, type DeclarationContext, type Declaration, type DeclarationValue, type DoraStage } from './incident-declaration'
 
 export type ExportLang = 'fr' | 'en' | 'de' | 'es' | 'it'
 export type DeclarationExport =
@@ -48,6 +48,14 @@ const RG: Record<ExportLang, { sheet: string; todo: string; label: Record<string
   de: { sheet: 'DSGVO Art. 33 Abs. 3', todo: 'Zu ergänzen', label: { nature: 'Art der Verletzung des Schutzes personenbezogener Daten', categoriesPersonnes: 'Kategorien der betroffenen Personen', nbPersonnes: 'Ungefähre Zahl der betroffenen Personen', categoriesDonnees: 'Kategorien der betroffenen personenbezogenen Datensätze', nbEnregistrements: 'Ungefähre Zahl der betroffenen personenbezogenen Datensätze', dpo: 'Name und Kontaktdaten des Datenschutzbeauftragten oder einer sonstigen Anlaufstelle', consequences: 'Wahrscheinliche Folgen der Verletzung', mesures: 'Ergriffene oder vorgeschlagene Maßnahmen zur Behebung und Abmilderung', retardMotif: 'Gründe für die Verzögerung (Meldung nach mehr als 72 Stunden)' } },
   es: { sheet: 'RGPD art. 33.3', todo: 'Por completar', label: { nature: 'Naturaleza de la violación de la seguridad de los datos personales', categoriesPersonnes: 'Categorías de interesados afectados', nbPersonnes: 'Número aproximado de interesados afectados', categoriesDonnees: 'Categorías de registros de datos personales afectados', nbEnregistrements: 'Número aproximado de registros de datos personales afectados', dpo: 'Nombre y datos de contacto del delegado de protección de datos u otro punto de contacto', consequences: 'Posibles consecuencias de la violación', mesures: 'Medidas adoptadas o propuestas para poner remedio y mitigar los posibles efectos negativos', retardMotif: 'Motivos del retraso (notificación pasadas 72 horas)' } },
   it: { sheet: 'GDPR art. 33 par. 3', todo: 'Da completare', label: { nature: 'Natura della violazione dei dati personali', categoriesPersonnes: 'Categorie di interessati', nbPersonnes: 'Numero approssimativo di interessati', categoriesDonnees: 'Categorie di registrazioni dei dati personali', nbEnregistrements: 'Numero approssimativo di registrazioni dei dati personali', dpo: 'Nome e dati di contatto del responsabile della protezione dei dati o di altro punto di contatto', consequences: 'Probabili conseguenze della violazione', mesures: 'Misure adottate o di cui si propone l’adozione per porre rimedio e attenuare i possibili effetti negativi', retardMotif: 'Motivi del ritardo (notifica oltre le 72 ore)' } },
+}
+
+const N2: Record<ExportLang, { sheet: string; todo: string; reponses: Record<string, string> }> = {
+  fr: { sheet: 'NIS2 art. 23 § 4', todo: 'À compléter', reponses: { OUI: 'Oui', NON: 'Non', INCONNU: 'Inconnu à ce stade' } },
+  en: { sheet: 'NIS2 Art. 23(4)', todo: 'To complete', reponses: { OUI: 'Yes', NON: 'No', INCONNU: 'Unknown at this stage' } },
+  de: { sheet: 'NIS2 Art. 23 Abs. 4', todo: 'Zu ergänzen', reponses: { OUI: 'Ja', NON: 'Nein', INCONNU: 'Derzeit unbekannt' } },
+  es: { sheet: 'NIS2 art. 23.4', todo: 'Por completar', reponses: { OUI: 'Sí', NON: 'No', INCONNU: 'Desconocido por ahora' } },
+  it: { sheet: 'NIS2 art. 23, par. 4', todo: 'Da completare', reponses: { OUI: 'Sì', NON: 'No', INCONNU: 'Non noto al momento' } },
 }
 
 export async function buildDeclarationWorkbook(what: DeclarationExport, inc: DeclarationIncident, ctx: DeclarationContext, lang: ExportLang): Promise<Buffer> {
@@ -101,6 +109,20 @@ export async function buildDeclarationWorkbook(what: DeclarationExport, inc: Dec
         if (v === undefined) row.getCell(2).font = { bold: true, color: { argb: 'FFB91C1C' } }
       }
       w2.getColumn(1).font = { bold: true }
+    }
+    // R-INC-3 : rubriques NIS2 (art. 23 § 4) de la phase, libellés officiels du module (EUR-Lex), préremplies depuis l'incident.
+    if (what.code === 'NIS2' && nis2Rubriques(what.phase.code).length) {
+      const n2 = N2[lang] ?? N2.fr
+      const w3 = wb.addWorksheet(n2.sheet)
+      w3.columns = [{ width: 70 }, { width: 70 }]
+      const derive = deriveNis2(inc)
+      for (const f of nis2Rubriques(what.phase.code)) {
+        const v = what.declaration?.[f.id] ?? derive[f.id]
+        const row = w3.addRow([`${f.libelles[lang] ?? f.libelles.fr} (${f.art})`, v === undefined ? n2.todo : f.kind === 'choice' ? n2.reponses[String(v)] ?? show(v) : show(v)])
+        row.alignment = { vertical: 'top', wrapText: true }
+        if (v === undefined) row.getCell(2).font = { bold: true, color: { argb: 'FFB91C1C' } }
+      }
+      w3.getColumn(1).font = { bold: true }
     }
   }
   return Buffer.from(await wb.xlsx.writeBuffer())
