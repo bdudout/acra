@@ -68,7 +68,11 @@ beforeAll(async () => {
   // Revues périodiques : processus jamais revu créé il y a 400 jours → propriétaire ; tiers revu il y a 360 jours → RSSI ;
   // système d'IA revu il y a 2 ans → auteur de la fiche ; traitement revu récemment → rien.
   await prisma.processus.create({ data: { ...o, nom: 'Paiements fournisseurs', proprietaire: porteurKri.email, createdAt: jour(-400) } as never })
-  await prisma.tier.create({ data: { rootOrganizationId: org.id, nom: 'Hébergeur Alpha', derniereRevue: jour(-360) } })
+  const alpha = await prisma.tier.create({ data: { rootOrganizationId: org.id, nom: 'Hébergeur Alpha', derniereRevue: jour(-360) } })
+  // Évaluation d'un usage de service tiers soumise il y a 10 jours → RSSI (lot T1).
+  const offre = await prisma.tierService.create({ data: { tierId: alpha.id, nom: 'IaaS', typeService: 'CLOUD' } })
+  const usage = await prisma.tierServiceUsage.create({ data: { organizationId: org.id, tierServiceId: offre.id, useCase: 'Hébergement de la paie' } })
+  await prisma.evaluationUsageTiers.create({ data: { usageId: usage.id, organizationId: org.id, statut: 'SOUMISE', soumisLe: jour(-10), actuelle: { dependance: 4, penetration: 3, maturite: 2, confiance: 2 } } })
   await prisma.systemeIA.create({ data: { ...o, nom: 'Tri des CV', finalite: 'Présélection', typeDecision: 'AIDE', usage: 'EMPLOI', statut: 'EN_SERVICE', derniereRevue: jour(-730), createdBy: auteur.id } as never })
   await prisma.traitement.create({ data: { ...tr, nom: 'Annuaire interne', derniereRevue: jour(-30) } as never })
 
@@ -116,6 +120,9 @@ describe('relances étendues (vraie base)', () => {
     expect(texte(rssi)).toContain('Revue annuelle d’un tiers — Hébergeur Alpha : échéance le')
     expect(texte(auteur)).toContain('Revue annuelle d’un système d’IA — Tri des CV : en retard')
     expect(texte(dpo)).not.toContain('Annuaire interne')
+  })
+  it('évaluation d’un service tiers soumise → RSSI', () => {
+    expect(texte(rssi)).toContain('Évaluation d’un service tiers à valider — Hébergeur Alpha — IaaS — Hébergement de la paie')
   })
   it('anti-doublon : rien au second passage', async () => {
     mail.send.mockClear()

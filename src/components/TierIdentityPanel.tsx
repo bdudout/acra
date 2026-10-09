@@ -15,7 +15,11 @@ import EntiteLiens from '@/components/tiers/EntiteLiens'
 import type { ServiceTiers } from '@/lib/services-tiers'
 
 type Candidate = { tierId: string; nom: string; reason: 'LEI' | 'NAME' | 'ALIAS'; strength: 'STRONG' | 'WEAK' }
-type TierRow = { id: string; nom: string; lei: string | null; pays: string | null; analysesCount: number; arrangements: { id: string; reference: string }[]; coverage: 'CYBER_ONLY' | 'TIC_ONLY' | 'CYBER_AND_TIC' | 'UNUSED' }
+type Niveau = { menace: number; zone: string; evalues: number } | null
+type Concentration = { usagesCritiques: number; processusCritiques: number }
+// Lot T2 : évaluation des usages (pire niveau, concentration) ; détail par organisation pour une tête de groupe.
+type EvaluationTier = { pire: Niveau; concentration: Concentration; groupe?: { pire: Niveau; concentration: Concentration; parOrganisation: { organizationId: string; organisation: string; synthese: Niveau; usages: number }[] } }
+type TierRow = { id: string; nom: string; lei: string | null; pays: string | null; analysesCount: number; arrangements: { id: string; reference: string }[]; coverage: 'CYBER_ONLY' | 'TIC_ONLY' | 'CYBER_AND_TIC' | 'UNUSED'; evaluation?: EvaluationTier }
 type Unlinked = { id: string; reference: string; prestataireNom: string; lei: string | null; candidates: Candidate[] }
 type Proposal = { arrangementId: string; reference: string; prestataireNom: string; ownerNom: string }
 type Registry = { active: boolean; canManage?: boolean; isAdmin?: boolean; orgId?: string; tiers: TierRow[]; unlinkedArrangements: Unlinked[]; proposals?: Proposal[] }
@@ -27,7 +31,10 @@ const post = (url: string, body: object) => send(url, 'POST', body)
 
 /** `sansTitre` : sur la page dédiée (/tiers/entites), qui porte déjà le titre et l'explication. */
 export default function TierIdentityPanel({ sansTitre = false }: { sansTitre?: boolean } = {}) {
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
+  const ZONE_BADGE: Record<string, string> = { danger: 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-200', controle: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-200', veille: 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-200' }
+  const zoneNom: Record<string, string> = { danger: t.workshop.a3.radar.zoneDanger, controle: t.workshop.a3.radar.zoneControle, veille: t.workshop.a3.radar.zoneVeille }
+  const niveauTexte = (n: { menace: number; zone: string }) => `${n.menace.toLocaleString(locale, { maximumFractionDigits: 2 })} — ${zoneNom[n.zone] ?? n.zone}`
   const c = t.tierIdentity
   const [data, setData] = useState<Registry | null>(null)
   const [busy, setBusy] = useState(false)
@@ -187,8 +194,10 @@ export default function TierIdentityPanel({ sansTitre = false }: { sansTitre?: b
         ? <p className="text-sm text-gray-600 dark:text-gray-300">{c.empty}</p>
         : (
           <div className="overflow-x-auto">
+            {/* Lot T2 : export Excel des évaluations d'usages (organisation, ou groupe pour une tête de groupe). */}
+            <a href={`/api/tier-registry/export?lang=${locale}`} download className="btn-secondary mb-2 inline-block text-xs">{t.tierEval.exporter}</a>
             <table aria-label={c.title} className="w-full text-sm">
-              <thead className="text-left text-xs text-gray-600 dark:text-gray-300"><tr><th className="px-2 py-1">{c.colName}</th><th className="px-2 py-1">{c.colLei}</th><th className="px-2 py-1">{c.colCoverage}</th><th className="px-2 py-1">{c.colArrangements}</th><th className="px-2 py-1">{c.colAnalyses}</th><th className="px-2 py-1"><span className="sr-only">{c.offersAndUsages}</span></th></tr></thead>
+              <thead className="text-left text-xs text-gray-600 dark:text-gray-300"><tr><th className="px-2 py-1">{c.colName}</th><th className="px-2 py-1">{c.colLei}</th><th className="px-2 py-1">{c.colCoverage}</th><th className="px-2 py-1">{c.colArrangements}</th><th className="px-2 py-1">{c.colAnalyses}</th><th className="px-2 py-1">{t.tierEval.colNiveau}</th><th className="px-2 py-1">{t.tierEval.colConcentration}</th><th className="px-2 py-1"><span className="sr-only">{c.offersAndUsages}</span></th></tr></thead>
               <tbody>{data.tiers.map(tier => (
                 <Fragment key={tier.id}>
                   <tr className="border-t border-gray-100 dark:border-gray-800">
@@ -200,10 +209,24 @@ export default function TierIdentityPanel({ sansTitre = false }: { sansTitre?: b
                     <td className="px-2 py-1"><span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-800 dark:bg-gray-800 dark:text-gray-100">{c.coverage[tier.coverage]}</span></td>
                     <td className="px-2 py-1 text-gray-700 dark:text-gray-200">{tier.arrangements.map(a => a.reference).join(', ') || '—'}</td>
                     <td className="px-2 py-1 text-gray-700 dark:text-gray-200">{tier.analysesCount}</td>
+                    <td className="px-2 py-1 text-xs">
+                      {tier.evaluation?.pire ? <span className={`rounded-full px-2 py-0.5 ${ZONE_BADGE[tier.evaluation.pire.zone]}`}>{niveauTexte(tier.evaluation.pire)}</span> : <span className="text-gray-400">{t.tierEval.nonEvalue}</span>}
+                      {tier.evaluation?.groupe && (
+                        <details className="mt-1">
+                          <summary className="cursor-pointer text-[11px] text-ebios-700 dark:text-ebios-300">{t.tierEval.groupe.replace('{niveau}', tier.evaluation.groupe.pire ? niveauTexte(tier.evaluation.groupe.pire) : t.tierEval.nonEvalue)}</summary>
+                          <ul className="mt-1 space-y-0.5" aria-label={t.tierEval.parOrganisation.replace('{name}', tier.nom)}>
+                            {tier.evaluation.groupe.parOrganisation.map(o => (
+                              <li key={o.organizationId} className="text-[11px] text-gray-700 dark:text-gray-200">{o.organisation} : {o.synthese ? <span className={`rounded-full px-1.5 py-0.5 ${ZONE_BADGE[o.synthese.zone]}`}>{niveauTexte(o.synthese)}</span> : t.tierEval.nonEvalue} <span className="text-gray-400">({t.tierEval.nbUsages.replace('{n}', String(o.usages))})</span></li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
+                    </td>
+                    <td className="px-2 py-1 text-xs text-gray-700 dark:text-gray-200">{tier.evaluation ? t.tierEval.concentration.replace('{u}', String(tier.evaluation.concentration.usagesCritiques)).replace('{p}', String(tier.evaluation.concentration.processusCritiques)) : '—'}</td>
                     <td className="px-2 py-1 text-right whitespace-nowrap">{canManage && data.tiers.length > 1 && <button type="button" className="btn-secondary mr-1 text-xs" aria-expanded={mergeFrom === tier.id} aria-label={`${c.merge} — ${tier.nom}`} onClick={() => { setMergeFrom(m => m === tier.id ? null : tier.id); setMergeTarget(''); setMergePreview(null) }}>{c.merge}</button>}<button type="button" className="btn-secondary text-xs" aria-expanded={open === tier.id} aria-label={`${c.offersAndUsages} — ${tier.nom}`} onClick={() => setOpen(o => o === tier.id ? null : tier.id)}>{c.offersAndUsages}</button></td>
                   </tr>
                   {mergeFrom === tier.id && (
-                    <tr><td colSpan={6} className="px-2 pb-3">
+                    <tr><td colSpan={8} className="px-2 pb-3">
                       <div className="rounded-sm border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
                         <p>{c.mergeHint.replace('{name}', tier.nom)}</p>
                         <label className="mt-2 block text-xs font-medium">{c.mergeInto}
@@ -223,7 +246,7 @@ export default function TierIdentityPanel({ sansTitre = false }: { sansTitre?: b
                       </div>
                     </td></tr>
                   )}
-                  {open === tier.id && <tr><td colSpan={6} className="px-2 pb-3">
+                  {open === tier.id && <tr><td colSpan={8} className="px-2 pb-3">
                     <EntiteLiens tier={tier} services={services} contrats={tier.arrangements} contratsLibres={data.unlinkedArrangements}
                       canManage={canManage} busy={busy} onRattacher={(ids, tierId) => void rattacher(ids, tierId)} onContrat={(id, tierId) => void link(id, tierId)} />
                     <TierDetailPanel tierId={tier.id} />

@@ -7,14 +7,18 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import RevuePeriodiqueChamp from '@/components/RevuePeriodiqueChamp'
+import EvaluationUsagePanel from '@/components/EvaluationUsagePanel'
 import { TYPES_SERVICE_TIC } from '@/lib/registre-tic'
 
-type Usage = { id: string; useCase: string; processusNom: string | null; contractServiceId: string | null; criticite: string | null; criticiteEcart: boolean; criticiteContrat: string | null; coverage: 'CONFIRMED' | 'UNCONFIRMED' }
-type Service = { id: string; nom: string; typeService: string; actif: boolean; coveredBy: { arrangementId: string; reference: string; contractServiceId: string }[]; usages: Usage[] }
+type NiveauEval = { menace: number; zone: string } | null
+// Évaluation d'un usage (lot T1) : statut, menace et zone actuelles / cibles, prochaine réévaluation.
+type EvalResume = { statut: string; actuelle: NiveauEval; cible: NiveauEval; prochaine: string | null } | null
+type Usage = { id: string; useCase: string; processusNom: string | null; contractServiceId: string | null; criticite: string | null; criticiteEcart: boolean; criticiteContrat: string | null; coverage: 'CONFIRMED' | 'UNCONFIRMED'; evaluation?: EvalResume }
+type Service = { id: string; nom: string; typeService: string; actif: boolean; synthese?: { menace: number; zone: string; evalues: number } | null; coveredBy: { arrangementId: string; reference: string; contractServiceId: string }[]; usages: Usage[] }
 type Detail = {
   orgId: string; canManage: boolean; isAdmin: boolean
   // Revue périodique du tiers (lib/revues) : modifiable par l'organisation racine du registre seulement.
-  tier?: { derniereRevue: string | null; prochaineRevue: string | null; revueModifiable: boolean; createdAt: string | null } | null
+  tier?: { derniereRevue: string | null; prochaineRevue: string | null; revueModifiable: boolean; createdAt: string | null; synthese?: { menace: number; zone: string; evalues: number } | null } | null
   contracts: { id: string; reference: string; ownedHere: boolean; serviceIds: string[]; details?: Record<string, { perimetre: string | null; dateDebut: string | null; dateFin: string | null }>; beneficiaries?: { organizationId: string; nom: string; status: 'PROPOSED' | 'CONFIRMED' | 'REJECTED' }[]; proposable?: { id: string; nom: string }[] }[]
   contractServices: { id: string; arrangementId: string; reference: string; serviceId: string }[]
   services: Service[]
@@ -35,6 +39,7 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
   const [covDetails, setCovDetails] = useState<Record<string, Record<string, { perimetre: string; dateDebut: string; dateFin: string }>>>({})
   const [proposeTo, setProposeTo] = useState<Record<string, string>>({})
   const [revue, setRevue] = useState('')
+  const [evalOuverte, setEvalOuverte] = useState<string | null>(null)
   const [revueOk, setRevueOk] = useState(false)
   const [usageForms, setUsageForms] = useState<Record<string, { useCase: string; processusId: string; contractServiceId: string; criticite: string }>>({})
 
@@ -69,11 +74,15 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
     finally { setBusy(false) }
   }
   const ownContracts = detail.contracts.filter(k => k.ownedHere)
+  const ZONE_BADGE: Record<string, string> = { danger: 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-200', controle: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-200', veille: 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-200' }
+  const zoneNom: Record<string, string> = { danger: t.workshop.a3.radar.zoneDanger, controle: t.workshop.a3.radar.zoneControle, veille: t.workshop.a3.radar.zoneVeille }
+  const niveau = (n: { menace: number; zone: string }) => `${n.menace.toLocaleString(locale, { maximumFractionDigits: 2 })} — ${zoneNom[n.zone] ?? n.zone}`
   const activeOffers = detail.services.filter(s => s.actif)
 
   return (
     <div className="mt-2 space-y-4 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
       {error && <p role="alert" className="rounded-sm border border-red-300 bg-red-50 p-2 text-sm text-red-900 dark:border-red-700 dark:bg-red-950/40 dark:text-red-100">{error}</p>}
+      {detail.tier?.synthese && <p className="text-xs text-gray-700 dark:text-gray-200">{t.tierEval.synthese.replace('{niveau}', '')}<span className={`rounded-full px-2 py-0.5 ${ZONE_BADGE[detail.tier.synthese.zone]}`}>{niveau(detail.tier.synthese)}</span></p>}
       {detail.tier && (detail.tier.revueModifiable ? (
         <div className="flex flex-wrap items-end gap-2">
           <RevuePeriodiqueChamp className="max-w-xs" valeur={revue} creeLe={detail.tier.createdAt} onChange={v => { setRevue(v); setRevueOk(false) }} />
@@ -94,6 +103,7 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
             <li key={s.id} className="rounded-sm border border-gray-100 p-2 text-sm dark:border-gray-800">
               <p className="font-medium text-gray-900 dark:text-gray-100">{s.nom} <span className="ml-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal dark:bg-gray-800">{types[s.typeService] ?? s.typeService}</span>{!s.actif && <span className="ml-2 text-xs text-gray-500">({c.inactive})</span>}</p>
               <p className="text-xs text-gray-600 dark:text-gray-300">{s.coveredBy.length ? c.covered.replace('{refs}', s.coveredBy.map(x => x.reference).join(', ')) : c.uncovered}</p>
+              {s.synthese && <p className="text-xs text-gray-600 dark:text-gray-300">{t.tierEval.synthese.replace('{niveau}', '')}<span className={`rounded-full px-2 py-0.5 ${ZONE_BADGE[s.synthese.zone]}`}>{niveau(s.synthese)}</span></p>}
               {s.usages.length > 0 && (
                 <ul className="mt-2 space-y-1">
                   {s.usages.map(u => (
@@ -106,7 +116,12 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
                           </select>
                         : u.criticite && <span className="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-gray-800">{c.criticalityLabels[u.criticite as keyof typeof c.criticalityLabels] ?? u.criticite}</span>}
                       {u.criticiteEcart && <span role="status" className="rounded-full bg-red-100 px-2 py-0.5 text-red-900 dark:bg-red-900/40 dark:text-red-100">{c.criticalityGap.replace('{contract}', c.criticalityLabels[u.criticiteContrat as keyof typeof c.criticalityLabels] ?? String(u.criticiteContrat))}</span>}
+                      {u.evaluation?.actuelle
+                        ? <span className={`rounded-full px-2 py-0.5 ${ZONE_BADGE[u.evaluation.actuelle.zone]}`}>{niveau(u.evaluation.actuelle)} · {t.tierEval.statuts[u.evaluation.statut as keyof typeof t.tierEval.statuts] ?? u.evaluation.statut}</span>
+                        : <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-500 dark:bg-gray-800">{t.tierEval.nonEvalue}</span>}
+                      <button type="button" className="btn-secondary px-2 py-0.5 text-xs" aria-expanded={evalOuverte === u.id} onClick={() => setEvalOuverte(evalOuverte === u.id ? null : u.id)}>{evalOuverte === u.id ? t.tierEval.masquer : t.tierEval.evaluer}</button>
                       {detail.isAdmin && <button type="button" className="btn-secondary px-2 py-0.5 text-xs" disabled={busy} aria-label={c.deleteUsage.replace('{name}', u.useCase)} onClick={() => void run(() => send(`/api/tier-registry/usages/${u.id}`, 'DELETE'))}>✕</button>}
+                      {evalOuverte === u.id && <div className="basis-full"><EvaluationUsagePanel usageId={u.id} usageNom={u.useCase} onChange={() => void load()} /></div>}
                     </li>
                   ))}
                 </ul>

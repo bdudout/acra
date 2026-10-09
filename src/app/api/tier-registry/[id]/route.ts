@@ -4,6 +4,9 @@ import { tierContext, tierGranted } from '@/lib/tier-registry.server'
 import { usageCoverage, usageCriticalityGap } from '@/lib/tier-offers'
 import type { NiveauCriticite } from '@/lib/registre-tic'
 import { echeanceRevue, sanitizeDateRevue } from '@/lib/revues'
+import { getOrgConfig } from '@/lib/org-config.server'
+import { resolveEchelles, type EchellesEcosysteme } from '@/lib/ecosystem-echelles'
+import { coterEvaluation, prochaineEvaluation, sanitizeEvaluationTiers, synthesePireNiveau } from '@/lib/tier-evaluation'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -27,7 +30,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     }),
     prisma.tierServiceUsage.findMany({
       where: { organizationId: ctx.orgId, tierService: { tierId: id } },
-      select: { id: true, useCase: true, description: true, tierServiceId: true, processusId: true, processus: { select: { nom: true } }, contractServiceId: true, criticite: true },
+      select: { id: true, useCase: true, description: true, tierServiceId: true, processusId: true, processus: { select: { nom: true } }, contractServiceId: true, criticite: true, evaluation: { select: { statut: true, actuelle: true, cible: true, valideLe: true } } },
       orderBy: { createdAt: 'asc' },
     }),
   ])
@@ -43,8 +46,18 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     : [[], []]
   const contractServices = arrangements.flatMap(a => a.servicesCouverts.map(cs => ({ id: cs.id, arrangementId: a.id, reference: a.reference, serviceId: cs.tierServiceId, owner: a.organizationId, status: a.beneficiaries[0]?.status ?? null, criticite: a.criticite as NiveauCriticite })))
   const csById = new Map(contractServices.map(cs => [cs.id, cs]))
+  // Évaluation de chaque usage (lot T1) : statut, menace et zone actuelles / cibles, prochaine réévaluation.
+  const echelles = resolveEchelles((await getOrgConfig(ctx.orgId)).echellesEcosysteme as Partial<EchellesEcosysteme> | null)
+  const resumeEvaluation = (e: { statut: string; actuelle: unknown; cible: unknown; valideLe: Date | null } | null | undefined) => {
+    if (!e) return null
+    const saisie = sanitizeEvaluationTiers({ actuelle: e.actuelle, cible: e.cible }, echelles)
+    const c = coterEvaluation(saisie, echelles)
+    const brief = (n: typeof c.actuelle) => (n ? { menace: n.menace, zone: n.zone } : null)
+    return { statut: e.statut, actuelle: brief(c.actuelle), cible: brief(c.cible), prochaine: prochaineEvaluation(e.valideLe)?.toISOString().slice(0, 10) ?? null }
+  }
   return NextResponse.json({
-    tier: tier && { id: tier.id, nom: tier.nom, lei: tier.lei, pays: tier.pays, derniereRevue: tier.derniereRevue?.toISOString().slice(0, 10) ?? null, prochaineRevue: tier.createdAt ? echeanceRevue(tier.derniereRevue ?? null, tier.createdAt).toISOString().slice(0, 10) : null, revueModifiable: ctx.canManage && tier.rootOrganizationId === ctx.orgId, createdAt: tier.createdAt?.toISOString() ?? null },
+    tier: tier && { id: tier.id, nom: tier.nom, lei: tier.lei, pays: tier.pays, derniereRevue: tier.derniereRevue?.toISOString().slice(0, 10) ?? null, prochaineRevue: tier.createdAt ? echeanceRevue(tier.derniereRevue ?? null, tier.createdAt).toISOString().slice(0, 10) : null, revueModifiable: ctx.canManage && tier.rootOrganizationId === ctx.orgId, createdAt: tier.createdAt?.toISOString() ?? null,
+      synthese: synthesePireNiveau(usages.map(u => resumeEvaluation(u.evaluation)?.actuelle ?? null)) },
     orgId: ctx.orgId, canManage: ctx.canManage, isAdmin: ctx.isAdmin,
     contracts: arrangements.map(a => {
       const beneficiaries = benRows.filter(b => b.arrangementId === a.id).map(b => ({ organizationId: b.organizationId, nom: b.organization.nom, status: b.status }))
@@ -57,10 +70,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     contractServices: contractServices.map(({ id: csId, arrangementId, reference, serviceId }) => ({ id: csId, arrangementId, reference, serviceId })),
     services: services.map(s => ({
       ...s,
+      // Synthèse de l'offre dans l'organisation : pire menace actuelle de ses usages évalués (jamais une moyenne).
+      synthese: synthesePireNiveau(usages.filter(u => u.tierServiceId === s.id).map(u => resumeEvaluation(u.evaluation)?.actuelle ?? null)),
       coveredBy: contractServices.filter(cs => cs.serviceId === s.id).map(cs => ({ arrangementId: cs.arrangementId, reference: cs.reference, contractServiceId: cs.id })),
       usages: usages.filter(u => u.tierServiceId === s.id).map(u => {
         const cs = u.contractServiceId ? csById.get(u.contractServiceId) : undefined
         return { id: u.id, useCase: u.useCase, description: u.description, processusId: u.processusId, processusNom: u.processus?.nom ?? null, contractServiceId: u.contractServiceId, criticite: u.criticite,
+          evaluation: resumeEvaluation(u.evaluation),
           criticiteContrat: cs?.criticite ?? null, criticiteEcart: usageCriticalityGap(u.criticite as NiveauCriticite | null, cs?.criticite ?? null),
           coverage: usageCoverage({ organizationId: ctx.orgId, contractService: cs ? { ownerOrganizationId: cs.owner, beneficiaryStatus: cs.status as 'PROPOSED' | 'CONFIRMED' | 'REJECTED' | null } : null }) }
       }),
