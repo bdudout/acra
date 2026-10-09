@@ -186,6 +186,27 @@ export function transitionPlanAnnee(statut: StatutAnnee, a: ActionPlan, c: Conte
   return { ok: true, statut: 'REVISION', patch: motif ? { motifRevision: motif } : {}, revision: true }
 }
 
+// ─── Relance du plan soumis (cron `relances`) ───────────────────────────────
+
+/**
+ * Valideurs à relancer pour une année soumise : membres dont le rôle valide ce type de plan, sans le préparateur quand
+ * le double regard est actif ; à défaut, les administrateurs (hors préparateur sous double regard).
+ */
+export function valideursPlanAnnee(membres: { role: string; userId: string }[], a: { type: TypePlan; preparePar: string | null }, cfg: PlanificationConfig): string[] {
+  const exclu = (id: string) => cfg.doubleRegard && id === a.preparePar
+  const ids = (ok: (role: UserRole) => boolean) => [...new Set(membres.filter(m => ok(m.role as UserRole) && !exclu(m.userId)).map(m => m.userId))]
+  const valideurs = ids(role => peutValider(role, a.type, cfg))
+  return valideurs.length ? valideurs : ids(role => role === 'ADMIN' || role === 'SUPER_ADMIN')
+}
+
+/** Date de la dernière soumission d'après l'historique des transitions ; `repli` si elle est introuvable. */
+export function soumisDepuis(historique: unknown, repli: Date): Date {
+  const dates = (Array.isArray(historique) ? historique : [])
+    .filter((h): h is { statut: string; le: string } => !!h && typeof h === 'object' && (h as { statut?: unknown }).statut === 'SOUMIS' && typeof (h as { le?: unknown }).le === 'string')
+    .map(h => new Date(h.le)).filter(d => !Number.isNaN(d.getTime()))
+  return dates.length ? new Date(Math.max(...dates.map(d => d.getTime()))) : repli
+}
+
 export interface LigneFigeable {
   id: string; intitule: string; prisme: string; cibles: unknown; echantillon: unknown
   debut: Date | null; fin: Date | null; charge: number | null; priorite: number | null; responsable: string | null; statutManuel: string | null

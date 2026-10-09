@@ -26,6 +26,7 @@ import { appUrl } from './org-invitation.server'
 import { auditLog } from './logger'
 import { piaRequis } from './ropa'
 import { aipdARelancer, type StatutAipd } from './ropa-aipd'
+import { sanitizePlanificationConfig, soumisDepuis, valideursPlanAnnee, type TypePlan } from './planification'
 
 // Gouvernance de l'organisation : repli des éléments sans responsable identifiable, destinataire
 // des contrôles à exécuter et des dérogations arrivant à expiration.
@@ -40,6 +41,7 @@ type Membre = { role: string; user: { id: string; email: string; name: string | 
 type Config = {
   relances: RelancesConfig; controle: boolean; audit: boolean; auditConfig: AuditConfig; derogations: boolean; derogationAlerteJours: number; secondeLigne: boolean
   reglementaire: boolean; kri: boolean; homologations: boolean; conformite: boolean; acceptationRisques: boolean; petiteStructure: boolean
+  mcp: boolean; planification: ReturnType<typeof sanitizePlanificationConfig>
 }
 
 export interface ResultatRelances {
@@ -101,7 +103,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     }),
   ])
   // Sources « à échéance » et décisions complémentaires.
-  const [contrats, tests, kris, documents, campagnes, missions, analysesEcheance, acceptations, invitations, homologations, suppressions, traitementsAipd] = await Promise.all([
+  const [contrats, tests, kris, documents, campagnes, missions, analysesEcheance, acceptations, invitations, homologations, suppressions, traitementsAipd, plansSoumis, propositionsMcp] = await Promise.all([
     prisma.arrangementTic.findMany({ where: { dateFin: { not: null } }, select: { id: true, organizationId: true, reference: true, prestataireNom: true, dateFin: true, createdAt: true, rappelLe: true }, take: 10000 }),
     prisma.testResilience.findMany({ where: { statut: { in: ['PLANIFIE', 'EN_COURS'] }, datePrevue: { not: null } }, select: { id: true, organizationId: true, intitule: true, datePrevue: true, createdAt: true, rappelLe: true }, take: 10000 }),
     prisma.kri.findMany({ where: { actif: true }, select: { id: true, organizationId: true, intitule: true, frequence: true, responsable: true, createdAt: true, rappelLe: true, mesures: { orderBy: { dateMesure: 'desc' }, take: 1, select: { dateMesure: true } } }, take: 10000 }),
@@ -115,6 +117,10 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     prisma.risque.findMany({ where: { suppressionDemandeeLe: { not: null }, analyse: { methode: 'PROJET_360', deletedAt: null } }, select: { id: true, nom: true, domaine: true, analyseId: true, suppressionDemandeeLe: true, suppressionRappelLe: true, analyse: { select: { organizationId: true, nom: true } } }, take: 10000 }),
     // RGPD : AIPD non engagée (le niveau « requise » se calcule ensuite à partir des critères WP248).
     prisma.traitement.findMany({ where: { OR: [{ aipdStatut: null }, { aipdStatut: 'A_REALISER' }] }, select: { id: true, organizationId: true, nom: true, aipdStatut: true, createdAt: true, aipdRappelLe: true, categoriesDonnees: true, grandeEchelle: true, surveillanceSystematique: true, criteresAipd: true }, take: 10000 }),
+    // Plans annuels d'audit ou de contrôle soumis, en attente de validation.
+    prisma.planAnnee.findMany({ where: { statut: 'SOUMIS' }, select: { id: true, annee: true, preparePar: true, historique: true, updatedAt: true, rappelLe: true, plan: { select: { id: true, nom: true, type: true, organizationId: true } } }, take: 10000 }),
+    // Propositions d'un agent IA (MCP) restées en attente de décision humaine.
+    prisma.mcpProposal.findMany({ where: { statut: 'EN_ATTENTE' }, select: { id: true, organizationId: true, type: true, targetType: true, targetId: true, payload: true, createdAt: true, rappelLe: true }, take: 10000 }),
   ])
   // Versions remplacées d'un document : seule la version en vigueur est à revoir.
   const remplaces = new Set((documents.length ? await prisma.document.findMany({ where: { remplaceId: { in: documents.map(d => d.id) } }, select: { remplaceId: true } }) : []).map(d => d.remplaceId))
@@ -131,6 +137,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
         audit: c.auditInterneActive, auditConfig: resolveAuditConfig(c.auditConfig),
         derogations: c.derogationsActive, derogationAlerteJours: c.derogationAlerteJours ?? 30, secondeLigne: c.secondeLigneActive,
         reglementaire: !!c.reglementaireActive, kri: !!c.kriActive, homologations: !!c.homologationsActive, conformite: c.conformiteActive, acceptationRisques: c.acceptationRisquesActive, petiteStructure: c.petiteStructure,
+        mcp: c.mcpActive, planification: sanitizePlanificationConfig(c.planificationConfig),
       })
     }
     return cfgCache.get(orgId)!
@@ -180,7 +187,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     analyses: [] as string[], derogations: [] as string[], constatsAudit: [] as string[], controles: [] as string[], derogationsExpiration: [] as string[],
     contratsTic: [] as string[], testsResilience: [] as string[], kri: [] as string[], documents: [] as string[], campagnes: [] as string[],
     missionsAudit: [] as string[], analysesEcheance: [] as string[], acceptationsRisques: [] as string[], invitations: [] as string[], homologations: [] as string[], suppressions: [] as string[],
-    aipd: [] as string[],
+    aipd: [] as string[], plansAnnee: [] as string[], propositionsMcp: [] as string[],
   }
 
   // ─── Éléments à traiter ───
@@ -401,6 +408,37 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     marques.aipd.push(t.id)
   }
 
+  // Plan annuel soumis : aux valideurs configurés du type de plan (double regard respecté), module du type actif.
+  for (const a of plansSoumis) {
+    const cfg = await cfgOf(a.plan.organizationId)
+    const type = a.plan.type as TypePlan
+    if (!(type === 'AUDIT' ? cfg.audit : cfg.controle)) continue
+    const depuis = soumisDepuis(a.historique, a.updatedAt)
+    if (!relanceAttenteDue({ depuis, rappelLe: a.rappelLe }, cfg.relances, now)) continue
+    const ids = valideursPlanAnnee((await decideurs(a.plan.organizationId)).map(m => ({ role: m.role, userId: m.user.id })), { type, preparePar: a.preparePar }, cfg.planification)
+    ajouter(a.plan.organizationId, await destsParIds(a.plan.organizationId, ids), { categorie: 'PLAN_ANNUEL_A_VALIDER', intitule: `${a.plan.nom} — ${a.annee}`, type: 'EN_ATTENTE', echeance: jour(depuis), chemin: `/plans/${a.plan.id}` })
+    marques.plansAnnee.push(a.id)
+  }
+
+  // Propositions MCP en attente : ancre « analyse » → son auteur ; autres ancres → gouvernance (module MCP actif).
+  const analysesAncres = new Map((await (async () => {
+    const ids = [...new Set(propositionsMcp.filter(p => p.targetType === 'ANALYSE').map(p => p.targetId))]
+    return ids.length ? prisma.analyse.findMany({ where: { id: { in: ids } }, select: { id: true, userId: true } }) : []
+  })()).map(a => [a.id, a.userId]))
+  const libelleProposition = (p: { type: string; payload: unknown }) => {
+    const o = p.payload && typeof p.payload === 'object' ? (p.payload as Record<string, unknown>) : {}
+    const v = [o.titre, o.title, o.intitule, o.nom, (o.analysis as Record<string, unknown> | undefined)?.title].find(x => typeof x === 'string' && x.trim())
+    return typeof v === 'string' ? v.trim().slice(0, 200) : p.type
+  }
+  for (const p of propositionsMcp) {
+    const cfg = await cfgOf(p.organizationId)
+    if (!cfg.mcp || !relanceAttenteDue({ depuis: p.createdAt, rappelLe: p.rappelLe }, cfg.relances, now)) continue
+    const auteur = p.targetType === 'ANALYSE' ? analysesAncres.get(p.targetId) : undefined
+    const dests = auteur ? await destsParIds(p.organizationId, [auteur]) : []
+    ajouter(p.organizationId, dests.length ? dests : await parRoles(p.organizationId, GOUVERNANCE), { categorie: 'PROPOSITION_MCP', intitule: libelleProposition(p), type: 'EN_ATTENTE', echeance: jour(p.createdAt) })
+    marques.propositionsMcp.push(p.id)
+  }
+
   // ─── Envoi : un e-mail de synthèse par personne ───
   const orgIds = [...new Set([...boite.values()].flatMap(e => e.items.map(i => i.orgId)))]
   const orgs = new Map((orgIds.length ? await prisma.organization.findMany({ where: { id: { in: orgIds } }, select: { id: true, nom: true } }) : []).map(o => [o.id, o.nom]))
@@ -434,11 +472,13 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     maj(marques.homologations, ids => prisma.homologation.updateMany({ where: { id: { in: ids } }, data: { rappelLe: now } })),
     maj(marques.suppressions, ids => prisma.risque.updateMany({ where: { id: { in: ids } }, data: { suppressionRappelLe: now } })),
     maj(marques.aipd, ids => prisma.traitement.updateMany({ where: { id: { in: ids } }, data: { aipdRappelLe: now } })),
+    maj(marques.plansAnnee, ids => prisma.planAnnee.updateMany({ where: { id: { in: ids } }, data: { rappelLe: now } })),
+    maj(marques.propositionsMcp, ids => prisma.mcpProposal.updateMany({ where: { id: { in: ids } }, data: { rappelLe: now } })),
   ])
 
   return {
     checked: reponses.length + preconisations.length + plans.length + aVerifier.length + analyses.length + derogationsRevue.length + constats.length + controles.length + derogationsActives.length
-      + contrats.length + tests.length + kris.length + documents.length + campagnes.length + missions.length + analysesEcheance.length + acceptations.length + invitations.length + homologations.length + suppressions.length + traitementsAipd.length,
+      + contrats.length + tests.length + kris.length + documents.length + campagnes.length + missions.length + analysesEcheance.length + acceptations.length + invitations.length + homologations.length + suppressions.length + traitementsAipd.length + plansSoumis.length + propositionsMcp.length,
     reminded: Object.fromEntries(Object.entries(marques).map(([k, v]) => [k, v.length])),
     emailsSent, emailsSkipped,
   }
