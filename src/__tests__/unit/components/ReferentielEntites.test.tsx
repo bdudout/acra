@@ -44,7 +44,8 @@ describe('ReferentielEntites', () => {
     expect(screen.queryByRole('button', { name: 'Réorganiser Ancien site' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Réorganiser DSI' }))
     expect(screen.getByRole('region', { name: 'Réorganiser « DSI »' })).toBeTruthy()
-    expect(screen.getByText('Historique des réorganisations (5 ans)')).toBeTruthy()
+    // L'historique se charge par sa propre requête : attente explicite (test instable sous charge sinon).
+    expect(await screen.findByText('Historique des réorganisations (5 ans)')).toBeTruthy()
   })
 
   it('hors ADMIN : consultation seule, aucun bouton de modification', async () => {
