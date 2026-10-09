@@ -1754,9 +1754,9 @@ export default function ConfigurationPage() {
             <button type="button" onClick={addImpact} className="btn-secondary text-sm">{t.config.impactsAdd}</button>
 
             <div className="flex items-center gap-3 mt-4">
-              {savedImpacts && <span className="text-sm text-green-600 font-medium">{t.config.entitesSaved}</span>}
+              {savedImpacts && <span className="text-sm text-green-600 font-medium">{t.config.sectionSaved}</span>}
               <button type="button" onClick={saveImpacts} disabled={savingImpacts} className="btn-primary text-sm">
-                {savingImpacts ? t.config.entitesSaving : t.config.entitesSave}
+                {savingImpacts ? t.config.entitesSaving : t.config.sectionSave}
               </button>
             </div>
           </section>
@@ -1800,9 +1800,9 @@ export default function ConfigurationPage() {
             </div>
 
             <div className="flex items-center gap-3 mt-4">
-              {savedRef && <span className="text-sm text-green-600 font-medium">{t.config.entitesSaved}</span>}
+              {savedRef && <span className="text-sm text-green-600 font-medium">{t.config.sectionSaved}</span>}
               <button type="button" onClick={saveReferentiels} disabled={savingRef} className="btn-primary text-sm">
-                {savingRef ? t.config.entitesSaving : t.config.entitesSave}
+                {savingRef ? t.config.entitesSaving : t.config.sectionSave}
               </button>
             </div>
           </section>

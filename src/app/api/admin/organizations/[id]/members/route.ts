@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { ROLES_ATTRIBUABLES } from '@/lib/permissions'
 import { requireInstanceAdmin } from '@/lib/route-guard.server'
 
 
@@ -21,7 +22,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 const addSchema = z.object({
   email: z.string().email(),
-  role: z.enum(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER']),
+  role: z.enum(ROLES_ATTRIBUABLES),
   scope: z.enum(['NODE', 'SUBTREE']).default('NODE'),
 })
 

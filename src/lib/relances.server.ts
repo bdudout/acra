@@ -117,7 +117,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     prisma.homologation.findMany({ where: { statut: { in: ['HOMOLOGUE', 'HOMOLOGUE_RESERVES'] } }, select: { id: true, organizationId: true, systeme: true, statut: true, dateFin: true, rappelLe: true, preparePar: true, autoriteId: true }, take: 10000 }),
     prisma.risque.findMany({ where: { suppressionDemandeeLe: { not: null }, analyse: { methode: 'PROJET_360', deletedAt: null } }, select: { id: true, nom: true, domaine: true, analyseId: true, suppressionDemandeeLe: true, suppressionRappelLe: true, analyse: { select: { organizationId: true, nom: true } } }, take: 10000 }),
     // RGPD : AIPD non engagée (le niveau « requise » se calcule ensuite à partir des critères WP248).
-    prisma.traitement.findMany({ where: { OR: [{ aipdStatut: null }, { aipdStatut: 'A_REALISER' }] }, select: { id: true, organizationId: true, nom: true, aipdStatut: true, createdAt: true, aipdRappelLe: true, categoriesDonnees: true, grandeEchelle: true, surveillanceSystematique: true, criteresAipd: true }, take: 10000 }),
+    prisma.traitement.findMany({ where: { OR: [{ aipdStatut: null }, { aipdStatut: 'A_REALISER' }] }, select: { id: true, organizationId: true, nom: true, aipdStatut: true, createdAt: true, aipdRappelLe: true, categoriesDonnees: true, categoriesPersonnes: true, grandeEchelle: true, surveillanceSystematique: true, criteresAipd: true }, take: 10000 }),
     // Plans annuels d'audit ou de contrôle soumis, en attente de validation.
     prisma.planAnnee.findMany({ where: { statut: 'SOUMIS' }, select: { id: true, annee: true, preparePar: true, historique: true, updatedAt: true, rappelLe: true, plan: { select: { id: true, nom: true, type: true, organizationId: true } } }, take: 10000 }),
     // Propositions d'un agent IA (MCP) restées en attente de décision humaine.
@@ -408,7 +408,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
   const textes = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [])
   for (const t of traitementsAipd) {
     const cfg = await cfgOf(t.organizationId)
-    const niveau = piaRequis({ categoriesDonnees: textes(t.categoriesDonnees), grandeEchelle: t.grandeEchelle, surveillanceSystematique: t.surveillanceSystematique, criteresAipd: textes(t.criteresAipd) }).niveau
+    const niveau = piaRequis({ categoriesDonnees: textes(t.categoriesDonnees), categoriesPersonnes: textes(t.categoriesPersonnes), grandeEchelle: t.grandeEchelle, surveillanceSystematique: t.surveillanceSystematique, criteresAipd: textes(t.criteresAipd) }).niveau
     if (!aipdARelancer({ niveau, aipdStatut: t.aipdStatut as StatutAipd | null, depuis: t.createdAt, rappelLe: t.aipdRappelLe }, cfg.relances, now)) continue
     const dpo = await parRoles(t.organizationId, ['DPO'])
     ajouter(t.organizationId, dpo.length ? dpo : await parRoles(t.organizationId, ['ADMIN']), { categorie: 'AIPD_A_REALISER', intitule: t.nom, type: 'EN_ATTENTE', echeance: jour(t.createdAt) })

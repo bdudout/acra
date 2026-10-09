@@ -3,6 +3,7 @@
 // d'instance `SSOConfig` (singleton 'global') : garde SSRF sur l'issuer,
 // résolution/allowlist de domaine e-mail, décision de provisioning JIT.
 
+import { ROLES_ATTRIBUABLES } from '@/lib/permissions'
 import { isSafeWebhookUrl } from '@/lib/webhook'
 
 /** Rôle par défaut le plus prudent pour un utilisateur provisionné automatiquement. */
@@ -50,10 +51,7 @@ export function emailDomainAllowed(email: unknown, allowedDomains: unknown): boo
 // l'utilisateur sont dans le jeton, mappés à un rôle ACRA à chaque connexion.
 
 /** Rôles assignables par SSO (SUPER_ADMIN EXCLU : réglage d'instance sensible). */
-export const SSO_ASSIGNABLE_ROLES = [
-  'LECTEUR', 'METIER', 'DPO', 'CONFORMITE', 'CONTROLEUR', 'AUDITEUR',
-  'ANALYSTE', 'DIRECTION_METIER', 'RISK_MANAGER', 'RSSI', 'ADMIN',
-] as const
+export const SSO_ASSIGNABLE_ROLES = ROLES_ATTRIBUABLES
 
 // Rang de privilège pour départager plusieurs groupes (le plus élevé gagne).
 const ROLE_RANK: Record<string, number> = {
