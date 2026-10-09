@@ -6,6 +6,21 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-09 (101) — Claude : parcours plan d'audit en navigateur (comptes de recette)
+
+- #243 (RGPD lots B à D + scénario 5 de CI) fusionnée.
+- Parcours joué dans l'interface : AUDITEUR crée un plan d'audit figé 2027 (seul « Nouveau plan d'audit » proposé), ajoute
+  une ligne (cibles risque + processus, période, charge, responsable), soumet ; DIRECTION_METIER voit « Valider /
+  Renvoyer », valide avec commentaire (historique) ; AUDITEUR : année figée (ajout de ligne → 409 `annee_verrouillee`,
+  seul « Réviser »), révision avec motif → « En révision », ligne ajoutée, resoumission ; revalidation (révision 1,
+  5 entrées d'historique) ; vue globale 2027 et export Excel corrects. Plan de test supprimé en base.
+- **Défaut corrigé** : à l'état « Soumis », le préparateur lisait « Année validée : les lignes sont figées » → message
+  dédié `planification … soumisVerrouille` (5 langues), test ajouté.
+- Remarque UX (non corrigée) : les cibles d'une ligne sont dans des listes repliées (`<details>`) ; un utilisateur peut
+  croire avoir sélectionné une cible sans avoir déplié la liste (le compteur « n sélectionné(s) » l'indique).
+
+---
+
 ## 2026-10-09 (100) — Claude : RGPD — suivi effectif de l'AIPD (lot D)
 
 - `lib/ropa-aipd` (pur) : statuts À réaliser / En cours / Réalisée / Non retenue ; alerte « AIPD à lancer » (requise non
