@@ -16,8 +16,9 @@ vérifié l'est avec la commande et son résultat.
   5 entrées d'historique) ; vue globale 2027 et export Excel corrects. Plan de test supprimé en base.
 - **Défaut corrigé** : à l'état « Soumis », le préparateur lisait « Année validée : les lignes sont figées » → message
   dédié `planification … soumisVerrouille` (5 langues), test ajouté.
-- Remarque UX (non corrigée) : les cibles d'une ligne sont dans des listes repliées (`<details>`) ; un utilisateur peut
-  croire avoir sélectionné une cible sans avoir déplié la liste (le compteur « n sélectionné(s) » l'indique).
+- UX (suite, à la demande de l'utilisateur) : `LigneForm` déplie d'office la liste de cibles du prisme choisi (Périmètres →
+  filiales, entités, tiers ; Risques ; Processus ; Référentiel → exigences) et toute liste déjà renseignée ; test
+  `LigneForm.test.tsx`, vérifié en navigateur (bascule Processus → Risques).
 
 ---
 

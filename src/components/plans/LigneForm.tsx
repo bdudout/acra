@@ -22,13 +22,14 @@ export const ligneVide = (prisme: Prisme): LigneSaisie => ({
   cibles: { organisations: [], entites: [], tiers: [], risques: [], processus: [], referentiel: null }, echantillon: { methode: '', population: '', taille: '' },
 })
 
-/** Liste à cocher filtrable (cibles multiples). */
-function Multi({ label, items, valeur, onChange }: { label: string; items: { id: string; nom: string }[]; valeur: string[]; onChange: (v: string[]) => void }) {
+/** Liste à cocher filtrable (cibles multiples). Dépliée d'office quand elle correspond au prisme de la ligne ou contient
+ *  déjà des cibles : on ne valide pas une ligne sans cible en croyant en avoir coché dans une liste repliée. */
+function Multi({ label, items, valeur, onChange, prisme = false }: { label: string; items: { id: string; nom: string }[]; valeur: string[]; onChange: (v: string[]) => void; prisme?: boolean }) {
   const { t } = useTranslation()
   const [q, setQ] = useState('')
   const vus = items.filter(i => !q || i.nom.toLowerCase().includes(q.toLowerCase())).slice(0, 200)
   return (
-    <details className="rounded border border-gray-200 dark:border-gray-700 p-2">
+    <details open={prisme || valeur.length > 0} className="rounded border border-gray-200 dark:border-gray-700 p-2">
       <summary className="cursor-pointer text-xs text-gray-700 dark:text-gray-200">{label} — {t.plans.selectionnes.replace('{n}', String(valeur.length))}</summary>
       <input aria-label={`${label} : ${t.plans.rechercher}`} value={q} onChange={e => setQ(e.target.value)} placeholder={t.plans.rechercher} className="mt-2 w-full rounded-sm border border-gray-300 px-2 py-1 text-xs dark:bg-gray-800 dark:border-gray-600" />
       <div className="max-h-40 overflow-y-auto mt-1 space-y-0.5">
@@ -76,12 +77,12 @@ export default function LigneForm({ initial, options, annee, onSave, onCancel }:
       <fieldset className="space-y-2">
         <legend className="text-xs font-medium text-gray-700 dark:text-gray-200">{p.cibles}</legend>
         <div className="grid sm:grid-cols-2 gap-2">
-          <Multi label={p.organisations} items={options.organisations} valeur={l.cibles.organisations} onChange={cible('organisations')} />
+          <Multi label={p.organisations} items={options.organisations} valeur={l.cibles.organisations} onChange={cible('organisations')} prisme={l.prisme === 'PERIMETRE'} />
           {/* Entités du référentiel (consolidation, lot E5) : proposées dès que le référentiel n'est pas vide. */}
-          {!!options.entites?.length && <Multi label={p.entites} items={options.entites} valeur={l.cibles.entites} onChange={cible('entites')} />}
-          <Multi label={p.tiers} items={options.tiers} valeur={l.cibles.tiers} onChange={cible('tiers')} />
-          <Multi label={p.risques} items={options.risques.map(r => ({ id: r.id, nom: r.intitule }))} valeur={l.cibles.risques} onChange={cible('risques')} />
-          <Multi label={p.processus} items={options.processus.map(pr => ({ id: pr.id, nom: pr.criticite ? `${pr.nom} (${pr.criticite}/4)` : pr.nom }))} valeur={l.cibles.processus} onChange={cible('processus')} />
+          {!!options.entites?.length && <Multi label={p.entites} items={options.entites} valeur={l.cibles.entites} onChange={cible('entites')} prisme={l.prisme === 'PERIMETRE'} />}
+          <Multi label={p.tiers} items={options.tiers} valeur={l.cibles.tiers} onChange={cible('tiers')} prisme={l.prisme === 'PERIMETRE'} />
+          <Multi label={p.risques} items={options.risques.map(r => ({ id: r.id, nom: r.intitule }))} valeur={l.cibles.risques} onChange={cible('risques')} prisme={l.prisme === 'RISQUE'} />
+          <Multi label={p.processus} items={options.processus.map(pr => ({ id: pr.id, nom: pr.criticite ? `${pr.nom} (${pr.criticite}/4)` : pr.nom }))} valeur={l.cibles.processus} onChange={cible('processus')} prisme={l.prisme === 'PROCESSUS'} />
         </div>
         <div className="grid sm:grid-cols-2 gap-2">
           <label className="text-xs text-gray-600 dark:text-gray-300">{p.referentiel}
@@ -90,7 +91,7 @@ export default function LigneForm({ initial, options, annee, onSave, onCancel }:
               {options.referentiels.map(r => <option key={r.code} value={r.code}>{r.nom}</option>)}
             </select>
           </label>
-          {code && <Multi label={p.exigences} items={exigences.map(e => ({ id: e.ref, nom: `${e.ref} — ${e.nom}` }))} valeur={l.cibles.referentiel?.exigences ?? []}
+          {code && <Multi label={p.exigences} items={exigences.map(e => ({ id: e.ref, nom: `${e.ref} — ${e.nom}` }))} valeur={l.cibles.referentiel?.exigences ?? []} prisme={l.prisme === 'REFERENTIEL'}
             onChange={v => setL(x => ({ ...x, cibles: { ...x.cibles, referentiel: { code, exigences: v } } }))} />}
         </div>
       </fieldset>
