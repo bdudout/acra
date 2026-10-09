@@ -770,6 +770,8 @@ export const it: Translations = {
   },
 
   tierEval: {
+    colTiers: 'Terzo', colOffre: 'Offerta', colOrganisation: 'Organizzazione', colUsage: 'Caso d’uso', colProcessus: 'Processo', colStatut: 'Stato della valutazione', colZone: 'Zona', colProchaine: 'Prossima valutazione', exporter: 'Esporta le valutazioni (Excel)',
+    colNiveau: 'Livello (peggiore)', colConcentration: 'Concentrazione', concentration: '{u} utilizzo/i critico/i · {p} processo/i critico/i', groupe: 'Gruppo: {niveau}', parOrganisation: 'Valutazione per organizzazione — {name}', nbUsages: '{n} utilizzo/i',
     titre: 'Valutazione — {nom}', evaluer: 'Valutare', masquer: 'Nascondi la valutazione', nonEvalue: 'Non valutato',
     aide: 'Stessi criteri del workshop 3 di EBIOS RM, sulle scale dell’organizzazione: minaccia = (dipendenza × penetrazione) / (maturità × fiducia). Valutazione attuale e obiettivo (dopo misure e clausole).',
     actuelle: 'Attuale', cible: 'Obiettivo (residuo)', menace: 'Minaccia', nonCote: 'non valutata', clauses: 'Clausole contrattuali previste o in vigore',

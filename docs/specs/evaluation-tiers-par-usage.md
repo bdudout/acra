@@ -76,7 +76,7 @@ Hors de ce lot (accès externe sans compte à sécuriser) ; à cadrer séparéme
 ## 4. Lots proposés (après validation)
 
 1. **T1** — ✅ livré (2026-10-10) : fiche d'évaluation d'un usage (méthode atelier 3, actuelle / cible, clauses, traitements RGPD, risques d'externalisation), cycle brouillon → soumise → validée (RSSI), synthèses offre / tiers au pire niveau, réévaluation à 12 mois et relances (`lib/tier-evaluation`, `EvaluationUsagePanel`, route `tier-registry/usages/[id]/evaluation`).
-2. **T2** — Vue groupe (pire niveau par filiale, concentration), export Excel.
+2. **T2** — ✅ livré (2026-10-10) : colonnes « Niveau (pire) » et « Concentration » (usages et processus critiques ou importants) de la liste des tiers, détail par organisation du sous-arbre visible pour une tête de groupe, export Excel (`lib/tier-evaluation-xlsx`, route `tier-registry/export`).
 3. **T3** — Proposition de risque fournisseur au-delà d'un seuil (Q5 b) ; circuit de validation (Q4 b).
 4. **T4** (option) — Grille fournisseur dédiée (Q2 c).
 

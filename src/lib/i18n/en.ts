@@ -770,6 +770,8 @@ export const en: Translations = {
   },
 
   tierEval: {
+    colTiers: 'Third party', colOffre: 'Offering', colOrganisation: 'Organisation', colUsage: 'Use case', colProcessus: 'Process', colStatut: 'Assessment status', colZone: 'Zone', colProchaine: 'Next assessment', exporter: 'Export assessments (Excel)',
+    colNiveau: 'Level (worst)', colConcentration: 'Concentration', concentration: '{u} critical usage(s) · {p} critical process(es)', groupe: 'Group: {niveau}', parOrganisation: 'Assessment by organisation — {name}', nbUsages: '{n} usage(s)',
     titre: 'Assessment — {nom}', evaluer: 'Assess', masquer: 'Hide assessment', nonEvalue: 'Not assessed',
     aide: 'Same criteria as EBIOS RM workshop 3, on the organisation’s scales: threat = (dependency × penetration) / (maturity × trust). Current and target rating (after measures and clauses).',
     actuelle: 'Current', cible: 'Target (residual)', menace: 'Threat', nonCote: 'not rated', clauses: 'Contractual clauses planned or in place',

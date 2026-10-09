@@ -89,3 +89,33 @@ export function synthesePireNiveau(niveaux: (Pick<Niveau, 'menace' | 'zone'> | n
   const pire = ok.reduce((a, b) => (b.menace > a.menace ? b : a))
   return { menace: pire.menace, zone: pire.zone, evalues: ok.length }
 }
+
+// ─── Lot T2 : vue groupe et concentration ───
+export interface UsageGroupe {
+  organizationId: string; organisation: string
+  niveau: Pick<Niveau, 'menace' | 'zone'> | null
+  /** Criticité de l'usage (CRITIQUE | IMPORTANTE | NON_CRITIQUE). */
+  criticite: string | null
+  processus: { id: string; criticite: number | null; criticiteDora: string | null } | null
+}
+/** Processus critique ou important : même règle que la complétude des processus (DORA critique / importante, ou criticité ≥ 3). */
+const processusSensible = (p: UsageGroupe['processus']) => !!p && (p.criticiteDora === 'CRITIQUE' || p.criticiteDora === 'IMPORTANTE' || (p.criticite ?? 0) >= 3)
+/**
+ * Synthèse d'un tiers sur plusieurs organisations : évaluation PAR ORGANISATION (pire niveau de ses usages), synthèse groupe
+ * au pire niveau ; concentration = usages critiques ou importants, et processus critiques ou importants distincts qui en dépendent.
+ */
+export function syntheseTiersGroupe(usages: UsageGroupe[]) {
+  const orgs = new Map<string, { organisation: string; niveaux: UsageGroupe['niveau'][] }>()
+  for (const u of usages) {
+    const o = orgs.get(u.organizationId) ?? { organisation: u.organisation, niveaux: [] }
+    o.niveaux.push(u.niveau); orgs.set(u.organizationId, o)
+  }
+  return {
+    pire: synthesePireNiveau(usages.map(u => u.niveau)),
+    parOrganisation: [...orgs].map(([organizationId, o]) => ({ organizationId, organisation: o.organisation, synthese: synthesePireNiveau(o.niveaux), usages: o.niveaux.length })),
+    concentration: {
+      usagesCritiques: usages.filter(u => u.criticite === 'CRITIQUE' || u.criticite === 'IMPORTANTE').length,
+      processusCritiques: new Set(usages.filter(u => processusSensible(u.processus)).map(u => u.processus!.id)).size,
+    },
+  }
+}

@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import { ECHELLES_ECOSYSTEME_DEFAUT } from '@/lib/ecosystem-echelles'
 import {
-  coterEvaluation, peutEvaluerTiers, peutValiderEvaluationTiers, prochaineEvaluation, sanitizeEvaluationTiers, synthesePireNiveau, transitionEvaluationTiers,
+  coterEvaluation, peutEvaluerTiers, peutValiderEvaluationTiers, prochaineEvaluation, sanitizeEvaluationTiers, synthesePireNiveau, syntheseTiersGroupe, transitionEvaluationTiers,
 } from '@/lib/tier-evaluation'
 
 const E = ECHELLES_ECOSYSTEME_DEFAUT
@@ -63,5 +63,26 @@ describe('synthesePireNiveau', () => {
   it('pire menace (actuelle) parmi les usages évalués, jamais une moyenne ; aucun usage évalué → null', () => {
     expect(synthesePireNiveau([{ menace: 0.5, zone: 'veille' }, { menace: 3, zone: 'danger' }, null])).toEqual({ menace: 3, zone: 'danger', evalues: 2 })
     expect(synthesePireNiveau([null, null])).toBeNull()
+  })
+})
+
+// Lot T2 — vue groupe et concentration : évaluation par organisation, synthèse groupe au pire niveau ; concentration =
+// usages critiques ou importants et processus critiques ou importants (distincts) qui dépendent du tiers.
+describe('syntheseTiersGroupe', () => {
+  const danger = { menace: 3, zone: 'danger' as const }
+  const veille = { menace: 0.5, zone: 'veille' as const }
+  it('pire niveau par organisation et pour le groupe ; organisations sans évaluation listées sans niveau', () => {
+    const s = syntheseTiersGroupe([
+      { organizationId: 'f1', organisation: 'Filiale Nord', niveau: veille, criticite: 'NON_CRITIQUE', processus: null },
+      { organizationId: 'f1', organisation: 'Filiale Nord', niveau: danger, criticite: 'CRITIQUE', processus: { id: 'p1', criticite: 4, criticiteDora: null } },
+      { organizationId: 'f2', organisation: 'Filiale Sud', niveau: null, criticite: 'IMPORTANTE', processus: { id: 'p2', criticite: 2, criticiteDora: 'IMPORTANTE' } },
+      { organizationId: 'f2', organisation: 'Filiale Sud', niveau: null, criticite: null, processus: { id: 'p2', criticite: 2, criticiteDora: 'IMPORTANTE' } },
+    ])
+    expect(s.pire).toEqual({ menace: 3, zone: 'danger', evalues: 2 })
+    expect(s.parOrganisation).toEqual([
+      { organizationId: 'f1', organisation: 'Filiale Nord', synthese: { menace: 3, zone: 'danger', evalues: 2 }, usages: 2 },
+      { organizationId: 'f2', organisation: 'Filiale Sud', synthese: null, usages: 2 },
+    ])
+    expect(s.concentration).toEqual({ usagesCritiques: 2, processusCritiques: 2 })
   })
 })

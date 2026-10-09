@@ -770,6 +770,8 @@ export const de: Translations = {
   },
 
   tierEval: {
+    colTiers: 'Drittanbieter', colOffre: 'Angebot', colOrganisation: 'Organisation', colUsage: 'Anwendungsfall', colProcessus: 'Prozess', colStatut: 'Status der Bewertung', colZone: 'Zone', colProchaine: 'Nächste Bewertung', exporter: 'Bewertungen exportieren (Excel)',
+    colNiveau: 'Stufe (schlechteste)', colConcentration: 'Konzentration', concentration: '{u} kritische Nutzung(en) · {p} kritische(r) Prozess(e)', groupe: 'Gruppe: {niveau}', parOrganisation: 'Bewertung je Organisation — {name}', nbUsages: '{n} Nutzung(en)',
     titre: 'Bewertung — {nom}', evaluer: 'Bewerten', masquer: 'Bewertung ausblenden', nonEvalue: 'Nicht bewertet',
     aide: 'Dieselben Kriterien wie in Workshop 3 von EBIOS RM, auf den Skalen der Organisation: Bedrohung = (Abhängigkeit × Durchdringung) / (Reife × Vertrauen). Aktuelle und Zielbewertung (nach Maßnahmen und Klauseln).',
     actuelle: 'Aktuell', cible: 'Ziel (Restrisiko)', menace: 'Bedrohung', nonCote: 'nicht bewertet', clauses: 'Geplante oder bestehende Vertragsklauseln',
