@@ -57,6 +57,9 @@ describe('R-AUD-2 — missions et constats de la période', () => {
     const t = tableau(r, 'missions')
     const m1 = t.lignes.find(l => l[0] === 'Audit paiements')!
     expect(m1[2]).toEqual({ k: 'rapports.notations.3' })
+    // Libellé personnalisé par l'organisation (auditConfig.libellesNotation) : repris tel quel.
+    const perso = tableau(buildRapportMissions({ ...data, libellesNotation: { 3: 'Partiellement maîtrisé' } }, periode, now), 'missions').lignes.find(l => l[0] === 'Audit paiements')!
+    expect(perso[2]).toBe('Partiellement maîtrisé')
     expect(m1[3]).toBe(3) // tous les constats de la mission
   })
 })

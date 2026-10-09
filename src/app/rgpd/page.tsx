@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Navbar from '@/components/Navbar'
-import { canManageRopa, type UserRole } from '@/lib/permissions'
+import { canManageRopa, isAdminRole, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import RgpdOnglets from '@/components/RgpdOnglets'
 import { getOrgConfig } from '@/lib/org-config.server'
@@ -26,7 +26,7 @@ export default async function RgpdPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <RgpdOnglets sousTraitant={sousTraitant} />
+        <RgpdOnglets sousTraitant={sousTraitant} estAdmin={isAdminRole(scope.role)} />
       </main>
     </div>
   )

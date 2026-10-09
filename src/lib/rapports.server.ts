@@ -52,7 +52,8 @@ async function chargerAudit(orgId: string, cfg: OrgConfigResolved): Promise<Audi
     prisma.auditMission.findMany({ where: { organizationId: orgId }, select: { id: true, intitule: true, statut: true, dateDebut: true, dateFin: true, notation: true, independance: true, processusIds: true, universIds: true }, take: 2000 }),
     prisma.auditConstat.findMany({ where: { organizationId: orgId }, select: { id: true, missionId: true, intitule: true, criticite: true, statut: true, echeance: true, echeanceInitiale: true, createdAt: true, reports: true, source: true }, take: 5000 }),
   ])
-  return { univers, constats, cycles: resolveAuditConfig(cfg.auditConfig).cycles, missions: missions.map(m => ({ ...m, processusIds: strs(m.processusIds), universIds: strs(m.universIds) })) }
+  const auditCfg = resolveAuditConfig(cfg.auditConfig)
+  return { univers, constats, cycles: auditCfg.cycles, libellesNotation: auditCfg.libellesNotation, missions: missions.map(m => ({ ...m, processusIds: strs(m.processusIds), universIds: strs(m.universIds) })) }
 }
 
 export async function genererContenuRapport(code: RapportCode, orgId: string, cfg: OrgConfigResolved, periode: Periode, locale: string, now: Date): Promise<RapportContenu> {

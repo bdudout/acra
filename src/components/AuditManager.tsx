@@ -93,6 +93,11 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
   const [cEditId, setCEditId] = useState<string | null>(null)
   const [showCForm, setShowCForm] = useState(false)
   const [busy, setBusy] = useState(false)
+  // Libellés de notation personnalisés (auditConfig), chargés à part : un échec garde les libellés traduits.
+  const [libellesNotation, setLibellesNotation] = useState<Record<number, string>>({})
+  useEffect(() => {
+    fetch('/api/audit/config').then(x => (x.ok ? x.json() : null)).then(j => setLibellesNotation(j?.config?.libellesNotation ?? {})).catch(() => {})
+  }, [])
   const [error, setError] = useState<string | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
   const [procs, setProcs] = useState<ProcLite[]>([])
@@ -437,7 +442,7 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
                     <div className="mb-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-800/40">
                       <MissionSuiviPanel key={`${m.id}-${m.notation ?? ''}-${JSON.stringify(m.jalons ?? {})}-${JSON.stringify(m.independance ?? {})}`}
                         mission={{ id: m.id, notation: m.notation ?? null, jalons: m.jalons ?? {}, independance: m.independance ?? {} }}
-                        canWrite={canWrite && !m.archiveLe} busy={busy} onSave={v => enregistrerSuiviMission(m, v)} onIndependance={v => declarerIndependance(m, v)} />
+                        canWrite={canWrite && !m.archiveLe} busy={busy} onSave={v => enregistrerSuiviMission(m, v)} onIndependance={v => declarerIndependance(m, v)} libellesNotation={libellesNotation} />
                     </div>
                     {canWrite && <div className="mb-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-800/40"><PapiersTravailPanel missionId={m.id} readOnly={!!m.archiveLe} /></div>}
                     {/* Rapports / preuves de la mission (PDF, docx…) */}

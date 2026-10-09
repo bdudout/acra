@@ -17,7 +17,7 @@ export interface ConstatRapport {
   id: string; missionId: string; intitule: string; criticite: number | null; statut: string
   echeance: Date | null; echeanceInitiale: Date | null; createdAt: Date; reports: unknown; source: string
 }
-export interface AuditRapportData { univers: UniversLite[]; missions: MissionRapport[]; constats: ConstatRapport[]; /** Cycles de couverture surchargés (auditConfig). */ cycles?: Record<number, number> }
+export interface AuditRapportData { univers: UniversLite[]; missions: MissionRapport[]; constats: ConstatRapport[]; /** Cycles de couverture surchargés (auditConfig). */ cycles?: Record<number, number>; /** Libellés de notation personnalisés (auditConfig). */ libellesNotation?: Record<number, string> }
 
 const cols = (...ks: string[]) => ks.map(k => `rapports.cols.${k}`)
 const tab = (colonnes: string[], lignes: Cellule[][]): Bloc => ({ type: 'tableau', colonnes, lignes })
@@ -25,7 +25,7 @@ const meta = (code: RapportContenu['code'], periode: Periode, now: Date, section
 const jour = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null)
 const dateMission = (m: MissionRapport) => m.dateFin ?? m.dateDebut
 const independanceDeclaree = (m: MissionRapport) => !!(m.independance && typeof m.independance === 'object' && (m.independance as { declareLe?: unknown }).declareLe)
-const notationCell = (n: number | null): Cellule => (n ? { k: `rapports.notations.${n}` } : { k: 'rapports.notations.NON_NOTEE' })
+const notationCell = (n: number | null, libelles?: Record<number, string>): Cellule => (n ? libelles?.[n] ?? { k: `rapports.notations.${n}` } : { k: 'rapports.notations.NON_NOTEE' })
 
 /** R-AUD-1 : couverture de l'univers d'audit, plan par année, missions de la période. */
 export function buildRapportPlanAudit(data: AuditRapportData, periode: Periode, now: Date): RapportContenu {
@@ -66,7 +66,7 @@ export function buildRapportMissions(data: AuditRapportData, periode: Periode, n
       { cle: 'independanceNonDeclaree', valeur: nonDeclarees, alerte: nonDeclarees > 0 },
     ] }] },
     { id: 'missions', blocs: [tab(cols('mission', 'statut', 'notation', 'constats', 'independance'), mp.map(m => [
-      m.intitule, { k: `rapports.missionStatuts.${m.statut}` }, notationCell(m.notation), nbConstats(m),
+      m.intitule, { k: `rapports.missionStatuts.${m.statut}` }, notationCell(m.notation, data.libellesNotation), nbConstats(m),
       { k: independanceDeclaree(m) ? ((m.independance as { conflit?: boolean }).conflit ? 'rapports.independances.CONFLIT' : 'rapports.independances.OK') : 'rapports.independances.NON_DECLAREE' }]))] },
     { id: 'constatsCritiques', blocs: [tab(cols('constat', 'criticite', 'statut'), critiques.map(c => [c.intitule, c.criticite, { k: `rapports.constatStatuts.${c.statut}` }]))] },
   ])

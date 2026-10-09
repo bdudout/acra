@@ -8,12 +8,16 @@ const j = (n: number) => new Date(now.getTime() + n * 86_400_000)
 
 describe('auditConfig', () => {
   it('défauts : rappels actifs, 14 j avant échéance, relance tous les 7 j, cycles par défaut', () => {
-    expect(resolveAuditConfig(undefined)).toEqual({ rappelsActifs: true, rappelJoursAvant: 14, rappelRelanceJours: 7, cycles: {} })
+    expect(resolveAuditConfig(undefined)).toEqual({ rappelsActifs: true, rappelJoursAvant: 14, rappelRelanceJours: 7, cycles: {}, libellesNotation: {} })
   })
   it('assainit : bornes, cycles 1–10 ans sur cotations 1–4, valeurs invalides ignorées', () => {
     expect(sanitizeAuditConfig({ rappelsActifs: false, rappelJoursAvant: 500, rappelRelanceJours: 0, cycles: { 4: 2, 3: 99, 9: 1, x: 2 } }))
-      .toEqual({ rappelsActifs: false, rappelJoursAvant: 90, rappelRelanceJours: 1, cycles: { 4: 2 } })
+      .toEqual({ rappelsActifs: false, rappelJoursAvant: 90, rappelRelanceJours: 1, cycles: { 4: 2 }, libellesNotation: {} })
     expect(resolveAuditConfig('nimporte quoi').rappelJoursAvant).toBe(14)
+  })
+  it('libellés de notation personnalisés : notes 1–4, texte nettoyé et borné, vides ignorés', () => {
+    expect(sanitizeAuditConfig({ libellesNotation: { 1: ' Conforme ', 2: '', 4: 'x'.repeat(200), 7: 'Hors échelle', 3: 12 } }).libellesNotation)
+      .toEqual({ 1: 'Conforme', 4: 'x'.repeat(60) })
   })
   it('les cycles surchargés pilotent le plan pluriannuel', () => {
     const cfg = sanitizeAuditConfig({ cycles: { 4: 3 } })
