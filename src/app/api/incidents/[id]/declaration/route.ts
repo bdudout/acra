@@ -7,7 +7,7 @@ import { type UserRole } from '@/lib/permissions'
 import { peutQualifier, loadIncidentInScope } from '@/lib/incident-access.server'
 import { resolveIncidentsConfig } from '@/lib/incidents-config'
 import { calculerHorloges, sanitizeAttributs, sanitizeNotifications } from '@/lib/notification-regimes'
-import { buildDoraReportJson, buildNotificationJson, cleanDeclaration, deriveDeclaration, DORA_STAGES, type DeclarationIncident, type DoraStage } from '@/lib/incident-declaration'
+import { buildDoraReportJson, buildNotificationJson, cleanDeclaration, deriveDeclaration, DORA_STAGES, type DeclarationIncident, type DoraStage, deriveNis2 } from '@/lib/incident-declaration'
 import { buildDeclarationWorkbook, type DeclarationExport, type ExportLang } from '@/lib/incident-declaration-xlsx'
 import type { DoraCriteres } from '@/lib/dora'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest, ctx: Params): Promise<NextResponse> 
   }
   const context = { organisationNom: row.organization.nom, devise: cfg.deviseReference, now: new Date() }
   // Sans paramètre : compléments saisis ET valeurs que le fichier reprendrait de l'incident (affichées comme valeurs proposées).
-  if (!regime) return NextResponse.json({ declaration, derived: deriveDeclaration(incident, context) })
+  if (!regime) return NextResponse.json({ declaration, derived: { ...deriveDeclaration(incident, context), ...deriveNis2(incident) } })
 
   const format = url.searchParams.get('format') === 'xlsx' ? 'xlsx' : 'json'
   const lang = (['fr', 'en', 'de', 'es', 'it'].includes(url.searchParams.get('lang') ?? '') ? url.searchParams.get('lang') : 'fr') as ExportLang

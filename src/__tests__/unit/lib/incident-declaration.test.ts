@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildDoraReportJson, buildNotificationJson, cleanDeclaration, CRITERIA_OPTIONS, DORA_ITS_FIELDS, DORA_STAGES, doraFieldRows, fieldsOfStage, isMandatoryAt, itsDatetime, itsDuration, type DeclarationIncident } from '@/lib/incident-declaration'
+import { buildDoraReportJson, buildNotificationJson, cleanDeclaration, NIS2_FIELDS, nis2Rubriques, CRITERIA_OPTIONS, DORA_ITS_FIELDS, DORA_STAGES, doraFieldRows, fieldsOfStage, isMandatoryAt, itsDatetime, itsDuration, type DeclarationIncident } from '@/lib/incident-declaration'
 
 const incident: DeclarationIncident = {
   id: 'inc123', intitule: 'Panne du SI de paiement', description: 'Indisponibilité du moteur de paiement',
@@ -135,5 +135,35 @@ describe('notification RGPD art. 33 § 3 (CNIL)', () => {
     expect(buildNotificationJson(incident, { ...n, code: 'NIS2' }, ctx, decl).rgpd).toBeUndefined()
     expect(buildNotificationJson(incident, n, ctx).rgpd).toBeDefined() // bloc présent, rubriques à compléter (nature proposée depuis la description)
     expect(buildNotificationJson(incident, n, ctx).rgpd!.nature).toBe('Indisponibilité du moteur de paiement')
+  })
+})
+
+// R-INC-3 — fiche de déclaration NIS2 (directive (UE) 2022/2555, art. 23 § 4) : rubriques par phase, libellés officiels
+// (EUR-Lex) dans les 5 langues, préremplissage depuis l'incident (jamais présumé pour les questions oui/non).
+describe('NIS2 — rubriques de l’art. 23 § 4', () => {
+  const nis2 = (phase: string, declaration = {}) => buildNotificationJson(incident, { code: 'NIS2', label: 'NIS2', autorite: 'CSIRT', phase: { code: phase }, echeance: null, soumisLe: null }, ctx, declaration).nis2
+  it('rubriques par phase : alerte précoce a), notification b) (reprend a)), rapport final d) i à iv', () => {
+    expect(NIS2_FIELDS.filter(f => f.phase === 'ALERTE_PRECOCE').map(f => f.key)).toEqual(['malveillance', 'transfrontiere'])
+    expect(NIS2_FIELDS.filter(f => f.phase === 'NOTIFICATION').map(f => f.key)).toEqual(['evaluationInitiale', 'indicateursCompromission'])
+    expect(NIS2_FIELDS.filter(f => f.phase === 'RAPPORT_FINAL').map(f => f.key)).toEqual(['description', 'menaceCause', 'mesuresAttenuation', 'impactTransfrontiere'])
+    expect(nis2Rubriques('NOTIFICATION').map(f => f.key)).toEqual(['malveillance', 'transfrontiere', 'evaluationInitiale', 'indicateursCompromission'])
+  })
+  it('libellés officiels dans les 5 langues pour chaque rubrique', () => {
+    for (const f of NIS2_FIELDS) for (const l of ['fr', 'en', 'de', 'es', 'it'] as const) expect(f.libelles[l].length, `${f.key}/${l}`).toBeGreaterThan(10)
+    expect(NIS2_FIELDS.find(f => f.key === 'menaceCause')!.libelles.fr).toBe('Type de menace ou cause profonde qui a probablement déclenché l’incident')
+  })
+  it('saisie : oui / non / inconnu pour les questions de l’alerte précoce ; textes bornés ; clés inconnues écartées', () => {
+    expect(cleanDeclaration({ 'nis2.malveillance': 'OUI', 'nis2.transfrontiere': 'peut-être', 'nis2.mesuresAttenuation': ' Isolement du serveur ', 'nis2.inconnu': 'x' }))
+      .toEqual({ 'nis2.malveillance': 'OUI', 'nis2.mesuresAttenuation': 'Isolement du serveur' })
+  })
+  it('export : rubriques de la phase, préremplies depuis l’incident ; la saisie l’emporte ; oui/non jamais présumés', () => {
+    expect(nis2('ALERTE_PRECOCE')).toEqual({})
+    expect(nis2('RAPPORT_FINAL')).toEqual({
+      description: 'Panne du SI de paiement — Indisponibilité du moteur de paiement',
+      menaceCause: 'SYSTEMES — Défaut de configuration après mise à jour',
+      mesuresAttenuation: 'Correctif déployé',
+    })
+    expect(nis2('RAPPORT_FINAL', { 'nis2.mesuresAttenuation': 'Bascule sur le site de secours' })?.mesuresAttenuation).toBe('Bascule sur le site de secours')
+    expect(buildNotificationJson(incident, { code: 'CRA_14', phase: { code: 'ALERTE_PRECOCE' }, echeance: null, soumisLe: null }, ctx).nis2).toBeUndefined()
   })
 })

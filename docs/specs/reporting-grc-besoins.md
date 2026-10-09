@@ -19,7 +19,10 @@
 > externes (`rapport-masquage`), rapports planifiés (cron `rapports-planifies`), diffusion par e-mail après validation,
 > gabarits (`gabarits`) ; rejeu N/N-1 du contrôle (B-CTL-5, `controle-l3b`) et rattachement d'un contrôle à un tiers / projet 360
 > (B-CTL-8) ; relances automatiques des recommandations d'audit, cycles configurables et libellés de notation personnalisés (`auditConfig`).
-> **Restent** : R-INC-3 ; feuilles de travail d'audit ; vocabulaire
+> **R-INC-3 livré (2026-10-09)** : fiche NIS2 par phase (art. 23 § 4 a), b), d) i–iv, libellés officiels EUR-Lex ×5) dans
+> l'écran de déclaration et les exports JSON / Excel, préremplie depuis l'incident ; DORA (ITS 2025/302) et RGPD (art. 33 § 3)
+> l'étaient déjà ; les régimes interne / personnalisés gardent l'export générique.
+> **Restent** : feuilles de travail d'audit ; vocabulaire
 > personnalisé dans les pages rendues côté serveur, exports et PDF ; champs personnalisés sur les tiers (les constats en ont).
 > Les blocs ci-dessous sont l'historique d'avancement (2026-09-29).
 
@@ -311,7 +314,7 @@ contrôles clés en anomalie »).
 |---|---|---|---|---|
 | R-INC-1 | Tableau de bord incidents (volumes, délais détection/résolution, tendances, top causes) | Direction, RSSI | Mensuel | Partiel (cockpit) |
 | R-INC-2 | **Registre / historique des incidents** (art. 33(5)-type, journal complet) | Auditeur, DPO | À la demande | Partiel (export) |
-| R-INC-3 | Fiche de déclaration par régime (DORA, NIS2, RGPD, interne) : contenu pré-rempli, **non soumis par l'outil** | Autorité (via l'entité) | À l'événement | DORA ITS oui, autres non |
+| R-INC-3 | Fiche de déclaration par régime (DORA, NIS2, RGPD, interne) : contenu pré-rempli, **non soumis par l'outil** | Autorité (via l'entité) | À l'événement | Oui : DORA (ITS), NIS2 (art. 23 § 4), RGPD (art. 33 § 3) ; interne / personnalisés : export générique |
 | R-PER-1 | **LDC** (base de pertes) avec seuils, allocation, rapprochement | Risk manager, ACPR | Trimestriel/annuel | Partiel |
 | R-PER-2 | Pertes par catégorie / ligne de métier / entité, grandes pertes, évolution | Comité des risques | Trimestriel | Non |
 | R-CTL-1 | Avancement du plan de contrôle (réalisé/prévu, retards, anomalies) | Contrôle permanent, N2 | Mensuel | Partiel (campagnes) |
