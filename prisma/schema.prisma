@@ -372,6 +372,8 @@ model Traitement {
   aipdDate                  DateTime?    @db.Date
   aipdJustification         String       @default("")
   aipdConsultationPrealable Boolean      @default(false)
+  // Anti-doublon de la relance « AIPD requise non engagée » (cron relances, destinataire : DPO).
+  aipdRappelLe              DateTime?
   // Provenance d'un traitement type du catalogue RoPA (import ligne par ligne idempotent).
   catalogueKey             String?
   catalogueVersion         String?
