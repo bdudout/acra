@@ -38,6 +38,14 @@ describe('parseAnalysisImportRequest', () => {
 })
 
 describe('summarizeAnalysisImport', () => {
+  it('B-IMP-09 : un niveau de risque du fichier divergent du calcul ACRA est signalé (valeur ignorée)', () => {
+    const summary = summarizeAnalysisImport(parseAnalysisImportRequest({
+      idempotencyKey: 'migration-2026-niveau', analysis: { title: 'A' },
+      risks: [{ externalId: 'R-1', title: 'Risque', gravity: 3, likelihood: 2, riskLevel: '8' }, { externalId: 'R-2', title: 'Cohérent', gravity: 3, likelihood: 2, riskLevel: '6' }],
+    }))
+    expect(summary.warnings).toEqual(['risk_level_differs:R-1:8:6'])
+  })
+
   it('annonce les créations et les références impossibles à relier sans écrire', () => {
     const summary = summarizeAnalysisImport(parseAnalysisImportRequest({
       idempotencyKey: 'migration-2026-002', analysis: { title: 'A' },

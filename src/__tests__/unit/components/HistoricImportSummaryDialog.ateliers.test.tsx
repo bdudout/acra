@@ -51,4 +51,12 @@ describe('bilan d’import — textes raccourcis', () => {
     expect(text).toContain('3 texte(s) trop long(s) raccourci(s) à 1000 caractères')
     expect(text).toContain('exigence(s) du socle › title')
   })
+  it('B-IMP-09 : niveau de risque divergent lisible (risque, valeur du fichier, calcul ACRA)', () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ mappings: [] }) })))
+    render(<HistoricImportSummaryDialog
+      result={{ imported: 1, results: [], decisions: [], warnings: ['risk_level_differs:R1:8:6'] }}
+      selection={{ mappings: {}, sheetTypes: {}, transforms: {}, statusMappings: {}, scoreMappings: {} } as never}
+      labels={fr.historicImportSummary as never} onClose={vi.fn()} />)
+    expect(screen.getByLabelText('Points à vérifier').textContent).toContain('Risque « R1 » : niveau 8 dans le fichier, mais ACRA calcule 6')
+  })
 })

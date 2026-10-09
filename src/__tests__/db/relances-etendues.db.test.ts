@@ -20,7 +20,7 @@ let captures: Envoye[] = []
 const texte = (u: { email: string }) => captures.filter(m => m.to === u.email).map(m => m.text).join('\n')
 
 let rssi: { id: string; email: string }, dm: { email: string }, auditeur: { email: string }, controleur: { email: string }
-let auteur: { id: string; email: string }, porteurKri: { email: string }
+let auteur: { id: string; email: string }, porteurKri: { email: string }, dpo: { email: string }
 
 beforeAll(async () => {
   const org = await makeOrg('Relances étendues')
@@ -34,6 +34,7 @@ beforeAll(async () => {
   controleur = await makeUser('ANALYSTE', [{ id: org.id, role: 'CONTROLEUR' }])
   auteur = await makeUser('ANALYSTE', [{ id: org.id }])
   porteurKri = await makeUser('ANALYSTE', [{ id: org.id }])
+  dpo = await makeUser('ANALYSTE', [{ id: org.id, role: 'DPO' }])
   const o = { organizationId: org.id }
 
   await prisma.arrangementTic.create({ data: { ...o, reference: 'C-042', prestataireNom: 'CloudCo', typeService: 'CLOUD', criticite: 'CRITIQUE', dateFin: jour(60) } as never })
@@ -51,6 +52,12 @@ beforeAll(async () => {
   await prisma.analyse.create({ data: { ...o, nom: 'Analyse paiements', userId: auteur.id, statut: 'EN_COURS', dateEcheance: jour(6) } })
   await prisma.analyse.create({ data: { ...o, nom: 'Analyse CRM', userId: auteur.id, statut: 'APPROUVE', approuveLe: jour(-10), risquesResiduelsStatut: 'EN_ATTENTE' } })
   await prisma.orgInvitation.create({ data: { ...o, email: 'nouveau@test.acra', role: 'ANALYSTE', scope: 'NODE', tokenHash: `h-${Date.now()}`, invitedById: rssi.id, expiresAt: jour(2) } })
+
+  // RGPD : AIPD requise (2 critères WP248) non engagée → DPO ; un seul critère, ou AIPD en cours → rien.
+  const tr = { ...o, finalite: 'Gestion', baseLegale: 'CONTRAT', createdAt: jour(-20) }
+  await prisma.traitement.create({ data: { ...tr, nom: 'Scoring clients', criteresAipd: ['EVALUATION', 'CROISEMENT'] } as never })
+  await prisma.traitement.create({ data: { ...tr, nom: 'Paie', grandeEchelle: true } as never })
+  await prisma.traitement.create({ data: { ...tr, nom: 'Vidéoprotection', grandeEchelle: true, surveillanceSystematique: true, aipdStatut: 'EN_COURS' } as never })
 
   mail.send.mockClear()
   await executerRelances()
@@ -79,6 +86,12 @@ describe('relances étendues (vraie base)', () => {
     expect(texte(controleur)).not.toContain('Campagne complète')
     expect(texte(auditeur)).toContain('Mission d’audit planifiée — Audit IAM : en retard')
     expect(texte(dm)).toContain('Risques résiduels à accepter — Analyse CRM : en attente depuis le')
+  })
+  it('RGPD : AIPD requise non engagée → DPO (pas un critère seul, pas une AIPD en cours)', () => {
+    const t = texte(dpo)
+    expect(t).toContain('Analyse d’impact relative à la protection des données (AIPD) requise, non engagée — Scoring clients')
+    expect(t).not.toContain('Paie')
+    expect(t).not.toContain('Vidéoprotection')
   })
   it('anti-doublon : rien au second passage', async () => {
     mail.send.mockClear()

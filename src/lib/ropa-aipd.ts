@@ -4,6 +4,8 @@
 // d'AIPD doit être documentée), consultation préalable de l'autorité de contrôle (art. 36) quand le risque résiduel
 // reste élevé. Le niveau (REQUISE / A_EXAMINER / NON) vient de lib/ropa (critères WP248). Testé : ropa-aipd.test.ts.
 
+import { relanceAttenteDue, type RelancesConfig } from '@/lib/relances'
+
 export const STATUTS_AIPD = ['A_REALISER', 'EN_COURS', 'REALISEE', 'NON_RETENUE'] as const
 export type StatutAipd = (typeof STATUTS_AIPD)[number]
 type Niveau = 'REQUISE' | 'A_EXAMINER' | 'NON'
@@ -38,4 +40,12 @@ export function alerteAipd(niveau: Niveau, s: Pick<SuiviAipd, 'aipdStatut' | 'ai
 /** Refus d'enregistrement : « non retenue » sans justification alors qu'un critère est présent. */
 export function validerSuiviAipd(niveau: Niveau, s: Pick<SuiviAipd, 'aipdStatut' | 'aipdJustification'>): 'justification_requise' | null {
   return niveau !== 'NON' && s.aipdStatut === 'NON_RETENUE' && !s.aipdJustification.trim() ? 'justification_requise' : null
+}
+
+/**
+ * Relance par e-mail (cron `relances`) d'une AIPD requise non engagée (cas `A_LANCER`) : première relance après le délai
+ * d'attente de l'organisation (`attenteJours`), puis tous les `periodiciteJours`. Destinataires : le DPO (cf. relances.server).
+ */
+export function aipdARelancer(t: { niveau: Niveau; aipdStatut: StatutAipd | null; depuis: Date; rappelLe: Date | null }, cfg: RelancesConfig, now: Date): boolean {
+  return alerteAipd(t.niveau, { aipdStatut: t.aipdStatut, aipdJustification: '' }) === 'A_LANCER' && relanceAttenteDue({ depuis: t.depuis, rappelLe: t.rappelLe }, cfg, now)
 }

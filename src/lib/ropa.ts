@@ -110,7 +110,8 @@ export interface PiaVerdict {
 
 /** Critères retenus : ceux cochés par le DPO, plus ceux que les champs du traitement établissent (catégories
  *  particulières de l'art. 9 détectées, grande échelle, surveillance systématique) ; ordre des lignes directrices. */
-export function criteresAipd(t: Traitement): CritereAipd[] {
+export type TraitementCriteres = Pick<Traitement, 'categoriesDonnees' | 'grandeEchelle' | 'surveillanceSystematique' | 'criteresAipd'>
+export function criteresAipd(t: TraitementCriteres): CritereAipd[] {
   const retenus = new Set<string>(t.criteresAipd ?? [])
   if (detectRgpdArt9(t.categoriesDonnees.map(nom => ({ nom }))).length > 0) retenus.add('DONNEES_SENSIBLES')
   if (t.grandeEchelle) retenus.add('GRANDE_ECHELLE')
@@ -123,7 +124,7 @@ export function criteresAipd(t: Traitement): CritereAipd[] {
  * qui satisfait à deux critères nécessite une AIPD ; un seul critère peut suffire selon le cas (« à examiner »). Aide à
  * la décision, pas un avis juridique : le DPO reste décisionnaire et documente sa décision.
  */
-export function piaRequis(t: Traitement): PiaVerdict {
+export function piaRequis(t: TraitementCriteres): PiaVerdict {
   const motifs = criteresAipd(t)
   const niveau = motifs.length >= 2 ? 'REQUISE' : motifs.length === 1 ? 'A_EXAMINER' : 'NON'
   return { requis: niveau === 'REQUISE', niveau, motifs }

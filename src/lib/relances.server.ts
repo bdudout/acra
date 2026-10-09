@@ -24,6 +24,8 @@ import { sendEmail } from './email'
 import { relancesEmail, type RelanceItem } from './email-i18n'
 import { appUrl } from './org-invitation.server'
 import { auditLog } from './logger'
+import { piaRequis } from './ropa'
+import { aipdARelancer, type StatutAipd } from './ropa-aipd'
 
 // Gouvernance de l'organisation : repli des éléments sans responsable identifiable, destinataire
 // des contrôles à exécuter et des dérogations arrivant à expiration.
@@ -99,7 +101,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     }),
   ])
   // Sources « à échéance » et décisions complémentaires.
-  const [contrats, tests, kris, documents, campagnes, missions, analysesEcheance, acceptations, invitations, homologations, suppressions] = await Promise.all([
+  const [contrats, tests, kris, documents, campagnes, missions, analysesEcheance, acceptations, invitations, homologations, suppressions, traitementsAipd] = await Promise.all([
     prisma.arrangementTic.findMany({ where: { dateFin: { not: null } }, select: { id: true, organizationId: true, reference: true, prestataireNom: true, dateFin: true, createdAt: true, rappelLe: true }, take: 10000 }),
     prisma.testResilience.findMany({ where: { statut: { in: ['PLANIFIE', 'EN_COURS'] }, datePrevue: { not: null } }, select: { id: true, organizationId: true, intitule: true, datePrevue: true, createdAt: true, rappelLe: true }, take: 10000 }),
     prisma.kri.findMany({ where: { actif: true }, select: { id: true, organizationId: true, intitule: true, frequence: true, responsable: true, createdAt: true, rappelLe: true, mesures: { orderBy: { dateMesure: 'desc' }, take: 1, select: { dateMesure: true } } }, take: 10000 }),
@@ -111,6 +113,8 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     prisma.orgInvitation.findMany({ where: { acceptedAt: null }, select: { id: true, organizationId: true, email: true, invitedById: true, expiresAt: true, createdAt: true, rappelLe: true }, take: 10000 }),
     prisma.homologation.findMany({ where: { statut: { in: ['HOMOLOGUE', 'HOMOLOGUE_RESERVES'] } }, select: { id: true, organizationId: true, systeme: true, statut: true, dateFin: true, rappelLe: true, preparePar: true, autoriteId: true }, take: 10000 }),
     prisma.risque.findMany({ where: { suppressionDemandeeLe: { not: null }, analyse: { methode: 'PROJET_360', deletedAt: null } }, select: { id: true, nom: true, domaine: true, analyseId: true, suppressionDemandeeLe: true, suppressionRappelLe: true, analyse: { select: { organizationId: true, nom: true } } }, take: 10000 }),
+    // RGPD : AIPD non engagée (le niveau « requise » se calcule ensuite à partir des critères WP248).
+    prisma.traitement.findMany({ where: { OR: [{ aipdStatut: null }, { aipdStatut: 'A_REALISER' }] }, select: { id: true, organizationId: true, nom: true, aipdStatut: true, createdAt: true, aipdRappelLe: true, categoriesDonnees: true, grandeEchelle: true, surveillanceSystematique: true, criteresAipd: true }, take: 10000 }),
   ])
   // Versions remplacées d'un document : seule la version en vigueur est à revoir.
   const remplaces = new Set((documents.length ? await prisma.document.findMany({ where: { remplaceId: { in: documents.map(d => d.id) } }, select: { remplaceId: true } }) : []).map(d => d.remplaceId))
@@ -176,6 +180,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     analyses: [] as string[], derogations: [] as string[], constatsAudit: [] as string[], controles: [] as string[], derogationsExpiration: [] as string[],
     contratsTic: [] as string[], testsResilience: [] as string[], kri: [] as string[], documents: [] as string[], campagnes: [] as string[],
     missionsAudit: [] as string[], analysesEcheance: [] as string[], acceptationsRisques: [] as string[], invitations: [] as string[], homologations: [] as string[], suppressions: [] as string[],
+    aipd: [] as string[],
   }
 
   // ─── Éléments à traiter ───
@@ -385,6 +390,17 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     marques.suppressions.push(r.id)
   }
 
+  // RGPD : AIPD requise (≥ 2 critères WP248) non engagée — au DPO, aux administrateurs à défaut.
+  const textes = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [])
+  for (const t of traitementsAipd) {
+    const cfg = await cfgOf(t.organizationId)
+    const niveau = piaRequis({ categoriesDonnees: textes(t.categoriesDonnees), grandeEchelle: t.grandeEchelle, surveillanceSystematique: t.surveillanceSystematique, criteresAipd: textes(t.criteresAipd) }).niveau
+    if (!aipdARelancer({ niveau, aipdStatut: t.aipdStatut as StatutAipd | null, depuis: t.createdAt, rappelLe: t.aipdRappelLe }, cfg.relances, now)) continue
+    const dpo = await parRoles(t.organizationId, ['DPO'])
+    ajouter(t.organizationId, dpo.length ? dpo : await parRoles(t.organizationId, ['ADMIN']), { categorie: 'AIPD_A_REALISER', intitule: t.nom, type: 'EN_ATTENTE', echeance: jour(t.createdAt) })
+    marques.aipd.push(t.id)
+  }
+
   // ─── Envoi : un e-mail de synthèse par personne ───
   const orgIds = [...new Set([...boite.values()].flatMap(e => e.items.map(i => i.orgId)))]
   const orgs = new Map((orgIds.length ? await prisma.organization.findMany({ where: { id: { in: orgIds } }, select: { id: true, nom: true } }) : []).map(o => [o.id, o.nom]))
@@ -417,11 +433,12 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     maj(marques.derogationsExpiration, ids => prisma.derogation.updateMany({ where: { id: { in: ids } }, data: { alerteeLe: now } })),
     maj(marques.homologations, ids => prisma.homologation.updateMany({ where: { id: { in: ids } }, data: { rappelLe: now } })),
     maj(marques.suppressions, ids => prisma.risque.updateMany({ where: { id: { in: ids } }, data: { suppressionRappelLe: now } })),
+    maj(marques.aipd, ids => prisma.traitement.updateMany({ where: { id: { in: ids } }, data: { aipdRappelLe: now } })),
   ])
 
   return {
     checked: reponses.length + preconisations.length + plans.length + aVerifier.length + analyses.length + derogationsRevue.length + constats.length + controles.length + derogationsActives.length
-      + contrats.length + tests.length + kris.length + documents.length + campagnes.length + missions.length + analysesEcheance.length + acceptations.length + invitations.length + homologations.length + suppressions.length,
+      + contrats.length + tests.length + kris.length + documents.length + campagnes.length + missions.length + analysesEcheance.length + acceptations.length + invitations.length + homologations.length + suppressions.length + traitementsAipd.length,
     reminded: Object.fromEntries(Object.entries(marques).map(([k, v]) => [k, v.length])),
     emailsSent, emailsSkipped,
   }

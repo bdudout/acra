@@ -90,6 +90,7 @@ export type RelanceCategorie = 'QUESTIONNAIRE' | 'PRECONISATION' | 'PLAN_ACTION'
   | 'CONTRAT_TIC' | 'TEST_RESILIENCE' | 'KRI_MESURE' | 'DOCUMENT_A_REVOIR' | 'CAMPAGNE_CONTROLE' | 'MISSION_AUDIT' | 'ANALYSE_ECHEANCE' | 'INVITATION'
   | 'ACCEPTATION_RISQUES'
   | 'SUPPRESSION_RISQUE'
+  | 'AIPD_A_REALISER'
   // Décisions en attente : vérifications (2ᵉ et 3ᵉ lignes) et validations (RSSI, Risk Manager, direction métier).
   | 'PRECONISATION_A_VERIFIER' | 'CONSTAT_A_VERIFIER' | 'ANALYSE_A_APPROUVER' | 'PROJET360_A_APPROUVER'
   | 'DEROGATION_AVIS' | 'DEROGATION_DOUBLE_REGARD' | 'DEROGATION_VALIDATION'
@@ -111,7 +112,7 @@ const relancesLabels: Record<EmailLocale, {
     categories: {
       CONTRAT_TIC: 'Contrat TIC arrivant à échéance', TEST_RESILIENCE: 'Test de résilience planifié', KRI_MESURE: 'KRI sans mesure récente', DOCUMENT_A_REVOIR: 'Document à revoir', CAMPAGNE_CONTROLE: 'Campagne de contrôle avec des contrôles non exécutés', MISSION_AUDIT: 'Mission d’audit planifiée', ANALYSE_ECHEANCE: 'Analyse de risques', INVITATION: 'Invitation non acceptée', ACCEPTATION_RISQUES: 'Risques résiduels à accepter',
       QUESTIONNAIRE: 'Questionnaire à répondre', PRECONISATION: 'Préconisation', PLAN_ACTION: 'Plan d’action',
-      CONSTAT_AUDIT: 'Recommandation d’audit', CONTROLE_A_EXECUTER: 'Contrôle à exécuter', DEROGATION_EXPIRATION: 'Dérogation arrivant à expiration', HOMOLOGATION_RENOUVELLEMENT: 'Homologation à renouveler', SUPPRESSION_RISQUE: 'Suppression d’un risque de projet à valider',
+      CONSTAT_AUDIT: 'Recommandation d’audit', CONTROLE_A_EXECUTER: 'Contrôle à exécuter', DEROGATION_EXPIRATION: 'Dérogation arrivant à expiration', HOMOLOGATION_RENOUVELLEMENT: 'Homologation à renouveler', SUPPRESSION_RISQUE: 'Suppression d’un risque de projet à valider', AIPD_A_REALISER: 'Analyse d’impact relative à la protection des données (AIPD) requise, non engagée',
       PRECONISATION_A_VERIFIER: 'Préconisation réalisée à vérifier', CONSTAT_A_VERIFIER: 'Recommandation d’audit réalisée à vérifier', ANALYSE_A_APPROUVER: 'Analyse à approuver', PROJET360_A_APPROUVER: 'Projet 360 à approuver',
       DEROGATION_AVIS: 'Dérogation : avis RSSI attendu', DEROGATION_DOUBLE_REGARD: 'Dérogation : double regard attendu', DEROGATION_VALIDATION: 'Dérogation : validation métier attendue',
     },
@@ -123,7 +124,7 @@ const relancesLabels: Record<EmailLocale, {
     categories: {
       CONTRAT_TIC: 'ICT contract nearing its end date', TEST_RESILIENCE: 'Planned resilience test', KRI_MESURE: 'KRI without a recent measurement', DOCUMENT_A_REVOIR: 'Document to review', CAMPAGNE_CONTROLE: 'Control campaign with controls not performed', MISSION_AUDIT: 'Planned audit engagement', ANALYSE_ECHEANCE: 'Risk analysis', INVITATION: 'Invitation not accepted', ACCEPTATION_RISQUES: 'Residual risks to accept',
       QUESTIONNAIRE: 'Questionnaire to answer', PRECONISATION: 'Recommendation', PLAN_ACTION: 'Action plan',
-      CONSTAT_AUDIT: 'Audit recommendation', CONTROLE_A_EXECUTER: 'Control to perform', DEROGATION_EXPIRATION: 'Waiver about to expire', HOMOLOGATION_RENOUVELLEMENT: 'Accreditation to renew', SUPPRESSION_RISQUE: 'Project risk deletion to approve',
+      CONSTAT_AUDIT: 'Audit recommendation', CONTROLE_A_EXECUTER: 'Control to perform', DEROGATION_EXPIRATION: 'Waiver about to expire', HOMOLOGATION_RENOUVELLEMENT: 'Accreditation to renew', SUPPRESSION_RISQUE: 'Project risk deletion to approve', AIPD_A_REALISER: 'Data protection impact assessment (DPIA) required, not started',
       PRECONISATION_A_VERIFIER: 'Completed recommendation to verify', CONSTAT_A_VERIFIER: 'Completed audit recommendation to verify', ANALYSE_A_APPROUVER: 'Analysis to approve', PROJET360_A_APPROUVER: '360 project to approve',
       DEROGATION_AVIS: 'Waiver: CISO opinion expected', DEROGATION_DOUBLE_REGARD: 'Waiver: second review expected', DEROGATION_VALIDATION: 'Waiver: business approval expected',
     },
@@ -135,7 +136,7 @@ const relancesLabels: Record<EmailLocale, {
     categories: {
       CONTRAT_TIC: 'IKT-Vertrag läuft bald aus', TEST_RESILIENCE: 'Geplanter Resilienztest', KRI_MESURE: 'KRI ohne aktuelle Messung', DOCUMENT_A_REVOIR: 'Zu überprüfendes Dokument', CAMPAGNE_CONTROLE: 'Kontrollkampagne mit nicht durchgeführten Kontrollen', MISSION_AUDIT: 'Geplante Prüfung', ANALYSE_ECHEANCE: 'Risikoanalyse', INVITATION: 'Nicht angenommene Einladung', ACCEPTATION_RISQUES: 'Zu akzeptierende Restrisiken',
       QUESTIONNAIRE: 'Zu beantwortender Fragebogen', PRECONISATION: 'Empfehlung', PLAN_ACTION: 'Maßnahmenplan',
-      CONSTAT_AUDIT: 'Prüfungsempfehlung', CONTROLE_A_EXECUTER: 'Durchzuführende Kontrolle', DEROGATION_EXPIRATION: 'Ausnahme läuft bald ab', HOMOLOGATION_RENOUVELLEMENT: 'Sicherheitsfreigabe zu erneuern', SUPPRESSION_RISQUE: 'Löschung eines Projektrisikos freizugeben',
+      CONSTAT_AUDIT: 'Prüfungsempfehlung', CONTROLE_A_EXECUTER: 'Durchzuführende Kontrolle', DEROGATION_EXPIRATION: 'Ausnahme läuft bald ab', HOMOLOGATION_RENOUVELLEMENT: 'Sicherheitsfreigabe zu erneuern', SUPPRESSION_RISQUE: 'Löschung eines Projektrisikos freizugeben', AIPD_A_REALISER: 'Datenschutz-Folgenabschätzung (DSFA) erforderlich, nicht begonnen',
       PRECONISATION_A_VERIFIER: 'Umgesetzte Empfehlung zu prüfen', CONSTAT_A_VERIFIER: 'Umgesetzte Prüfungsempfehlung zu prüfen', ANALYSE_A_APPROUVER: 'Analyse zu genehmigen', PROJET360_A_APPROUVER: '360-Projekt zu genehmigen',
       DEROGATION_AVIS: 'Ausnahme: Stellungnahme des CISO erwartet', DEROGATION_DOUBLE_REGARD: 'Ausnahme: Zweitprüfung erwartet', DEROGATION_VALIDATION: 'Ausnahme: Freigabe durch den Fachbereich erwartet',
     },
@@ -147,7 +148,7 @@ const relancesLabels: Record<EmailLocale, {
     categories: {
       CONTRAT_TIC: 'Contrato TIC próximo a vencer', TEST_RESILIENCE: 'Prueba de resiliencia planificada', KRI_MESURE: 'KRI sin medición reciente', DOCUMENT_A_REVOIR: 'Documento por revisar', CAMPAGNE_CONTROLE: 'Campaña de control con controles no ejecutados', MISSION_AUDIT: 'Misión de auditoría planificada', ANALYSE_ECHEANCE: 'Análisis de riesgos', INVITATION: 'Invitación no aceptada', ACCEPTATION_RISQUES: 'Riesgos residuales por aceptar',
       QUESTIONNAIRE: 'Cuestionario por responder', PRECONISATION: 'Recomendación', PLAN_ACTION: 'Plan de acción',
-      CONSTAT_AUDIT: 'Recomendación de auditoría', CONTROLE_A_EXECUTER: 'Control por ejecutar', DEROGATION_EXPIRATION: 'Excepción a punto de caducar', HOMOLOGATION_RENOUVELLEMENT: 'Homologación por renovar', SUPPRESSION_RISQUE: 'Eliminación de un riesgo de proyecto por validar',
+      CONSTAT_AUDIT: 'Recomendación de auditoría', CONTROLE_A_EXECUTER: 'Control por ejecutar', DEROGATION_EXPIRATION: 'Excepción a punto de caducar', HOMOLOGATION_RENOUVELLEMENT: 'Homologación por renovar', SUPPRESSION_RISQUE: 'Eliminación de un riesgo de proyecto por validar', AIPD_A_REALISER: 'Evaluación de impacto relativa a la protección de datos (EIPD) requerida, no iniciada',
       PRECONISATION_A_VERIFIER: 'Recomendación realizada por verificar', CONSTAT_A_VERIFIER: 'Recomendación de auditoría realizada por verificar', ANALYSE_A_APPROUVER: 'Análisis por aprobar', PROJET360_A_APPROUVER: 'Proyecto 360 por aprobar',
       DEROGATION_AVIS: 'Excepción: dictamen del RSSI pendiente', DEROGATION_DOUBLE_REGARD: 'Excepción: doble revisión pendiente', DEROGATION_VALIDATION: 'Excepción: validación de negocio pendiente',
     },
@@ -159,7 +160,7 @@ const relancesLabels: Record<EmailLocale, {
     categories: {
       CONTRAT_TIC: 'Contratto TIC in scadenza', TEST_RESILIENCE: 'Test di resilienza pianificato', KRI_MESURE: 'KRI senza misurazione recente', DOCUMENT_A_REVOIR: 'Documento da rivedere', CAMPAGNE_CONTROLE: 'Campagna di controllo con controlli non eseguiti', MISSION_AUDIT: 'Missione di audit pianificata', ANALYSE_ECHEANCE: 'Analisi dei rischi', INVITATION: 'Invito non accettato', ACCEPTATION_RISQUES: 'Rischi residui da accettare',
       QUESTIONNAIRE: 'Questionario da compilare', PRECONISATION: 'Raccomandazione', PLAN_ACTION: 'Piano d’azione',
-      CONSTAT_AUDIT: 'Raccomandazione di audit', CONTROLE_A_EXECUTER: 'Controllo da eseguire', DEROGATION_EXPIRATION: 'Deroga in scadenza', HOMOLOGATION_RENOUVELLEMENT: 'Omologazione da rinnovare', SUPPRESSION_RISQUE: 'Eliminazione di un rischio di progetto da approvare',
+      CONSTAT_AUDIT: 'Raccomandazione di audit', CONTROLE_A_EXECUTER: 'Controllo da eseguire', DEROGATION_EXPIRATION: 'Deroga in scadenza', HOMOLOGATION_RENOUVELLEMENT: 'Omologazione da rinnovare', SUPPRESSION_RISQUE: 'Eliminazione di un rischio di progetto da approvare', AIPD_A_REALISER: 'Valutazione d’impatto sulla protezione dei dati (DPIA) richiesta, non avviata',
       PRECONISATION_A_VERIFIER: 'Raccomandazione attuata da verificare', CONSTAT_A_VERIFIER: 'Raccomandazione di audit attuata da verificare', ANALYSE_A_APPROUVER: 'Analisi da approvare', PROJET360_A_APPROUVER: 'Progetto 360 da approvare',
       DEROGATION_AVIS: 'Deroga: parere del CISO atteso', DEROGATION_DOUBLE_REGARD: 'Deroga: doppia revisione attesa', DEROGATION_VALIDATION: 'Deroga: validazione di business attesa',
     },
