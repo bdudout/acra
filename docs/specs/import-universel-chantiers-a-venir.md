@@ -48,7 +48,11 @@ CSV, JSON libre, profils, mapping par défaut `mapping_mzt`) est décrit dans [`
 - **Questions** : format de transport du fichier (base64 comme l'interface, ou multipart) ; profil inline ou référencé (`mapping_mzt`, mappings
   d'organisation) ; limites de taille et de débit alignées sur l'interface (500 lignes / feuille, 30 aperçus / 10 min).
 
-## 4. MCP (B-IMP-73)
+## 4. MCP (B-IMP-73) — ✅ livré (2026-10-09)
+> Création d'une analyse depuis un paquet v3 : déjà possible via `propose_nouvelle_analyse` (ancre ORGANISATION, droit de créer une
+> analyse, validation humaine) — conforme à la décision. Ajouts : `analyse_import_preview` résume aussi les ateliers (volumes,
+> références orphelines) ; `propose_analysis_import` sur une analyse **existante** refuse explicitement un paquet avec contenu
+> d'ateliers (qui serait sinon perdu à l'acceptation) et renvoie vers `propose_nouvelle_analyse`.
 - **Besoin** : `analyse_import_preview` et `propose_analysis_import` acceptent le paquet v3 ; une proposition reste **ancrée à une analyse
   existante** (règle projet « propositions MCP ancrées ») et n'écrit que les objets validés, après acceptation humaine.
 - **Contraintes** : RBAC hérité de l'ancre ; gel d'analyse respecté ; aucune écriture directe (proposition → acceptation).

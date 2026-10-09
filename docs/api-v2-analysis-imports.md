@@ -110,8 +110,10 @@ lectures de classeur par 10 min et par clé), `profil_introuvable`,
 
 ## Équivalent MCP
 
-`analyse_import_preview` réalise la même vérification sans écriture. Ensuite,
-`propose_analysis_import` dépose un paquet sur une analyse existante de
-l'organisation portée par la clé MCP. Il n'existe pas d'outil MCP d'application
+`analyse_import_preview` réalise la même vérification sans écriture (paquet v3 :
+ateliers résumés aussi). Ensuite, `propose_analysis_import` dépose un paquet sur une
+analyse existante de l'organisation portée par la clé MCP — sans contenu d'ateliers,
+refusé explicitement ici — et `propose_nouvelle_analyse` propose la création d'une
+analyse complète (ateliers compris), ancrée à l'organisation. Il n'existe pas d'outil MCP d'application
 directe : un utilisateur habilité accepte ou rejette la proposition dans
 `/mcp-propositions`, ce qui laisse une trace d'audit.

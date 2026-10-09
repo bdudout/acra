@@ -20,6 +20,7 @@ import { parseAnalysisImportRequest, summarizeAnalysisImport } from '@/lib/analy
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { isProjet360ProposalValid, sanitizeProjet360Proposal } from './projet360-proposal'
+import { hasAtelierContent, summarizeAtelierContent } from '@/lib/analysis-import-ateliers'
 import { isPssiProposalValid, sanitizePssiProposal } from './pssi-proposal'
 
 /** Origines possibles d'un plan d'action : un objet précis, jamais l'organisation entière. */
@@ -243,7 +244,7 @@ export const proposeConformiteTool: McpTool<McpContext> = {
 /** Dépose un lot historique complet, qui reste obligatoirement revu avant écriture. */
 export const proposeAnalysisImportTool: McpTool<McpContext> = {
   name: 'propose_analysis_import',
-  description: "Propose l'import de risques, mesures et plans d'action dans une analyse existante. Ne crée rien directement : un utilisateur habilité doit accepter la proposition.",
+  description: "Propose l'import de risques, mesures et plans d'action dans une analyse existante. Ne crée rien directement : un utilisateur habilité doit accepter la proposition. Le contenu des ateliers (valeurs métier, biens supports, scénarios…) est refusé ici : il ne s'importe que dans une nouvelle analyse (propose_nouvelle_analyse).",
   inputSchema: {
     type: 'object', properties: {
       analyseId: { type: 'string' },
@@ -255,6 +256,9 @@ export const proposeAnalysisImportTool: McpTool<McpContext> = {
     if (!(await analyseInOrg(analyseId, ctx.organizationId))) return { content: [{ type: 'text', text: 'analyse_introuvable' }], isError: true }
     try {
       const payload = parseAnalysisImportRequest({ ...(args.import as object), idempotencyKey: `mcp-${Date.now()}-${Math.random().toString(36).slice(2)}` })
+      // Contenu des ateliers (paquet v3) : il n'est écrit qu'à la création d'une analyse ; dans une analyse existante il
+      // serait perdu à l'acceptation — refus explicite plutôt qu'une perte silencieuse (B-IMP-73).
+      if (hasAtelierContent(payload)) return { content: [{ type: 'text', text: 'contenu_ateliers_non_pris_en_charge: le contenu des ateliers (valeurs métier, biens supports, scénarios…) ne s’importe que dans une NOUVELLE analyse — utiliser propose_nouvelle_analyse, ou retirer ces collections pour compléter une analyse existante (risques, mesures, plans d’action, liens).' }], isError: true }
       return depose('analysis_import', 'ANALYSE', analyseId, payload, ctx)
     } catch { return { content: [{ type: 'text', text: 'proposition_invalide: paquet historique invalide' }], isError: true } }
   },
@@ -263,10 +267,14 @@ export const proposeAnalysisImportTool: McpTool<McpContext> = {
 /** Aperçu MCP sans écriture : l'agent peut détecter les liens orphelins avant proposition. */
 export const previewAnalysisImportTool: McpTool<McpContext> = {
   name: 'analyse_import_preview',
-  description: "Valide et résume un paquet d'import historique sans écrire de donnée. Renvoie les volumes et références risques/actions introuvables.",
-  inputSchema: { type: 'object', properties: { import: { type: 'object', properties: { analysis: { type: 'object' }, risks: { type: 'array' }, vulnerabilities: { type: 'array' }, measures: { type: 'array' }, actions: { type: 'array' }, links: { type: 'array' } }, required: ['analysis'], additionalProperties: false } }, required: ['import'], additionalProperties: false },
+  description: "Valide et résume un paquet d'import historique sans écrire de donnée (paquet canonique v3 : risques, mesures, plans, liens et, en EBIOS RM, contenu des ateliers 1 à 4). Renvoie les volumes, les références introuvables et les avertissements (dont les niveaux de risque divergents du calcul ACRA).",
+  inputSchema: { type: 'object', properties: { import: { type: 'object', properties: { analysis: { type: 'object' }, risks: { type: 'array' }, vulnerabilities: { type: 'array' }, measures: { type: 'array' }, actions: { type: 'array' }, links: { type: 'array' }, context: { type: 'object' }, businessValues: { type: 'array' }, supportAssets: { type: 'array' }, fearedEvents: { type: 'array' }, riskSources: { type: 'array' }, stakeholders: { type: 'array' }, strategicScenarios: { type: 'array' }, operationalScenarios: { type: 'array' }, securityBaseline: { type: 'array' }, residualRisks: { type: 'array' } }, required: ['analysis'], additionalProperties: false } }, required: ['import'], additionalProperties: false },
   async handler(args, ctx): Promise<McpToolResult> {
-    try { return toolText({ valid: true, ...summarizeAnalysisImport(parseAnalysisImportRequest({ ...(args.import as object), idempotencyKey: 'mcp-preview-0001' }), await getEffectiveScaleConfig(ctx.organizationId)) }) }
+    try {
+      const parsed = parseAnalysisImportRequest({ ...(args.import as object), idempotencyKey: 'mcp-preview-0001' })
+      // Paquet v3 : volumes et références orphelines des ateliers 1 à 4, comme l'aperçu de l'API v2.
+      return toolText({ valid: true, ...summarizeAnalysisImport(parsed, await getEffectiveScaleConfig(ctx.organizationId)), ...(hasAtelierContent(parsed) ? { ateliers: summarizeAtelierContent(parsed, parsed.risks.flatMap(r => (r.externalId ? [r.externalId] : []))) } : {}) })
+    }
     catch { return { content: [{ type: 'text', text: 'import_invalide' }], isError: true } }
   },
 }
