@@ -18,8 +18,8 @@
 > rapprochement comptable (B-PER-6, `rapprochement-compta`), import des incidents (B-INC-5) ; R-INC-2, masquage pour rapports
 > externes (`rapport-masquage`), rapports planifiés (cron `rapports-planifies`), diffusion par e-mail après validation,
 > gabarits (`gabarits`) ; rejeu N/N-1 du contrôle (B-CTL-5, `controle-l3b`) et rattachement d'un contrôle à un tiers / projet 360
-> (B-CTL-8) ; relances automatiques des recommandations d'audit et cycles configurables (`auditConfig`).
-> **Restent** : R-INC-3 ; feuilles de travail d'audit ; libellés de notation de mission personnalisables ; vocabulaire
+> (B-CTL-8) ; relances automatiques des recommandations d'audit, cycles configurables et libellés de notation personnalisés (`auditConfig`).
+> **Restent** : R-INC-3 ; feuilles de travail d'audit ; vocabulaire
 > personnalisé dans les pages rendues côté serveur, exports et PDF ; champs personnalisés sur les tiers (les constats en ont).
 > Les blocs ci-dessous sont l'historique d'avancement (2026-09-29).
 

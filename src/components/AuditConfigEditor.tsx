@@ -12,6 +12,7 @@ const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark
 export default function AuditConfigEditor({ onSaved }: { onSaved?: () => void }) {
   const { t } = useTranslation()
   const l = t.auditInterne.l4
+  const notes = t.rapports.notations as Record<string, string>
   const [cfg, setCfg] = useState<AuditConfig | null>(null)
   const [canEdit, setCanEdit] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -27,6 +28,12 @@ export default function AuditConfigEditor({ onSaved }: { onSaved?: () => void })
     const j = await res.json().catch(() => ({}))
     if (res.ok) { setCfg(j.config); setMsg(l.cfgSaved); onSaved?.() }
   }
+  const setLibelle = (n: number, v: string) => setCfg(c => {
+    if (!c) return c
+    const libellesNotation = { ...(c.libellesNotation ?? {}) }
+    if (v === '') delete libellesNotation[n]; else libellesNotation[n] = v
+    return { ...c, libellesNotation }
+  })
   const setCycle = (cot: number, v: string) => setCfg(c => {
     if (!c) return c
     const cycles = { ...c.cycles }
@@ -54,6 +61,16 @@ export default function AuditConfigEditor({ onSaved }: { onSaved?: () => void })
         {[4, 3, 2, 1].map(cot => (
           <label key={cot} className="text-sm flex flex-col gap-1">{l.universRisque.replace(/\(.*\)/, '').trim()} {cot}
             <input type="number" min={1} max={10} className={inp} value={cfg.cycles[cot] ?? ''} onChange={e => setCycle(cot, e.target.value)} aria-label={`${l.cfgCycles} — ${cot}`} />
+          </label>
+        ))}
+      </div>
+      {/* Libellés de notation de mission : vide = libellé par défaut (traduit). */}
+      <p className="text-sm mb-1">{l.cfgNotation}</p>
+      <div className="flex flex-wrap gap-4 mb-3">
+        {[1, 2, 3, 4].map(n => (
+          <label key={n} className="text-sm flex flex-col gap-1">{n}
+            <input type="text" maxLength={60} className={inp} aria-label={l.cfgNotationNote.replace('{n}', String(n))} placeholder={notes[String(n)]}
+              value={cfg.libellesNotation?.[n] ?? ''} onChange={e => setLibelle(n, e.target.value)} />
           </label>
         ))}
       </div>

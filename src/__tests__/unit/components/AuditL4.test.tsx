@@ -53,6 +53,10 @@ describe('RecommandationSuivi', () => {
 })
 
 describe('MissionSuiviPanel', () => {
+  it('libellés de notation personnalisés par l’organisation (liste et lecture)', () => {
+    render(<MissionSuiviPanel mission={{ ...mission, notation: 2 }} canWrite={false} busy={false} onSave={() => {}} onIndependance={() => {}} libellesNotation={{ 2: 'Maîtrise partielle' }} />)
+    expect(screen.getByText(/Maîtrise partielle/)).toBeInTheDocument()
+  })
   const mission = { id: 'm1', notation: null as number | null, jalons: {} as Record<string, string>, independance: {} as Record<string, unknown> }
   it('enregistre notation et jalons', () => {
     const onSave = vi.fn()

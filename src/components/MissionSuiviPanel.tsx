@@ -9,14 +9,16 @@ import { JALONS, NOTATION_MIN, NOTATION_MAX } from '@/lib/audit-l4'
 export interface MissionSuiviData { id: string; notation: number | null; jalons: Record<string, string>; independance: Record<string, unknown> }
 const inp = 'px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs'
 
-export default function MissionSuiviPanel({ mission, canWrite, busy, onSave, onIndependance }: {
+export default function MissionSuiviPanel({ mission, canWrite, busy, onSave, onIndependance, libellesNotation }: {
   mission: MissionSuiviData; canWrite: boolean; busy: boolean
+  /** Libellés de notation personnalisés par l'organisation (auditConfig) ; à défaut, libellés traduits. */
+  libellesNotation?: Record<number, string>
   onSave: (v: { notation: number | null; jalons: Record<string, string> }) => void
   onIndependance: (v: { conflit: boolean; commentaire?: string }) => void
 }) {
   const { t, locale } = useTranslation()
   const l = t.auditInterne.l4
-  const notes = t.rapports.notations as Record<string, string>
+  const notes = { ...(t.rapports.notations as Record<string, string>), ...Object.fromEntries(Object.entries(libellesNotation ?? {}).map(([k, v]) => [k, v])) } as Record<string, string>
   const [notation, setNotation] = useState(mission.notation ? String(mission.notation) : '')
   const [jalons, setJalons] = useState<Record<string, string>>(Object.fromEntries(Object.entries(mission.jalons ?? {}).map(([k, v]) => [k, String(v).slice(0, 10)])))
   const [conflit, setConflit] = useState(false)
