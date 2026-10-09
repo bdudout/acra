@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
@@ -10,7 +11,6 @@ import ConfirmDialog from '@/components/ConfirmDialog'
 import { AlertTriangle, CheckCircle2, Download, FileText, KeyRound, UserPlus, Users, X, XCircle } from 'lucide-react'
 import AdminNav from '@/components/AdminNav'
 import ReassignAnalysesDialog from '@/components/ReassignAnalysesDialog'
-import PetiteStructureGuide from '@/components/PetiteStructureGuide'
 import { ROLE_LABELS, ROLE_DESCRIPTIONS, ROLE_COLORS, ROLES_ATTRIBUABLES, type UserRole } from '@/lib/permissions'
 
 interface UserItem {
@@ -666,8 +666,8 @@ export default function AdminUsersPage() {
           </div>
         </div>
 
-        {/* Petite structure : cumul des rôles quand une seule personne porte la sécurité et les risques */}
-        <PetiteStructureGuide />
+        {/* Petite structure : réglage et explications à un seul endroit (Configuration › Entités et rôles) ; ici, un renvoi. */}
+        <p className="mt-6 text-sm text-gray-600 dark:text-gray-300"><Link href="/configuration/entites" className="text-ebios-600 hover:underline">{t.config.petiteStructureLien}</Link></p>
 
         {/* Guide des rôles */}
         <div className="mt-6 card p-5">
