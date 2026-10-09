@@ -181,6 +181,25 @@ describe('import historique MCP', () => {
     })
     expect(risqueCreate).not.toHaveBeenCalled()
   })
+
+  // B-IMP-73 : paquet v3 (contenu des ateliers EBIOS RM).
+  it('aperçu d’un paquet v3 : volumes des ateliers et références orphelines résumés', async () => {
+    const res = await previewAnalysisImportTool.handler({
+      import: { analysis: { title: 'Dossier EBIOS' }, businessValues: [{ externalId: 'VM_01', title: 'Paiements' }], supportAssets: [{ externalId: 'BS_01', title: 'Serveur', businessValueExternalIds: ['VM_99'] }] },
+    }, ctx)
+    const j = parse(res)
+    expect(j.ateliers.counts).toMatchObject({ businessValues: 1, supportAssets: 1 })
+    expect(j.ateliers.warnings).toContain('support_asset_business_value_not_found:VM_99')
+  })
+  it('import dans une analyse EXISTANTE avec contenu d’ateliers : refusé explicitement (jamais ignoré en silence), renvoi vers propose_nouvelle_analyse', async () => {
+    analyseCount.mockResolvedValue(1)
+    const res = await proposeAnalysisImportTool.handler({
+      analyseId: 'an1', import: { analysis: { title: 'PRA' }, businessValues: [{ externalId: 'VM_01', title: 'Paiements' }] },
+    }, ctx)
+    expect(res.isError).toBe(true)
+    expect(res.content[0].text).toContain('propose_nouvelle_analyse')
+    expect(proposalCreate).not.toHaveBeenCalled()
+  })
 })
 
 describe('propose_risk — échelle de l’organisation', () => {

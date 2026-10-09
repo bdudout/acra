@@ -5,15 +5,11 @@ import { z } from 'zod'
 import { authOptions } from '@/lib/auth'
 import { canCreateAnalyse, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.server'
-import { excelCellText } from '@/lib/excel-cell'
 import { rateLimit, rateLimitHeaders, LIMIT_EXCEL_PARSE } from '@/lib/rate-limit'
-import { detectContextSheet } from '@/lib/excel-blocks'
-import { suggestAtelierMapping } from '@/lib/import-ateliers-build'
-import { readSheetSample, sheetFormulaIssues, sheetUsedBounds } from '@/lib/excel-grid'
 import { checkTabularUpload } from '@/lib/import-file-format'
 import { loadTabularWorkbook } from '@/lib/tabular-workbook'
 import { importErrorStatus } from '@/lib/import-errors'
-import { linkChildSheetsToRisks, refineReferenceMapping, isAtelierRole, detectHistoricHeaderLayout, detectHistoricImportSheet, profileHistoricColumn, suggestHistoricColumnMapping, validateHistoricColumnMapping } from '@/lib/historic-import'
+import { apercuClasseur } from '@/lib/analysis-import-classeur.server'
 
 const schema = z.object({ filename: z.string().max(255), data: z.string().min(1).max(14_000_000), organizationId: z.string().trim().min(1).max(191).optional() })
 
@@ -41,28 +37,6 @@ export async function POST(req: NextRequest) {
     const loaded = await loadTabularWorkbook(buffer, body.filename)
     if (!loaded.ok) return NextResponse.json({ error: loaded.error, details: loaded.details }, { status: loaded.status })
     const { workbook } = loaded
-    const sheets = workbook.worksheets.slice(0, 20).map(sheet => {
-      // Échantillon d'en-tête : fusions lues une fois (titre / bandeau ≠ en-tête) ; zone utile et formules sans valeur signalées (lot I1).
-      const layout = detectHistoricHeaderLayout(readSheetSample(sheet, 20, 100))
-      const columns = layout.columns
-      const header = columns.map(column => column.key)
-      let detection = detectHistoricImportSheet(sheet.name, header)
-      // Feuille sans tableau : périmètre en texte libre ou page de garde (rôle « contexte »).
-      const contextKind = detection.type === 'UNKNOWN' ? detectContextSheet(sheet.name, readSheetSample(sheet, 80, 20)) : null
-      if (contextKind) detection = { type: 'CONTEXT', confidence: 'MEDIUM', missing: [] }
-      const { lastRow } = sheetUsedBounds(sheet)
-      const dataRowCount = contextKind ? Math.max(1, lastRow) : Math.max(0, lastRow - layout.headerRowIndex - 1)
-      const dataRows = Array.from({ length: Math.min(500, dataRowCount) }, (_, offset) => sheet.getRow(layout.headerRowIndex + offset + 2))
-      const profiles = Object.fromEntries(columns.map(column => [column.key, profileHistoricColumn(dataRows.map(row => {
-        const value = row.getCell(column.index + 1).value
-        return excelCellText(value)
-      }))]))
-      // Une « référence » aux valeurs répétées est un regroupement : on lui préfère la colonne à valeurs uniques.
-      const suggested = isAtelierRole(detection.type) ? suggestAtelierMapping(detection.type, header) : suggestHistoricColumnMapping(header)
-      const mapping = isAtelierRole(detection.type) ? suggested : refineReferenceMapping(suggested, header, profiles)
-      const issues = sheetFormulaIssues(sheet)
-      return { name: sheet.name, columns: header, profiles, rows: dataRowCount, headerRow: layout.headerRowIndex + 1, detection, mapping, missing: validateHistoricColumnMapping(detection.type, mapping), warnings: { formulasWithoutValue: issues.withoutValue, formulaErrors: issues.errors } }
-    })
-    return NextResponse.json({ filename: body.filename, sheets: linkChildSheetsToRisks(sheets) })
+    return NextResponse.json({ filename: body.filename, sheets: apercuClasseur(workbook) })
   } catch { return NextResponse.json({ error: 'excel_workbook_unreadable' }, { status: 422 }) }
 }

@@ -4,7 +4,18 @@ Mis de côté volontairement (décision du 2026-09-29) : ils restent au backlog 
 [`import-universel-analyses.md`](import-universel-analyses.md) (numéros `B-IMP-…` ci-dessous). Ce qui est **déjà livré** (I1–I7 hors API/MCP,
 CSV, JSON libre, profils, mapping par défaut `mapping_mzt`) est décrit dans [`import-universel-plan-de-test.md`](import-universel-plan-de-test.md).
 
-## 1. Liens biens supports ↔ valeurs métier (B-IMP-41)
+
+> **Décisions (2026-10-09)** — B-IMP-41 : option (b), colonne « valeurs métier liées (références) » dans la feuille des biens
+> supports, **facultative** (jamais bloquante ; sans colonne, import inchangé). B-IMP-72 : transport **multipart** (pérenne) ;
+> profil **inline ou référencé** (les deux acceptés, la référence prioritaire). B-IMP-73 : **oui** — le MCP peut proposer la
+> création d'une analyse, ancrée à l'**organisation** (ancre `ORGANISATION` réservée à ce cas), acceptation soumise au droit
+> de créer une analyse, aucune écriture avant validation humaine.
+
+## 1. Liens biens supports ↔ valeurs métier (B-IMP-41) — ✅ livré (lot I5, vérifié 2026-10-09)
+> Option (b) déjà en place : champ facultatif `businessValueRefs` du rôle `SUPPORT_ASSETS` (colonne « valeur(s) métier » reconnue),
+> références résolues sous forme canonique (`VM02` = `VM_02`), référence inconnue → avertissement `support_asset_business_value_not_found`,
+> jamais de lien inventé (test `analysis-import-ateliers.test.ts`). Le classeur d'exemple n'ayant pas de colonne de liens, l'import
+> reste sans lien pour lui : c'est attendu.
 - **Besoin** : un bien support doit pouvoir être rattaché à une ou plusieurs valeurs métier (`Cadrage.biensSupports[].valeurMetierIds`).
 - **Constat** : le classeur EBIOS RM d'exemple ne porte **aucun lien** dans la feuille « 2 - Biens supports » (colonnes : Réf.BS, Catégorie,
   Bien support, Description, Retenu, Responsable, Commentaires) ; l'import écrit donc les biens sans lien.
@@ -26,7 +37,10 @@ CSV, JSON libre, profils, mapping par défaut `mapping_mzt`) est décrit dans [`
   traduit ×5 (`previewWarnings`). Les cellules calculées sans valeur enregistrée sont déjà signalées (B-IMP-08).
 - **Critère d'acceptation** : un niveau « 8 » pour gravité 3 × vraisemblance 2 (= 6) produit un avertissement ; un niveau cohérent n'en produit pas.
 
-## 3. API v2 avec profil (B-IMP-72)
+## 3. API v2 avec profil (B-IMP-72) — ✅ livré (2026-10-09)
+> `multipart/form-data` (`file`, `profileRef` prioritaire, `profile`, `idempotencyKey`) sur `preview` et l'import ; même lecture que
+> l'interface (`lib/analysis-import-classeur.server`), profil résolu par `lib/import-v2-profil` (testé), états des lignes de
+> B-IMP-53 dans `lines`. Doc : `docs/api-v2-analysis-imports.md`.
 - **Besoin** : `preview` de l'API v2 accepte le paquet canonique v3 **ou** un fichier + profil ; la réponse reprend les états de B-IMP-53
   (prêt / sans ce champ / à confirmer / non importable) ; `idempotencyKey` et 409 inchangés ; la description OpenAPI documente le paquet v3.
 - **Existant** : l'API v2 accepte déjà le paquet v3 (`/api/v2/analysis-imports/preview`, ateliers résumés). Manque : fichier + profil,
@@ -34,7 +48,11 @@ CSV, JSON libre, profils, mapping par défaut `mapping_mzt`) est décrit dans [`
 - **Questions** : format de transport du fichier (base64 comme l'interface, ou multipart) ; profil inline ou référencé (`mapping_mzt`, mappings
   d'organisation) ; limites de taille et de débit alignées sur l'interface (500 lignes / feuille, 30 aperçus / 10 min).
 
-## 4. MCP (B-IMP-73)
+## 4. MCP (B-IMP-73) — ✅ livré (2026-10-09)
+> Création d'une analyse depuis un paquet v3 : déjà possible via `propose_nouvelle_analyse` (ancre ORGANISATION, droit de créer une
+> analyse, validation humaine) — conforme à la décision. Ajouts : `analyse_import_preview` résume aussi les ateliers (volumes,
+> références orphelines) ; `propose_analysis_import` sur une analyse **existante** refuse explicitement un paquet avec contenu
+> d'ateliers (qui serait sinon perdu à l'acceptation) et renvoie vers `propose_nouvelle_analyse`.
 - **Besoin** : `analyse_import_preview` et `propose_analysis_import` acceptent le paquet v3 ; une proposition reste **ancrée à une analyse
   existante** (règle projet « propositions MCP ancrées ») et n'écrit que les objets validés, après acceptation humaine.
 - **Contraintes** : RBAC hérité de l'ancre ; gel d'analyse respecté ; aucune écriture directe (proposition → acceptation).

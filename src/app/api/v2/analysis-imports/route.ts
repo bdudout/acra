@@ -2,13 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateApiRequest } from '@/lib/api-auth.server'
 import { executeAnalysisImport, parseAnalysisImportRequest } from '@/lib/analysis-import'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { estMultipart, traiterFichierV2 } from '@/lib/import-v2-fichier.server'
 
 export const dynamic = 'force-dynamic'
 
-/** Import d'analyses v2 : contrat canonique + idempotence obligatoire par organisation. */
+/**
+ * Import d'analyses v2 : contrat canonique (JSON) + idempotence obligatoire par organisation ; ou fichier + profil en
+ * multipart/form-data (B-IMP-72, lib/import-v2-fichier.server).
+ */
 export async function POST(req: NextRequest) {
   const auth = await authenticateApiRequest(req, 'write')
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status })
+  if (estMultipart(req)) return traiterFichierV2(req, auth, 'IMPORT')
   if (!auth.actorUserId) return NextResponse.json({ error: 'api_key_without_organization_member' }, { status: 422 })
   try {
     const input = parseAnalysisImportRequest(await req.json())
