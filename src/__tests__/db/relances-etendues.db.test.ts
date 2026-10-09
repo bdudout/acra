@@ -26,7 +26,7 @@ beforeAll(async () => {
   const org = await makeOrg('Relances étendues')
   await prisma.organizationConfig.create({ data: {
     id: org.id, reglementaireActive: true, kriActive: true, conformiteActive: true, controlePermanentActive: true,
-    auditInterneActive: true, acceptationRisquesActive: true, secondeLigneActive: true, mcpActive: true,
+    auditInterneActive: true, acceptationRisquesActive: true, secondeLigneActive: true, mcpActive: true, registreIaActive: true,
   } })
   rssi = await makeUser('ANALYSTE', [{ id: org.id, role: 'RSSI' }])
   dm = await makeUser('ANALYSTE', [{ id: org.id, role: 'DIRECTION_METIER' }])
@@ -64,6 +64,13 @@ beforeAll(async () => {
   const auditeurId = (await prisma.user.findUniqueOrThrow({ where: { email: auditeur.email }, select: { id: true } })).id
   await prisma.planAnnee.create({ data: { planId: plan.id, annee: 2027, statut: 'SOUMIS', preparePar: auditeurId, historique: [{ action: 'SOUMETTRE', statut: 'SOUMIS', par: auditeurId, le: jour(-10).toISOString() }] } })
   await prisma.mcpProposal.create({ data: { ...o, type: 'risk', targetType: 'ANALYSE', targetId: paiements.id, payload: { title: 'Fraude au virement' }, createdAt: jour(-10) } })
+
+  // Revues périodiques : processus jamais revu créé il y a 400 jours → propriétaire ; tiers revu il y a 360 jours → RSSI ;
+  // système d'IA revu il y a 2 ans → auteur de la fiche ; traitement revu récemment → rien.
+  await prisma.processus.create({ data: { ...o, nom: 'Paiements fournisseurs', proprietaire: porteurKri.email, createdAt: jour(-400) } as never })
+  await prisma.tier.create({ data: { rootOrganizationId: org.id, nom: 'Hébergeur Alpha', derniereRevue: jour(-360) } })
+  await prisma.systemeIA.create({ data: { ...o, nom: 'Tri des CV', finalite: 'Présélection', typeDecision: 'AIDE', usage: 'EMPLOI', statut: 'EN_SERVICE', derniereRevue: jour(-730), createdBy: auteur.id } as never })
+  await prisma.traitement.create({ data: { ...tr, nom: 'Annuaire interne', derniereRevue: jour(-30) } as never })
 
   mail.send.mockClear()
   await executerRelances()
@@ -103,6 +110,12 @@ describe('relances étendues (vraie base)', () => {
     expect(texte(dm)).toContain('Plan annuel d’audit ou de contrôle à valider — Programme audit 2027-2029 — 2027')
     expect(texte(auditeur)).not.toContain('Programme audit 2027-2029')
     expect(texte(auteur)).toContain('Proposition d’un agent IA (MCP) à examiner — Fraude au virement')
+  })
+  it('revues périodiques : processus → propriétaire ; tiers → RSSI ; système d’IA → auteur ; revue récente → rien', () => {
+    expect(texte(porteurKri)).toContain('Revue annuelle d’un processus (BIA) — Paiements fournisseurs : en retard')
+    expect(texte(rssi)).toContain('Revue annuelle d’un tiers — Hébergeur Alpha : échéance le')
+    expect(texte(auteur)).toContain('Revue annuelle d’un système d’IA — Tri des CV : en retard')
+    expect(texte(dpo)).not.toContain('Annuaire interne')
   })
   it('anti-doublon : rien au second passage', async () => {
     mail.send.mockClear()

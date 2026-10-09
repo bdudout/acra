@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { canManageRopa, type UserRole } from '@/lib/permissions'
+import { sanitizeDateRevue } from '@/lib/revues'
 import { sanitizeTraitement, evaluerTraitement } from '@/lib/ropa'
 import { auditLog, getClientIp } from '@/lib/logger'
 
@@ -50,7 +51,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const t = sanitizeTraitement({ ...existing, ...body })
   if (!t.nom.trim()) return NextResponse.json({ error: 'nom_requis' }, { status: 400 })
   const { id: _drop, ...data } = t
-  const updated = await db.traitement.update({ where: { id }, data })
+  // Revue périodique (lib/revues) : date de dernière revue saisie par le DPO ; invalide ou future → ignorée.
+  const derniereRevue = sanitizeDateRevue((body as { derniereRevue?: unknown }).derniereRevue, new Date())
+  const updated = await db.traitement.update({ where: { id }, data: { ...data, ...(derniereRevue !== undefined ? { derniereRevue } : {}) } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId, userRole, organizationId: orgId, ip: getClientIp(req), details: { scope: 'ropa', action: 'update', id } })
   return NextResponse.json(updated)
 }

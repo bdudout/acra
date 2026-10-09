@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { validateProcessusInput, cleanProcessus, wouldCreateCycle } from '@/lib/processus'
+import { sanitizeDateRevue } from '@/lib/revues'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 type Params = { params: Promise<{ id: string }> }
@@ -46,7 +47,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const all = await prisma.processus.findMany({ where: { organizationId: ctx.orgId }, select: { id: true, parentId: true } })
     if (wouldCreateCycle(all, id, data.parentId)) return NextResponse.json({ error: 'cycle' }, { status: 400 })
   }
-  const updated = await prisma.processus.update({ where: { id }, data })
+  // Revue périodique du BIA (lib/revues) : date de dernière revue ; invalide ou future → ignorée.
+  const derniereRevue = sanitizeDateRevue((body as { derniereRevue?: unknown }).derniereRevue, new Date())
+  const updated = await prisma.processus.update({ where: { id }, data: { ...data, ...(derniereRevue !== undefined ? { derniereRevue } : {}) } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: ctx.userId, userRole: ctx.userRole, ip: getClientIp(req), details: { scope: 'processus', action: 'update', id } })
   return NextResponse.json(updated)
 }

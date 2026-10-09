@@ -10,6 +10,7 @@ export const CHEMINS: Record<RelanceItem['categorie'], string> = {
   CONSTAT_AUDIT: '/audit', CONSTAT_A_VERIFIER: '/audit', CONTROLE_A_EXECUTER: '/controles',
   CONTRAT_TIC: '/registre-tic', TEST_RESILIENCE: '/reglementaire/tests-resilience', KRI_MESURE: '/kri', DOCUMENT_A_REVOIR: '/documents',
   CAMPAGNE_CONTROLE: '/controles/campagnes', MISSION_AUDIT: '/audit', ANALYSE_ECHEANCE: '/analyses', INVITATION: '/configuration/entites', ACCEPTATION_RISQUES: '/analyses', SUPPRESSION_RISQUE: '/projets', AIPD_A_REALISER: '/rgpd', PLAN_ANNUEL_A_VALIDER: '/plans', PROPOSITION_MCP: '/mcp-propositions',
+  REVUE_SYSTEME_IA: '/registre-ia', REVUE_TRAITEMENT: '/rgpd', REVUE_PROCESSUS: '/processus', REVUE_TIERS: '/tiers',
 }
 
 export function cheminRelance(item: { categorie: RelanceItem['categorie']; chemin?: string }): string {

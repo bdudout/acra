@@ -6,12 +6,15 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import RevuePeriodiqueChamp from '@/components/RevuePeriodiqueChamp'
 import { TYPES_SERVICE_TIC } from '@/lib/registre-tic'
 
 type Usage = { id: string; useCase: string; processusNom: string | null; contractServiceId: string | null; criticite: string | null; criticiteEcart: boolean; criticiteContrat: string | null; coverage: 'CONFIRMED' | 'UNCONFIRMED' }
 type Service = { id: string; nom: string; typeService: string; actif: boolean; coveredBy: { arrangementId: string; reference: string; contractServiceId: string }[]; usages: Usage[] }
 type Detail = {
   orgId: string; canManage: boolean; isAdmin: boolean
+  // Revue périodique du tiers (lib/revues) : modifiable par l'organisation racine du registre seulement.
+  tier?: { derniereRevue: string | null; prochaineRevue: string | null; revueModifiable: boolean; createdAt: string | null } | null
   contracts: { id: string; reference: string; ownedHere: boolean; serviceIds: string[]; details?: Record<string, { perimetre: string | null; dateDebut: string | null; dateFin: string | null }>; beneficiaries?: { organizationId: string; nom: string; status: 'PROPOSED' | 'CONFIRMED' | 'REJECTED' }[]; proposable?: { id: string; nom: string }[] }[]
   contractServices: { id: string; arrangementId: string; reference: string; serviceId: string }[]
   services: Service[]
@@ -20,7 +23,7 @@ type Detail = {
 const send = (url: string, method: string, body?: object) => fetch(url, { method, headers: { 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) })
 
 export default function TierDetailPanel({ tierId }: { tierId: string }) {
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   const c = t.tierDetail
   const types = t.registreTic.typeOpt as Record<string, string>
   const [detail, setDetail] = useState<Detail | null>(null)
@@ -31,6 +34,8 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
   const [coverage, setCoverage] = useState<Record<string, string[]>>({})
   const [covDetails, setCovDetails] = useState<Record<string, Record<string, { perimetre: string; dateDebut: string; dateFin: string }>>>({})
   const [proposeTo, setProposeTo] = useState<Record<string, string>>({})
+  const [revue, setRevue] = useState('')
+  const [revueOk, setRevueOk] = useState(false)
   const [usageForms, setUsageForms] = useState<Record<string, { useCase: string; processusId: string; contractServiceId: string; criticite: string }>>({})
 
   const load = useCallback(async () => {
@@ -39,6 +44,7 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
       if (!res.ok) return
       const d = await res.json() as Detail
       setDetail(d)
+      setRevue(d.tier?.derniereRevue ?? '')
       setCoverage(Object.fromEntries(d.contracts.filter(k => k.ownedHere).map(k => [k.id, k.serviceIds])))
       setCovDetails(Object.fromEntries(d.contracts.filter(k => k.ownedHere).map(k => [k.id, Object.fromEntries(Object.entries(k.details ?? {}).map(([sid, v]) => [sid, { perimetre: v.perimetre ?? '', dateDebut: v.dateDebut ?? '', dateFin: v.dateFin ?? '' }]))])))
       if (d.isAdmin) { const p = await fetch('/api/processus').then(r => r.ok ? r.json() : null).catch(() => null); setProcesses(p?.processus ?? []) }
@@ -48,6 +54,7 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
 
   if (!detail) return null
   const errorText = (code: string, extra?: { blocked?: { usages: number }[] }) => {
+    if (code === 'date_invalide') return t.revues.erreur
     if (code === 'has_usages') return c.errors.has_usages.replace('{n}', String((extra?.blocked ?? []).reduce((n, b) => n + b.usages, 0)))
     return (c.errors as Record<string, string>)[code] ?? c.errors.failed
   }
@@ -67,6 +74,15 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
   return (
     <div className="mt-2 space-y-4 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
       {error && <p role="alert" className="rounded-sm border border-red-300 bg-red-50 p-2 text-sm text-red-900 dark:border-red-700 dark:bg-red-950/40 dark:text-red-100">{error}</p>}
+      {detail.tier && (detail.tier.revueModifiable ? (
+        <div className="flex flex-wrap items-end gap-2">
+          <RevuePeriodiqueChamp className="max-w-xs" valeur={revue} creeLe={detail.tier.createdAt} onChange={v => { setRevue(v); setRevueOk(false) }} />
+          <button type="button" disabled={busy} className="btn-secondary text-sm" onClick={async () => setRevueOk(await run(() => send(`/api/tier-registry/${tierId}`, 'PATCH', { derniereRevue: revue })))}>{t.revues.enregistrer}</button>
+          {revueOk && <span role="status" className="text-xs text-green-700 dark:text-green-300">{t.revues.enregistree}</span>}
+        </div>
+      ) : detail.tier.prochaineRevue && (
+        <p className="text-xs text-gray-500 dark:text-gray-400">{t.revues.prochaineRevue.replace('{date}', new Date(`${detail.tier.prochaineRevue}T00:00:00Z`).toLocaleDateString(locale, { timeZone: 'UTC' }))}</p>
+      ))}
       <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{c.offers}</h4>
       {detail.services.length === 0 && <p className="text-sm text-gray-600 dark:text-gray-300">{c.noOffers}</p>}
       <ul className="space-y-3">

@@ -13,6 +13,7 @@ import { buildProcessusTree, type ProcessusTree } from '@/lib/processus'
 import { CRITICITES_DORA, formatDuree, type CriticiteDora } from '@/lib/processus-dora'
 import SectorSuggestionsPanel from '@/components/SectorSuggestionsPanel'
 import ProcessusImportPanel from '@/components/ProcessusImportPanel'
+import RevuePeriodiqueChamp from '@/components/RevuePeriodiqueChamp'
 import { champsManquantsProcessus } from '@/lib/processus-completude'
 
 interface Processus {
@@ -20,12 +21,14 @@ interface Processus {
   proprietaire: string | null; criticite: number | null
   criticiteDora: string | null; rtoMinutes: number | null; rpoMinutes: number | null
   ordre: number; actif: boolean
+  // Revue périodique du BIA (lib/revues).
+  derniereRevue?: string | null; createdAt?: string
 }
 type Form = {
   nom: string; parentId: string; proprietaire: string; criticite: string
-  criticiteDora: string; rtoHeures: string; rpoHeures: string
+  criticiteDora: string; rtoHeures: string; rpoHeures: string; derniereRevue: string
 }
-const EMPTY: Form = { nom: '', parentId: '', proprietaire: '', criticite: '', criticiteDora: '', rtoHeures: '', rpoHeures: '' }
+const EMPTY: Form = { nom: '', parentId: '', proprietaire: '', criticite: '', criticiteDora: '', rtoHeures: '', rpoHeures: '', derniereRevue: '' }
 
 // Saisie en heures (usuel pour RTO/RPO) → stockage en minutes ; '' → null.
 const heuresToMinutes = (h: string): number | null => {
@@ -77,6 +80,7 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
       criticiteDora: form.criticiteDora || null,
       rtoMinutes: heuresToMinutes(form.rtoHeures),
       rpoMinutes: heuresToMinutes(form.rpoHeures),
+      derniereRevue: form.derniereRevue,
     }
     const res = await fetch(editId ? `/api/processus/${editId}` : '/api/processus', {
       method: editId ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' },
@@ -93,6 +97,7 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
     setForm({
       nom: x.nom, parentId: x.parentId ?? '', proprietaire: x.proprietaire ?? '', criticite: x.criticite?.toString() ?? '',
       criticiteDora: x.criticiteDora ?? '', rtoHeures: minutesToHeures(x.rtoMinutes), rpoHeures: minutesToHeures(x.rpoMinutes),
+      derniereRevue: x.derniereRevue ? x.derniereRevue.slice(0, 10) : '',
     })
     setError(null)
   }
@@ -185,6 +190,7 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
               <span className="text-[11px] text-gray-400">{form.rpoHeures.trim() !== '' && Number.isFinite(Number(form.rpoHeures)) ? `${p.dureeApercu} ${formatDuree(heuresToMinutes(form.rpoHeures), p.dureeUnites)}` : p.rpoHint}</span>
             </label>
           </div>
+          {editId && <RevuePeriodiqueChamp className="max-w-xs" valeur={form.derniereRevue} creeLe={list.find(x => x.id === editId)?.createdAt} onChange={v => setForm(f => ({ ...f, derniereRevue: v }))} />}
           <div className="flex gap-2">
             <button onClick={submit} disabled={busy} className="btn-primary text-sm disabled:opacity-50">{editId ? p.save : p.add}</button>
             {editId && <button onClick={() => { setEditId(null); setForm(EMPTY); setError(null) }} className="text-sm text-gray-500 hover:text-gray-700">{p.cancel}</button>}

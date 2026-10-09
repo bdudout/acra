@@ -124,3 +124,28 @@ describe('TierDetailPanel — offres, couverture et usages', () => {
     expect(screen.queryByRole('group', { name: /Filiales bénéficiaires/ })).toBeNull()
   })
 })
+
+describe('TierDetailPanel — revue périodique du tiers', () => {
+  it('organisation racine : date de dernière revue enregistrée (PATCH) ; ailleurs : prochaine revue en lecture seule', async () => {
+    const avecRevue = (modifiable: boolean) => ({ ...detail, tier: { ...detail.tier, derniereRevue: '2026-01-15', prochaineRevue: '2027-01-15', revueModifiable: modifiable, createdAt: '2024-01-01T00:00:00Z' } })
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (init?.method && init.method !== 'GET') return ok({ ok: true })
+      return url.startsWith('/api/processus') ? ok(processus) : ok(avecRevue(true))
+    })
+    const { unmount } = render(<TierDetailPanel tierId="t1" />)
+    const champ = await screen.findByLabelText('Dernière revue')
+    expect(champ).toHaveValue('2026-01-15')
+    fireEvent.change(champ, { target: { value: '2026-10-01' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer la revue' }))
+    await screen.findByText('Revue enregistrée.')
+    const patch = posts().find(c => c[1].method === 'PATCH')!
+    expect(patch[0]).toBe('/api/tier-registry/t1')
+    expect(JSON.parse(patch[1].body)).toEqual({ derniereRevue: '2026-10-01' })
+    unmount()
+
+    fetchMock.mockImplementation((url: string) => (url.startsWith('/api/processus') ? ok(processus) : ok(avecRevue(false))))
+    render(<TierDetailPanel tierId="t1" />)
+    expect(await screen.findByText(/Prochaine revue : 15\/01\/2027/)).toBeInTheDocument()
+    expect(screen.queryByLabelText('Dernière revue')).toBeNull()
+  })
+})

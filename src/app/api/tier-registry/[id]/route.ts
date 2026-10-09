@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { tierContext, tierGranted } from '@/lib/tier-registry.server'
 import { usageCoverage, usageCriticalityGap } from '@/lib/tier-offers'
 import type { NiveauCriticite } from '@/lib/registre-tic'
+import { echeanceRevue, sanitizeDateRevue } from '@/lib/revues'
+import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +18,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params
   if (!(await tierGranted(id, ctx.orgId))) return NextResponse.json({ error: 'not_found' }, { status: 404 })
   const [tier, services, arrangements, usages] = await Promise.all([
-    prisma.tier.findUnique({ where: { id }, select: { id: true, nom: true, lei: true, pays: true } }),
+    prisma.tier.findUnique({ where: { id }, select: { id: true, nom: true, lei: true, pays: true, derniereRevue: true, createdAt: true, rootOrganizationId: true } }),
     prisma.tierService.findMany({ where: { tierId: id }, select: { id: true, nom: true, typeService: true, description: true, actif: true }, orderBy: { nom: 'asc' } }),
     prisma.arrangementTic.findMany({
       where: { tierId: id, OR: [{ organizationId: ctx.orgId }, { beneficiaries: { some: { organizationId: ctx.orgId, status: 'CONFIRMED' } } }] },
@@ -42,7 +44,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const contractServices = arrangements.flatMap(a => a.servicesCouverts.map(cs => ({ id: cs.id, arrangementId: a.id, reference: a.reference, serviceId: cs.tierServiceId, owner: a.organizationId, status: a.beneficiaries[0]?.status ?? null, criticite: a.criticite as NiveauCriticite })))
   const csById = new Map(contractServices.map(cs => [cs.id, cs]))
   return NextResponse.json({
-    tier,
+    tier: tier && { id: tier.id, nom: tier.nom, lei: tier.lei, pays: tier.pays, derniereRevue: tier.derniereRevue?.toISOString().slice(0, 10) ?? null, prochaineRevue: tier.createdAt ? echeanceRevue(tier.derniereRevue ?? null, tier.createdAt).toISOString().slice(0, 10) : null, revueModifiable: ctx.canManage && tier.rootOrganizationId === ctx.orgId, createdAt: tier.createdAt?.toISOString() ?? null },
     orgId: ctx.orgId, canManage: ctx.canManage, isAdmin: ctx.isAdmin,
     contracts: arrangements.map(a => {
       const beneficiaries = benRows.filter(b => b.arrangementId === a.id).map(b => ({ organizationId: b.organizationId, nom: b.organization.nom, status: b.status }))
@@ -64,4 +66,22 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       }),
     })),
   })
+}
+
+/**
+ * Revue périodique du tiers (lib/revues) : date de dernière revue. L'identité du tiers appartient à l'organisation racine
+ * du registre : seule celle-ci la modifie (gestionnaires du registre TIC), jamais une filiale à laquelle le tiers est accordé.
+ */
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const got = await tierContext({ write: 'manage' }); if ('error' in got) return got.error
+  const { ctx } = got
+  const { id } = await params
+  if (!(await tierGranted(id, ctx.orgId))) return NextResponse.json({ error: 'not_found' }, { status: 404 })
+  const tier = await prisma.tier.findUnique({ where: { id }, select: { rootOrganizationId: true } })
+  if (!tier || tier.rootOrganizationId !== ctx.orgId) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  const derniereRevue = sanitizeDateRevue(((await req.json().catch(() => ({}))) as { derniereRevue?: unknown }).derniereRevue, new Date())
+  if (derniereRevue === undefined) return NextResponse.json({ error: 'date_invalide' }, { status: 400 })
+  await prisma.tier.update({ where: { id }, data: { derniereRevue } })
+  await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: ctx.userId, userRole: ctx.role, organizationId: ctx.orgId, ip: getClientIp(req), details: { scope: 'tier-registry', action: 'revue', tierId: id } })
+  return NextResponse.json({ ok: true })
 }
