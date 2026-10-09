@@ -770,6 +770,7 @@ export const de: Translations = {
   },
 
   tierEval: {
+    servicesRattaches: 'Verknüpfte Drittanbieterdienste',
     colTiers: 'Drittanbieter', colOffre: 'Angebot', colOrganisation: 'Organisation', colUsage: 'Anwendungsfall', colProcessus: 'Prozess', colStatut: 'Status der Bewertung', colZone: 'Zone', colProchaine: 'Nächste Bewertung', exporter: 'Bewertungen exportieren (Excel)',
     colNiveau: 'Stufe (schlechteste)', colConcentration: 'Konzentration', concentration: '{u} kritische Nutzung(en) · {p} kritische(r) Prozess(e)', groupe: 'Gruppe: {niveau}', parOrganisation: 'Bewertung je Organisation — {name}', nbUsages: '{n} Nutzung(en)',
     titre: 'Bewertung — {nom}', evaluer: 'Bewerten', masquer: 'Bewertung ausblenden', nonEvalue: 'Nicht bewertet',

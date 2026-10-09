@@ -784,6 +784,7 @@ export const fr = {
 
   // ─── Nouvelle analyse ─────────────────────────────────────────────────────
   tierEval: {
+    servicesRattaches: 'Services tiers rattachés',
     colTiers: 'Tiers', colOffre: 'Offre', colOrganisation: 'Organisation', colUsage: 'Cas d’usage', colProcessus: 'Processus', colStatut: 'Statut de l’évaluation', colZone: 'Zone', colProchaine: 'Prochaine évaluation', exporter: 'Exporter les évaluations (Excel)',
     colNiveau: 'Niveau (pire)', colConcentration: 'Concentration', concentration: '{u} usage(s) critique(s) · {p} processus critique(s)', groupe: 'Groupe : {niveau}', parOrganisation: 'Évaluation par organisation — {name}', nbUsages: '{n} usage(s)',
     titre: 'Évaluation — {nom}', evaluer: 'Évaluer', masquer: 'Masquer l’évaluation', nonEvalue: 'Non évalué',

@@ -770,6 +770,7 @@ export const it: Translations = {
   },
 
   tierEval: {
+    servicesRattaches: 'Servizi di terzi collegati',
     colTiers: 'Terzo', colOffre: 'Offerta', colOrganisation: 'Organizzazione', colUsage: 'Caso d’uso', colProcessus: 'Processo', colStatut: 'Stato della valutazione', colZone: 'Zona', colProchaine: 'Prossima valutazione', exporter: 'Esporta le valutazioni (Excel)',
     colNiveau: 'Livello (peggiore)', colConcentration: 'Concentrazione', concentration: '{u} utilizzo/i critico/i · {p} processo/i critico/i', groupe: 'Gruppo: {niveau}', parOrganisation: 'Valutazione per organizzazione — {name}', nbUsages: '{n} utilizzo/i',
     titre: 'Valutazione — {nom}', evaluer: 'Valutare', masquer: 'Nascondi la valutazione', nonEvalue: 'Non valutato',

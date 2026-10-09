@@ -770,6 +770,7 @@ export const en: Translations = {
   },
 
   tierEval: {
+    servicesRattaches: 'Linked third-party services',
     colTiers: 'Third party', colOffre: 'Offering', colOrganisation: 'Organisation', colUsage: 'Use case', colProcessus: 'Process', colStatut: 'Assessment status', colZone: 'Zone', colProchaine: 'Next assessment', exporter: 'Export assessments (Excel)',
     colNiveau: 'Level (worst)', colConcentration: 'Concentration', concentration: '{u} critical usage(s) · {p} critical process(es)', groupe: 'Group: {niveau}', parOrganisation: 'Assessment by organisation — {name}', nbUsages: '{n} usage(s)',
     titre: 'Assessment — {nom}', evaluer: 'Assess', masquer: 'Hide assessment', nonEvalue: 'Not assessed',
