@@ -13,6 +13,16 @@
 
 ---
 
+> **Mise à jour (2026-10-09) — restes des lots L1 à L4 vérifiés dans le code.** Livrés depuis : chronologie et cause racine
+> (B-INC-3), impacts non financiers (B-PER-5), allocation multi-entités (B-PER-3, rattachée au référentiel des entités),
+> rapprochement comptable (B-PER-6, `rapprochement-compta`), import des incidents (B-INC-5) ; R-INC-2, masquage pour rapports
+> externes (`rapport-masquage`), rapports planifiés (cron `rapports-planifies`), diffusion par e-mail après validation,
+> gabarits (`gabarits`) ; rejeu N/N-1 du contrôle (B-CTL-5, `controle-l3b`) et rattachement d'un contrôle à un tiers / projet 360
+> (B-CTL-8) ; relances automatiques des recommandations d'audit et cycles configurables (`auditConfig`).
+> **Restent** : R-INC-3 ; feuilles de travail d'audit ; libellés de notation de mission personnalisables ; vocabulaire
+> personnalisé dans les pages rendues côté serveur, exports et PDF ; champs personnalisés sur les tiers (les constats en ont).
+> Les blocs ci-dessous sont l'historique d'avancement (2026-09-29).
+
 > **État d'avancement (2026-09-29)** — **L1 livré** (décisions §9 retenues sur les recommandations) :
 > régimes de notification configurables (B-INC-1 : NIS2, RGPD art. 33, interne, personnalisés ;
 > DORA garde son moteur dédié), pertes multi-composantes (B-PER-1/2/4 : lignes typées, devises,

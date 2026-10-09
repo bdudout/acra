@@ -24,3 +24,21 @@ describe('RgpdOnglets', () => {
     expect(screen.queryByText('registre du responsable')).toBeNull()
   })
 })
+
+// Recette n° 7 : le DPO ne savait pas que le registre du sous-traitant existait → une ligne explique comment l'obtenir ;
+// lien vers la configuration des fonctionnalités pour l'administrateur seulement.
+describe('RgpdOnglets — registre du sous-traitant désactivé', () => {
+  it('DPO : explication, sans lien de configuration', () => {
+    render(<RgpdOnglets sousTraitant={false} estAdmin={false} />)
+    expect(screen.getByText(/demandez à l’administrateur/)).toBeInTheDocument()
+    expect(screen.queryByRole('link')).toBeNull()
+  })
+  it('administrateur : lien vers la configuration des fonctionnalités', () => {
+    render(<RgpdOnglets sousTraitant={false} estAdmin />)
+    expect(screen.getByRole('link', { name: /Activer le registre du sous-traitant/ })).toHaveAttribute('href', '/configuration')
+  })
+  it('module actif : pas d’explication', () => {
+    render(<RgpdOnglets sousTraitant estAdmin={false} />)
+    expect(screen.queryByText(/demandez à l’administrateur/)).toBeNull()
+  })
+})
