@@ -13,7 +13,7 @@ import AipdSuiviPanel from '@/components/AipdSuiviPanel'
 import { ShieldCheck, AlertTriangle, CheckCircle2, Trash2, Plus, Download } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
 import { BASES_LEGALES, CRITERES_AIPD, type CritereAipd } from '@/lib/ropa'
-import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
+import { detectRgpdArt9, detectPersonnesVulnerables } from '@/lib/rgpd-sensitive'
 import RopaCataloguePanel from '@/components/RopaCataloguePanel'
 import RevuePeriodiqueChamp from '@/components/RevuePeriodiqueChamp'
 import RopaIdentiteCard from '@/components/RopaIdentiteCard'
@@ -90,6 +90,8 @@ export default function RopaManager() {
 
   // Catégories particulières (art. 9) détectées dans les catégories de données saisies : critère « données sensibles » déduit.
   const sensiblesDetectees = detectRgpdArt9(toArr(form.categoriesDonnees).map(nom => ({ nom }))).length > 0
+  // Personnes vulnérables (WP248 critère 7 : patients, mineurs, salariés, personnes âgées…) déduites des catégories de personnes.
+  const vulnerablesDetectees = detectPersonnesVulnerables(toArr(form.categoriesPersonnes))
   function basculerCritere(c: CritereAipd, actif: boolean) {
     if (c === 'GRANDE_ECHELLE') return setForm(f => ({ ...f, grandeEchelle: actif }))
     if (c === 'SURVEILLANCE') return setForm(f => ({ ...f, surveillanceSystematique: actif }))
@@ -178,7 +180,7 @@ export default function RopaManager() {
               <p className="text-[11px] text-gray-500 mb-1">{r.aideCriteres}</p>
               <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1">
                 {CRITERES_AIPD.map(c => {
-                  const deduit = c === 'DONNEES_SENSIBLES' && sensiblesDetectees
+                  const deduit = (c === 'DONNEES_SENSIBLES' && sensiblesDetectees) || (c === 'PERSONNES_VULNERABLES' && vulnerablesDetectees)
                   const coche = c === 'GRANDE_ECHELLE' ? form.grandeEchelle : c === 'SURVEILLANCE' ? form.surveillanceSystematique : deduit || form.criteresAipd.includes(c)
                   return (
                     <label key={c} className="inline-flex items-start gap-1.5 text-xs text-gray-700 dark:text-gray-200">

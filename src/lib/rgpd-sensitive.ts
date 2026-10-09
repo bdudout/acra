@@ -46,3 +46,21 @@ export function detectRgpdArt9(
   )
   return found
 }
+
+/**
+ * Critère WP248 rév. 01 n° 7 « données concernant des personnes vulnérables » : enfants, salariés (déséquilibre du rapport
+ * de force), patients, personnes âgées, demandeurs d'asile, personnes handicapées… Déduit des catégories de personnes
+ * concernées saisies (FR, EN, DE, ES, IT), début de mot uniquement pour éviter les faux positifs. Aide : le DPO décide.
+ */
+const VULNERABLES = [
+  'patient', 'paciente', 'pazient', 'malade', 'mineur', 'enfant', 'eleve', 'personnes agee', 'personne agee', 'senior', 'salarie', 'employe',
+  'demandeur d asile', 'demandeurs d asile', 'refugie', 'handicap', 'resident', 'beneficiaires de l aide sociale',
+  'minor', 'child', 'pupil', 'elderly', 'employee', 'staff', 'asylum', 'disabled',
+  'minderjahrig', 'kind', 'schuler', 'altere', 'beschaftigt', 'arbeitnehmer', 'mitarbeit', 'asylbewerber',
+  'menor', 'nino', 'nina', 'alumno', 'personas mayores', 'empleado', 'trabajador', 'solicitante de asilo',
+  'minore', 'bambin', 'alunn', 'anzian', 'dipendent', 'lavorator', 'richiedent',
+]
+const VULNERABLES_RE = new RegExp(`(^|[^a-z])(${VULNERABLES.map(m => m.replace(/ /g, '[^a-z]+')).join('|')})`)
+export function detectPersonnesVulnerables(categoriesPersonnes: string[]): boolean {
+  return (categoriesPersonnes ?? []).some(c => VULNERABLES_RE.test(normalize(c).replace(/[’']/g, ' ')))
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
+import { detectRgpdArt9, detectPersonnesVulnerables } from '@/lib/rgpd-sensitive'
 
 // Détection des données particulières RGPD Art. 9 (improvements-priority.md 🟠).
 
@@ -28,5 +28,19 @@ describe('detectRgpdArt9', () => {
   it('liste vide / champs absents → []', () => {
     expect(detectRgpdArt9([])).toEqual([])
     expect(detectRgpdArt9([{}, { nom: '' }])).toEqual([])
+  })
+})
+
+// Critère WP248 n° 7 « personnes vulnérables » (enfants, salariés, patients, personnes âgées, demandeurs d'asile…) déduit
+// des catégories de personnes saisies (recette n° 12), en plusieurs langues ; pas de faux positif sur des mots voisins.
+describe('detectPersonnesVulnerables', () => {
+  it('reconnaît patients, mineurs, élèves, personnes âgées, salariés, demandeurs d’asile (FR/EN/DE/ES/IT)', () => {
+    for (const c of [['Patients'], ['Mineurs'], ['Élèves'], ['Personnes âgées'], ['Salariés'], ['Demandeurs d’asile'], ['Children'], ['Employees'], ['Kinder'], ['Beschäftigte'], ['Pacientes'], ['Menores'], ['Pazienti'], ['Anziani']]) {
+      expect(detectPersonnesVulnerables(c), c[0]).toBe(true)
+    }
+  })
+  it('clients, fournisseurs, prospects, visiteurs : non', () => {
+    expect(detectPersonnesVulnerables(['Clients', 'Fournisseurs', 'Prospects', 'Visiteurs du site'])).toBe(false)
+    expect(detectPersonnesVulnerables([])).toBe(false)
   })
 })

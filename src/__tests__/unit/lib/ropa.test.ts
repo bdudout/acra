@@ -64,13 +64,19 @@ describe('AIPD — critères des lignes directrices WP248 rév. 01 (CEPD)', () =
     expect(criteresAipd(t)).toEqual(['DONNEES_SENSIBLES', 'GRANDE_ECHELLE', 'PERSONNES_VULNERABLES'])
   })
   it('deux critères ou plus → AIPD requise (« dans la plupart des cas ») ; ex. notation de clients à grande échelle', () => {
-    const r = piaRequis({ ...complet(), grandeEchelle: true, criteresAipd: ['EVALUATION'] })
+    const clients = { ...complet(), categoriesPersonnes: ['clients'] }
+    const r = piaRequis({ ...clients, grandeEchelle: true, criteresAipd: ['EVALUATION'] })
     expect(r).toEqual({ requis: true, niveau: 'REQUISE', motifs: ['EVALUATION', 'GRANDE_ECHELLE'] })
-    expect(piaRequis({ ...complet(), grandeEchelle: true, surveillanceSystematique: true }).niveau).toBe('REQUISE')
+    expect(piaRequis({ ...clients, grandeEchelle: true, surveillanceSystematique: true }).niveau).toBe('REQUISE')
   })
   it('un seul critère → AIPD à examiner (un critère peut suffire selon le cas) ; aucun → non requise', () => {
-    expect(piaRequis({ ...complet(), categoriesDonnees: ['données de santé des patients'] })).toEqual({ requis: false, niveau: 'A_EXAMINER', motifs: ['DONNEES_SENSIBLES'] })
-    expect(piaRequis(complet())).toEqual({ requis: false, niveau: 'NON', motifs: [] })
+    const clients = { ...complet(), categoriesPersonnes: ['clients'] }
+    expect(piaRequis({ ...clients, categoriesDonnees: ['données de santé des patients'] })).toEqual({ requis: false, niveau: 'A_EXAMINER', motifs: ['DONNEES_SENSIBLES'] })
+    expect(piaRequis(clients)).toEqual({ requis: false, niveau: 'NON', motifs: [] })
+  })
+  it('personnes vulnérables déduites des catégories de personnes (salariés, patients… — recette n° 12)', () => {
+    expect(criteresAipd(complet())).toEqual(['PERSONNES_VULNERABLES'])
+    expect(piaRequis({ ...complet(), categoriesPersonnes: ['patients', 'mineurs'], categoriesDonnees: ['dossier médical'] })).toEqual({ requis: true, niveau: 'REQUISE', motifs: ['DONNEES_SENSIBLES', 'PERSONNES_VULNERABLES'] })
   })
 })
 

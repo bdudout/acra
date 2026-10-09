@@ -4,7 +4,7 @@
 // AIPD, art. 35). Aucune dépendance base — testable directement. L'UI/les routes/le
 // modèle Prisma s'appuieront dessus (registre par organisation, réservé au DPO).
 
-import { detectRgpdArt9 } from '@/lib/rgpd-sensitive'
+import { detectRgpdArt9, detectPersonnesVulnerables } from '@/lib/rgpd-sensitive'
 
 /** Bases légales du traitement (RGPD art. 6 §1 a–f). */
 export const BASES_LEGALES = [
@@ -110,10 +110,11 @@ export interface PiaVerdict {
 
 /** Critères retenus : ceux cochés par le DPO, plus ceux que les champs du traitement établissent (catégories
  *  particulières de l'art. 9 détectées, grande échelle, surveillance systématique) ; ordre des lignes directrices. */
-export type TraitementCriteres = Pick<Traitement, 'categoriesDonnees' | 'grandeEchelle' | 'surveillanceSystematique' | 'criteresAipd'>
+export type TraitementCriteres = Pick<Traitement, 'categoriesDonnees' | 'grandeEchelle' | 'surveillanceSystematique' | 'criteresAipd'> & { categoriesPersonnes?: string[] }
 export function criteresAipd(t: TraitementCriteres): CritereAipd[] {
   const retenus = new Set<string>(t.criteresAipd ?? [])
   if (detectRgpdArt9(t.categoriesDonnees.map(nom => ({ nom }))).length > 0) retenus.add('DONNEES_SENSIBLES')
+  if (detectPersonnesVulnerables(t.categoriesPersonnes ?? [])) retenus.add('PERSONNES_VULNERABLES')
   if (t.grandeEchelle) retenus.add('GRANDE_ECHELLE')
   if (t.surveillanceSystematique) retenus.add('SURVEILLANCE')
   return CRITERES_AIPD.filter(c => retenus.has(c))
