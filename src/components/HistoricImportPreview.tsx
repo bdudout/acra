@@ -56,7 +56,7 @@ export type HistoricImportPreviewLabels = {
 const mappingFields: Partial<Record<HistoricSheetType, string[]>> = {
   ...ATELIER_ROLE_FIELDS,
   ANALYSES: ['externalId', 'title', 'description'],
-  RISKS: ['analysisExternalId', 'externalId', 'title', 'description', 'gravity', 'likelihood', 'strategy', 'embeddedVulnerabilities', 'embeddedActions'],
+  RISKS: ['analysisExternalId', 'externalId', 'title', 'description', 'gravity', 'likelihood', 'riskLevel', 'strategy', 'embeddedVulnerabilities', 'embeddedActions'],
   VULNERABILITIES: ['riskExternalId', 'title', 'description'],
   MEASURES: ['externalId', 'riskExternalId', 'title', 'description', 'status', 'responsible', 'dueDate'],
   ACTIONS: ['externalId', 'riskExternalId', 'title', 'description', 'responsible', 'dueDate'],

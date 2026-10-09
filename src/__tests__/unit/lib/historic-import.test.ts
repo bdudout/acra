@@ -126,6 +126,16 @@ describe('buildHistoricImportPackage', () => {
     ])
   })
 
+  it('B-IMP-09 : la colonne « niveau de risque » est transmise pour comparaison (jamais enregistrée)', () => {
+    const result = buildHistoricImportPackage([{
+      type: 'RISKS',
+      mapping: { externalId: 'Réf', title: 'Risque', gravity: 'Gravité', likelihood: 'Vraisemblance', riskLevel: 'Niveau de risque' },
+      rows: [{ Réf: 'R-1', Risque: 'Fraude', Gravité: '3', Vraisemblance: '2', 'Niveau de risque': '8' }, { Réf: 'R-2', Risque: 'Panne', Gravité: '2', Vraisemblance: '2' }],
+    }], 'Import historique')
+    expect(result.risks[0]).toMatchObject({ externalId: 'R-1', gravity: 3, likelihood: 2, riskLevel: '8' })
+    expect(result.risks[1]).not.toHaveProperty('riskLevel')
+  })
+
   it('diffuse une référence risque vers plusieurs plans listés dans une même cellule', () => {
     const result = buildHistoricImportPackage([{
       type: 'ACTIONS',

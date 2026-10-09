@@ -14,7 +14,10 @@ CSV, JSON libre, profils, mapping par défaut `mapping_mzt`) est décrit dans [`
 - **Critère d'acceptation** : une colonne de références « VM_01, VM_02 » sur les biens supports est résolue (variantes `VM01`/`VM_01`),
   les références inconnues produisent un avertissement et rien n'est inventé.
 
-## 2. Champs calculés : avertissement de divergence (B-IMP-09)
+## 2. Champs calculés : avertissement de divergence (B-IMP-09) — ✅ livré (2026-10-09)
+> Champ « Niveau de risque (recalculé par ACRA) » dans le mapping des risques (alias FR/EN/DE/ES/IT) ; `lib/import-niveau-risque`
+> compare un niveau chiffré au score g × v, un libellé au palier de la matrice de l'organisation (mode qualitatif compris ;
+> libellé inconnu de la matrice : pas comparé) ; avertissement `risk_level_differs` au bilan, à l'aperçu API v2 et MCP.
 - **Besoin** : pour un champ que ACRA recalcule (niveau de risque, exposition, fiabilité, pertinence SR/OV, zone de menace), la valeur du
   fichier est **ignorée** ; si elle diffère du calcul ACRA avec les échelles de l'organisation, un **avertissement** (jamais une correction
   silencieuse) est ajouté au bilan.

@@ -265,8 +265,8 @@ export const previewAnalysisImportTool: McpTool<McpContext> = {
   name: 'analyse_import_preview',
   description: "Valide et résume un paquet d'import historique sans écrire de donnée. Renvoie les volumes et références risques/actions introuvables.",
   inputSchema: { type: 'object', properties: { import: { type: 'object', properties: { analysis: { type: 'object' }, risks: { type: 'array' }, vulnerabilities: { type: 'array' }, measures: { type: 'array' }, actions: { type: 'array' }, links: { type: 'array' } }, required: ['analysis'], additionalProperties: false } }, required: ['import'], additionalProperties: false },
-  async handler(args): Promise<McpToolResult> {
-    try { return toolText({ valid: true, ...summarizeAnalysisImport(parseAnalysisImportRequest({ ...(args.import as object), idempotencyKey: 'mcp-preview-0001' })) }) }
+  async handler(args, ctx): Promise<McpToolResult> {
+    try { return toolText({ valid: true, ...summarizeAnalysisImport(parseAnalysisImportRequest({ ...(args.import as object), idempotencyKey: 'mcp-preview-0001' }), await getEffectiveScaleConfig(ctx.organizationId)) }) }
     catch { return { content: [{ type: 'text', text: 'import_invalide' }], isError: true } }
   },
 }

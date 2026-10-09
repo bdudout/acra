@@ -11,6 +11,7 @@ vi.mock('@/lib/prisma', () => ({
 }))
 vi.mock('@/lib/interfaces-config.server', () => ({ getActiveMethodes: vi.fn().mockResolvedValue(['ISO_31000']) }))
 vi.mock('@/lib/methodes', () => ({ resolveMethodes: vi.fn().mockReturnValue({ available: ['ISO_31000'], default: 'ISO_31000' }) }))
+vi.mock('@/lib/configuration-server', () => ({ getEffectiveScaleConfig: vi.fn().mockResolvedValue({}) }))
 
 import { analysisImportPayloadHash, applyAnalysisImportContent, executeAnalysisImport, parseAnalysisImportRequest } from '@/lib/analysis-import'
 

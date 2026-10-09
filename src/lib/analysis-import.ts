@@ -8,12 +8,15 @@ import { getActiveMethodes } from '@/lib/interfaces-config.server'
 import { resolveMethodes } from '@/lib/methodes'
 import { canonicalRef } from '@/lib/import-transforms'
 import { truncateStringsBySchema } from '@/lib/import-truncate'
-import { atelierContentSchema, hasAtelierContent, summarizeAtelierContent, writeAtelierContent } from '@/lib/analysis-import-ateliers'
+import { atelierContentSchema, hasAtelierContent, writeAtelierContent } from '@/lib/analysis-import-ateliers'
 import { normalizePatterns, PATTERNS_MAX_MAX } from '@/lib/patterns-archi'
+import { divergencesNiveauRisque } from '@/lib/import-niveau-risque'
+import { getEffectiveScaleConfig } from '@/lib/configuration-server'
+import type { ScaleConfig } from '@/lib/risk-scale'
 
 const string = z.string().trim().min(1).max(255)
 const externalId = z.string().trim().min(1).max(255)
-const item = z.object({ externalId: externalId.optional(), title: string, description: z.string().max(2000).optional(), riskExternalId: externalId.optional(), gravity: z.coerce.number().int().min(1).max(4).optional(), likelihood: z.coerce.number().int().min(1).max(4).optional(), strategy: z.string().max(30).optional(), status: z.string().max(30).optional(), responsible: z.string().max(200).optional(), dueDate: z.string().max(40).optional() })
+const item = z.object({ externalId: externalId.optional(), title: string, description: z.string().max(2000).optional(), riskExternalId: externalId.optional(), gravity: z.coerce.number().int().min(1).max(4).optional(), likelihood: z.coerce.number().int().min(1).max(4).optional(), riskLevel: z.string().trim().max(60).optional(), strategy: z.string().max(30).optional(), status: z.string().max(30).optional(), responsible: z.string().max(200).optional(), dueDate: z.string().max(40).optional() })
 const schema = z.object({
   idempotencyKey: z.string().trim().min(8).max(120),
   analysis: z.object({ title: string.max(200), description: z.string().max(2000).optional(), methode: z.enum(['EBIOS_RM', 'ISO_27005', 'ISO_31000', 'NIST_800_30']).optional(), patternsArchi: z.array(z.string().max(60)).max(PATTERNS_MAX_MAX).optional(), secteur: z.string().trim().max(120).optional(), sousSecteurs: z.array(z.string().max(60)).max(MAX_SOUS_SECTEURS * 2).optional() }),
@@ -68,8 +71,11 @@ function countImportLinks(input: AnalysisImportRequest, riskIds: Set<string>, ac
   return links.size
 }
 
-/** Prévisualisation pure : expose les volumes et liens orphelins avant toute écriture. */
-export function summarizeAnalysisImport(input: AnalysisImportRequest) {
+/**
+ * Prévisualisation pure : expose les volumes et liens orphelins avant toute écriture, et les niveaux de risque du fichier
+ * qui divergent du calcul ACRA avec les échelles de l'organisation (B-IMP-09 : avertissement seulement).
+ */
+export function summarizeAnalysisImport(input: AnalysisImportRequest, echelles?: Partial<ScaleConfig> | null) {
   const riskIds = new Set(input.risks.flatMap(risk => risk.externalId ? [risk.externalId] : []))
   const actionIds = new Set(input.actions.flatMap(action => action.externalId ? [action.externalId] : []))
   const warnings = [
@@ -77,6 +83,7 @@ export function summarizeAnalysisImport(input: AnalysisImportRequest) {
     ...input.measures.filter(item => item.riskExternalId && !riskIds.has(item.riskExternalId)).map(item => `measure_risk_reference_not_found:${item.riskExternalId}`),
     ...input.actions.filter(item => item.riskExternalId && !riskIds.has(item.riskExternalId)).map(item => `action_risk_reference_not_found:${item.riskExternalId}`),
     ...input.links.filter(link => !riskIds.has(link.riskExternalId) || !actionIds.has(link.actionExternalId)).map(link => `risk_action_link_reference_not_found:${link.riskExternalId}:${link.actionExternalId}`),
+    ...divergencesNiveauRisque(input.risks, echelles),
   ]
   return { analysis: input.analysis.title, created: { risks: input.risks.length, vulnerabilities: input.vulnerabilities.length, measures: input.measures.length, actions: input.actions.length, links: countImportLinks(input, riskIds, actionIds) }, warnings }
 }
@@ -161,7 +168,7 @@ export async function executeAnalysisImport(input: AnalysisImportRequest, ctx: {
   }
   const configured = resolveMethodes({ instanceEnabled: await getActiveMethodes() })
   const methode = input.analysis.methode && configured.available.includes(input.analysis.methode) ? input.analysis.methode : configured.default
-  const summary = summarizeAnalysisImport(input)
+  const summary = summarizeAnalysisImport(input, await getEffectiveScaleConfig(ctx.organizationId))
   try {
     const response = await prisma.$transaction(async tx => {
     // Secteur et sous-secteurs (cohérents avec le secteur) ; hors EBIOS RM, le contexte du paquet initialise le cadrage
@@ -200,7 +207,7 @@ export async function executeAnalysisImport(input: AnalysisImportRequest, ctx: {
 export async function applyAnalysisImportContent(input: AnalysisImportRequest, ctx: { organizationId: string; userId: string; analyseId: string }) {
   return prisma.$transaction(async tx => {
     await writeImportContent(tx, input, ctx)
-    const summary = summarizeAnalysisImport(input)
+    const summary = summarizeAnalysisImport(input, await getEffectiveScaleConfig(ctx.organizationId))
     return { analyseId: ctx.analyseId, created: summary.created, warnings: summary.warnings }
   }, IMPORT_TX_OPTIONS)
 }

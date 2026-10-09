@@ -87,6 +87,7 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   title: ['=risque', '=risk', '=risiko', '=riesgo', '=rischio', 'description courte', 'short description', 'kurzbeschreibung', 'descripcion corta', 'descrizione breve', 'libelle de risque', 'risk label', 'intitule', 'titre', 'nom', 'libelle', 'title', 'bezeichnung', 'titel', 'titulo', 'nombre', 'titolo', 'nome', 'description du risque', 'libelle du risque', 'intitule du risque', 'nom du risque', 'risk name', 'risk title', 'risk description'],
   gravity: ['gravite', 'severity', 'impact', 'schweregrad', 'auswirkung', 'gravedad', 'impacto', 'gravita', 'impatto'],
   likelihood: ['vraisemblance', 'probabilite', 'likelihood', 'probability', 'wahrscheinlichkeit', 'probabilidad', 'probabilita'],
+  riskLevel: ['niveau de risque', 'niveau du risque', 'risk level', 'risk score', 'criticite du risque', 'risikostufe', 'risikoniveau', 'nivel de riesgo', 'livello di rischio'],
   description: ['description', 'detail', 'commentaire', 'beschreibung', 'descripcion', 'descrizione', 'comment'],
   strategy: ['strategie', 'traitement', 'treatment', 'strategy', 'behandlung', 'tratamiento', 'trattamento'],
   status: ['statut', 'etat', 'status', 'state', 'estado', 'stato', 'zustand'],
@@ -369,7 +370,7 @@ export type HistoricContextBlocks = { text: TextBlock[]; kv: KeyValue[] }
 export type HistoricImportSheet = { valueMaps?: AtelierValueMaps; refAliases?: Record<string, string>; blocks?: HistoricContextBlocks; name?: string; type: HistoricSheetType; mapping: HistoricColumnMapping; transforms?: HistoricFieldTransforms; statusMapping?: Record<string, string>; scoreMappings?: Record<string, Record<string, string>>; rows: HistoricImportRow[]; rowNumbers?: number[] }
 export type HistoricImportPackage = {
   analysis: { title: string; description?: string; methode?: 'EBIOS_RM'; patternsArchi?: string[] }
-  risks: Array<{ externalId?: string; title: string; description?: string; gravity?: number; likelihood?: number; strategy?: string }>
+  risks: Array<{ externalId?: string; title: string; description?: string; gravity?: number; likelihood?: number; riskLevel?: string; strategy?: string }>
   vulnerabilities: Array<{ riskExternalId: string; title: string; description?: string }>
   measures: Array<{ externalId?: string; riskExternalId?: string; title: string; description?: string; status?: string; responsible?: string; dueDate?: string }>
   actions: Array<{ externalId?: string; riskExternalId?: string; title: string; description?: string; responsible?: string; dueDate?: string }>
@@ -554,7 +555,7 @@ export function buildHistoricImportPackage(sheets: HistoricImportSheet[], fallba
     }
     if (sheet.type === 'RISKS' && title) {
       const externalId = text(row, sheet.mapping.externalId)
-      result.risks.push({ externalId, title: title.slice(0, 255), description: descriptionText(row, sheet.mapping.description)?.slice(0, 2000), gravity: score(row, sheet.mapping.gravity, sheet.scoreMappings?.gravity), likelihood: score(row, sheet.mapping.likelihood, sheet.scoreMappings?.likelihood), strategy: (v => (v ? normalizeStrategy(v) ?? v : undefined))(text(row, sheet.mapping.strategy)) })
+      result.risks.push({ externalId, title: title.slice(0, 255), description: descriptionText(row, sheet.mapping.description)?.slice(0, 2000), gravity: score(row, sheet.mapping.gravity, sheet.scoreMappings?.gravity), likelihood: score(row, sheet.mapping.likelihood, sheet.scoreMappings?.likelihood), ...(v => (v ? { riskLevel: v.slice(0, 60) } : {}))(text(row, sheet.mapping.riskLevel)), strategy: (v => (v ? normalizeStrategy(v) ?? v : undefined))(text(row, sheet.mapping.strategy)) })
       if (externalId) {
         for (const vulnerabilityTitle of values(row, sheet, 'embeddedVulnerabilities')) result.vulnerabilities.push({ riskExternalId: externalId, title: vulnerabilityTitle.slice(0, 500) })
         for (const actionTitle of values(row, sheet, 'embeddedActions')) result.actions.push({ riskExternalId: externalId, title: actionTitle.slice(0, 255) })
