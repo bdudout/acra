@@ -86,6 +86,24 @@ release_run_lock() { rm -rf "$RUN_LOCK"; }
 trap 'cleanup_tmp; release_run_lock' EXIT
 take_run_lock || { echo "Une mise à jour est déjà en cours." >&2; exit 40; }
 
+# ── Étapes de la version cible : jamais abandonnées sur un signal ─────────────────────────────────
+# Un signal reçu par le SEUL lanceur (kill, session SSH coupée, délai d'un superviseur) le faisait sortir pendant
+# que les étapes cible continuaient : son nettoyage supprimait $TMPDIR_RUN, dont le script de points de restauration
+# utilisé par le retour arrière automatique (→ rollback_failed, application arrêtée), et libérait le verrou.
+# Le lanceur attend donc la fin des étapes (retour arrière compris) puis sort avec leur code ; lancées en arrière-plan,
+# elles ignorent elles-mêmes SIGINT (Ctrl-C) : une mise à jour commencée va jusqu'au succès ou au retour arrière.
+signal_deferred() { echo "⚠ Signal reçu : la mise à jour se termine d'abord (retour arrière automatique si nécessaire)." >&2; }
+run_target_steps() { # script journal → RC
+  local pid rc_file="$TMPDIR_RUN/steps.rc"
+  rm -f "$rc_file"
+  trap signal_deferred TERM HUP INT
+  ( bash "$1" "$2" && rc=0 || rc=$?; echo "$rc" > "$rc_file" ) &
+  pid=$!
+  while kill -0 "$pid" 2>/dev/null; do wait "$pid" 2>/dev/null || true; done
+  trap - TERM HUP INT
+  RC="$(cat "$rc_file" 2>/dev/null || echo 1)"
+}
+
 fail() { # code message : échec AVANT que du code ou de la base soit touché
   local code="$1"; shift
   echo "✗ $*" >&2
@@ -197,7 +215,7 @@ if [ "$DOCKER" -eq 0 ]; then
   step_enter HANDOFF "Passage de main à la version cible"; step_ok HANDOFF
   export ACRA_ROOT
   if [ -f scripts/update-steps.sh ] && grep -q '^ACRA_UPDATE_STEPS_API=1' scripts/update-steps.sh; then
-    cp scripts/update-steps.sh "$TMPDIR_RUN/update-steps.sh"; bash "$TMPDIR_RUN/update-steps.sh" "$CURRENT" && RC=0 || RC=$?
+    cp scripts/update-steps.sh "$TMPDIR_RUN/update-steps.sh"; run_target_steps "$TMPDIR_RUN/update-steps.sh" "$CURRENT"
   else run_steps && RC=0 || RC=$?; fi
   [ "$RC" -eq 0 ] && echo "✓ ACRA $TO opérationnel." || echo "✗ Mise à jour échouée : voir le statut (retour arrière tenté)." >&2
   exit "$RC"
@@ -259,7 +277,7 @@ if [ "$INSTANCE_UP" -eq 1 ]; then
     STEPS_COPY="$TMPDIR_RUN/update-steps.sh"; cp scripts/update-steps.sh "$STEPS_COPY"
     export ACRA_ROOT
     # Documents sauvés : remis en place dès que le nouveau conteneur existe (cf. run_steps → après START).
-    bash "$STEPS_COPY" "$CURRENT" && RC=0 || RC=$?
+    run_target_steps "$STEPS_COPY" "$CURRENT"
   else
     # Cible sans update-steps.sh : ce lanceur exécute lui-même les étapes.
     run_steps && RC=0 || RC=$?

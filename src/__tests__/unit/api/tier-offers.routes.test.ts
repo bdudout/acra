@@ -16,6 +16,8 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope }))
 vi.mock('@/lib/rate-limit', () => ({ rateLimit: m.rl, rateLimitHeaders: () => ({}), LIMIT_API_WRITE: { limit: 60, windowMs: 60_000 } }))
 vi.mock('@/lib/logger', () => ({ auditLog: m.audit, getClientIp: () => '127.0.0.1' }))
+// Échelles d'écosystème de l'organisation (évaluation des usages, lot T1) : défauts.
+vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: async () => ({ echellesEcosysteme: null }) }))
 vi.mock('@/lib/prisma', () => ({ prisma: {
   tierOrganization: { findUnique: m.tierOrgFindUnique }, tier: { findUnique: m.tierFindUnique },
   tierService: { findMany: m.svcFindMany, findUnique: m.svcFindUnique, create: m.svcCreate, update: m.svcUpdate },

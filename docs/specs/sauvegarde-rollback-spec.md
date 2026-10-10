@@ -382,6 +382,15 @@ Au démarrage, `update.sh` (et `update-agent.sh` à chaque passage) lit `run/cur
 
 Le verrou (`mkdir`) contient un fichier `pid` ; un verrou dont le pid n'existe plus est repris.
 
+**Signal reçu par le lanceur pendant les étapes cible** (SIGTERM/SIGHUP/SIGINT — `kill`, session
+SSH coupée, délai d'un superviseur) : le lanceur **n'abandonne pas** `update-steps.sh`. Il attend la
+fin des étapes (retour arrière automatique compris), puis sort avec leur code et libère le verrou.
+Correctif 2026-10-09 : auparavant le lanceur sortait seul et son nettoyage supprimait le dossier
+temporaire contenant la copie de `acra-snapshot.sh` utilisée par le retour arrière ⇒
+`ROLLBACK_FAILED`, application arrêtée (constaté par le test « échec de fumée » sous charge, où le
+délai de `spawnSync` du banc tuait le lanceur). Les étapes tournant en arrière-plan ignorent SIGINT :
+un Ctrl-C n'interrompt plus une mise à jour commencée, elle va jusqu'au succès ou au retour arrière.
+
 ### 2.3 Passage de main (ADR-004)
 
 - `scripts/update.sh` (lanceur) : PRECHECK, QUIESCE, SNAPSHOT, FETCH, HANDOFF ; **ce fichier doit

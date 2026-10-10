@@ -783,6 +783,20 @@ export const fr = {
   },
 
   // ─── Nouvelle analyse ─────────────────────────────────────────────────────
+  tierEval: {
+    servicesRattaches: 'Services tiers rattachés',
+    colTiers: 'Tiers', colOffre: 'Offre', colOrganisation: 'Organisation', colUsage: 'Cas d’usage', colProcessus: 'Processus', colStatut: 'Statut de l’évaluation', colZone: 'Zone', colProchaine: 'Prochaine évaluation', exporter: 'Exporter les évaluations (Excel)',
+    colNiveau: 'Niveau (pire)', colConcentration: 'Concentration', concentration: '{u} usage(s) critique(s) · {p} processus critique(s)', groupe: 'Groupe : {niveau}', parOrganisation: 'Évaluation par organisation — {name}', nbUsages: '{n} usage(s)',
+    titre: 'Évaluation — {nom}', evaluer: 'Évaluer', masquer: 'Masquer l’évaluation', nonEvalue: 'Non évalué',
+    aide: 'Mêmes critères que l’atelier 3 d’EBIOS RM, sur les échelles de l’organisation : menace = (dépendance × pénétration) / (maturité × confiance). Cotation actuelle et cible (après mesures et clauses).',
+    actuelle: 'Actuelle', cible: 'Cible (résiduelle)', menace: 'Menace', nonCote: 'non cotée', clauses: 'Clauses contractuelles prévues ou en place',
+    traitements: 'Traitements RGPD concernés', risques: 'Risques d’externalisation rattachés', risquesAide: 'Risques du registre de l’organisation que cet usage alimente.', aucun: 'Aucun dans l’organisation.',
+    justification: 'Justification', enregistrer: 'Enregistrer', soumettre: 'Soumettre au RSSI', valider: 'Valider', renvoyer: 'Renvoyer',
+    enregistre: 'Évaluation enregistrée (brouillon).', soumise: 'Évaluation soumise au RSSI.', validee: 'Évaluation validée.', renvoyee: 'Évaluation renvoyée en brouillon.',
+    prochaine: 'Réévaluation au plus tard le {date}', synthese: 'Pire niveau évalué : {niveau}',
+    statuts: { BROUILLON: 'Brouillon', SOUMISE: 'Soumise', VALIDEE: 'Validée' },
+    erreurs: { cotation_incomplete: 'Cotez les quatre critères de la cotation actuelle avant de soumettre.', role_validateur_requis: 'Seul le RSSI valide une évaluation.', role_evaluateur_requis: 'Votre rôle ne permet pas d’évaluer un tiers.', transition_interdite: 'Action impossible dans l’état actuel de l’évaluation.', defaut: 'L’enregistrement a échoué.' },
+  },
   revues: { derniereRevue: 'Dernière revue', prochaineRevue: 'Prochaine revue : {date} (12 mois après la dernière revue ou la création).', enRetard: 'Revue en retard', enregistrer: 'Enregistrer la revue', enregistree: 'Revue enregistrée.', erreur: 'Date de revue invalide (pas de date future).' },
   revisions: {
     title: 'Versions & révisions',

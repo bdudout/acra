@@ -8,6 +8,8 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { analyseWhereClause, isAdminRole, peutGererRegistreTic, type UserRole } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
+import { resolveEchelles, type EchellesEcosysteme } from '@/lib/ecosystem-echelles'
+import { coterEvaluation, sanitizeEvaluationTiers, syntheseTiersGroupe, type UsageGroupe } from '@/lib/tier-evaluation'
 import { classifyTierCoverage, cleanTierInput, findTierCandidates, normalizeLei, rootOrganizationIdOf, type TierLite } from '@/lib/tier-identity'
 
 export const dynamic = 'force-dynamic'
@@ -45,10 +47,33 @@ export async function GET(_req: NextRequest) {
   const analysesByTier = new Map<string, Set<string>>()
   for (const p of parties) if (p.tierId) analysesByTier.set(p.tierId, (analysesByTier.get(p.tierId) ?? new Set()).add(p.analyseId))
 
+  // Lot T2 — évaluation des usages : pire niveau et concentration dans l'organisation active ; pour une tête de groupe,
+  // détail par organisation du sous-arbre visible (évaluation par organisation, synthèse groupe au pire niveau).
+  const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { path: true } })
+  const sousArbre = org ? await prisma.organization.findMany({ where: { path: { startsWith: org.path }, actif: true }, select: { id: true, nom: true } }) : []
+  const visibles = new Set([...(ctx.scope.scope.visibleOrgIds ?? []), orgId])
+  const orgsGroupe = sousArbre.filter(o => visibles.has(o.id))
+  const nomOrg = new Map(orgsGroupe.map(o => [o.id, o.nom]))
+  const echelles = resolveEchelles(cfg.echellesEcosysteme as Partial<EchellesEcosysteme> | null)
+  const usagesGroupe = ids.length && orgsGroupe.length ? await prisma.tierServiceUsage.findMany({
+    where: { tierService: { tierId: { in: ids } }, organizationId: { in: orgsGroupe.map(o => o.id) } },
+    select: { organizationId: true, criticite: true, processus: { select: { id: true, criticite: true, criticiteDora: true } }, evaluation: { select: { actuelle: true } }, tierService: { select: { tierId: true } } },
+  }) : []
+  const usageGroupe = (u: (typeof usagesGroupe)[number]): UsageGroupe => {
+    const n = u.evaluation ? coterEvaluation(sanitizeEvaluationTiers({ actuelle: u.evaluation.actuelle }, echelles), echelles).actuelle : null
+    return { organizationId: u.organizationId, organisation: nomOrg.get(u.organizationId) ?? '', niveau: n ? { menace: n.menace, zone: n.zone } : null, criticite: u.criticite, processus: u.processus }
+  }
+  const evaluationDe = (tierId: string) => {
+    const tous = usagesGroupe.filter(u => u.tierService.tierId === tierId).map(usageGroupe)
+    const ici = syntheseTiersGroupe(tous.filter(u => u.organizationId === orgId))
+    const groupe = orgsGroupe.length > 1 ? syntheseTiersGroupe(tous) : null
+    return { pire: ici.pire, concentration: ici.concentration, ...(groupe && groupe.parOrganisation.some(o => o.organizationId !== orgId) ? { groupe: { pire: groupe.pire, parOrganisation: groupe.parOrganisation, concentration: groupe.concentration } } : {}) }
+  }
+
   const rows = tiers.map(t => {
     const own = arrangements.filter(a => a.tierId === t.id)
     const analysesCount = analysesByTier.get(t.id)?.size ?? 0
-    return { id: t.id, nom: t.nom, lei: t.lei, pays: t.pays, aliases: t.aliases, analysesCount, arrangements: own.map(a => ({ id: a.id, reference: a.reference })), coverage: classifyTierCoverage({ cyber: analysesCount > 0, tic: own.length > 0 }) }
+    return { id: t.id, nom: t.nom, lei: t.lei, pays: t.pays, aliases: t.aliases, analysesCount, evaluation: evaluationDe(t.id), arrangements: own.map(a => ({ id: a.id, reference: a.reference })), coverage: classifyTierCoverage({ cyber: analysesCount > 0, tic: own.length > 0 }) }
   })
   const nomOf = new Map(tiers.map(t => [t.id, t.nom]))
   const unlinkedArrangements = arrangements.filter(a => !a.tierId).map(a => ({

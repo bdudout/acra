@@ -28,6 +28,7 @@ import { piaRequis } from './ropa'
 import { aipdARelancer, type StatutAipd } from './ropa-aipd'
 import { sanitizePlanificationConfig, soumisDepuis, valideursPlanAnnee, type TypePlan } from './planification'
 import { echeanceRevue } from './revues'
+import { prochaineEvaluation } from './tier-evaluation'
 
 // Gouvernance de l'organisation : repli des éléments sans responsable identifiable, destinataire
 // des contrôles à exécuter et des dérogations arrivant à expiration.
@@ -104,7 +105,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     }),
   ])
   // Sources « à échéance » et décisions complémentaires.
-  const [contrats, tests, kris, documents, campagnes, missions, analysesEcheance, acceptations, invitations, homologations, suppressions, traitementsAipd, plansSoumis, propositionsMcp, revuesIa, revuesTraitements, revuesProcessus, revuesTiers] = await Promise.all([
+  const [contrats, tests, kris, documents, campagnes, missions, analysesEcheance, acceptations, invitations, homologations, suppressions, traitementsAipd, plansSoumis, propositionsMcp, revuesIa, revuesTraitements, revuesProcessus, revuesTiers, evaluationsTiers] = await Promise.all([
     prisma.arrangementTic.findMany({ where: { dateFin: { not: null } }, select: { id: true, organizationId: true, reference: true, prestataireNom: true, dateFin: true, createdAt: true, rappelLe: true }, take: 10000 }),
     prisma.testResilience.findMany({ where: { statut: { in: ['PLANIFIE', 'EN_COURS'] }, datePrevue: { not: null } }, select: { id: true, organizationId: true, intitule: true, datePrevue: true, createdAt: true, rappelLe: true }, take: 10000 }),
     prisma.kri.findMany({ where: { actif: true }, select: { id: true, organizationId: true, intitule: true, frequence: true, responsable: true, createdAt: true, rappelLe: true, mesures: { orderBy: { dateMesure: 'desc' }, take: 1, select: { dateMesure: true } } }, take: 10000 }),
@@ -127,6 +128,8 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     prisma.traitement.findMany({ select: { id: true, organizationId: true, nom: true, derniereRevue: true, createdAt: true, revueRappelLe: true }, take: 10000 }),
     prisma.processus.findMany({ where: { actif: true }, select: { id: true, organizationId: true, nom: true, proprietaire: true, derniereRevue: true, createdAt: true, revueRappelLe: true }, take: 10000 }),
     prisma.tier.findMany({ select: { id: true, rootOrganizationId: true, nom: true, derniereRevue: true, createdAt: true, revueRappelLe: true }, take: 10000 }),
+    // Évaluations d'usages de services tiers (lot T1) : soumises (validation RSSI) ou validées (réévaluation à 12 mois).
+    prisma.evaluationUsageTiers.findMany({ where: { statut: { in: ['SOUMISE', 'VALIDEE'] } }, select: { id: true, organizationId: true, statut: true, soumisLe: true, valideLe: true, evaluePar: true, createdAt: true, rappelLe: true, usage: { select: { useCase: true, tierService: { select: { nom: true, tier: { select: { nom: true } } } } } } }, take: 10000 }),
   ])
   // Versions remplacées d'un document : seule la version en vigueur est à revoir.
   const remplaces = new Set((documents.length ? await prisma.document.findMany({ where: { remplaceId: { in: documents.map(d => d.id) } }, select: { remplaceId: true } }) : []).map(d => d.remplaceId))
@@ -195,6 +198,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     missionsAudit: [] as string[], analysesEcheance: [] as string[], acceptationsRisques: [] as string[], invitations: [] as string[], homologations: [] as string[], suppressions: [] as string[],
     aipd: [] as string[], plansAnnee: [] as string[], propositionsMcp: [] as string[],
     revuesIa: [] as string[], revuesTraitements: [] as string[], revuesProcessus: [] as string[], revuesTiers: [] as string[],
+    evaluationsTiers: [] as string[],
   }
 
   // ─── Éléments à traiter ───
@@ -481,6 +485,25 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     marques.revuesTiers.push(x.id)
   }
 
+  // Évaluations de tiers : soumise → RSSI (administrateurs en petite structure) ; validée → réévaluation à 12 mois, à l'évaluateur.
+  for (const ev of evaluationsTiers) {
+    const cfg = await cfgOf(ev.organizationId)
+    const intitule = `${ev.usage.tierService.tier.nom} — ${ev.usage.tierService.nom} — ${ev.usage.useCase}`
+    if (ev.statut === 'SOUMISE') {
+      const depuis = ev.soumisLe ?? ev.createdAt
+      if (!relanceAttenteDue({ depuis, rappelLe: ev.rappelLe }, cfg.relances, now)) continue
+      const rssi = await parRoles(ev.organizationId, cfg.petiteStructure ? ['RSSI', 'ADMIN'] : ['RSSI'])
+      ajouter(ev.organizationId, rssi.length ? rssi : await parRoles(ev.organizationId, ['ADMIN']), { categorie: 'EVALUATION_TIERS_A_VALIDER', intitule, type: 'EN_ATTENTE', echeance: jour(depuis) })
+    } else {
+      const echeance = prochaineEvaluation(ev.valideLe)
+      const type = echeance ? typeEcheance({ echeance, rappelLe: ev.rappelLe, createdAt: ev.createdAt }, cfg.relances, now) : null
+      if (!type) continue
+      const evaluateur = ev.evaluePar ? await destsParIds(ev.organizationId, [ev.evaluePar]) : []
+      ajouter(ev.organizationId, evaluateur.length ? evaluateur : await parRoles(ev.organizationId, ['RSSI', 'RISK_MANAGER']), { categorie: 'EVALUATION_TIERS_A_REVOIR', intitule, type, echeance: jour(echeance) })
+    }
+    marques.evaluationsTiers.push(ev.id)
+  }
+
   // ─── Envoi : un e-mail de synthèse par personne ───
   const orgIds = [...new Set([...boite.values()].flatMap(e => e.items.map(i => i.orgId)))]
   const orgs = new Map((orgIds.length ? await prisma.organization.findMany({ where: { id: { in: orgIds } }, select: { id: true, nom: true } }) : []).map(o => [o.id, o.nom]))
@@ -520,11 +543,12 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     maj(marques.revuesTraitements, ids => prisma.traitement.updateMany({ where: { id: { in: ids } }, data: { revueRappelLe: now } })),
     maj(marques.revuesProcessus, ids => prisma.processus.updateMany({ where: { id: { in: ids } }, data: { revueRappelLe: now } })),
     maj(marques.revuesTiers, ids => prisma.tier.updateMany({ where: { id: { in: ids } }, data: { revueRappelLe: now } })),
+    maj(marques.evaluationsTiers, ids => prisma.evaluationUsageTiers.updateMany({ where: { id: { in: ids } }, data: { rappelLe: now } })),
   ])
 
   return {
     checked: reponses.length + preconisations.length + plans.length + aVerifier.length + analyses.length + derogationsRevue.length + constats.length + controles.length + derogationsActives.length
-      + contrats.length + tests.length + kris.length + documents.length + campagnes.length + missions.length + analysesEcheance.length + acceptations.length + invitations.length + homologations.length + suppressions.length + traitementsAipd.length + plansSoumis.length + propositionsMcp.length + revuesIa.length + revuesTraitements.length + revuesProcessus.length + revuesTiers.length,
+      + contrats.length + tests.length + kris.length + documents.length + campagnes.length + missions.length + analysesEcheance.length + acceptations.length + invitations.length + homologations.length + suppressions.length + traitementsAipd.length + plansSoumis.length + propositionsMcp.length + revuesIa.length + revuesTraitements.length + revuesProcessus.length + revuesTiers.length + evaluationsTiers.length,
     reminded: Object.fromEntries(Object.entries(marques).map(([k, v]) => [k, v.length])),
     emailsSent, emailsSkipped,
   }

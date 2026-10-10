@@ -153,3 +153,25 @@ describe('TierIdentityPanel — identités de tiers', () => {
     expect(screen.queryByRole('button', { name: 'Confirmer la fusion' })).toBeNull()
   })
 })
+
+describe('TierIdentityPanel — évaluation des usages (lot T2)', () => {
+  it('niveau (pire) et concentration par tiers ; tête de groupe : détail par organisation', async () => {
+    const avecEval = { ...data, tiers: data.tiers.map(t => t.id !== 't1' ? t : {
+      ...t, evaluation: {
+        pire: { menace: 1, zone: 'veille', evalues: 1 }, concentration: { usagesCritiques: 2, processusCritiques: 1 },
+        groupe: { pire: { menace: 3, zone: 'danger', evalues: 2 }, concentration: { usagesCritiques: 2, processusCritiques: 1 }, parOrganisation: [
+          { organizationId: 'grp', organisation: 'Groupe', synthese: { menace: 1, zone: 'veille', evalues: 1 }, usages: 1 },
+          { organizationId: 'fil1', organisation: 'Filiale Nord', synthese: { menace: 3, zone: 'danger', evalues: 1 }, usages: 1 },
+        ] },
+      },
+    }) }
+    fetchMock.mockImplementation(() => ok(avecEval))
+    render(<TierIdentityPanel />)
+    expect((await screen.findAllByText('1 — Veille')).length).toBeGreaterThan(0) // organisation active (+ ligne « Groupe » du détail)
+    expect(screen.getByText('2 usage(s) critique(s) · 1 processus critique(s)')).toBeInTheDocument()
+    expect(screen.getByText('Groupe : 3 — Danger')).toBeInTheDocument()
+    const liste = screen.getByRole('list', { name: 'Évaluation par organisation — Acme' })
+    expect(within(liste).getByText(/Filiale Nord/)).toBeInTheDocument()
+    expect(screen.getAllByText('Non évalué').length).toBeGreaterThan(0)
+  })
+})

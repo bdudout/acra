@@ -4,9 +4,12 @@
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, copyFileSync, rmSync, chmodSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { spawnSync, execFileSync } from 'node:child_process'
+import { spawn, spawnSync, execFileSync } from 'node:child_process'
 
 const REPO = process.cwd()
+// Délai d'un lancement : sous la limite des tests (120 s) pour qu'un blocage réel échoue proprement, mais loin des
+// ~7 s nominales — à 60 s, la suite complète sur une machine chargée tuait le lanceur en plein retour arrière.
+const RUN_TIMEOUT_MS = 110_000
 const GIT_ENV = { GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t', GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_SYSTEM: '/dev/null' }
 const git = (cwd: string, ...args: string[]) => execFileSync('git', args, { cwd, env: { ...process.env, ...GIT_ENV }, encoding: 'utf8' }).trim()
 
@@ -51,7 +54,7 @@ case "$a" in
   *"pg_dump"*) if f dump_fail; then printf 'PARTIAL'; exit 1; fi; if f dump; then cat "$FAKE_DIR/dump"; else printf 'PGDMP-FAKE'; fi ;;
   *"pg_restore --list"*) cat > /dev/null; if f list_fail; then exit 1; fi; if f restore_list_many; then exec awk 'BEGIN { print "; Archive"; print "123; 0 0 TABLE DATA public User x"; for (n = 1; n <= 100000; n++) print "999; 0 0 COMMENT public filler-" n }'; elif f restore_list; then cat "$FAKE_DIR/restore_list"; else printf '; Archive\\n123; 0 0 TABLE DATA public User x\\n'; fi ;;
   *"run --rm"*"tar"*) f tar_fail && exit 1; printf 'docs' | gzip ;;
-  *wget*) case "$a" in *" -S "*) if f smoke_fail; then echo 'CI_SMOKE_FAILURE_DETAIL' >&2; else echo "  HTTP/1.1 200 OK" >&2; fi ;; *) if f health_json; then cat "$FAKE_DIR/health_json"; else rev="$(cat "$FAKE_DIR/health_stuck" 2>/dev/null || cat "$FAKE_DIR/served_rev" 2>/dev/null || cat "$FAKE_DIR/health_rev" 2>/dev/null || echo unknown)"; printf '{"status":"ok","db":"connected","version":"x","revision":"%s"}' "$rev"; fi ;; esac ;;
+  *wget*) case "$a" in *" -S "*) if f kill_launcher_on_smoke; then kill "-$(cat "$FAKE_DIR/kill_signal" 2>/dev/null || echo TERM)" "$(cat "$FAKE_DIR/kill_launcher_on_smoke")"; rm "$FAKE_DIR/kill_launcher_on_smoke"; fi; if f smoke_fail; then echo 'CI_SMOKE_FAILURE_DETAIL' >&2; else echo "  HTTP/1.1 200 OK" >&2; fi ;; *) if f health_json; then cat "$FAKE_DIR/health_json"; else rev="$(cat "$FAKE_DIR/health_stuck" 2>/dev/null || cat "$FAKE_DIR/served_rev" 2>/dev/null || cat "$FAKE_DIR/health_rev" 2>/dev/null || echo unknown)"; printf '{"status":"ok","db":"connected","version":"x","revision":"%s"}' "$rev"; fi ;; esac ;;
   *"run --rm --no-deps migrator"*) echo "ENV MIGRATOR RESOLVE=\${ACRA_MIGRATE_AUTO_RESOLVE-unset}" >> "$AUDIT_LOG"; if f migrate_fail; then echo 'CI_MIGRATOR_FAILURE_DETAIL' >&2; exit 1; fi ;;
   *"up -d"*) echo "ENV ACRA_VERSION=$ACRA_VERSION ACRA_REVISION=$ACRA_REVISION RESOLVE=\${ACRA_MIGRATE_AUTO_RESOLVE-unset}" >> "$AUDIT_LOG"; f up_fail && exit 1; if [ -n "$ACRA_REVISION" ] && ! f no_serve; then printf '%s' "$ACRA_REVISION" > "$FAKE_DIR/served_rev"; fi ;;
 esac
@@ -62,6 +65,8 @@ export interface Instance {
   root: string; work: string; bin: string; fake: string; audit: string
   shaA: string; shaB: string
   run(script: string, args: string[], env?: Record<string, string>): { status: number | null; stdout: string; stderr: string }
+  /** Lancement asynchrone : `onSpawn` reçoit le pid du lanceur (conservé par son `exec`). */
+  runAsync(script: string, args: string[], onSpawn: (pid: number) => void): Promise<{ status: number | null; signal: NodeJS.Signals | null; stderr: string }>
   calls(): string[]
   fakeFile(name: string, content?: string): void
   read(rel: string): string
@@ -96,7 +101,13 @@ export function makeInstance(opts: { scripts?: string[]; extraFiles?: Record<str
   const env = (extra: Record<string, string> = {}) => ({ ...process.env, ...GIT_ENV, PATH: `${bin}:${process.env.PATH}`, AUDIT_LOG: audit, FAKE_DIR: fake, ACRA_HEALTH_RETRIES: '2', ACRA_HEALTH_INTERVAL: '0', ...extra })
   return {
     root, work, bin, fake, audit, shaA, shaB,
-    run: (script, args, extra) => { const r = spawnSync('bash', [path.isAbsolute(script) ? script : path.join(work, script), ...args], { cwd: work, env: env(extra), encoding: 'utf8', timeout: 60_000 }); return { status: r.status, stdout: r.stdout, stderr: r.stderr } },
+    run: (script, args, extra) => { const r = spawnSync('bash', [path.isAbsolute(script) ? script : path.join(work, script), ...args], { cwd: work, env: env(extra), encoding: 'utf8', timeout: RUN_TIMEOUT_MS }); return { status: r.status, stdout: r.stdout, stderr: r.stderr } },
+    runAsync: (script, args, onSpawn) => new Promise(resolve => {
+      const c = spawn('bash', [path.join(work, script), ...args], { cwd: work, env: env() })
+      let stderr = ''; c.stderr.on('data', d => { stderr += d }); c.stdout.resume()
+      onSpawn(c.pid as number)
+      c.on('close', (status, signal) => resolve({ status, signal, stderr }))
+    }),
     calls: () => readFileSync(audit, 'utf8').split('\n').filter(Boolean),
     fakeFile: (name, content = '1') => writeFileSync(path.join(fake, name), content),
     read: rel => readFileSync(path.join(work, rel), 'utf8'),

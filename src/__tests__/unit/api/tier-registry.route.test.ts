@@ -5,7 +5,7 @@ import { NextRequest } from 'next/server'
 const m = vi.hoisted(() => ({
   session: vi.fn(), scope: vi.fn(), cfg: vi.fn(), rl: vi.fn(), audit: vi.fn(),
   tierOrgFindMany: vi.fn(), tierOrgFindUnique: vi.fn(), tierFindFirst: vi.fn(), tierCreate: vi.fn(), tierOrgCreate: vi.fn(),
-  benFindMany: vi.fn(), arrFindMany: vi.fn(), arrFindFirst: vi.fn(), arrUpdateMany: vi.fn(), arrUpdate: vi.fn(), ppFindMany: vi.fn(), orgFindUnique: vi.fn(), tx: vi.fn(),
+  benFindMany: vi.fn(), arrFindMany: vi.fn(), arrFindFirst: vi.fn(), arrUpdateMany: vi.fn(), arrUpdate: vi.fn(), ppFindMany: vi.fn(), orgFindUnique: vi.fn(), tx: vi.fn(), orgFindMany: vi.fn(), usageFindMany: vi.fn(),
 }))
 vi.mock('next-auth', () => ({ getServerSession: m.session }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
@@ -17,7 +17,7 @@ vi.mock('@/lib/prisma', () => ({ prisma: {
   tierOrganization: { findMany: m.tierOrgFindMany, findUnique: m.tierOrgFindUnique, create: m.tierOrgCreate },
   tier: { findFirst: m.tierFindFirst, create: m.tierCreate },
   arrangementTic: { findMany: m.arrFindMany, findFirst: m.arrFindFirst, updateMany: m.arrUpdateMany, update: m.arrUpdate },
-  partiePrenante: { findMany: m.ppFindMany }, tierContractBeneficiary: { findMany: m.benFindMany }, organization: { findUnique: m.orgFindUnique }, $transaction: m.tx,
+  partiePrenante: { findMany: m.ppFindMany }, tierContractBeneficiary: { findMany: m.benFindMany }, organization: { findUnique: m.orgFindUnique, findMany: m.orgFindMany }, tierServiceUsage: { findMany: m.usageFindMany }, $transaction: m.tx,
 } }))
 import { GET, POST } from '@/app/api/tier-registry/route'
 import { POST as LINK } from '@/app/api/tier-registry/link/route'
@@ -37,6 +37,8 @@ beforeEach(() => {
   m.benFindMany.mockResolvedValue([])
   m.tierFindFirst.mockResolvedValue(null)
   m.orgFindUnique.mockResolvedValue({ path: '/grp/fil1/' })
+  m.orgFindMany.mockResolvedValue([{ id: 'fil1', nom: 'Filiale 1' }])
+  m.usageFindMany.mockResolvedValue([])
   m.tierCreate.mockImplementation(async ({ data }: { data: object }) => ({ id: 'tNew', ...data }))
   m.tx.mockImplementation(async (fn: (tx: unknown) => unknown) => fn({ tier: { create: m.tierCreate }, tierOrganization: { create: m.tierOrgCreate }, arrangementTic: { updateMany: m.arrUpdateMany } }))
   m.arrUpdateMany.mockResolvedValue({ count: 1 })
@@ -139,5 +141,23 @@ describe('POST /api/tier-registry/link — rattacher ou détacher un arrangement
   it('droits : un simple analyste ne peut pas rattacher', async () => {
     m.scope.mockResolvedValue(scope('ANALYSTE'))
     expect((await LINK(req('/api/tier-registry/link', { arrangementId: 'a3', tierId: 't1' }))).status).toBe(403)
+  })
+  it('lot T2 — tête de groupe : pire niveau et concentration de l’organisation, détail par filiale visible', async () => {
+    m.scope.mockResolvedValue({ role: 'RSSI', activeOrgId: 'grp', scope: { visibleOrgIds: ['grp', 'fil1'], isSuperAdmin: false } })
+    m.orgFindUnique.mockResolvedValue({ path: '/grp/' })
+    m.orgFindMany.mockResolvedValue([{ id: 'grp', nom: 'Groupe' }, { id: 'fil1', nom: 'Filiale 1' }, { id: 'fil2', nom: 'Filiale invisible' }])
+    m.tierOrgFindMany.mockResolvedValue([{ tier: { id: 't1', nom: 'Hébergeur', lei: null, pays: 'FR', aliases: [] } }])
+    m.usageFindMany.mockResolvedValue([
+      { organizationId: 'grp', criticite: 'CRITIQUE', processus: { id: 'p1', criticite: 4, criticiteDora: null }, evaluation: { actuelle: { dependance: 2, penetration: 2, maturite: 2, confiance: 2 } }, tierService: { tierId: 't1' } },
+      { organizationId: 'fil1', criticite: null, processus: null, evaluation: { actuelle: { dependance: 4, penetration: 3, maturite: 2, confiance: 2 } }, tierService: { tierId: 't1' } },
+    ])
+    const j = await (await GET(req('/api/tier-registry'))).json()
+    const ev = j.tiers[0].evaluation
+    expect(ev.pire).toEqual({ menace: 1, zone: 'veille', evalues: 1 })
+    expect(ev.concentration).toEqual({ usagesCritiques: 1, processusCritiques: 1 })
+    expect(ev.groupe.pire).toMatchObject({ menace: 3, zone: 'danger' })
+    expect(ev.groupe.parOrganisation.map((o: { organisation: string }) => o.organisation)).toEqual(['Groupe', 'Filiale 1'])
+    // Usages cherchés dans les seules organisations visibles du sous-arbre (jamais une filiale hors périmètre).
+    expect(m.usageFindMany.mock.calls[0][0].where.organizationId).toEqual({ in: ['grp', 'fil1'] })
   })
 })

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import TierDetailPanel from '@/components/TierDetailPanel'
+import { ECHELLES_ECOSYSTEME_DEFAUT } from '@/lib/ecosystem-echelles'
 
 vi.mock('@/lib/i18n/context', async () => {
   const { fr } = await import('@/lib/i18n/fr')
@@ -147,5 +148,22 @@ describe('TierDetailPanel — revue périodique du tiers', () => {
     render(<TierDetailPanel tierId="t1" />)
     expect(await screen.findByText(/Prochaine revue : 15\/01\/2027/)).toBeInTheDocument()
     expect(screen.queryByLabelText('Dernière revue')).toBeNull()
+  })
+})
+
+describe('TierDetailPanel — évaluation des usages (lot T1)', () => {
+  it('badge de zone par usage évalué, « Non évalué » sinon ; synthèse de l’offre ; « Évaluer » ouvre le panneau', async () => {
+    const avecEval = { ...detail, services: detail.services.map(s => s.id !== 's1' ? s : {
+      ...s, synthese: { menace: 3, zone: 'danger', evalues: 1 },
+      usages: s.usages.map(u => (u.id === 'u1' ? { ...u, evaluation: { statut: 'VALIDEE', actuelle: { menace: 3, zone: 'danger' }, cible: { menace: 0.89, zone: 'veille' }, prochaine: '2027-10-09' } } : u)),
+    }) }
+    fetchMock.mockImplementation((url: string) => (String(url).endsWith('/evaluation') ? ok({ evaluation: null, cotation: { actuelle: null, cible: null }, prochaineEvaluation: null, droits: { peutEvaluer: true, peutValider: false }, echelles: ECHELLES_ECOSYSTEME_DEFAUT, options: { traitements: [], risques: [] } }) : url.startsWith('/api/processus') ? ok(processus) : ok(avecEval)))
+    render(<TierDetailPanel tierId="t1" />)
+    const li = await offerItem('SignNow Signature')
+    expect(within(li).getByText('3 — Danger · Validée')).toBeInTheDocument()
+    expect(within(li).getByText('Non évalué')).toBeInTheDocument()
+    expect(within(li).getAllByText(/Pire niveau évalué/).length).toBeGreaterThan(0)
+    fireEvent.click(within(li).getAllByRole('button', { name: 'Évaluer' })[0])
+    expect(await screen.findByRole('region', { name: 'Évaluation — Contrats fournisseurs' })).toBeInTheDocument()
   })
 })

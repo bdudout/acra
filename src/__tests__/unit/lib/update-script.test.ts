@@ -159,6 +159,19 @@ describe('update.sh v2 — retour arrière automatique', () => {
     update()
     expect(status()).toMatchObject({ rolledBack: true, code: 'smoke_failed' })
   })
+  // Sous charge, `spawnSync` (délai du banc) ou l'exploitant (kill, SSH coupé) peut tuer le SEUL lanceur pendant
+  // les étapes cible : son nettoyage supprimait alors le script de points de restauration utilisé par le retour arrière.
+  it.each(['TERM', 'HUP', 'INT'])('SIG%s reçu par le lanceur pendant les étapes cible : le retour arrière automatique aboutit', async sig => {
+    inst = makeInstance(); inst.fakeFile('smoke_fail'); inst.fakeFile('kill_signal', sig)
+    const r = await inst.runAsync('scripts/update.sh', ['stable', '--yes', '--status-file', STATUS], pid => inst.fakeFile('kill_launcher_on_smoke', String(pid)))
+    expect(inst.exists('../fake/kill_launcher_on_smoke'), 'le signal doit avoir été envoyé').toBe(false)
+    expect(r.signal, r.stderr).toBeNull()
+    expect(r.status, r.stderr).toBe(1)
+    expect(status()).toMatchObject({ state: 'FAILED', rolledBack: true, code: 'smoke_failed' })
+    expect(inst.gitIn('rev-parse', 'HEAD')).toBe(inst.shaA)
+    expect(inst.read('.acra-update/events.log')).toMatch(/^ROLLED_BACK 1\.0\.5 1\.0\.4 smoke_failed /m)
+    expect(inst.exists('.acra-update/run/lock'), 'verrou libéré après le retour arrière').toBe(false)
+  })
   it('échec du HANDOFF (contrat inconnu) : retour arrière du code SANS restauration de base', () => {
     inst = makeInstance({ targetFiles: { 'scripts/update-steps.sh': '#!/usr/bin/env bash\nACRA_UPDATE_STEPS_API=99\n' } })
     const r = update()

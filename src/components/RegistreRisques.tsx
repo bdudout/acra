@@ -16,6 +16,7 @@ import { niveauBucket } from '@/lib/cartographie'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
 import { RISK_STATUTS } from '@/lib/risk-item'
 import RiskActionsPanel, { type ActionsSummary } from '@/components/RiskActionsPanel'
+import RiskTiersPanel from '@/components/RiskTiersPanel'
 import AutocompleteInput from '@/components/AutocompleteInput'
 import { mostFrequentString } from '@/lib/most-frequent'
 import { resolveScaleConfig, getRiskLevelFromSeuils, type ScaleConfig, type EchelleNiveau, type Seuil } from '@/lib/risk-scale'
@@ -316,6 +317,7 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
                   <tr className="bg-gray-50/60 dark:bg-gray-800/30">
                     <td colSpan={canEdit ? 8 : 7} className="px-4 py-4">
                       <RiskActionsPanel riskId={x.id} canEdit={canEdit} onChange={reload} />
+                      <RiskTiersPanel riskId={x.id} />
                     </td>
                   </tr>
                 )}
