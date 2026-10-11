@@ -135,7 +135,7 @@ export default function ConformiteTrackingCard({ rows, locale }: { rows: Conform
                     onClick={() => setOpen(o => ({ ...o, [r.key]: !isOpen }))}
                     className="text-xs text-gray-600 hover:text-gray-900 font-medium"
                   >
-                    {isOpen ? '▾' : '▸'} {ctrls.length} {t.dashboard.conformiteNonConfLabel}
+                    {isOpen ? '▾' : '▸'} {ctrls.length} {r.canEdit ? t.dashboard.conformiteNonConfLabel : t.dashboard.conformiteNonConfLecture}
                   </button>
                   {isOpen && (
                     <ul className="mt-2 space-y-1.5">

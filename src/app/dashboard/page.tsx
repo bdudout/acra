@@ -277,8 +277,9 @@ export default async function DashboardPage() {
               {analyses.length === 0 ? (
                 <div className="card p-12 text-center">
                   <div className="text-5xl mb-4"><ShieldCheck size={40} aria-hidden="true" /></div>
-                  <h3 className="font-semibold text-gray-800 mb-2">{t.dashboard.noAnalyses}</h3>
-                  <p className="text-gray-500 text-sm mb-6">{t.dashboard.noAnalysesDesc}</p>
+                  {/* Recette n° 23 : un rôle qui ne crée pas d'analyses n'est pas invité à en créer — on lui dit qui contacter. */}
+                  <h3 className="font-semibold text-gray-800 mb-2">{peutCreerAnalyse ? t.dashboard.noAnalyses : t.dashboard.noAnalysesPartage}</h3>
+                  <p className="text-gray-500 text-sm mb-6">{peutCreerAnalyse ? t.dashboard.noAnalysesDesc : t.dashboard.noAnalysesPartageDesc}</p>
                   {/* Seuls les rôles qui peuvent créer une analyse voient l'invitation à en créer une. */}
                   {peutCreerAnalyse && (
                     <Link href="/analyses/new" className="btn-primary inline-block">
