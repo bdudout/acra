@@ -26,7 +26,8 @@ type Detail = {
 
 const send = (url: string, method: string, body?: object) => fetch(url, { method, headers: { 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) })
 
-export default function TierDetailPanel({ tierId }: { tierId: string }) {
+/** `onChange` : prévient la liste parente (niveau, concentration) après une évaluation enregistrée (recette n° 18). */
+export default function TierDetailPanel({ tierId, onChange }: { tierId: string; onChange?: () => void }) {
   const { t, locale } = useTranslation()
   const c = t.tierDetail
   const types = t.registreTic.typeOpt as Record<string, string>
@@ -121,7 +122,7 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
                         : <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-500 dark:bg-gray-800">{t.tierEval.nonEvalue}</span>}
                       <button type="button" className="btn-secondary px-2 py-0.5 text-xs" aria-expanded={evalOuverte === u.id} onClick={() => setEvalOuverte(evalOuverte === u.id ? null : u.id)}>{evalOuverte === u.id ? t.tierEval.masquer : t.tierEval.evaluer}</button>
                       {detail.canManage && <button type="button" className="btn-secondary px-2 py-0.5 text-xs" disabled={busy} aria-label={c.deleteUsage.replace('{name}', u.useCase)} onClick={() => void run(() => send(`/api/tier-registry/usages/${u.id}`, 'DELETE'))}>✕</button>}
-                      {evalOuverte === u.id && <div className="basis-full"><EvaluationUsagePanel usageId={u.id} usageNom={u.useCase} onChange={() => void load()} /></div>}
+                      {evalOuverte === u.id && <div className="basis-full"><EvaluationUsagePanel usageId={u.id} usageNom={u.useCase} onChange={() => { void load(); onChange?.() }} /></div>}
                     </li>
                   ))}
                 </ul>

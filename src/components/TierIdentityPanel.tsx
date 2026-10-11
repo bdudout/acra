@@ -249,7 +249,7 @@ export default function TierIdentityPanel({ sansTitre = false }: { sansTitre?: b
                   {open === tier.id && <tr><td colSpan={8} className="px-2 pb-3">
                     <EntiteLiens tier={tier} services={services} contrats={tier.arrangements} contratsLibres={data.unlinkedArrangements}
                       canManage={canManage} busy={busy} onRattacher={(ids, tierId) => void rattacher(ids, tierId)} onContrat={(id, tierId) => void link(id, tierId)} />
-                    <TierDetailPanel tierId={tier.id} />
+                    <TierDetailPanel tierId={tier.id} onChange={() => void load()} />
                   </td></tr>}
                 </Fragment>))}</tbody>
             </table>

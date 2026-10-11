@@ -61,7 +61,9 @@ export default function EvaluationUsagePanel({ usageId, usageNom, onChange }: { 
     const r = await fetch(`/api/tier-registry/usages/${usageId}/evaluation`, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null)
     setBusy(false)
     if (!r?.ok) { const j = r ? ((await r.json().catch(() => ({}))) as { error?: string }) : {}; setMsg({ ok: false, texte: erreur(j.error) }); return }
-    setMsg({ ok: true, texte: okTexte }); await charger(); onChange()
+    // Recette n° 19 : soumise, mais aucun valideur dans l'organisation → le dire tout de suite.
+    const j = (await r.json().catch(() => ({}))) as { avertissement?: string }
+    setMsg(j.avertissement === 'aucun_validateur' ? { ok: false, texte: `${okTexte} ${l.aucunValideur}` } : { ok: true, texte: okTexte }); await charger(); onChange()
   }
   const enregistrer = () => appel('PUT', { actuelle, cible: Object.values(cible).some(v => v !== null) ? cible : null, clauses, traitementIds, risqueIds, justification }, l.enregistre)
 

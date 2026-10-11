@@ -91,6 +91,10 @@ export async function POST(req: NextRequest, { params }: Params): Promise<NextRe
     : action === 'VALIDER' ? { statut: t.statut, validePar: c.ctx.userId, valideLe: now }
       : { statut: t.statut }
   await prisma.evaluationUsageTiers.update({ where: { usageId }, data })
+  // Recette n° 19 : soumission sans valideur possible dans l'organisation (aucun RSSI ; ni ADMIN en petite structure) —
+  // acceptée, mais signalée pour ne pas laisser l'évaluation en attente sans destinataire.
+  const sansValideur = action === 'SOUMETTRE'
+    && (await prisma.orgMembership.count({ where: { organizationId: c.ctx.orgId, role: { in: c.petiteStructure ? ['RSSI', 'ADMIN'] : ['RSSI'] } } })) === 0
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: c.ctx.userId, userRole: c.ctx.role, organizationId: c.ctx.orgId, ip: getClientIp(req), details: { scope: 'tier-registry', action: `usage-evaluation-${action.toLowerCase()}`, usageId } })
-  return NextResponse.json({ ok: true, statut: t.statut })
+  return NextResponse.json({ ok: true, statut: t.statut, ...(sansValideur ? { avertissement: 'aucun_validateur' } : {}) })
 }

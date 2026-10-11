@@ -6,7 +6,7 @@ import { NextRequest } from 'next/server'
 
 const m = vi.hoisted(() => ({
   session: vi.fn(), scope: vi.fn(), rl: vi.fn(), audit: vi.fn(), orgCfg: vi.fn(),
-  usage: vi.fn(), evalFind: vi.fn(), evalUpsert: vi.fn(), evalUpdate: vi.fn(), traitements: vi.fn(), risques: vi.fn(),
+  usage: vi.fn(), evalFind: vi.fn(), evalUpsert: vi.fn(), evalUpdate: vi.fn(), traitements: vi.fn(), risques: vi.fn(), membres: vi.fn(),
 }))
 vi.mock('next-auth', () => ({ getServerSession: m.session }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
@@ -17,7 +17,7 @@ vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.orgCfg }))
 vi.mock('@/lib/prisma', () => ({ prisma: {
   tierServiceUsage: { findUnique: m.usage },
   evaluationUsageTiers: { findUnique: m.evalFind, upsert: m.evalUpsert, update: m.evalUpdate },
-  traitement: { findMany: m.traitements }, riskItem: { findMany: m.risques },
+  traitement: { findMany: m.traitements }, riskItem: { findMany: m.risques }, orgMembership: { count: m.membres },
 } }))
 import { GET, PUT, POST } from '@/app/api/tier-registry/usages/[usageId]/evaluation/route'
 
@@ -38,6 +38,7 @@ beforeEach(() => {
   m.evalUpdate.mockImplementation(async (a: { data: object }) => ({ id: 'e1', ...a.data }))
   m.traitements.mockResolvedValue([{ id: 't1', nom: 'Paie' }])
   m.risques.mockResolvedValue([{ id: 'r1', intitule: 'Risque d’externalisation — hébergement', taxonomieCode: null }])
+  m.membres.mockResolvedValue(1)
 })
 
 describe('évaluation d’un usage de service tiers', () => {
@@ -75,5 +76,12 @@ describe('évaluation d’un usage de service tiers', () => {
     expect((await POST(req('POST', { action: 'VALIDER' }), p)).status).toBe(200)
     expect(m.evalUpdate.mock.calls.at(-1)![0].data).toMatchObject({ statut: 'VALIDEE', validePar: 'user1' })
     expect(m.evalUpdate.mock.calls.at(-1)![0].data.valideLe).toBeInstanceOf(Date)
+  })
+  it('recette n° 19 : soumission dans une organisation sans RSSI — acceptée mais signalée', async () => {
+    m.evalFind.mockResolvedValue({ id: 'e1', statut: 'BROUILLON', actuelle: COMPLETE, cible: null })
+    m.membres.mockResolvedValue(0)
+    const j = await (await POST(req('POST', { action: 'SOUMETTRE' }), p)).json()
+    expect(j).toEqual({ ok: true, statut: 'SOUMISE', avertissement: 'aucun_validateur' })
+    expect(m.membres.mock.calls[0][0].where).toEqual({ organizationId: 'org1', role: { in: ['RSSI'] } })
   })
 })
