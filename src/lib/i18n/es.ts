@@ -755,6 +755,7 @@ export const es: Translations = {
     expressTitle:    'EBIOS RM flash',
     expressSubtitle: 'Recorrido rápido guiado: T1 → T2 → T3 → T4 → T5',
     expressInfo:     'El enfoque «Flash» (Club EBIOS) recorre todos los talleres en una pasada rápida apoyándose en la capitalización (ejemplos, base). Concéntrese en los escenarios más pertinentes (≈ 5 máx.), cada uno con al menos un escenario operativo. La escala y la matriz siguen siendo las configuradas por el administrador.',
+    quitterFlash: 'Salir del enfoque Flash',
     flashTipLabel:   'Para este taller',
     flashTips: {
       a1: 'limítese a ~2 valores de negocio (1 dato + 1 servicio) y 1–2 activos de soporte por valor; 2–3 eventos temidos en total.',

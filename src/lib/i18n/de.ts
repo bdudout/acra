@@ -755,6 +755,7 @@ export const de: Translations = {
     expressTitle:    'EBIOS RM Flash',
     expressSubtitle: 'Schneller geführter Pfad: W1 → W2 → W3 → W4 → W5',
     expressInfo:     'Der „Flash"-Ansatz (Club EBIOS) durchläuft alle Workshops in einem schnellen Durchgang und stützt sich auf die Kapitalisierung (Beispiele, Basis). Konzentrieren Sie sich auf die relevantesten Szenarien (≈ 5 max.), jeweils mit mindestens einem operativen Szenario. Skala und Matrix bleiben die vom Administrator konfigurierten.',
+    quitterFlash: 'Flash-Vorgehen verlassen',
     flashTipLabel:   'Für diesen Workshop',
     flashTips: {
       a1: 'beschränken Sie sich auf ~2 Geschäftswerte (1 Datum + 1 Dienst) und 1–2 unterstützende Werte je Wert; insgesamt 2–3 befürchtete Ereignisse.',

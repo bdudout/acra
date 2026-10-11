@@ -768,6 +768,7 @@ export const fr = {
     expressTitle:    'EBIOS RM flash',
     expressSubtitle: 'Parcours rapide guidé : A1 → A2 → A3 → A4 → A5',
     expressInfo:     "La démarche « Flash » (Club EBIOS) déroule tous les ateliers en une passe rapide en s'appuyant sur la capitalisation (exemples, socle). Concentrez-vous sur les scénarios les plus pertinents (≈ 5 max) avec au moins un scénario opérationnel chacun. L'échelle et la matrice restent celles configurées par l'administrateur.",
+    quitterFlash: 'Quitter la démarche Flash',
     flashTipLabel:   'Pour cet atelier',
     flashTips: {
       a1: "limitez-vous à ~2 valeurs métier (1 donnée + 1 service) et 1 à 2 biens supports par valeur ; 2 à 3 événements redoutés au total.",

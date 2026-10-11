@@ -755,6 +755,7 @@ export const en: Translations = {
     expressTitle:    'EBIOS RM flash',
     expressSubtitle: 'Quick guided path: W1 → W2 → W3 → W4 → W5',
     expressInfo:     'The "Flash" approach (Club EBIOS) runs all workshops in a single fast pass, leveraging capitalization (examples, baseline). Focus on the most relevant scenarios (≈ 5 max), each with at least one operational scenario. The scale and matrix remain those configured by the administrator.',
+    quitterFlash: 'Leave the Flash approach',
     flashTipLabel:   'For this workshop',
     flashTips: {
       a1: 'keep to ~2 business values (1 data + 1 service) and 1–2 supporting assets each; 2–3 dreaded events total.',
