@@ -776,6 +776,7 @@ export const es: Translations = {
 
   aTraiter: { declaration: 'Notificación de incidente por presentar', titre: 'Pendiente', intro: 'Lo que espera su acción o su decisión en todas sus organizaciones: los mismos elementos que el correo diario de recordatorios, sin esperarlo.', vide: 'Nada le espera por ahora.', chargement: 'Cargando…', erreur: 'No se pudo cargar la lista.', note: 'Lista actualizada cada minuto.', lienCompte: 'Pendiente: {n} elemento(s), {r} con retraso', groupes: { EN_RETARD: 'Con retraso', EN_ATTENTE: 'Decisiones pendientes', ECHEANCE_PROCHE: 'Vencimiento próximo', PERIODIQUE: 'Abiertos' } },
   tierEval: {
+    sourceDora: 'Reglamento (UE) 2022/2554 (DORA), artículo 30', doraNonCritique: 'Tercero inscrito en el registro de información: apartado 2 (todo contrato de servicios de TIC). Texto oficial completo al pasar el cursor.', doraCritique: 'Tercero inscrito en el registro de información, uso crítico o importante: apartados 2 y 3. Texto oficial completo al pasar el cursor.',
     soumisePar: 'Enviada por {nom} el {date}', validePar: 'Validada por {nom} el {date}',
     aucunValideur: 'Atención: no hay ningún RSSI en esta organización; no podrá validarse hasta que se designe un RSSI (o se active «Organización pequeña»).',
     servicesRattaches: 'Servicios de terceros vinculados',

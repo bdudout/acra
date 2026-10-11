@@ -790,6 +790,7 @@ export const fr = {
   // ─── Nouvelle analyse ─────────────────────────────────────────────────────
   aTraiter: { declaration: 'Déclaration d’incident à effectuer', titre: 'À traiter', intro: 'Ce qui attend votre action ou votre décision, dans toutes vos organisations — les mêmes éléments que l’e-mail quotidien de relances, sans l’attendre.', vide: 'Rien ne vous attend pour le moment.', chargement: 'Chargement…', erreur: 'La liste n’a pas pu être chargée.', note: 'Liste mise à jour toutes les minutes.', lienCompte: 'À traiter : {n} élément(s), dont {r} en retard', groupes: { EN_RETARD: 'En retard', EN_ATTENTE: 'Décisions en attente', ECHEANCE_PROCHE: 'Échéance proche', PERIODIQUE: 'Ouverts' } },
   tierEval: {
+    sourceDora: 'Règlement (UE) 2022/2554 (DORA), article 30', doraNonCritique: 'Tiers inscrit au registre d’informations : paragraphe 2 (tout contrat de services TIC). Texte officiel complet au survol.', doraCritique: 'Tiers inscrit au registre d’informations, usage critique ou important : paragraphes 2 et 3. Texte officiel complet au survol.',
     soumisePar: 'Soumise par {nom} le {date}', validePar: 'Validée par {nom} le {date}',
     aucunValideur: 'Attention : aucun RSSI dans cette organisation — elle ne pourra pas être validée tant qu’un RSSI n’est pas désigné (ou que « Petite structure » n’est pas activée).',
     servicesRattaches: 'Services tiers rattachés',

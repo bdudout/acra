@@ -776,6 +776,7 @@ export const it: Translations = {
 
   aTraiter: { declaration: 'Notifica di incidente da presentare', titre: 'Da fare', intro: 'Ciò che attende la sua azione o decisione in tutte le sue organizzazioni: gli stessi elementi dell’e-mail giornaliera di promemoria, senza attenderla.', vide: 'Nulla la attende per il momento.', chargement: 'Caricamento…', erreur: 'Impossibile caricare l’elenco.', note: 'Elenco aggiornato ogni minuto.', lienCompte: 'Da fare: {n} elemento/i, di cui {r} in ritardo', groupes: { EN_RETARD: 'In ritardo', EN_ATTENTE: 'Decisioni in sospeso', ECHEANCE_PROCHE: 'Scadenza vicina', PERIODIQUE: 'Aperti' } },
   tierEval: {
+    sourceDora: 'Regolamento (UE) 2022/2554 (DORA), articolo 30', doraNonCritique: 'Terzo iscritto nel registro delle informazioni: paragrafo 2 (tutti i contratti di servizi TIC). Testo ufficiale completo al passaggio del mouse.', doraCritique: 'Terzo iscritto nel registro delle informazioni, uso critico o importante: paragrafi 2 e 3. Testo ufficiale completo al passaggio del mouse.',
     soumisePar: 'Inviata da {nom} il {date}', validePar: 'Approvata da {nom} il {date}',
     aucunValideur: 'Attenzione: nessun CISO in questa organizzazione — non potrà essere approvata finché non viene designato un CISO (o attivata «Piccola organizzazione»).',
     servicesRattaches: 'Servizi di terzi collegati',

@@ -10,12 +10,14 @@ import { CRITERES_ECOSYSTEME, maxValeur, type CritereEcosysteme, type EchellesEc
 import { zoneOf, type EcosystemZone } from '@/lib/ecosystem-radar'
 import { CONTRACTUAL_CLAUSE_KEYS, type ContractualClauseKey } from '@/lib/ecosystem-contractual-clauses'
 import { echeanceRevue } from '@/lib/revues'
+import { CLAUSES_DORA_ART30, type ClauseDoraArt30 } from '@/lib/dora-art30'
 import type { UserRole } from '@/lib/permissions'
 
 export type Cotation = Record<CritereEcosysteme, number | null>
 export interface EvaluationTiersSaisie {
   actuelle: Cotation; cible: Cotation | null
-  clauses: ContractualClauseKey[]; traitementIds: string[]; risqueIds: string[]; justification: string
+  /** Clauses types de l'atelier 3, ou points de DORA art. 30 (tiers au registre d'information TIC, recette n° 20). */
+  clauses: (ContractualClauseKey | ClauseDoraArt30)[]; traitementIds: string[]; risqueIds: string[]; justification: string
 }
 export const STATUTS_EVALUATION_TIERS = ['BROUILLON', 'SOUMISE', 'VALIDEE'] as const
 export type StatutEvaluationTiers = (typeof STATUTS_EVALUATION_TIERS)[number]
@@ -35,7 +37,7 @@ export function sanitizeEvaluationTiers(input: unknown, e: EchellesEcosysteme): 
   return {
     actuelle: cotation(o.actuelle, e),
     cible: o.cible && typeof o.cible === 'object' ? cotation(o.cible, e) : null,
-    clauses: (Array.isArray(o.clauses) ? o.clauses : []).filter((c): c is ContractualClauseKey => (CONTRACTUAL_CLAUSE_KEYS as readonly unknown[]).includes(c)).filter((c, i, a) => a.indexOf(c) === i),
+    clauses: (Array.isArray(o.clauses) ? o.clauses : []).filter((c): c is ContractualClauseKey | ClauseDoraArt30 => (CONTRACTUAL_CLAUSE_KEYS as readonly unknown[]).includes(c) || (CLAUSES_DORA_ART30 as readonly unknown[]).includes(c)).filter((c, i, a) => a.indexOf(c) === i),
     traitementIds: ids(o.traitementIds), risqueIds: ids(o.risqueIds),
     justification: typeof o.justification === 'string' ? o.justification.trim().slice(0, 4000) : '',
   }

@@ -10,12 +10,14 @@ import { useTranslation } from '@/lib/i18n/context'
 import { CRITERES_ECOSYSTEME, type CritereEcosysteme, type EchellesEcosysteme } from '@/lib/ecosystem-echelles'
 import { CONTRACTUAL_CLAUSE_KEYS } from '@/lib/ecosystem-contractual-clauses'
 import { coterEvaluation, type Cotation } from '@/lib/tier-evaluation'
+import { TEXTE_DORA_ART30, clausesDoraApplicables, libelleClauseDora } from '@/lib/dora-art30'
 
 interface Reponse {
   evaluation: { statut: 'BROUILLON' | 'SOUMISE' | 'VALIDEE'; evalueParNom?: string | null; soumisLe?: string | null; valideParNom?: string | null; valideLe?: string | null; actuelle: Cotation; cible: Cotation | null; clauses: string[]; traitementIds: string[]; risqueIds: string[]; justification: string } | null
   prochaineEvaluation: string | null
   droits: { peutEvaluer: boolean; peutValider: boolean }
   echelles: EchellesEcosysteme
+  cadreDora?: { actif: boolean; critique: boolean }
   options: { traitements: { id: string; nom: string }[]; risques: { id: string; intitule: string }[] }
 }
 const VIDE: Cotation = { dependance: null, penetration: null, maturite: null, confiance: null }
@@ -104,14 +106,27 @@ export default function EvaluationUsagePanel({ usageId, usageNom, onChange }: { 
         {colonne(l.actuelle, actuelle, setActuelle, 'actuelle')}
         {colonne(l.cible, cible, setCible, 'cible')}
       </div>
-      <fieldset>
-        <legend className="text-xs font-semibold text-gray-700 dark:text-gray-200">{l.clauses}</legend>
-        <div className="mt-1 grid gap-1 sm:grid-cols-2">
-          {CONTRACTUAL_CLAUSE_KEYS.map(k => { const lab = (a3.measClauses as Record<string, string>)[k]; return (
-            <label key={k} className="inline-flex items-center gap-1.5 text-[11px] text-gray-700 dark:text-gray-200"><input type="checkbox" aria-label={lab} disabled={lecture} checked={clauses.includes(k)} onChange={() => bascule(clauses, setClauses, k)} />{lab}</label>
-          ) })}
-        </div>
-      </fieldset>
+      {data.cadreDora?.actif ? (
+        // Recette n° 20 : tiers au registre d'information TIC → points de DORA art. 30, texte officiel (EUR-Lex) en infobulle.
+        <fieldset>
+          <legend className="text-xs font-semibold text-gray-700 dark:text-gray-200">{(TEXTE_DORA_ART30[locale as keyof typeof TEXTE_DORA_ART30] ?? TEXTE_DORA_ART30.fr).titre} — {l.sourceDora}</legend>
+          <p className="text-[11px] text-gray-400">{data.cadreDora.critique ? l.doraCritique : l.doraNonCritique}</p>
+          <div className="mt-1 space-y-1">
+            {clausesDoraApplicables(data.cadreDora.critique).map(k => { const c = libelleClauseDora(k, locale); const lab = `${c.reference} — ${c.extrait}`; return (
+              <label key={k} title={c.texte} className="flex items-start gap-1.5 text-[11px] text-gray-700 dark:text-gray-200"><input type="checkbox" className="mt-0.5" aria-label={lab} disabled={lecture} checked={clauses.includes(k)} onChange={() => bascule(clauses, setClauses, k)} /><span><span className="font-medium">{c.reference}</span> — {c.extrait}</span></label>
+            ) })}
+          </div>
+        </fieldset>
+      ) : (
+        <fieldset>
+          <legend className="text-xs font-semibold text-gray-700 dark:text-gray-200">{l.clauses}</legend>
+          <div className="mt-1 grid gap-1 sm:grid-cols-2">
+            {CONTRACTUAL_CLAUSE_KEYS.map(k => { const lab = (a3.measClauses as Record<string, string>)[k]; return (
+              <label key={k} className="inline-flex items-center gap-1.5 text-[11px] text-gray-700 dark:text-gray-200"><input type="checkbox" aria-label={lab} disabled={lecture} checked={clauses.includes(k)} onChange={() => bascule(clauses, setClauses, k)} />{lab}</label>
+            ) })}
+          </div>
+        </fieldset>
+      )}
       <div className="grid gap-3 sm:grid-cols-2">
         <fieldset>
           <legend className="text-xs font-semibold text-gray-700 dark:text-gray-200">{l.traitements}</legend>
