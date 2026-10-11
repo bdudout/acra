@@ -307,9 +307,8 @@ export async function PATCH(req: NextRequest) {
 
   // Le rôle SUPER_ADMIN (niveau instance) n'est gérable que par un SUPER_ADMIN.
   const isSuper = userRole === 'SUPER_ADMIN'
-  const validRoles: UserRole[] = isSuper
-    ? ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER', 'SUPER_ADMIN']
-    : ['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER']
+  // Source unique (recette n° 15) : tous les rôles attribuables ; SUPER_ADMIN réservé à un SUPER_ADMIN.
+  const validRoles: UserRole[] = isSuper ? [...ROLES_ATTRIBUABLES, 'SUPER_ADMIN'] : [...ROLES_ATTRIBUABLES]
   if (!validRoles.includes(role)) {
     return NextResponse.json({ error: 'Rôle invalide' }, { status: 400 })
   }

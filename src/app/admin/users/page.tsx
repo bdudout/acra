@@ -69,9 +69,8 @@ export default function AdminUsersPage() {
 
   // Rôles assignables : un SUPER_ADMIN peut aussi promouvoir/rétrograder un SUPER_ADMIN.
   const isSuperAdmin = currentRole === 'SUPER_ADMIN'
-  const assignableRoles: UserRole[] = isSuperAdmin
-    ? ['LECTEUR', 'METIER', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'CONTROLEUR', 'CONFORMITE', 'DPO', 'ADMIN', 'DIRECTION_METIER', 'AUDITEUR', 'SUPER_ADMIN']
-    : ['LECTEUR', 'METIER', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'CONTROLEUR', 'CONFORMITE', 'DPO', 'ADMIN', 'DIRECTION_METIER']
+  // Source unique (recette n° 9 / 15) : tous les rôles attribuables, plus SUPER_ADMIN pour un SUPER_ADMIN.
+  const assignableRoles: UserRole[] = isSuperAdmin ? [...ROLES_ATTRIBUABLES, 'SUPER_ADMIN'] : [...ROLES_ATTRIBUABLES]
 
   useEffect(() => {
     if (status === 'loading') return
@@ -673,7 +672,7 @@ export default function AdminUsersPage() {
         <div className="mt-6 card p-5">
           <h2 className="font-semibold text-gray-800 mb-4">{t.admin.rolesGuideTitle}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {(['LECTEUR', 'ANALYSTE', 'RISK_MANAGER', 'RSSI', 'ADMIN', 'DIRECTION_METIER', 'AUDITEUR', 'CONTROLEUR', 'METIER', 'CONFORMITE', 'DPO', 'SUPER_ADMIN'] as UserRole[]).map(role => (
+            {([...ROLES_ATTRIBUABLES, 'SUPER_ADMIN'] as UserRole[]).map(role => (
               <div key={role} className="p-3 rounded-lg border border-gray-100 bg-gray-50">
                 <div className="flex items-center gap-2 mb-1">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_COLORS[role]}`}>

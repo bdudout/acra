@@ -68,4 +68,10 @@ describe('usages locaux d’une offre de tiers', () => {
     expect((await POST(request(body), ctx)).status).toBe(403)
     expect(db.usage.create).not.toHaveBeenCalled()
   })
+  it('recette n° 13 : la conformité (gestionnaire du registre TIC) déclare un usage ; l’analyste non', async () => {
+    auth.role.mockResolvedValue('CONFORMITE')
+    expect((await POST(request(body), ctx)).status).toBe(201)
+    auth.role.mockResolvedValue('ANALYSTE')
+    expect((await POST(request(body), ctx)).status).toBe(403)
+  })
 })
