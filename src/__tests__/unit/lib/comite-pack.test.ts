@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildComitePack, verdictGlobal, verdictDispositif, verdictSignauxActifs, COMITE_TYPES, type ComiteConsolide } from '../../../lib/comite-pack'
+import { buildComitePack, verdictGlobal, verdictDispositif, verdictSignauxActifs, COMITE_TYPES, type ComiteConsolide, valeursPack, ajouterTendances, texteTendance } from '../../../lib/comite-pack'
 
 const MODULES_ON = { risques: true, appetit: true, incidents: true, controles: true, audit: true, regulateur: true, kri: true, dora: true }
 
@@ -146,5 +146,36 @@ describe('buildComitePack — flag positif (RAG vert, #134)', () => {
     const ctrlBas = bas.sections.find(s => s.id === 'controles')!.metrics.find(m => m.key === 'tauxConformite')
     expect(ctrlBas?.positif).toBeFalsy()
     expect(ctrlBas?.alerte).toBe(true)
+  })
+})
+
+// Tendance ↑↓ (cadrage 2026-10-11, option a) : photo mensuelle des indicateurs (clé « section.indicateur », valeurs
+// numériques) ; tendance par rapport à la photo du 1er du mois (état de fin du mois précédent) ; sens favorable : baisse
+// pour les compteurs d'alerte, hausse pour les taux et ce qui est « dans l'appétit ».
+describe('tendance des indicateurs du comité', () => {
+  const c: ComiteConsolide = { risques: { total: 10, eleve: 3, moyen: 4, faible: 3, nonCote: 0 }, actions: { total: 20, faits: 10, enRetard: 2, tauxAvancement: 50 } }
+  const m = { risques: true, appetit: false, incidents: false, controles: false, audit: false, regulateur: false, kri: false, dora: false }
+  it('valeurs numériques indexées par section, pourcentages convertis, valeurs non numériques ignorées', () => {
+    const v = valeursPack([buildComitePack('RISQUES', c, m)])
+    expect(v['risques.eleve']).toBe(3)
+    expect(v['risques.avancement']).toBe(50)
+    expect(Object.keys(v).every(k => k.includes('.'))).toBe(true)
+  })
+  it('écart et sens favorable par rapport à la photo ; sans photo, aucune tendance', () => {
+    const pack = ajouterTendances(buildComitePack('RISQUES', c, m), { 'risques.eleve': 5, 'risques.avancement': 40, 'risques.actionsEnRetard': 2, 'risques.total': 8 })
+    const met = (s: string, k: string) => pack.sections.find(x => x.id === s)!.metrics.find(x => x.key === k)!
+    expect(met('risques', 'eleve').tendance).toEqual({ precedent: 5, delta: -2, sens: 'BAISSE', favorable: true })
+    expect(met('risques', 'avancement').tendance).toEqual({ precedent: 40, delta: 10, sens: 'HAUSSE', favorable: true })
+    expect(met('risques', 'actionsEnRetard').tendance).toEqual({ precedent: 2, delta: 0, sens: 'STABLE', favorable: null })
+    expect(met('risques', 'total').tendance?.favorable).toBeNull() // pas de sens favorable défini
+    expect(ajouterTendances(buildComitePack('RISQUES', c, m), null).sections[0].metrics[0].tendance).toBeUndefined()
+  })
+})
+
+describe('texteTendance (PDF, police sans flèches)', () => {
+  it('écart signé, « = » si stable, suffixe de la langue', () => {
+    expect(texteTendance({ precedent: 5, delta: -2, sens: 'BAISSE', favorable: true }, 'vs mois préc.')).toBe('-2 vs mois préc.')
+    expect(texteTendance({ precedent: 40, delta: 10, sens: 'HAUSSE', favorable: true }, 'vs prev. month')).toBe('+10 vs prev. month')
+    expect(texteTendance({ precedent: 2, delta: 0, sens: 'STABLE', favorable: null }, 'vs mois préc.')).toBe('= vs mois préc.')
   })
 })

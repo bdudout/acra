@@ -2996,3 +2996,16 @@ model EvaluationUsageTiers {
   @@index([organizationId, statut])
 }
 
+// ─── Photo mensuelle des indicateurs du dossier de comité (tendance ↑↓, cadrage 2026-10-11) ────────────────────────────
+// Prise le 1er du mois (cron `comite-snapshots`) : état de fin du mois précédent ; valeurs numériques « section.indicateur »
+// (lib/comite-pack.valeursPack). Une photo par organisation et par mois, jamais écrasée.
+model ComiteSnapshot {
+  id             String   @id @default(cuid())
+  organizationId String
+  periode        String   // AAAA-MM (mois de la prise de vue)
+  valeurs        Json     @default("{}")
+  createdAt      DateTime @default(now())
+
+  @@unique([organizationId, periode])
+}
+

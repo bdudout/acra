@@ -36,7 +36,11 @@ export interface ComiteModules {
 
 /** Une métrique d'un pack comité (clé i18n + valeur, avec drapeaux alerte/positif). */
 /** `cible` : valeur visée affichée à côté de l'indicateur (« 80% », « 0 ») ; `cibleMinimum` : la cible est un plancher. Absente sans cible. */
-export interface ComiteMetric { key: string; value: number | string; alerte?: boolean; positif?: boolean; cible?: string; cibleMinimum?: boolean }
+export interface ComiteMetric { key: string; value: number | string; alerte?: boolean; positif?: boolean; cible?: string; cibleMinimum?: boolean
+  /** Tendance par rapport à la photo du 1er du mois (état de fin du mois précédent) ; absente sans photo. */
+  tendance?: TendanceMetric }
+/** Écart à la photo précédente ; `favorable` : null quand l'indicateur n'a pas de sens favorable défini, ou s'il est stable. */
+export interface TendanceMetric { precedent: number; delta: number; sens: 'HAUSSE' | 'BAISSE' | 'STABLE'; favorable: boolean | null }
 /** Une section d'un pack comité : un groupe de métriques identifié. */
 export interface ComiteSection { id: string; metrics: ComiteMetric[] }
 /** Un point saillant d'un pack comité (signal d'alerte ou d'information chiffré). */
@@ -215,4 +219,53 @@ export function verdictSignauxActifs(s: VerdictSignaux): VerdictSignalKey[] {
     actionsEnRetard: (s.actionsEnRetard ?? 0) > 0,
   }
   return VERDICT_SIGNAUX_KEYS.filter((k) => actif[k])
+}
+
+// ─── Tendance ↑↓ (cadrage 2026-10-11, option a) ─────────────────────────────
+// Photo mensuelle des indicateurs (cron `comite-snapshots`, 1er du mois) ; le dossier compare les valeurs actuelles à la
+// photo du mois en cours, c'est-à-dire à l'état de fin du mois précédent.
+const numerique = (v: number | string): number | null => {
+  const n = typeof v === 'number' ? v : Number.parseFloat(String(v).replace(',', '.'))
+  return Number.isFinite(n) ? n : null
+}
+/** Valeurs numériques d'un ou plusieurs dossiers, indexées « section.indicateur » (les clés se répètent d'une section à l'autre). */
+export function valeursPack(packs: ComitePack[]): Record<string, number> {
+  const out: Record<string, number> = {}
+  for (const p of packs) for (const s of p.sections) for (const m of s.metrics) {
+    const n = numerique(m.value)
+    if (n !== null) out[`${s.id}.${m.key}`] = n
+  }
+  return out
+}
+// Sens favorable : hausse pour les taux et ce qui est « dans l'appétit » ; baisse pour les compteurs d'alerte.
+const HAUSSE_FAVORABLE = new Set(['avancement', 'tauxConformite', 'dansAppetit'])
+function sensFavorable(m: ComiteMetric): 'HAUSSE' | 'BAISSE' | null {
+  if (HAUSSE_FAVORABLE.has(m.key) || m.cibleMinimum) return 'HAUSSE'
+  if (m.alerte !== undefined) return 'BAISSE'
+  return null
+}
+/** Ajoute à chaque indicateur numérique sa tendance par rapport à la photo `precedent` (null → dossier inchangé). */
+export function ajouterTendances(pack: ComitePack, precedent: Record<string, number> | null): ComitePack {
+  if (!precedent) return pack
+  return {
+    ...pack,
+    sections: pack.sections.map(s => ({
+      ...s,
+      metrics: s.metrics.map(m => {
+        const actuel = numerique(m.value)
+        const avant = precedent[`${s.id}.${m.key}`]
+        if (actuel === null || typeof avant !== 'number') return m
+        const delta = Math.round((actuel - avant) * 100) / 100
+        const sens = delta > 0 ? 'HAUSSE' as const : delta < 0 ? 'BAISSE' as const : 'STABLE' as const
+        const bon = sensFavorable(m)
+        return { ...m, tendance: { precedent: avant, delta, sens, favorable: sens === 'STABLE' || !bon ? null : sens === bon } }
+      }),
+    })),
+  }
+}
+
+/** Texte d'une tendance pour le PDF (Helvetica n'a pas de flèches) : « +2 », « -2 », « = » suivi du suffixe de la langue. */
+export function texteTendance(t: TendanceMetric, suffixe: string): string {
+  const v = t.sens === 'STABLE' ? '=' : `${t.delta > 0 ? '+' : ''}${t.delta}`
+  return `${v} ${suffixe}`
 }

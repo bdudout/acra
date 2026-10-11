@@ -6,7 +6,8 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import { gatherGrcConsolide } from '@/lib/grc-consolide.server'
-import { buildComitePack, COMITE_TYPES, type ComiteType } from '@/lib/comite-pack'
+import { ajouterTendances, buildComitePack, COMITE_TYPES, type ComiteType } from '@/lib/comite-pack'
+import { photoDuMois } from '@/lib/comite-historique.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { loadPdfRuntime } from '@/lib/pdf-runtime'
 
@@ -36,7 +37,8 @@ export async function GET(req: NextRequest) {
 
   const now = new Date()
   const { consolide, modules } = await gatherGrcConsolide(orgId, cfg, now)
-  const pack = buildComitePack(type, consolide, modules)
+  // Tendance ↑↓ : écart à la photo du 1er du mois (état de fin du mois précédent), quand elle existe.
+  const pack = ajouterTendances(buildComitePack(type, consolide, modules), await photoDuMois(orgId, now))
 
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole: role, organizationId: orgId, ip: getClientIp(req),

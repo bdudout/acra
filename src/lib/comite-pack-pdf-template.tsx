@@ -7,7 +7,7 @@
  */
 
 import { Document, Page, Text, View, StyleSheet, renderToBuffer } from '@react-pdf/renderer'
-import { verdictGlobal, type ComitePack, type VerdictNiveau } from '@/lib/comite-pack'
+import { texteTendance, verdictGlobal, type ComitePack, type VerdictNiveau } from '@/lib/comite-pack'
 import { formatNumber } from '@/lib/format'
 import { HeatmapGrid } from '@/lib/pdf-heatmap'
 import { isNonEmptyText } from '@/lib/pdf-guards'
@@ -54,7 +54,7 @@ type Dict = Record<string, string>
 type Strings = {
   docTitle: string; comiteType: Dict; section: Dict; metric: Dict; highlight: Dict
   highlightsTitle: string; noAlert: string; generatedOn: string
-  verdictTitle: string; verdict: Record<VerdictNiveau, string>; verdictAlertes: string; cible: string; minimum: string
+  verdictTitle: string; verdict: Record<VerdictNiveau, string>; verdictAlertes: string; cible: string; minimum: string; vsMoisPrecedent: string
 }
 
 const COMMON_METRIC = {
@@ -66,7 +66,7 @@ const COMMON_METRIC = {
 
 const STRINGS: Record<string, Strings> = {
   fr: {
-    cible: 'cible', minimum: 'minimum',
+    cible: 'cible', minimum: 'minimum', vsMoisPrecedent: 'vs mois préc.',
     docTitle: 'Dossier de comité',
     comiteType: { RISQUES: 'Comité des risques', CONFORMITE: 'Comité de conformité', INCIDENTS: 'Comité incidents & sécurité' },
     section: { risques: 'Cartographie des risques', appetit: 'Appétit au risque', incidents: 'Incidents & pertes', controles: 'Contrôle permanent', audit: 'Audit interne', regulateur: 'Suivi régulateur', kri: 'Indicateurs clés (KRI)', dora: 'Résilience TIC (DORA)' },
@@ -76,7 +76,7 @@ const STRINGS: Record<string, Strings> = {
     verdictTitle: 'Niveau de risque global', verdict: { ELEVE: 'ÉLEVÉ', MODERE: 'MODÉRÉ', MAITRISE: 'MAÎTRISÉ' }, verdictAlertes: 'point(s) d\'alerte',
   },
   en: {
-    cible: 'target', minimum: 'minimum',
+    cible: 'target', minimum: 'minimum', vsMoisPrecedent: 'vs prev. month',
     docTitle: 'Committee pack',
     comiteType: { RISQUES: 'Risk committee', CONFORMITE: 'Compliance committee', INCIDENTS: 'Incidents & security committee' },
     section: { risques: 'Risk map', appetit: 'Risk appetite', incidents: 'Incidents & losses', controles: 'Permanent control', audit: 'Internal audit', regulateur: 'Regulator tracking', kri: 'Key risk indicators (KRI)', dora: 'ICT resilience (DORA)' },
@@ -86,7 +86,7 @@ const STRINGS: Record<string, Strings> = {
     verdictTitle: 'Overall risk level', verdict: { ELEVE: 'HIGH', MODERE: 'MODERATE', MAITRISE: 'UNDER CONTROL' }, verdictAlertes: 'alert(s)',
   },
   de: {
-    cible: 'Ziel', minimum: 'Minimum',
+    cible: 'Ziel', minimum: 'Minimum', vsMoisPrecedent: 'ggü. Vormonat',
     docTitle: 'Ausschussunterlage',
     comiteType: { RISQUES: 'Risikoausschuss', CONFORMITE: 'Compliance-Ausschuss', INCIDENTS: 'Vorfall- & Sicherheitsausschuss' },
     section: { risques: 'Risikokarte', appetit: 'Risikoappetit', incidents: 'Vorfälle & Verluste', controles: 'Permanente Kontrolle', audit: 'Interne Revision', regulateur: 'Aufsichtsverfolgung', kri: 'Schlüsselindikatoren (KRI)', dora: 'IKT-Resilienz (DORA)' },
@@ -96,7 +96,7 @@ const STRINGS: Record<string, Strings> = {
     verdictTitle: 'Gesamtrisikoniveau', verdict: { ELEVE: 'HOCH', MODERE: 'MITTEL', MAITRISE: 'BEHERRSCHT' }, verdictAlertes: 'Alarm(e)',
   },
   es: {
-    cible: 'objetivo', minimum: 'mínimo',
+    cible: 'objetivo', minimum: 'mínimo', vsMoisPrecedent: 'vs mes anterior',
     docTitle: 'Expediente de comité',
     comiteType: { RISQUES: 'Comité de riesgos', CONFORMITE: 'Comité de cumplimiento', INCIDENTS: 'Comité de incidentes y seguridad' },
     section: { risques: 'Mapa de riesgos', appetit: 'Apetito de riesgo', incidents: 'Incidentes y pérdidas', controles: 'Control permanente', audit: 'Auditoría interna', regulateur: 'Seguimiento regulador', kri: 'Indicadores clave (KRI)', dora: 'Resiliencia TIC (DORA)' },
@@ -106,7 +106,7 @@ const STRINGS: Record<string, Strings> = {
     verdictTitle: 'Nivel de riesgo global', verdict: { ELEVE: 'ALTO', MODERE: 'MODERADO', MAITRISE: 'CONTROLADO' }, verdictAlertes: 'alerta(s)',
   },
   it: {
-    cible: 'obiettivo', minimum: 'minimo',
+    cible: 'obiettivo', minimum: 'minimo', vsMoisPrecedent: 'vs mese prec.',
     docTitle: 'Fascicolo di comitato',
     comiteType: { RISQUES: 'Comitato rischi', CONFORMITE: 'Comitato conformità', INCIDENTS: 'Comitato incidenti e sicurezza' },
     section: { risques: 'Mappatura dei rischi', appetit: 'Propensione al rischio', incidents: 'Incidenti e perdite', controles: 'Controllo permanente', audit: 'Audit interno', regulateur: 'Monitoraggio regolatore', kri: 'Indicatori chiave (KRI)', dora: 'Resilienza TIC (DORA)' },
@@ -171,6 +171,7 @@ function ComitePackPDF({ pack, locale, orgNom, dateStr }: { pack: ComitePack; lo
                       {mt.key === 'perteNette' && typeof mt.value === 'number' ? `${formatNumber(mt.value, locale).replace(/[\u202f\u00a0]/g, ' ')} €` : String(mt.value)}
                     </Text>
                     {mt.cible ? <Text style={s.kpiCible}>{`${S.cible} ${mt.cible}${mt.cibleMinimum ? ` ${S.minimum}` : ''}`}</Text> : null}
+                    {mt.tendance ? <Text style={[s.kpiCible, { color: mt.tendance.favorable === true ? COLORS.ok : mt.tendance.favorable === false ? COLORS.danger : COLORS.muted }]}>{texteTendance(mt.tendance, S.vsMoisPrecedent)}</Text> : null}
                   </View>
                 </View>
               ))}

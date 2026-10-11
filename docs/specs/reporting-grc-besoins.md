@@ -455,3 +455,7 @@ organisation (tests IDOR), gel/rôles respectés, journal d'audit des exports,
 - **Confidentialité des incidents** : données sensibles (personnes, fraude) → accès par
   rôle, masquage dans les rapports sortants, pas d'envoi externe automatique.
 - **Volume** : chaque lot livré et démontrable seul (comme la trajectoire M0→M5).
+
+> **Tendance ↑↓ du dossier de comité (2026-10-11, option a)** : photo mensuelle automatique des indicateurs (cron
+> `comite-snapshots`, 1er du mois) ; le dossier affiche l'écart à la photo du mois en cours (état de fin du mois précédent),
+> en vert si favorable, rouge sinon. La tendance n'apparaît qu'après la première photo.
