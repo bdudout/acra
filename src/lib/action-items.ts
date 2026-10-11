@@ -19,6 +19,7 @@ import {
   summarizeActions,
 } from './risk-action'
 import { peutGererConformite, peutLireConformite, type UserRole } from './permissions'
+import { sansRubriquesVides } from './incident-gabarit'
 
 export const ACTION_SOURCES = ['MESURE', 'RISK_ACTION', 'CONFORMITE', 'AUDIT', 'CONTROLE', 'INCIDENT', 'PLAN_ACTION'] as const
 /** Source technique d'un plan d'action (modèle Prisma d'origine). */
@@ -208,7 +209,8 @@ export function normalizeIncident(row: IncidentRow, opt: LienOpt = {}): ActionIt
     row.statut === 'CLOTURE' ? 'FAIT' : row.statut === 'QUALIFIE' ? 'EN_COURS' : 'A_FAIRE'
   return {
     id: `INCIDENT:${row.id}`, source: 'INCIDENT', origine: 'incident', sourceId: row.id,
-    titre: row.intitule, description: str(row.description),
+    // Recette n° 34 : sans les rubriques vides du gabarit de déclaration (« À compléter : - … : »).
+    titre: row.intitule, description: sansRubriquesVides(str(row.description)),
     porteur: str(row.entite), entite: str(row.entite), entiteId: str(row.entiteId),
     echeance: toDate(row.echeance), statut, priorite: mapCriticitePriorite(row.impactEstime),
     lien: opt.lien ?? null, riskItemId: str(row.riskItemId),
