@@ -56,3 +56,21 @@ describe('sanitizePapiers', () => {
     expect(r[0].statut).toBe('BROUILLON')
   })
 })
+
+// Trame libre (cadrage 2026-10-11, option a) : un papier peut être rattaché à un constat de la mission et porter des
+// pièces de la bibliothèque documentaire (identifiants, ≤ 10, sans doublon) — validés côté serveur dans l'organisation.
+describe('papiers — constat et pièces rattachés', () => {
+  it('constat et pièces conservés ; liste bornée et dédoublonnée ; valeurs invalides écartées', () => {
+    const r = appliquerPapiers([], { action: 'AJOUTER', data: { titre: 'Test des accès', travaux: 'Échantillon de 25 comptes', constatId: 'c1', documentIds: ['d1', 'd1', 'd2', 7, ...Array.from({ length: 12 }, (_, i) => `x${i}`)] } }, ctx('a1'))
+    if (!r.ok) throw new Error(r.error)
+    expect(r.papiers[0].constatId).toBe('c1')
+    expect(r.papiers[0].documentIds).toEqual(['d1', 'd2', 'x0', 'x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7'])
+    const sans = appliquerPapiers([], { action: 'AJOUTER', data: { titre: 'Entretien', travaux: 'x', constatId: '', documentIds: 'd1' } }, ctx('a2'))
+    if (!sans.ok) throw new Error(sans.error)
+    expect(sans.papiers[0]).not.toHaveProperty('constatId')
+    expect(sans.papiers[0]).not.toHaveProperty('documentIds')
+  })
+  it('relu depuis la base (sanitizePapiers) : rattachements conservés', () => {
+    expect(sanitizePapiers([{ id: 'p1', type: 'TEST', titre: 'T', travaux: 'x', statut: 'BROUILLON', preparePar: 'u', prepareLe: '2026-10-11', constatId: 'c1', documentIds: ['d1'] }])[0]).toMatchObject({ constatId: 'c1', documentIds: ['d1'] })
+  })
+})

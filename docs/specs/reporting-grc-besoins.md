@@ -22,7 +22,8 @@
 > **R-INC-3 livré (2026-10-09)** : fiche NIS2 par phase (art. 23 § 4 a), b), d) i–iv, libellés officiels EUR-Lex ×5) dans
 > l'écran de déclaration et les exports JSON / Excel, préremplie depuis l'incident ; DORA (ITS 2025/302) et RGPD (art. 33 § 3)
 > l'étaient déjà ; les régimes interne / personnalisés gardent l'export générique.
-> **Restent** : feuilles de travail d'audit ; vocabulaire
+> **Restent** : ~~feuilles de travail d'audit~~ (existaient : papiers de travail du lot L4 ; ✅ 2026-10-11, trame libre retenue :
+> rattachement d'un papier à un constat et aux pièces de la bibliothèque documentaire) ; vocabulaire
 > personnalisé dans les pages rendues côté serveur, exports et PDF (✅ levé le 2026-10-11 : les seuls rendus serveur concernés — pages
 > Projets et Dérogations — l'appliquent via `getServerTOrg` ; l'export des rapports l'appliquait déjà) ; champs personnalisés sur les tiers (les constats en ont).
 > Les blocs ci-dessous sont l'historique d'avancement (2026-09-29).
@@ -454,3 +455,7 @@ organisation (tests IDOR), gel/rôles respectés, journal d'audit des exports,
 - **Confidentialité des incidents** : données sensibles (personnes, fraude) → accès par
   rôle, masquage dans les rapports sortants, pas d'envoi externe automatique.
 - **Volume** : chaque lot livré et démontrable seul (comme la trajectoire M0→M5).
+
+> **Tendance ↑↓ du dossier de comité (2026-10-11, option a)** : photo mensuelle automatique des indicateurs (cron
+> `comite-snapshots`, 1er du mois) ; le dossier affiche l'écart à la photo du mois en cours (état de fin du mois précédent),
+> en vert si favorable, rouge sinon. La tendance n'apparaît qu'après la première photo.

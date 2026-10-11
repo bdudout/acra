@@ -41,4 +41,21 @@ describe('PapiersTravailPanel', () => {
     expect(screen.queryByRole('button', { name: 'Nouveau papier' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Soumettre à revue' })).toBeNull()
   })
+  it('trame libre : constat étayé et pièces de la bibliothèque — saisis, enregistrés, affichés avec lien de téléchargement', async () => {
+    const options = { constats: [{ id: 'c1', intitule: 'Revues d’accès non tracées' }], documents: [{ id: 'd1', titre: 'Extraction des comptes', type: 'PREUVE' }] }
+    fetchMock.mockImplementation(async (_u: string, init?: RequestInit) => (init?.method === 'POST'
+      ? { ok: true, json: async () => ({ papiers: [] }) }
+      : { ok: true, json: async () => ({ papiers: [papier({ constatId: 'c1', documentIds: ['d1'] })], utilisateurs: { a1: 'Alice' }, moi: 'a1', options }) }))
+    render(<PapiersTravailPanel missionId="m1" />)
+    expect(await screen.findByText(/Constat étayé : Revues d’accès non tracées/)).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Extraction des comptes' })).toHaveAttribute('href', '/api/documents/d1/download')
+    fireEvent.click(screen.getByRole('button', { name: 'Nouveau papier' }))
+    fireEvent.change(screen.getByLabelText('Titre'), { target: { value: 'Test des sauvegardes' } })
+    fireEvent.change(screen.getByLabelText('Constat étayé'), { target: { value: 'c1' } })
+    fireEvent.click(screen.getByLabelText('Extraction des comptes'))
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    await waitFor(() => expect(fetchMock.mock.calls.some(c => c[1]?.method === 'POST')).toBe(true))
+    const body = JSON.parse(fetchMock.mock.calls.find(c => c[1]?.method === 'POST')![1].body)
+    expect(body.data).toMatchObject({ titre: 'Test des sauvegardes', constatId: 'c1', documentIds: ['d1'] })
+  })
 })

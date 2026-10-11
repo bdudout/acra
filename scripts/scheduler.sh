@@ -49,9 +49,9 @@ hit() {
 }
 
 echo "[scheduler] demarre — tick ${TICK}s, cible ${APP_URL}"
-echo "[scheduler] planning : webhooks-dispatch chaque tick · alertes-dora chaque heure · snapshots 02:00 · relances 06:00 · tableau-bord-mensuel 1er 08:00 · appetence-snapshots 1er 03:00"
+echo "[scheduler] planning : webhooks-dispatch chaque tick · alertes-dora chaque heure · snapshots 02:00 · relances 06:00 · tableau-bord-mensuel 1er 08:00 · appetence-snapshots 1er 03:00 · comite-snapshots 1er 03:00"
 
-last_snap=""; last_clean=""; last_rap=""; last_dig=""; last_rel=""; last_dora=""; last_app=""
+last_snap=""; last_clean=""; last_rap=""; last_dig=""; last_rel=""; last_dora=""; last_app=""; last_com=""
 while true; do
   day="$(date +%Y%m%d)"; month="$(date +%Y%m)"; hour="$(date +%H)"; dom="$(date +%d)"
 
@@ -67,6 +67,8 @@ while true; do
   [ "$hour" = "08" ] && [ "$dom" = "01" ] && [ "$last_dig" != "$month" ] && { hit tableau-bord-mensuel; last_dig="$month"; }
   # Instantané mensuel d'appétence (RAS / RAD) : le 1er du mois à 03:00 (idempotent, n'écrase jamais).
   [ "$hour" = "03" ] && [ "$dom" = "01" ] && [ "$last_app" != "$month" ] && { hit appetence-snapshots; last_app="$month"; }
+  # Photo mensuelle des indicateurs du dossier de comité (tendance ↑↓) : le 1er du mois à 03:00 (idempotent, n'écrase jamais).
+  [ "$hour" = "03" ] && [ "$dom" = "01" ] && [ "$last_com" != "$month" ] && { hit comite-snapshots; last_com="$month"; }
 
   sleep "$TICK"
 done

@@ -8,7 +8,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import { TYPES_PAPIER, type Papier } from '@/lib/papiers-travail'
 
 const inp = 'px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs w-full'
-const VIDE = { type: 'TEST', titre: '', objectif: '', travaux: '', conclusion: '', reference: '' }
+const VIDE = { type: 'TEST', titre: '', objectif: '', travaux: '', conclusion: '', reference: '', constatId: '', documentIds: [] as string[] }
 const BADGE: Record<string, string> = {
   BROUILLON: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200',
   SOUMIS: 'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300',
@@ -25,10 +25,12 @@ export default function PapiersTravailPanel({ missionId, readOnly = false }: { m
   const [editId, setEditId] = useState<string | null>(null)
   const [commentaire, setCommentaire] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
+  // Rattachements (trame libre) : constats de la mission, pièces de la bibliothèque documentaire.
+  const [options, setOptions] = useState<{ constats: { id: string; intitule: string }[]; documents: { id: string; titre: string; type: string }[] }>({ constats: [], documents: [] })
   const err = (c: string) => (l.papierErrors as Record<string, string>)[c] ?? c
 
   const load = useCallback(() => {
-    fetch(`/api/audit/missions/${missionId}/papiers`).then(r => (r.ok ? r.json() : null)).then(d => { if (d) { setPapiers(d.papiers); setNoms(d.utilisateurs ?? {}); setMoi(d.moi ?? '') } }).catch(() => setPapiers(null))
+    fetch(`/api/audit/missions/${missionId}/papiers`).then(r => (r.ok ? r.json() : null)).then(d => { if (d) { setPapiers(d.papiers); setNoms(d.utilisateurs ?? {}); setMoi(d.moi ?? ''); setOptions(d.options ?? { constats: [], documents: [] }) } }).catch(() => setPapiers(null))
   }, [missionId])
   useEffect(() => { load() }, [load])
 
@@ -60,6 +62,25 @@ export default function PapiersTravailPanel({ missionId, readOnly = false }: { m
           <textarea aria-label={l.papierTravaux} placeholder={l.papierTravaux} className={inp} rows={4} maxLength={10000} value={form.travaux} onChange={e => setForm({ ...form, travaux: e.target.value })} />
           <textarea aria-label={l.papierConclusion} placeholder={l.papierConclusion} className={inp} rows={2} maxLength={4000} value={form.conclusion} onChange={e => setForm({ ...form, conclusion: e.target.value })} />
           <input aria-label={l.papierReference} placeholder={l.papierReference} className={inp} maxLength={300} value={form.reference} onChange={e => setForm({ ...form, reference: e.target.value })} />
+          {options.constats.length > 0 && (
+            <select aria-label={l.papierConstat} className={inp} value={form.constatId} onChange={e => setForm({ ...form, constatId: e.target.value })}>
+              <option value="">{l.papierConstatAucun}</option>
+              {options.constats.map(c => <option key={c.id} value={c.id}>{c.intitule}</option>)}
+            </select>
+          )}
+          {options.documents.length > 0 && (
+            <fieldset>
+              <legend className="text-gray-600 dark:text-gray-300">{l.papierPieces}</legend>
+              <div className="mt-1 max-h-28 space-y-0.5 overflow-y-auto">
+                {options.documents.map(d => (
+                  <label key={d.id} className="flex items-center gap-1.5 text-gray-700 dark:text-gray-200">
+                    <input type="checkbox" aria-label={d.titre} checked={form.documentIds.includes(d.id)} disabled={!form.documentIds.includes(d.id) && form.documentIds.length >= 10}
+                      onChange={() => setForm({ ...form, documentIds: form.documentIds.includes(d.id) ? form.documentIds.filter(x => x !== d.id) : [...form.documentIds, d.id] })} />{d.titre}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
           <div className="flex gap-3">
             <button type="button" className="btn-primary text-xs" onClick={() => agir(editId ? { action: 'MODIFIER', id: editId, data: form } : { action: 'AJOUTER', data: form })}>{t.auditInterne.save}</button>
             <button type="button" className={btn} onClick={() => { setForm(null); setEditId(null) }}>{l.papierAnnuler}</button>
@@ -82,11 +103,19 @@ export default function PapiersTravailPanel({ missionId, readOnly = false }: { m
               {p.travaux && <p className="mt-1 whitespace-pre-line text-gray-700 dark:text-gray-200">{p.travaux}</p>}
               {p.conclusion && <p className="mt-1 font-medium text-gray-700 dark:text-gray-200">{p.conclusion}</p>}
               {p.reference && <p className="mt-1 text-gray-400">{l.papierReference} : {p.reference}</p>}
+              {p.constatId && <p className="mt-1 text-gray-500">{l.papierConstat} : {options.constats.find(c => c.id === p.constatId)?.intitule ?? '—'}</p>}
+              {p.documentIds && p.documentIds.length > 0 && (
+                <p className="mt-1 flex flex-wrap gap-x-2 text-gray-500">{l.papierPieces} :
+                  {p.documentIds.map(id => { const d = options.documents.find(x => x.id === id); return d
+                    ? <a key={id} href={`/api/documents/${id}/download`} className="text-ebios-700 underline dark:text-ebios-300">{d.titre}</a>
+                    : <span key={id} className="text-gray-400">{l.papierPieceIndisponible}</span> })}
+                </p>
+              )}
               {p.revueCommentaire && <p className="mt-1 italic text-amber-700 dark:text-amber-300">{p.revueCommentaire}</p>}
               {!readOnly && (
                 <div className="mt-1.5 flex flex-wrap items-center gap-3">
                   {p.statut === 'BROUILLON' && mien && <>
-                    <button type="button" className={btn} onClick={() => { setEditId(p.id); setForm({ type: p.type, titre: p.titre, objectif: p.objectif ?? '', travaux: p.travaux, conclusion: p.conclusion ?? '', reference: p.reference ?? '' }) }}>{l.papierModifier}</button>
+                    <button type="button" className={btn} onClick={() => { setEditId(p.id); setForm({ type: p.type, titre: p.titre, objectif: p.objectif ?? '', travaux: p.travaux, conclusion: p.conclusion ?? '', reference: p.reference ?? '', constatId: p.constatId ?? '', documentIds: p.documentIds ?? [] }) }}>{l.papierModifier}</button>
                     <button type="button" className={btn} onClick={() => agir({ action: 'SOUMETTRE', id: p.id })}>{l.papierSoumettre}</button>
                     <button type="button" className="text-xs text-red-600 hover:underline" onClick={() => { if (confirm(`${l.papierSupprimer} ?`)) agir({ action: 'SUPPRIMER', id: p.id }) }}>{l.papierSupprimer}</button>
                   </>}
