@@ -11,7 +11,7 @@ import { FlaskConical, Paperclip, X } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { useSearchParams } from 'next/navigation'
-import { CONTROLE_NIVEAUX, PERIODICITES, RESULTATS, deduireResultatChecklist, filtrerControles, type ControleFiltre } from '@/lib/controle'
+import { CONTROLE_NIVEAUX, PERIODICITES, RESULTATS, deduireResultatChecklist, filtrerControles, resumeEfficaciteProvisoire, type ControleFiltre } from '@/lib/controle'
 import ControleCataloguePanel from '@/components/ControleCataloguePanel'
 import { todayInputDate, suggestionsFromValues, defaultResponsable } from '@/lib/form-defaults'
 import Link from 'next/link'
@@ -27,6 +27,9 @@ interface Efficacite {
   tauxConformite: number | null
   efficacite: 'FORTE' | 'MOYENNE' | 'FAIBLE' | null
   vraisemblanceSuggeree: number | null
+  /** Recette n° 36 : établie à partir de 3 exécutions évaluées ; en deçà, résumé provisoire. */
+  etablie?: boolean
+  echantillon?: { testes: number; anomalies: number } | null
 }
 interface Preuve { nom: string; mime: string; taille: number; dataUrl: string }
 type ChecklistStatut = 'OK' | 'KO' | 'NA'
@@ -479,12 +482,17 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
                       <span className="block text-[10px] text-gray-400 mt-0.5">{jour(x.prochaineEcheance)}</span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      {x.efficacite.efficacite ? (
+                      {x.efficacite.efficacite && x.efficacite.etablie !== false ? (
                         <button onClick={() => setExpandedId(id => id === x.id ? null : x.id)} className="inline-flex items-center gap-1">
                           <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${EFF_BADGE[x.efficacite.efficacite]}`}>
                             {x.efficacite.tauxConformite}% · {lbl(c.efficacites, x.efficacite.efficacite)}
                           </span>
                           <span className="text-gray-400 text-xs">{expandedId === x.id ? '▾' : '▸'}</span>
+                        </button>
+                      ) : x.efficacite.evaluees > 0 ? (
+                        // Recette n° 36 : moins de 3 exécutions → pas de taux ni de niveau, un résumé factuel.
+                        <button onClick={() => setExpandedId(id => id === x.id ? null : x.id)} className="inline-flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300" title={c.efficaciteProvisoireAide}>
+                          {resumeEfficaciteProvisoire(x.efficacite, { executions: c.efficaciteProvisoire, echantillon: c.efficaciteEchantillon })}<span className="text-xs text-gray-400">{expandedId === x.id ? '▾' : '▸'}</span>
                         </button>
                       ) : (
                         // Sans exécution, le détail reste ouvrable : la conception s'évalue avant toute exécution.
@@ -514,7 +522,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
                             .replace('{e}', String(x.efficacite.evaluees))
                             .replace('{c}', String(x.efficacite.conformes))
                             .replace('{a}', String(x.efficacite.anomalies))}
-                          {x.efficacite.vraisemblanceSuggeree != null && x.riskItemIntitule && (
+                          {x.efficacite.vraisemblanceSuggeree != null && x.efficacite.etablie !== false && x.riskItemIntitule && (
                             <span className="ml-1 text-ebios-600">
                               · {c.suggestion.replace('{v}', String(x.efficacite.vraisemblanceSuggeree))}
                             </span>

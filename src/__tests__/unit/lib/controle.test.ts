@@ -244,3 +244,24 @@ describe('constantes et libellés', () => {
     expect(libelleActionAnomalie('Rapprochement bancaire')).toBe("Traiter l'anomalie : Rapprochement bancaire")
   })
 })
+
+// Recette n° 36 : moins de 3 exécutions évaluées → efficacité non établie (pas de « 0 % · Faible » ni de « Défaillant »
+// sur une seule exécution) ; on affiche le nombre d'exécutions, d'anomalies et l'échantillon testé.
+import { efficaciteEtablie, echantillonTeste, resumeEfficaciteProvisoire } from '@/lib/controle'
+describe('efficacité établie et échantillon testé', () => {
+  it('établie à partir de 3 exécutions évaluées (NON_APPLICABLE exclues)', () => {
+    const ex = (resultat: string) => ({ resultat, dateRealisation: '2026-10-01' })
+    expect(efficaciteEtablie(evaluerEfficacite([ex('ANOMALIE')]))).toBe(false)
+    expect(efficaciteEtablie(evaluerEfficacite([ex('ANOMALIE'), ex('CONFORME'), ex('NON_APPLICABLE')]))).toBe(false)
+    expect(efficaciteEtablie(evaluerEfficacite([ex('ANOMALIE'), ex('CONFORME'), ex('CONFORME')]))).toBe(true)
+  })
+  it('échantillon : somme des éléments testés et des anomalies trouvées ; null sans échantillon saisi', () => {
+    expect(echantillonTeste([{ tailleTestee: 25, anomaliesTrouvees: 1 }, { tailleTestee: 10, anomaliesTrouvees: null }])).toEqual({ testes: 35, anomalies: 1 })
+    expect(echantillonTeste([{ tailleTestee: null, anomaliesTrouvees: null }])).toBeNull()
+  })
+  it('résumé provisoire : « 1 exécution(s) · 1 anomalie(s) (1/25 testés) »', () => {
+    const g = { executions: '{e} exécution(s) · {a} anomalie(s)', echantillon: '({a}/{t} testés)' }
+    expect(resumeEfficaciteProvisoire({ evaluees: 1, anomalies: 1, echantillon: { testes: 25, anomalies: 1 } }, g)).toBe('1 exécution(s) · 1 anomalie(s) (1/25 testés)')
+    expect(resumeEfficaciteProvisoire({ evaluees: 2, anomalies: 0, echantillon: null }, g)).toBe('2 exécution(s) · 0 anomalie(s)')
+  })
+})
