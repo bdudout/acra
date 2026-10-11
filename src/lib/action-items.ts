@@ -190,7 +190,8 @@ export function normalizeControleAnomalie(row: ControleAnomalieRow, opt: LienOpt
     id: `CONTROLE:${row.id}`, source: 'CONTROLE', origine: 'controle', sourceId: row.id,
     titre: `${row.controleNom} — anomalie`, description: str(row.constat),
     porteur: str(row.responsable), entite: str(row.entite), entiteId: str(row.entiteId),
-    echeance: toDate(row.dateRealisation), statut: 'A_FAIRE', priorite: 'MAJEUR',
+    // Recette n° 31 : la date d'exécution n'est pas une échéance — l'action naîtrait « En retard ». Sans échéance.
+    echeance: null, statut: 'A_FAIRE', priorite: 'MAJEUR',
     lien: opt.lien ?? null, riskItemId: null,
   }
 }
