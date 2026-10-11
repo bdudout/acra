@@ -11,6 +11,8 @@ test('cycle cyber : sauvegarder 5 ateliers, approuver, accepter, geler et export
   const save = async (num: number, data: unknown) => {
     const response = await page.request.put(`${url}/workshop/${num}`, { data })
     expect(response.status(), await response.text()).toBe(200)
+    // Recette n° 14 : la sauvegarde n'avance plus l'analyse — comme dans l'interface, « Passer à l'atelier suivant ».
+    if (num < 5) expect((await page.request.post(`${url}/workshop/${num}`)).status()).toBe(200)
   }
   await save(1, { perimetre: 'Facturation fictive', valeursMetier: [{ id: 'vm', nom: 'Facturation' }], socleSecurite: [{ ref: '5.1', statut: 'partiel', commentaire: 'Politique à compléter' }] })
   await save(2, { sourcesRisque: [{ nom: 'Cybercriminel', categorie: 'CYBERCRIMINEL', objectifVise: 'Extorsion', retenu: true }] })
