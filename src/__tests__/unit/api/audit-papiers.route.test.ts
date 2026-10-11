@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const m = vi.hoisted(() => ({ session: vi.fn(), scope: vi.fn(), config: vi.fn(), find: vi.fn(), updateMany: vi.fn(), users: vi.fn(), audit: vi.fn() }))
+const m = vi.hoisted(() => ({ session: vi.fn(), scope: vi.fn(), config: vi.fn(), find: vi.fn(), updateMany: vi.fn(), users: vi.fn(), audit: vi.fn(), constats: vi.fn(), constat: vi.fn(), docs: vi.fn() }))
 vi.mock('next-auth', () => ({ getServerSession: m.session }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
-vi.mock('@/lib/prisma', () => ({ prisma: { auditMission: { findFirst: m.find, updateMany: m.updateMany }, user: { findMany: m.users } } }))
+vi.mock('@/lib/prisma', () => ({ prisma: { auditMission: { findFirst: m.find, updateMany: m.updateMany }, user: { findMany: m.users }, auditConstat: { findMany: m.constats, findFirst: m.constat }, document: { findMany: m.docs } } }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.config }))
 vi.mock('@/lib/logger', () => ({ auditLog: m.audit, getClientIp: () => '127.0.0.1' }))
@@ -22,6 +22,9 @@ beforeEach(() => {
   m.find.mockResolvedValue({ id: 'm1', organizationId: 'o1', papiers: [], updatedAt: T })
   m.updateMany.mockResolvedValue({ count: 1 })
   m.users.mockResolvedValue([{ id: 'a1', name: 'Alice', email: 'a@x.fr' }])
+  m.constats.mockResolvedValue([{ id: 'c1', intitule: 'Revues d’accès non tracées' }])
+  m.constat.mockResolvedValue(null)
+  m.docs.mockResolvedValue([])
 })
 
 describe('/api/audit/missions/[id]/papiers', () => {
@@ -49,5 +52,20 @@ describe('/api/audit/missions/[id]/papiers', () => {
     m.find.mockResolvedValue({ id: 'm1', organizationId: 'o1', updatedAt: T, papiers: [{ id: 'p1', type: 'TEST', titre: 'T', travaux: 'x', statut: 'BROUILLON', preparePar: 'a1', prepareLe: T.toISOString() }] })
     const j = await (await GET(new NextRequest('http://x'), params)).json()
     expect(j).toMatchObject({ moi: 'a1', utilisateurs: { a1: 'Alice' }, papiers: [{ id: 'p1' }] })
+  })
+  it('trame libre : options (constats de la mission, pièces si Conformité actif) ; rattachements hors mission / organisation écartés', async () => {
+    m.config.mockResolvedValue({ auditInterneActive: true, conformiteActive: true })
+    m.docs.mockResolvedValue([{ id: 'd1', titre: 'Extraction des comptes', type: 'PREUVE' }])
+    const g = await (await GET(new NextRequest('http://x'), params)).json()
+    expect(g.options).toEqual({ constats: [{ id: 'c1', intitule: 'Revues d’accès non tracées' }], documents: [{ id: 'd1', titre: 'Extraction des comptes', type: 'PREUVE' }] })
+    expect(m.docs.mock.calls[0][0].where).toEqual({ organizationId: 'o1', analyseId: null })
+    m.constat.mockImplementation(async (a: { where: { id: string } }) => (a.where.id === 'c1' ? { id: 'c1' } : null))
+    m.docs.mockResolvedValue([{ id: 'd1' }])
+    await POST(post({ action: 'AJOUTER', data: { titre: 'Test', travaux: 'x', constatId: 'cAutre', documentIds: ['d1', 'dAutre'] } }), params)
+    const papier = m.updateMany.mock.calls[0][0].data.papiers[0]
+    expect(papier).not.toHaveProperty('constatId')
+    expect(papier.documentIds).toEqual(['d1'])
+    await POST(post({ action: 'AJOUTER', data: { titre: 'Test 2', travaux: 'x', constatId: 'c1' } }), params)
+    expect(m.updateMany.mock.calls[1][0].data.papiers.at(-1).constatId).toBe('c1')
   })
 })

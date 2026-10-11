@@ -43,7 +43,14 @@ export async function GET(_req: NextRequest, { params }: Params): Promise<NextRe
   const c = await charger((await params).id)
   if ('error' in c) return c.error as NextResponse
   const papiers = sanitizePapiers(c.mission.papiers)
-  return NextResponse.json({ papiers, utilisateurs: await noms(papiers.flatMap(p => [p.preparePar, ...(p.revuePar ? [p.revuePar] : [])])), moi: c.userId })
+  // Rattachements possibles (trame libre) : constats de la mission, pièces de la bibliothèque documentaire (module Conformité).
+  const [constats, documents] = await Promise.all([
+    prisma.auditConstat.findMany({ where: { missionId: c.mission.id }, select: { id: true, intitule: true }, orderBy: { createdAt: 'asc' } }),
+    (await getOrgConfig(c.mission.organizationId)).conformiteActive
+      ? prisma.document.findMany({ where: { organizationId: c.mission.organizationId, analyseId: null }, select: { id: true, titre: true, type: true }, orderBy: { titre: 'asc' }, take: 500 })
+      : [],
+  ])
+  return NextResponse.json({ papiers, utilisateurs: await noms(papiers.flatMap(p => [p.preparePar, ...(p.revuePar ? [p.revuePar] : [])])), moi: c.userId, options: { constats, documents } })
 }
 
 // POST /api/audit/missions/[id]/papiers — { action: AJOUTER | MODIFIER | SUPPRIMER | SOUMETTRE | REVOIR | RENVOYER, … }
@@ -54,6 +61,16 @@ export async function POST(req: NextRequest, { params }: Params): Promise<NextRe
   const body = await req.json().catch(() => ({}))
   if (!ACTIONS.includes(body.action)) return NextResponse.json({ error: 'action_invalide' }, { status: 400 })
 
+  // Rattachements limités à la mission (constat) et à l'organisation (pièces) : tout autre identifiant est écarté.
+  if ((body.action === 'AJOUTER' || body.action === 'MODIFIER') && body.data && typeof body.data === 'object') {
+    const d = body.data as { constatId?: unknown; documentIds?: unknown }
+    if (typeof d.constatId === 'string' && d.constatId && !(await prisma.auditConstat.findFirst({ where: { id: d.constatId, missionId: c.mission.id }, select: { id: true } }))) d.constatId = undefined
+    if (Array.isArray(d.documentIds) && d.documentIds.length) {
+      const ids = d.documentIds.filter((x): x is string => typeof x === 'string').slice(0, 10)
+      const ok = new Set((await prisma.document.findMany({ where: { id: { in: ids }, organizationId: c.mission.organizationId, analyseId: null }, select: { id: true } })).map(x => x.id))
+      d.documentIds = ids.filter(x => ok.has(x))
+    }
+  }
   const r = appliquerPapiers(sanitizePapiers(c.mission.papiers), body as CommandePapier, { acteur: c.userId, now: new Date(), newId: () => randomUUID() })
   if (!r.ok) return NextResponse.json({ error: r.error }, { status: 400 })
   // Écriture optimiste : si la mission a changé entre la lecture et l'écriture, on refuse (409).

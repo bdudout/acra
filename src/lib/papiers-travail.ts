@@ -13,10 +13,14 @@ export type StatutPapier = (typeof STATUTS_PAPIER)[number]
 
 export interface Papier {
   id: string; type: TypePapier; titre: string; objectif?: string; travaux: string; conclusion?: string; reference?: string
+  /** Constat de la mission que le papier étaye (trame libre, cadrage 2026-10-11). */
+  constatId?: string
+  /** Pièces de la bibliothèque documentaire (identifiants, ≤ 10) — appartenance à l'organisation vérifiée par la route. */
+  documentIds?: string[]
   statut: StatutPapier; preparePar: string; prepareLe: string
   revuePar?: string; revueLe?: string; revueCommentaire?: string
 }
-export type PapierDonnees = Pick<Papier, 'type' | 'titre' | 'objectif' | 'travaux' | 'conclusion' | 'reference'>
+export type PapierDonnees = Pick<Papier, 'type' | 'titre' | 'objectif' | 'travaux' | 'conclusion' | 'reference' | 'constatId' | 'documentIds'>
 
 export type CommandePapier =
   | { action: 'AJOUTER'; data: unknown }
@@ -36,7 +40,11 @@ function cleanDonnees(input: unknown): PapierDonnees | null {
   const titre = txt(o.titre, 200)
   if (!titre) return null
   const type = (TYPES_PAPIER as readonly unknown[]).includes(o.type) ? (o.type as TypePapier) : 'AUTRE'
-  return { type, titre, travaux: txt(o.travaux, 10000) ?? '', ...(txt(o.objectif, 1000) ? { objectif: txt(o.objectif, 1000) } : {}), ...(txt(o.conclusion, 4000) ? { conclusion: txt(o.conclusion, 4000) } : {}), ...(txt(o.reference, 300) ? { reference: txt(o.reference, 300) } : {}) }
+  const documentIds = Array.isArray(o.documentIds) ? [...new Set(o.documentIds.filter((x): x is string => typeof x === 'string' && x.trim() !== '').map(x => x.trim().slice(0, 64)))].slice(0, 10) : []
+  return {
+    type, titre, travaux: txt(o.travaux, 10000) ?? '', ...(txt(o.objectif, 1000) ? { objectif: txt(o.objectif, 1000) } : {}), ...(txt(o.conclusion, 4000) ? { conclusion: txt(o.conclusion, 4000) } : {}), ...(txt(o.reference, 300) ? { reference: txt(o.reference, 300) } : {}),
+    ...(txt(o.constatId, 64) ? { constatId: txt(o.constatId, 64) } : {}), ...(documentIds.length ? { documentIds } : {}),
+  }
 }
 
 /** Lecture défensive de la colonne JSON. */
@@ -76,7 +84,7 @@ export function appliquerPapiers(papiers: Papier[], cmd: CommandePapier, ctx: { 
       if (!editable) return { ok: false, error: 'modification_interdite' }
       const d = cleanDonnees(cmd.data)
       if (!d) return { ok: false, error: 'titre_requis' }
-      const { objectif: _o, conclusion: _c, reference: _r, ...rest } = p
+      const { objectif: _o, conclusion: _c, reference: _r, constatId: _k, documentIds: _d, ...rest } = p
       return remplacer({ ...rest, ...d })
     }
     case 'SUPPRIMER':
