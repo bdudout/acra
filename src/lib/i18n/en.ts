@@ -2976,6 +2976,8 @@ export const en: Translations = {
     empty: 'No indicator defined.',
     valeurPlaceholder: 'Value',
     commentairePlaceholder: 'Comment (optional)',
+    suggestionIncidents: '{n} incident(s) in this category since {date}',
+    suggestionAConfirmer: 'prefilled, check before saving',
     addMesure: 'Record',
     aucuneMesure: 'No measurement.',
     clearFilter: 'Show all',

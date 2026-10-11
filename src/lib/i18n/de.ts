@@ -2975,6 +2975,8 @@ export const de: Translations = {
     empty: 'Kein Indikator definiert.',
     valeurPlaceholder: 'Wert',
     commentairePlaceholder: 'Kommentar (optional)',
+    suggestionIncidents: '{n} Vorfall/Vorfälle dieser Kategorie seit dem {date}',
+    suggestionAConfirmer: 'vorausgefüllt, vor dem Speichern prüfen',
     addMesure: 'Erfassen',
     aucuneMesure: 'Keine Messung.',
     clearFilter: 'Alle anzeigen',

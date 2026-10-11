@@ -20,6 +20,8 @@ interface KriRow {
   sens: 'HAUSSE' | 'BAISSE'; seuilAlerte: number | null; seuilCritique: number | null; frequence: string
   responsable: string | null; taxonomieCode: string | null; riskItemId: string | null; riskIntitule: string | null; actif: boolean
   derniereValeur: number | null; derniereMesureLe: string | null; statut: KriStatut; tendance: KriTendance
+  /** Recette n° 35 : incidents de la catégorie du KRI depuis le début de la période (suggestion à confirmer). */
+  suggestionIncidents?: { nombre: number; depuis: string } | null
 }
 interface KriSynthese { total: number; normal: number; alerte: number; critique: number; inconnu: number; enAlerte: number }
 interface Mesure { id: string; valeur: number; dateMesure: string; commentaire: string | null }
@@ -70,6 +72,7 @@ export default function KriManager({ canDefine, canMeasure }: { canDefine: boole
   useEffect(() => { reload() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fmt = (n: number | null) => n == null ? '—' : new Intl.NumberFormat(locale).format(n)
+  const suggestionTexte = (sg: { nombre: number; depuis: string }) => k.suggestionIncidents.replace('{n}', String(sg.nombre)).replace('{date}', new Date(sg.depuis).toLocaleDateString(locale, { timeZone: 'UTC' }))
   const errMsg = (code: string | undefined) => (code && (k.errors as Record<string, string>)[code]) || k.errors.erreur
 
   function openCreate() { setEditing(null); setForm({ ...emptyForm }); setShowForm(true); setErr(null) }
@@ -105,7 +108,10 @@ export default function KriManager({ canDefine, canMeasure }: { canDefine: boole
 
   async function toggleExpand(id: string) {
     if (expanded === id) { setExpanded(null); return }
-    setExpanded(id); setMesureForm({ valeur: '', commentaire: '' }); setErr(null)
+    // Recette n° 35 : mesure pré-remplie avec le nombre d'incidents de la catégorie — enregistrée seulement sur confirmation.
+    const sug = data?.kris.find(x => x.id === id)?.suggestionIncidents
+    setExpanded(id); setErr(null)
+    setMesureForm(sug ? { valeur: String(sug.nombre), commentaire: suggestionTexte(sug) } : { valeur: '', commentaire: '' })
     const res = await fetch(`/api/kri/${id}`)
     if (res.ok) { const d = await res.json(); setMesures(m => ({ ...m, [id]: d.mesures ?? [] })) }
   }
@@ -214,6 +220,9 @@ export default function KriManager({ canDefine, canMeasure }: { canDefine: boole
                     {row.responsable ? ` · ${row.responsable}` : ''}
                     {(row.seuilAlerte == null || row.seuilCritique == null) && <span role="status" className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100">{k.thresholdsTbd}</span>}
                   </p>
+                  {canMeasure && row.suggestionIncidents && (
+                    <p role="status" className="mb-1 text-xs text-sky-800 dark:text-sky-200">{suggestionTexte(row.suggestionIncidents)} — {k.suggestionAConfirmer}</p>
+                  )}
                   {canMeasure && (
                     <div className="flex flex-wrap items-center gap-2 mb-3">
                       <input type="number" className="input w-28" placeholder={k.valeurPlaceholder} value={mesureForm.valeur} onChange={e => setMesureForm(m => ({ ...m, valeur: e.target.value }))} />

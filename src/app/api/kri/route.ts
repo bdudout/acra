@@ -8,6 +8,7 @@ import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
 import {
   validateKriInput, cleanKriInput, evaluerKri, tendanceKri, synthetiserKri,
   type KriSens, type KriStatut,
+  debutPeriodeKri, suggestionIncidentsKri,
 } from '@/lib/kri'
 import { auditLog, getClientIp } from '@/lib/logger'
 
@@ -44,6 +45,16 @@ export async function GET() {
     },
   })
 
+  // Recette n° 35 : incidents de l'année (catégories des KRI) pour suggérer la mesure de la période.
+  const codes = [...new Set(rows.map(r => r.taxonomieCode).filter((c): c is string => !!c))]
+  const now = new Date()
+  const incidents = cfg.incidentsActive && codes.length
+    ? await prisma.incident.findMany({
+        where: { organizationId: orgId, taxonomieCode: { in: codes }, statut: { not: 'REJETE' }, OR: [{ dateSurvenance: { gte: debutPeriodeKri('ANNUEL', now) } }, { dateSurvenance: null, createdAt: { gte: debutPeriodeKri('ANNUEL', now) } }] },
+        select: { taxonomieCode: true, dateSurvenance: true, createdAt: true }, take: 5000,
+      })
+    : []
+
   const kris = rows.map(({ mesures, riskItem, ...k }) => {
     const derniere = mesures[0]?.valeur ?? null
     const precedente = mesures[1]?.valeur ?? null
@@ -55,6 +66,7 @@ export async function GET() {
       derniereMesureLe: mesures[0]?.dateMesure ?? null,
       statut,
       tendance: tendanceKri(derniere, precedente, k.sens as KriSens),
+      suggestionIncidents: cfg.incidentsActive ? suggestionIncidentsKri(k, incidents, now) : null,
     }
   })
 

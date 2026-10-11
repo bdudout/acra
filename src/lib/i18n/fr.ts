@@ -3015,6 +3015,8 @@ export const fr = {
     empty: 'Aucun indicateur défini.',
     valeurPlaceholder: 'Valeur',
     commentairePlaceholder: 'Commentaire (facultatif)',
+    suggestionIncidents: '{n} incident(s) de cette catégorie depuis le {date}',
+    suggestionAConfirmer: 'pré-rempli, à vérifier avant d’enregistrer',
     addMesure: 'Relever',
     aucuneMesure: 'Aucune mesure.',
     clearFilter: 'Tout afficher',

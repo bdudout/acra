@@ -2976,6 +2976,8 @@ export const it: Translations = {
     empty: 'Nessun indicatore definito.',
     valeurPlaceholder: 'Valore',
     commentairePlaceholder: 'Commento (facoltativo)',
+    suggestionIncidents: '{n} incidente/i di questa categoria dal {date}',
+    suggestionAConfirmer: 'precompilato, da verificare prima di salvare',
     addMesure: 'Registra',
     aucuneMesure: 'Nessuna misurazione.',
     clearFilter: 'Mostra tutto',
