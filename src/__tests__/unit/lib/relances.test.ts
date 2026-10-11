@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { RELANCES_DEFAUT, sanitizeRelancesConfig, typeRelance, relanceAttenteDue, approbateursAnalyse, valideursDerogation, attenteDerogationDepuis, typeEcheance, controlesNonExecutes, PREAVIS_CONTRAT_TIC_JOURS } from '@/lib/relances'
+import { RELANCES_DEFAUT, sanitizeRelancesConfig, typeRelance, relanceAttenteDue, approbateursAnalyse, valideursDerogation, attenteDerogationDepuis, typeEcheance, controlesNonExecutes, PREAVIS_CONTRAT_TIC_JOURS, libelleProposition } from '@/lib/relances'
 
 const J = 86_400_000
 const now = new Date('2026-10-01T06:00:00Z')
@@ -107,3 +107,14 @@ describe('échéances seules', () => {
   })
 })
 
+
+// Intitulé d'une proposition MCP dans les relances et la page « À traiter » : titre du contenu proposé, y compris imbriqué
+// (référentiel d'une PSSI, analyse d'un import) ; à défaut, le type de proposition.
+describe('libelleProposition', () => {
+  it('titre direct, puis imbriqué, puis type', () => {
+    expect(libelleProposition({ type: 'risk', payload: { nom: 'Fuite de données' } })).toBe('Fuite de données')
+    expect(libelleProposition({ type: 'pssi', payload: { texte: 'x', referentiel: { nom: 'PSSI 2026' } } })).toBe('PSSI 2026')
+    expect(libelleProposition({ type: 'analysis_create', payload: { analysis: { title: 'PRA' } } })).toBe('PRA')
+    expect(libelleProposition({ type: 'pssi', payload: { texte: 'x' } })).toBe('pssi')
+  })
+})

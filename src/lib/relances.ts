@@ -156,3 +156,18 @@ export function controlesNonExecutes(controleIds: string[], executions: { contro
   const faits = new Set(executions.filter(x => x.dateRealisation.getTime() >= depuis.getTime()).map(x => x.controleId))
   return controleIds.filter(id => !faits.has(id))
 }
+
+/**
+ * Intitulé d'une proposition MCP (relances, page « À traiter ») : titre du contenu proposé, au premier niveau ou imbriqué
+ * (référentiel d'une PSSI, analyse d'un import, projet…) ; à défaut, le type de proposition.
+ */
+export function libelleProposition(p: { type: string; payload: unknown }): string {
+  const CLES = ['titre', 'title', 'intitule', 'nom'] as const
+  const objet = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
+  const racine = objet(p.payload) ? p.payload : {}
+  for (const o of [racine, ...Object.values(racine).filter(objet)]) {
+    const v = CLES.map(k => o[k]).find((x): x is string => typeof x === 'string' && x.trim() !== '')
+    if (v) return v.trim().slice(0, 200)
+  }
+  return p.type
+}

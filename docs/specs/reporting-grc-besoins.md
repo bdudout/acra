@@ -23,7 +23,8 @@
 > l'écran de déclaration et les exports JSON / Excel, préremplie depuis l'incident ; DORA (ITS 2025/302) et RGPD (art. 33 § 3)
 > l'étaient déjà ; les régimes interne / personnalisés gardent l'export générique.
 > **Restent** : feuilles de travail d'audit ; vocabulaire
-> personnalisé dans les pages rendues côté serveur, exports et PDF ; champs personnalisés sur les tiers (les constats en ont).
+> personnalisé dans les pages rendues côté serveur, exports et PDF (✅ levé le 2026-10-11 : les seuls rendus serveur concernés — pages
+> Projets et Dérogations — l'appliquent via `getServerTOrg` ; l'export des rapports l'appliquait déjà) ; champs personnalisés sur les tiers (les constats en ont).
 > Les blocs ci-dessous sont l'historique d'avancement (2026-09-29).
 
 > **État d'avancement (2026-09-29)** — **L1 livré** (décisions §9 retenues sur les recommandations) :

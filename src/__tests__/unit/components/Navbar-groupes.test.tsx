@@ -21,6 +21,7 @@ vi.mock('@/lib/i18n/context', () => ({
 vi.mock('@/components/BrandingProvider', () => ({ useBranding: () => ({ nom: 'ACRA', baseline: 'Cyber risk' }) }))
 vi.mock('@/components/GlobalSearch', () => ({ default: () => <span>Recherche</span> }))
 vi.mock('@/components/OrgSwitcher', () => ({ default: () => <span>Organisation</span> }))
+vi.mock('@/components/ATraiterLien', () => ({ default: () => <span>À traiter</span> }))
 vi.mock('@/lib/nav-modules-cache', () => ({
   peekNavModules: () => ({ registre: true, incidents: true, controles: true, audit: true, kri: true, reglementaire: true, profilsOperationnels: true }),
   loadNavModules: vi.fn(), setCachedNavModules: vi.fn(),
