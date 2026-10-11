@@ -687,6 +687,7 @@ export const it: Translations = {
     colStatut:    'Stato',
     colEcheance:  'Scadenza',
     open:         'Modifica →',
+    voir:         'Visualizza →',
     sansEcheance: 'Senza scadenza',
     sansPorteur:  'Non assegnato',
     sources: {

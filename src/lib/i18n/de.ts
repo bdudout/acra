@@ -687,6 +687,7 @@ export const de: Translations = {
     colStatut:    'Status',
     colEcheance:  'Fällig am',
     open:         'Bearbeiten →',
+    voir:         'Ansehen →',
     sansEcheance: 'Ohne Fälligkeit',
     sansPorteur:  'Nicht zugewiesen',
     sources: {

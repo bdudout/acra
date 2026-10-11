@@ -687,6 +687,7 @@ export const es: Translations = {
     colStatut:    'Estado',
     colEcheance:  'Vencimiento',
     open:         'Modificar →',
+    voir:         'Ver →',
     sansEcheance: 'Sin vencimiento',
     sansPorteur:  'Sin asignar',
     sources: {

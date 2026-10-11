@@ -699,6 +699,7 @@ export const fr = {
     colStatut:    'Statut',
     colEcheance:  'Échéance',
     open:         'Modifier →',
+    voir:         'Voir →',
     sansEcheance: 'Sans échéance',
     sansPorteur:  'Non attribué',
     sources: {

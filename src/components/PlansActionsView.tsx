@@ -284,7 +284,7 @@ export default function PlansActionsView({ items, orgId, initialPriorite = '', i
               <span className="rounded-sm bg-gray-100 px-2 py-0.5 text-gray-600">{fmtDate(it.echeance)}</span>
             </div>
             <div className="mt-3">
-              {it.lien ? <Link href={it.lien} className="text-xs font-medium text-blue-600 hover:underline">{t.plansActions.open}</Link>
+              {it.lien ? <Link href={it.lien} className="text-xs font-medium text-blue-600 hover:underline">{it.lecture ? t.plansActions.voir : t.plansActions.open}</Link>
                 : isOrphan && orgId ? <button type="button" onClick={() => setEditId(editing ? null : it.sourceId)} className="text-xs font-medium text-blue-600 hover:underline">{t.plansActions.open}</button> : null}
             </div>
             {editing && orgId && <div className="mt-3 border-t border-gray-100 pt-3"><PlanActionEditor orgId={orgId} action={{ id: it.sourceId, titre: it.titre, porteur: it.porteur, echeance: it.echeance ? it.echeance.toISOString() : null, priorite: it.priorite, statut: it.statut }} onSaved={() => { setEditId(null); router.refresh() }} onCancel={() => setEditId(null)} /></div>}
@@ -345,7 +345,7 @@ export default function PlansActionsView({ items, orgId, initialPriorite = '', i
                   <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{fmtDate(it.echeance)}</td>
                   <td className="px-3 py-2 whitespace-nowrap">
                     {it.lien
-                      ? <Link href={it.lien} className="text-blue-600 hover:underline text-xs font-medium">{t.plansActions.open}</Link>
+                      ? <Link href={it.lien} className="text-blue-600 hover:underline text-xs font-medium">{it.lecture ? t.plansActions.voir : t.plansActions.open}</Link>
                       : isOrphan && orgId
                         ? <button type="button" onClick={() => setEditId(editing ? null : it.sourceId)} className="text-blue-600 hover:underline text-xs font-medium">{t.plansActions.open}</button>
                         : null}

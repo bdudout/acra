@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { lienSelonRole } from '@/lib/action-items'
 import {
   normalizeMesure,
   normalizeRiskAction,
@@ -291,5 +292,21 @@ describe('lien au référentiel des entités (consolidation, lot E5)', () => {
     expect(normalizeAnalyseRiskPlanAction({ id: 'p', titre: 't', risqueId: 'r', entiteId: 'e3' }).entiteId).toBe('e3')
     expect(normalizeIncident({ id: 'i', intitule: 'x', statut: 'DECLARE', entiteId: 'e4' })?.entiteId).toBe('e4')
     expect(normalizeMesure({ id: 'm', nom: 'x' }).entiteId).toBeNull()
+  })
+})
+
+// Recette n° 22 : pas de « Modifier → » vers une page que le rôle ne peut pas ouvrir (redirection silencieuse).
+describe('lienSelonRole', () => {
+  const socle = '/conformite/socle?ref=ISO27001&ctrl=A.5.1'
+  it('conformité : gestionnaire → page d’édition ; analyste (lecture) → /conformite en « Voir » ; LECTEUR / METIER → pas de lien', () => {
+    expect(lienSelonRole(socle, 'CONFORMITE')).toEqual({ lien: socle, lecture: false })
+    expect(lienSelonRole(socle, 'ANALYSTE')).toEqual({ lien: '/conformite', lecture: true })
+    expect(lienSelonRole(socle, 'LECTEUR')).toEqual({ lien: null, lecture: true })
+    expect(lienSelonRole(socle, 'METIER')).toEqual({ lien: null, lecture: true })
+  })
+  it('autres sources : lien conservé ; le LECTEUR le voit en « Voir »', () => {
+    expect(lienSelonRole('/audit?mission=m1', 'RSSI')).toEqual({ lien: '/audit?mission=m1', lecture: false })
+    expect(lienSelonRole('/audit?mission=m1', 'LECTEUR')).toEqual({ lien: '/audit?mission=m1', lecture: true })
+    expect(lienSelonRole(null, 'RSSI')).toEqual({ lien: null, lecture: false })
   })
 })

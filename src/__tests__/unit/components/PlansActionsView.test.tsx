@@ -17,7 +17,7 @@ vi.mock('@/lib/i18n/context', () => ({
         filterAll: 'Toutes', searchPh: 'Rechercher', clear: 'Effacer',
         resultCount: '{n}/{total}', empty: 'Aucune action.',
         colTitre: 'Action', colSource: 'Source', colOrigine: 'Origine', colPorteur: 'Porteur', colPriorite: 'Priorité',
-        colStatut: 'Statut', colEcheance: 'Échéance', open: 'Ouvrir', sansEcheance: '—', sansPorteur: 'Non attribué',
+        colStatut: 'Statut', colEcheance: 'Échéance', open: 'Ouvrir', voir: 'Voir', sansEcheance: '—', sansPorteur: 'Non attribué',
         sources: { MESURE: 'Mesure', RISK_ACTION: 'Registre', CONFORMITE: 'Conformité', AUDIT: 'Audit', CONTROLE: 'Contrôle', INCIDENT: 'Incident' },
         origines: { risque: 'Risque', conformite: 'Conformité', controle: 'Contrôle', audit: 'Audit', regulateur: 'Régulateur', incident: 'Incident', resilience: 'Résilience', preconisation: 'Préconisation', orpheline: 'Orpheline' },
         orphanAlert: '{n} orpheline(s)', save: 'Enregistrer',
@@ -32,7 +32,7 @@ const mk = (p: Partial<SerializedActionItem>): SerializedActionItem => ({
   id: p.id ?? 'x', source: p.source ?? 'MESURE', origine: p.origine ?? 'risque', sourceId: p.sourceId ?? 'x', entiteId: p.entiteId ?? null,
   titre: p.titre ?? 't', description: p.description ?? null, porteur: p.porteur ?? null,
   entite: p.entite ?? null, echeance: p.echeance ?? null, statut: p.statut ?? 'A_FAIRE',
-  priorite: p.priorite ?? 'MAJEUR', lien: p.lien ?? '/x', riskItemId: p.riskItemId ?? null,
+  priorite: p.priorite ?? 'MAJEUR', lien: p.lien === undefined ? '/x' : p.lien, riskItemId: p.riskItemId ?? null, ...(p.lecture ? { lecture: true } : {}),
 })
 
 const items: SerializedActionItem[] = [
@@ -145,5 +145,10 @@ describe('PlansActionsView — filtre par entité (consolidation, lot E5)', () =
     expect(tableau.getByText('Revoir les habilitations')).toBeTruthy()
     expect(screen.queryAllByText('Former les acheteurs')).toHaveLength(0)
     vi.unstubAllGlobals()
+  })
+  it('recette n° 22 : action en lecture seule → « Voir » ; sans lien accessible → ni « Ouvrir » ni « Voir »', () => {
+    render(<PlansActionsView items={[mk({ id: 'l1', titre: 'Lecture', lien: '/conformite', lecture: true }), mk({ id: 'l2', titre: 'Sans accès', source: 'CONFORMITE', origine: 'conformite', lien: null, lecture: true })]} />)
+    expect(screen.getAllByText('Voir').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Ouvrir')).toBeNull()
   })
 })

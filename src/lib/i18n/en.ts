@@ -687,6 +687,7 @@ export const en: Translations = {
     colStatut:    'Status',
     colEcheance:  'Due date',
     open:         'Edit →',
+    voir:         'View →',
     sansEcheance: 'No due date',
     sansPorteur:  'Unassigned',
     sources: {

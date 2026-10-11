@@ -18,6 +18,7 @@ import {
   type ActionsSummary,
   summarizeActions,
 } from './risk-action'
+import { peutGererConformite, peutLireConformite, type UserRole } from './permissions'
 
 export const ACTION_SOURCES = ['MESURE', 'RISK_ACTION', 'CONFORMITE', 'AUDIT', 'CONTROLE', 'INCIDENT', 'PLAN_ACTION'] as const
 /** Source technique d'un plan d'action (modèle Prisma d'origine). */
@@ -47,6 +48,22 @@ export interface ActionItem {
   priorite: ActionPriorite // CRITIQUE | MAJEUR | MODERE
   lien: string | null // lien profond vers la fiche source
   riskItemId: string | null // rattachement éventuel au registre canonique
+  lecture?: boolean // le rôle ne peut que consulter la source (« Voir » au lieu de « Modifier »)
+}
+
+// ─── Lien selon le rôle (recette n° 22) ───
+/**
+ * Pas de lien vers une page que le rôle ne peut pas ouvrir (elle redirigerait sans message) : la conformité s'édite sur
+ * /conformite/socle (gestionnaires), se consulte sur /conformite (lecteurs de la conformité), sinon aucun lien.
+ * `lecture` : le rôle ne fait que consulter (« Voir »).
+ */
+export function lienSelonRole(lien: string | null, role: UserRole): { lien: string | null; lecture: boolean } {
+  const lecteur = role === 'LECTEUR' || role === 'METIER'
+  if (lien?.startsWith('/conformite')) {
+    if (peutGererConformite(role)) return { lien, lecture: false }
+    return peutLireConformite(role) ? { lien: '/conformite', lecture: true } : { lien: null, lecture: true }
+  }
+  return { lien, lecture: lien !== null && lecteur }
 }
 
 interface LienOpt { lien?: string | null }
