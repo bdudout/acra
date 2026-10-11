@@ -6,6 +6,8 @@ import { elementsATraiter } from '@/lib/relances.server'
 import { libelleEtat, libellePhaseDeclaration, libelleRelance } from '@/lib/email-i18n'
 import { declarationsATraiter } from '@/lib/declarations-a-traiter.server'
 import { getT } from '@/lib/i18n'
+import { resolveOrgContext } from '@/lib/org-context.server'
+import type { UserRole } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,5 +35,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const URG: Record<string, number> = { EN_RETARD: 0, EN_ATTENTE: 1, ECHEANCE_PROCHE: 2, PERIODIQUE: 3 }
   const items = [...decl, ...relances.map(i => { const l = libelleRelance(user.locale, i); return { ...i, libelleCategorie: l.categorie, etat: l.etat } })]
     .sort((a, b) => URG[a.type] - URG[b.type] || (a.echeance ?? '9999').localeCompare(b.echeance ?? '9999'))
-  return NextResponse.json({ total, enRetard, items })
+  // Organisation active : un élément d'une autre organisation y bascule au clic (recette n° 21).
+  const { activeOrgId } = await resolveOrgContext(userId, ((session.user as { role?: UserRole }).role ?? 'ANALYSTE'))
+  return NextResponse.json({ total, enRetard, items, activeOrgId: activeOrgId ?? null })
 }

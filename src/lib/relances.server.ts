@@ -143,7 +143,7 @@ async function passageRelances(now: Date, apercu: boolean): Promise<ResultatRela
     prisma.processus.findMany({ where: { actif: true }, select: { id: true, organizationId: true, nom: true, proprietaire: true, derniereRevue: true, createdAt: true, revueRappelLe: true }, take: 10000 }),
     prisma.tier.findMany({ select: { id: true, rootOrganizationId: true, nom: true, derniereRevue: true, createdAt: true, revueRappelLe: true }, take: 10000 }),
     // Évaluations d'usages de services tiers (lot T1) : soumises (validation RSSI) ou validées (réévaluation à 12 mois).
-    prisma.evaluationUsageTiers.findMany({ where: { statut: { in: ['SOUMISE', 'VALIDEE'] } }, select: { id: true, organizationId: true, statut: true, soumisLe: true, valideLe: true, evaluePar: true, createdAt: true, rappelLe: true, usage: { select: { useCase: true, tierService: { select: { nom: true, tier: { select: { nom: true } } } } } } }, take: 10000 }),
+    prisma.evaluationUsageTiers.findMany({ where: { statut: { in: ['SOUMISE', 'VALIDEE'] } }, select: { id: true, organizationId: true, statut: true, soumisLe: true, valideLe: true, evaluePar: true, createdAt: true, rappelLe: true, usage: { select: { useCase: true, tierService: { select: { nom: true, tier: { select: { id: true, nom: true } } } } } } }, take: 10000 }),
   ])
   if (apercu) {
     for (const liste of [reponses, preconisations, plans, aVerifier, analyses, derogationsRevue, constats, controles, derogationsActives, contrats, tests, kris, documents, campagnes, missions, analysesEcheance, acceptations, invitations, homologations, suppressions, traitementsAipd, plansSoumis, propositionsMcp, revuesIa, revuesTraitements, revuesProcessus, revuesTiers, evaluationsTiers] as Record<string, unknown>[][]) {
@@ -496,7 +496,7 @@ async function passageRelances(now: Date, apercu: boolean): Promise<ResultatRela
     const cfg = await cfgOf(x.rootOrganizationId)
     const type = revueDue(x, cfg)
     if (!type) continue
-    ajouter(x.rootOrganizationId, await parRolesOuAdmin(x.rootOrganizationId, ['RSSI', 'RISK_MANAGER']), { categorie: 'REVUE_TIERS', intitule: x.nom, type, echeance: jour(echeanceRevue(x.derniereRevue, x.createdAt)) })
+    ajouter(x.rootOrganizationId, await parRolesOuAdmin(x.rootOrganizationId, ['RSSI', 'RISK_MANAGER']), { categorie: 'REVUE_TIERS', intitule: x.nom, type, echeance: jour(echeanceRevue(x.derniereRevue, x.createdAt)), chemin: `/tiers/entites?tier=${x.id}` })
     marques.revuesTiers.push(x.id)
   }
 
@@ -504,17 +504,18 @@ async function passageRelances(now: Date, apercu: boolean): Promise<ResultatRela
   for (const ev of evaluationsTiers) {
     const cfg = await cfgOf(ev.organizationId)
     const intitule = `${ev.usage.tierService.tier.nom} — ${ev.usage.tierService.nom} — ${ev.usage.useCase}`
+    const chemin = `/tiers/entites?tier=${ev.usage.tierService.tier.id}`
     if (ev.statut === 'SOUMISE') {
       const depuis = ev.soumisLe ?? ev.createdAt
       if (!relanceAttenteDue({ depuis, rappelLe: ev.rappelLe }, cfg.relances, now)) continue
       const rssi = await parRoles(ev.organizationId, cfg.petiteStructure ? ['RSSI', 'ADMIN'] : ['RSSI'])
-      ajouter(ev.organizationId, rssi.length ? rssi : await parRoles(ev.organizationId, ['ADMIN']), { categorie: 'EVALUATION_TIERS_A_VALIDER', intitule, type: 'EN_ATTENTE', echeance: jour(depuis) })
+      ajouter(ev.organizationId, rssi.length ? rssi : await parRoles(ev.organizationId, ['ADMIN']), { categorie: 'EVALUATION_TIERS_A_VALIDER', intitule, type: 'EN_ATTENTE', echeance: jour(depuis), chemin })
     } else {
       const echeance = prochaineEvaluation(ev.valideLe)
       const type = echeance ? typeEcheance({ echeance, rappelLe: ev.rappelLe, createdAt: ev.createdAt }, cfg.relances, now) : null
       if (!type) continue
       const evaluateur = ev.evaluePar ? await destsParIds(ev.organizationId, [ev.evaluePar]) : []
-      ajouter(ev.organizationId, evaluateur.length ? evaluateur : await parRoles(ev.organizationId, ['RSSI', 'RISK_MANAGER']), { categorie: 'EVALUATION_TIERS_A_REVOIR', intitule, type, echeance: jour(echeance) })
+      ajouter(ev.organizationId, evaluateur.length ? evaluateur : await parRoles(ev.organizationId, ['RSSI', 'RISK_MANAGER']), { categorie: 'EVALUATION_TIERS_A_REVOIR', intitule, type, echeance: jour(echeance), chemin })
     }
     marques.evaluationsTiers.push(ev.id)
   }

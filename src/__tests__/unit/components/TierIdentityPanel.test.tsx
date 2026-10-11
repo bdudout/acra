@@ -104,6 +104,11 @@ describe('TierIdentityPanel — identités de tiers', () => {
     expect(screen.getByTestId('detail-t1')).toBeInTheDocument(); expect(toggle).toHaveAttribute('aria-expanded', 'true')
     fireEvent.click(toggle); expect(screen.queryByTestId('detail-t1')).toBeNull()
   })
+  it('recette n° 21 : lien d’une relance (?tier=) — la fiche du tiers est ouverte d’emblée', async () => {
+    render(<TierIdentityPanel sansTitre ouvrir="t2" />)
+    expect(await screen.findByTestId('detail-t2')).toBeInTheDocument()
+    expect(screen.queryByTestId('detail-t1')).toBeNull()
+  })
   it('contrat groupe proposé à l’organisation : confirmer ou refuser (ADMIN), rien n’est accordé avant la décision', async () => {
     render(<TierIdentityPanel />)
     const box = (await screen.findByText(/CG-7/)).closest('li')!

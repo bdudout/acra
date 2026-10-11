@@ -29,8 +29,9 @@ type Duplicate = { payload: { nom: string; lei?: string | null; pays?: string; l
 const send = (url: string, method: string, body: object) => fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 const post = (url: string, body: object) => send(url, 'POST', body)
 
-/** `sansTitre` : sur la page dédiée (/tiers/entites), qui porte déjà le titre et l'explication. */
-export default function TierIdentityPanel({ sansTitre = false }: { sansTitre?: boolean } = {}) {
+/** `sansTitre` : sur la page dédiée (/tiers/entites), qui porte déjà le titre et l'explication.
+ *  `ouvrir` : tiers dont la fiche est dépliée d'emblée (lien d'une relance ou d'« À traiter », `?tier=`). */
+export default function TierIdentityPanel({ sansTitre = false, ouvrir }: { sansTitre?: boolean; ouvrir?: string } = {}) {
   const { t, locale } = useTranslation()
   const ZONE_BADGE: Record<string, string> = { danger: 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-200', controle: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-200', veille: 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-200' }
   const zoneNom: Record<string, string> = { danger: t.workshop.a3.radar.zoneDanger, controle: t.workshop.a3.radar.zoneControle, veille: t.workshop.a3.radar.zoneVeille }
@@ -41,7 +42,7 @@ export default function TierIdentityPanel({ sansTitre = false }: { sansTitre?: b
   const [error, setError] = useState<string | null>(null)
   const [duplicate, setDuplicate] = useState<Duplicate | null>(null)
   const [form, setForm] = useState({ nom: '', lei: '', pays: '' })
-  const [open, setOpen] = useState<string | null>(null)
+  const [open, setOpen] = useState<string | null>(ouvrir ?? null)
   const [mergeFrom, setMergeFrom] = useState<string | null>(null)
   const [mergeTarget, setMergeTarget] = useState('')
   const [mergePreview, setMergePreview] = useState<MergePreview | null>(null)
