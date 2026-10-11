@@ -16,7 +16,7 @@ const userUpdate = vi.fn(async (_args: { data: Record<string, unknown> }) => ({ 
 const trustedDeleteMany = vi.fn(async () => ({ count: 2 }))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    user: { findUnique: vi.fn(async () => ({ email: 't@ex.com', role: target.role, memberships: target.orgs.map(organizationId => ({ organizationId })) })) },
+    user: { findUnique: vi.fn(async () => ({ email: 't@ex.com', role: target.role, memberships: target.orgs.map(organizationId => ({ organizationId })) })), update: (a: { data: Record<string, unknown> }) => userUpdate(a), count: vi.fn(async () => 1) },
     passwordPolicy: { findUnique: vi.fn(async () => null) },
     orgMembership: { count: vi.fn(async () => 1) },
     $transaction: vi.fn(async (cb: (tx: unknown) => unknown) =>
@@ -83,3 +83,14 @@ describe('T1 (audit 2026-10-01) — un ADMIN ne prend pas la main sur un compte 
     expect(res.status).toBe(200)
   })
 })
+
+// Recette n° 15 : changement de rôle global — tous les rôles attribuables (dont AUDITEUR, DPO, CONFORMITE), plus de
+// liste figée à 6 rôles côté serveur ; rôle inconnu refusé.
+describe('changement de rôle — rôles attribuables', () => {
+  it('promouvoir Auditeur est accepté ; un rôle inconnu est refusé (400)', async () => {
+    expect((await PATCH(req({ userId: 'target1', role: 'AUDITEUR' }))).status).toBe(200)
+    expect(userUpdate.mock.calls.at(-1)![0].data).toMatchObject({ role: 'AUDITEUR' })
+    expect((await PATCH(req({ userId: 'target1', role: 'SORCIER' }))).status).toBe(400)
+  })
+})
+

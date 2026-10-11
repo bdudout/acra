@@ -254,6 +254,8 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode, e
   async function save() {
     setSaving(true)
     await saveNow()
+    // Recette n° 14 : seul ce bouton fait avancer l'analyse (jamais la sauvegarde automatique).
+    await fetch(`/api/analyses/${analyseId}/workshop/2`, { method: 'POST' }).catch(() => null)
     setSaving(false)
     // Mode Flash : parcours complet conservé (→ A3), on propage juste le flag
     router.push(`/analyses/${analyseId}/atelier/3${flashMode ? '?mode=flash' : ''}`)

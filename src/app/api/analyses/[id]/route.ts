@@ -111,6 +111,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const d = dateSaisie(data.dateEcheance)
     if (d === undefined) delete data.dateEcheance; else data.dateEcheance = d
   }
+  // Démarche Flash mémorisée sur l'analyse (recette n° 16) — booléen strict.
+  if ('demarcheFlash' in body) data.demarcheFlash = body.demarcheFlash === true
   // Mention de protection (label EBIOS RM §3.2) — normalisée vers un niveau connu.
   if ('mentionProtection' in body) {
     data.mentionProtection = normalizeMentionProtection(body.mentionProtection)

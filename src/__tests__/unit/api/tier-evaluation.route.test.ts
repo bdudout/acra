@@ -6,7 +6,7 @@ import { NextRequest } from 'next/server'
 
 const m = vi.hoisted(() => ({
   session: vi.fn(), scope: vi.fn(), rl: vi.fn(), audit: vi.fn(), orgCfg: vi.fn(),
-  usage: vi.fn(), evalFind: vi.fn(), evalUpsert: vi.fn(), evalUpdate: vi.fn(), traitements: vi.fn(), risques: vi.fn(),
+  usage: vi.fn(), evalFind: vi.fn(), evalUpsert: vi.fn(), evalUpdate: vi.fn(), traitements: vi.fn(), risques: vi.fn(), membres: vi.fn(), users: vi.fn(),
 }))
 vi.mock('next-auth', () => ({ getServerSession: m.session }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
@@ -17,7 +17,7 @@ vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.orgCfg }))
 vi.mock('@/lib/prisma', () => ({ prisma: {
   tierServiceUsage: { findUnique: m.usage },
   evaluationUsageTiers: { findUnique: m.evalFind, upsert: m.evalUpsert, update: m.evalUpdate },
-  traitement: { findMany: m.traitements }, riskItem: { findMany: m.risques },
+  traitement: { findMany: m.traitements }, riskItem: { findMany: m.risques }, orgMembership: { count: m.membres }, user: { findMany: m.users },
 } }))
 import { GET, PUT, POST } from '@/app/api/tier-registry/usages/[usageId]/evaluation/route'
 
@@ -32,12 +32,14 @@ beforeEach(() => {
   m.scope.mockResolvedValue(scope('ANALYSTE'))
   m.rl.mockResolvedValue({ allowed: true, remaining: 10, resetAt: 0 })
   m.orgCfg.mockResolvedValue({ echellesEcosysteme: null, petiteStructure: false })
-  m.usage.mockResolvedValue({ id: 'u1', organizationId: 'org1' })
+  m.usage.mockResolvedValue({ id: 'u1', organizationId: 'org1', criticite: null, tierService: { tier: { _count: { arrangementsTic: 0 } } } })
   m.evalFind.mockResolvedValue(null)
   m.evalUpsert.mockImplementation(async (a: { create: object }) => ({ id: 'e1', statut: 'BROUILLON', ...a.create }))
   m.evalUpdate.mockImplementation(async (a: { data: object }) => ({ id: 'e1', ...a.data }))
   m.traitements.mockResolvedValue([{ id: 't1', nom: 'Paie' }])
   m.risques.mockResolvedValue([{ id: 'r1', intitule: 'Risque d’externalisation — hébergement', taxonomieCode: null }])
+  m.membres.mockResolvedValue(1)
+  m.users.mockResolvedValue([])
 })
 
 describe('évaluation d’un usage de service tiers', () => {
@@ -75,5 +77,24 @@ describe('évaluation d’un usage de service tiers', () => {
     expect((await POST(req('POST', { action: 'VALIDER' }), p)).status).toBe(200)
     expect(m.evalUpdate.mock.calls.at(-1)![0].data).toMatchObject({ statut: 'VALIDEE', validePar: 'user1' })
     expect(m.evalUpdate.mock.calls.at(-1)![0].data.valideLe).toBeInstanceOf(Date)
+  })
+  it('recette n° 19 : soumission dans une organisation sans RSSI — acceptée mais signalée', async () => {
+    m.evalFind.mockResolvedValue({ id: 'e1', statut: 'BROUILLON', actuelle: COMPLETE, cible: null })
+    m.membres.mockResolvedValue(0)
+    const j = await (await POST(req('POST', { action: 'SOUMETTRE' }), p)).json()
+    expect(j).toEqual({ ok: true, statut: 'SOUMISE', avertissement: 'aucun_validateur' })
+    expect(m.membres.mock.calls[0][0].where).toEqual({ organizationId: 'org1', role: { in: ['RSSI'] } })
+  })
+  it('recette n° 24 : GET nomme l’évaluateur (et le valideur) pour le bandeau « soumise par X le JJ/MM »', async () => {
+    m.evalFind.mockResolvedValue({ id: 'e1', statut: 'SOUMISE', actuelle: COMPLETE, cible: null, evaluePar: 'u9', soumisLe: new Date('2026-10-10T08:00:00Z'), validePar: null, valideLe: null })
+    m.users.mockResolvedValue([{ id: 'u9', name: 'Claire Martin', email: 'claire@exemple.test' }])
+    const j = await (await GET(req('GET'), p)).json()
+    expect(j.evaluation).toMatchObject({ evalueParNom: 'Claire Martin', valideParNom: null, soumisLe: '2026-10-10T08:00:00.000Z' })
+    expect(m.users.mock.calls[0][0].where).toEqual({ id: { in: ['u9'] } })
+  })
+  it('recette n° 20 : cadre DORA art. 30 si le tiers figure au registre d’information TIC ; § 3 pour un usage critique ou important', async () => {
+    expect((await (await GET(req('GET'), p)).json()).cadreDora).toEqual({ actif: false, critique: false })
+    m.usage.mockResolvedValue({ id: 'u1', organizationId: 'org1', criticite: 'IMPORTANTE', tierService: { tier: { _count: { arrangementsTic: 2 } } } })
+    expect((await (await GET(req('GET'), p)).json()).cadreDora).toEqual({ actif: true, critique: true })
   })
 })

@@ -19,6 +19,7 @@ import QualificationQuestions from '@/components/QualificationQuestions'
 import { QualificationRisksDialog, type QualificationProposal } from '@/components/QualificationRisksFlow'
 import { EMPTY_QUALIFICATION_CONFIG, type QualificationAnswers, type QualificationConfig } from '@/lib/qualification'
 import { qualificationRiskChannel } from '@/lib/qualification-risks'
+import { appliquerQualificationPatterns, aDesSousEntites } from '@/lib/qualification-patterns'
 
 // Clé i18n du nom de chaque méthode (t.methodes.*).
 const METHODE_I18N: Record<string, string> = {
@@ -62,6 +63,10 @@ export default function NewAnalysePage() {
   // mais ne doit jamais passer inaperçue au moment du choix de méthode.
   const [qualificationOpen, setQualificationOpen] = useState(true)
   const [qualification, setQualification] = useState<QualificationAnswers>({})
+  // Recette n° 17 : pré-réponses posées d'après les patterns cochés (jamais sur une réponse de l'utilisateur).
+  const [qualifAuto, setQualifAuto] = useState<QualificationAnswers>({})
+  // Bloc « Groupe multi-établissements ? » seulement si l'organisation active a des sous-entités.
+  const [sousEntites, setSousEntites] = useState(false)
   // Questions pré-remplies d'après la qualification 360 du projet choisi.
   const [reprises, setReprises] = useState<string[]>([])
   const [qualificationConfig, setQualificationConfig] = useState<QualificationConfig>(EMPTY_QUALIFICATION_CONFIG)
@@ -108,6 +113,19 @@ export default function NewAnalysePage() {
       })
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    fetch('/api/org/active', { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d) setSousEntites(aDesSousEntites(d.options ?? [], d.activeOrgId)) })
+      .catch(() => {})
+  }, [])
+
+  function changerPatterns(v: string[]) {
+    setForm(f => ({ ...f, patternsArchi: v }))
+    const r = appliquerQualificationPatterns(qualification, qualifAuto, v)
+    setQualification(r.answers); setQualifAuto(r.auto)
+  }
 
   useEffect(() => {
     fetch('/api/analyses/socles')
@@ -208,7 +226,7 @@ export default function NewAnalysePage() {
             {/* Sous-secteurs (optionnels) — seulement ceux cohérents avec le secteur, plus les interconnexions */}
             <div className="mt-3">
               <SousSecteursPicker secteur={form.secteur} value={form.sousSecteurs} onChange={v => setForm({ ...form, sousSecteurs: v })} />
-              <div className="mt-4"><PatternsArchiPicker value={form.patternsArchi} max={patternsMax} hiddenCodes={hiddenPatterns} required onChange={v => setForm({ ...form, patternsArchi: v })} /></div>
+              <div className="mt-4"><PatternsArchiPicker value={form.patternsArchi} max={patternsMax} hiddenCodes={hiddenPatterns} required onChange={changerPatterns} /></div>
             </div>
             {/* Note de périmètre OT/IT pour les secteurs industriels */}
             {/(énergie|energie|industrie|industry|transport|eau|utilities|scada|manufactur|agro|agricol)/i.test(form.secteur) && (
@@ -247,7 +265,7 @@ export default function NewAnalysePage() {
 
           {/* Découvrabilité du socle (issue #107) — quand aucun socle n'existe encore,
               expliquer qu'on peut en créer un pour un groupe multi-établissements. */}
-          {socles.length === 0 && (
+          {socles.length === 0 && sousEntites && (
             <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">
               <p className="text-sm font-medium text-indigo-900"><Landmark size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.newAnalysis.socleDiscoverTitle}</p>
               <p className="text-xs text-indigo-800 mt-0.5">{t.newAnalysis.socleDiscoverText}</p>

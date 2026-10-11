@@ -37,6 +37,7 @@ const createSchema = z.object({
   mentionProtection: z.enum(MENTIONS_PROTECTION).optional(), // mention de protection (label §3.2)
   methode:      z.string().max(20).optional(), // méthode d'analyse (validée contre l'ensemble effectif)
   qualification: z.record(z.string(), z.union([z.boolean(), z.string()])).optional(),
+  demarcheFlash: z.boolean().optional(), // démarche Flash (Club EBIOS) mémorisée sur l'analyse (recette n° 16)
   objectifsEtude: z.string().max(2000).optional(), // objectifs de l'étude saisis dès la création (projet 360)
 })
 
@@ -161,6 +162,7 @@ export async function POST(req: NextRequest) {
         tags: cleanTags(data.tags),
         dateEcheance: data.dateEcheance ? new Date(data.dateEcheance) : undefined,
         isSocle: data.isSocle ?? false,
+        demarcheFlash: data.demarcheFlash === true,
         socleId: data.socleId ?? null,
         projetSourceId,
         mentionProtection: normalizeMentionProtection(data.mentionProtection),
@@ -169,7 +171,7 @@ export async function POST(req: NextRequest) {
         // Cadrage : copier du socle ou créer vide
         // Cadrage : hérité du socle, ou initialisé (projet 360 : périmètre + objectifs saisis à la création).
         // NB : événements redoutés et socle de sécurité ne sont jamais hérités (propres à chaque analyse).
-        cadrage: { create: cadrageInitial({ methode, description: data.description, objectifsEtude: data.objectifsEtude }, socleData.cadrage) as never },
+        cadrage: { create: cadrageInitial({ methode, description: data.description, objectifsEtude: data.objectifsEtude, patterns: patternsArchi, petiteStructure: orgConfig.petiteStructure }, socleData.cadrage) as never },
       },
     })
 

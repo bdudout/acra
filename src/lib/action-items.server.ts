@@ -12,6 +12,7 @@ import {
   normalizeAnalyseRiskPlanAction,
   normalizeAuditConstat,
   normalizeControleAnomalie,
+  lienSelonRole,
   normalizeIncident,
   normalizeConformiteTraitement,
   normalizeEcosystemeMesure,
@@ -232,5 +233,6 @@ export async function gatherActionItems(
     }))
   }
 
-  return items
+  // Recette n° 22 : pas de lien vers une source que le rôle ne peut pas ouvrir ; « Voir » pour la consultation.
+  return items.map(it => ({ ...it, ...lienSelonRole(it.lien, access.role) }))
 }

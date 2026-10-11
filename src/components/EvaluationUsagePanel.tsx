@@ -10,12 +10,14 @@ import { useTranslation } from '@/lib/i18n/context'
 import { CRITERES_ECOSYSTEME, type CritereEcosysteme, type EchellesEcosysteme } from '@/lib/ecosystem-echelles'
 import { CONTRACTUAL_CLAUSE_KEYS } from '@/lib/ecosystem-contractual-clauses'
 import { coterEvaluation, type Cotation } from '@/lib/tier-evaluation'
+import { TEXTE_DORA_ART30, clausesDoraApplicables, libelleClauseDora } from '@/lib/dora-art30'
 
 interface Reponse {
-  evaluation: { statut: 'BROUILLON' | 'SOUMISE' | 'VALIDEE'; actuelle: Cotation; cible: Cotation | null; clauses: string[]; traitementIds: string[]; risqueIds: string[]; justification: string } | null
+  evaluation: { statut: 'BROUILLON' | 'SOUMISE' | 'VALIDEE'; evalueParNom?: string | null; soumisLe?: string | null; valideParNom?: string | null; valideLe?: string | null; actuelle: Cotation; cible: Cotation | null; clauses: string[]; traitementIds: string[]; risqueIds: string[]; justification: string } | null
   prochaineEvaluation: string | null
   droits: { peutEvaluer: boolean; peutValider: boolean }
   echelles: EchellesEcosysteme
+  cadreDora?: { actif: boolean; critique: boolean }
   options: { traitements: { id: string; nom: string }[]; risques: { id: string; intitule: string }[] }
 }
 const VIDE: Cotation = { dependance: null, penetration: null, maturite: null, confiance: null }
@@ -61,7 +63,9 @@ export default function EvaluationUsagePanel({ usageId, usageNom, onChange }: { 
     const r = await fetch(`/api/tier-registry/usages/${usageId}/evaluation`, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null)
     setBusy(false)
     if (!r?.ok) { const j = r ? ((await r.json().catch(() => ({}))) as { error?: string }) : {}; setMsg({ ok: false, texte: erreur(j.error) }); return }
-    setMsg({ ok: true, texte: okTexte }); await charger(); onChange()
+    // Recette n° 19 : soumise, mais aucun valideur dans l'organisation → le dire tout de suite.
+    const j = (await r.json().catch(() => ({}))) as { avertissement?: string }
+    setMsg(j.avertissement === 'aucun_validateur' ? { ok: false, texte: `${okTexte} ${l.aucunValideur}` } : { ok: true, texte: okTexte }); await charger(); onChange()
   }
   const enregistrer = () => appel('PUT', { actuelle, cible: Object.values(cible).some(v => v !== null) ? cible : null, clauses, traitementIds, risqueIds, justification }, l.enregistre)
 
@@ -89,19 +93,40 @@ export default function EvaluationUsagePanel({ usageId, usageNom, onChange }: { 
         {statut && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700 dark:bg-gray-700 dark:text-gray-200">{l.statuts[statut]}</span>}
         {data.prochaineEvaluation && <span className="text-[11px] text-gray-500">{l.prochaine.replace('{date}', new Date(data.prochaineEvaluation).toLocaleDateString(locale, { timeZone: 'UTC' }))}</span>}
       </div>
+      {/* Recette n° 24 : le valideur sait qui a évalué et quand. */}
+      {(() => {
+        const e = data.evaluation
+        const date = (d?: string | null) => (d ? new Date(d).toLocaleDateString(locale, { timeZone: 'UTC' }) : '')
+        if (e?.statut === 'VALIDEE' && e.valideParNom) return <p className="text-xs text-gray-700 dark:text-gray-200">{l.validePar.replace('{nom}', e.valideParNom).replace('{date}', date(e.valideLe))}</p>
+        if (e?.statut === 'SOUMISE' && e.evalueParNom) return <p className="text-xs text-gray-700 dark:text-gray-200">{l.soumisePar.replace('{nom}', e.evalueParNom).replace('{date}', date(e.soumisLe))}</p>
+        return null
+      })()}
       <p className="text-[11px] text-gray-500 dark:text-gray-400">{l.aide}</p>
       <div className="grid gap-4 sm:grid-cols-2">
         {colonne(l.actuelle, actuelle, setActuelle, 'actuelle')}
         {colonne(l.cible, cible, setCible, 'cible')}
       </div>
-      <fieldset>
-        <legend className="text-xs font-semibold text-gray-700 dark:text-gray-200">{l.clauses}</legend>
-        <div className="mt-1 grid gap-1 sm:grid-cols-2">
-          {CONTRACTUAL_CLAUSE_KEYS.map(k => { const lab = (a3.measClauses as Record<string, string>)[k]; return (
-            <label key={k} className="inline-flex items-center gap-1.5 text-[11px] text-gray-700 dark:text-gray-200"><input type="checkbox" aria-label={lab} disabled={lecture} checked={clauses.includes(k)} onChange={() => bascule(clauses, setClauses, k)} />{lab}</label>
-          ) })}
-        </div>
-      </fieldset>
+      {data.cadreDora?.actif ? (
+        // Recette n° 20 : tiers au registre d'information TIC → points de DORA art. 30, texte officiel (EUR-Lex) en infobulle.
+        <fieldset>
+          <legend className="text-xs font-semibold text-gray-700 dark:text-gray-200">{(TEXTE_DORA_ART30[locale as keyof typeof TEXTE_DORA_ART30] ?? TEXTE_DORA_ART30.fr).titre} — {l.sourceDora}</legend>
+          <p className="text-[11px] text-gray-400">{data.cadreDora.critique ? l.doraCritique : l.doraNonCritique}</p>
+          <div className="mt-1 space-y-1">
+            {clausesDoraApplicables(data.cadreDora.critique).map(k => { const c = libelleClauseDora(k, locale); const lab = `${c.reference} — ${c.extrait}`; return (
+              <label key={k} title={c.texte} className="flex items-start gap-1.5 text-[11px] text-gray-700 dark:text-gray-200"><input type="checkbox" className="mt-0.5" aria-label={lab} disabled={lecture} checked={clauses.includes(k)} onChange={() => bascule(clauses, setClauses, k)} /><span><span className="font-medium">{c.reference}</span> — {c.extrait}</span></label>
+            ) })}
+          </div>
+        </fieldset>
+      ) : (
+        <fieldset>
+          <legend className="text-xs font-semibold text-gray-700 dark:text-gray-200">{l.clauses}</legend>
+          <div className="mt-1 grid gap-1 sm:grid-cols-2">
+            {CONTRACTUAL_CLAUSE_KEYS.map(k => { const lab = (a3.measClauses as Record<string, string>)[k]; return (
+              <label key={k} className="inline-flex items-center gap-1.5 text-[11px] text-gray-700 dark:text-gray-200"><input type="checkbox" aria-label={lab} disabled={lecture} checked={clauses.includes(k)} onChange={() => bascule(clauses, setClauses, k)} />{lab}</label>
+            ) })}
+          </div>
+        </fieldset>
+      )}
       <div className="grid gap-3 sm:grid-cols-2">
         <fieldset>
           <legend className="text-xs font-semibold text-gray-700 dark:text-gray-200">{l.traitements}</legend>

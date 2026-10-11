@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { peutGererRegistreTic, type UserRole } from '@/lib/permissions'
 import { cleanUsageCriticality } from '@/lib/tier-offers'
 import { validateServiceUsage } from '@/lib/tier-contract-coverage'
 
@@ -32,7 +32,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!crit.ok) return NextResponse.json({ error: 'invalid_usage_input' }, { status: 400 })
 
   const role = await getEffectiveRoleForOrg(userId, instanceRole, organizationId)
-  if (!role || !isAdminRole(role)) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  // Recette n° 13 : les gestionnaires du registre TIC (RSSI, gestionnaire des risques, conformité, DPO, ADMIN) déclarent
+  // les usages — comme les tiers et les offres —, sans quoi aucune évaluation n'est possible sans l'ADMIN.
+  if (!role || !peutGererRegistreTic(role)) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   const cfg = await getOrgConfig(organizationId)
   if (!cfg.reglementaireActive) return NextResponse.json({ error: 'module_inactive' }, { status: 403 })
 

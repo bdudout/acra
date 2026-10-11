@@ -183,11 +183,13 @@ describe('DELETE /api/tier-registry/usages/[usageId]', () => {
     expect((await DELETE_USAGE(req(undefined, 'DELETE'), p({ usageId: 'u1' }))).status).toBe(200)
     expect(m.usageDelete).toHaveBeenCalledWith({ where: { id: 'u1' } })
   })
-  it('usage d’une autre organisation : 404 ; non admin : 403', async () => {
+  it('usage d’une autre organisation : 404 ; gestionnaire du registre (RSSI) autorisé, analyste refusé (recette n° 13)', async () => {
     m.usageFindUnique.mockResolvedValue({ id: 'u2', organizationId: 'fil2' })
     expect((await DELETE_USAGE(req(undefined, 'DELETE'), p({ usageId: 'u2' }))).status).toBe(404)
-    m.scope.mockResolvedValue(scope('RSSI'))
+    m.scope.mockResolvedValue(scope('ANALYSTE'))
     m.usageFindUnique.mockResolvedValue({ id: 'u1', organizationId: 'fil1' })
     expect((await DELETE_USAGE(req(undefined, 'DELETE'), p({ usageId: 'u1' }))).status).toBe(403)
+    m.scope.mockResolvedValue(scope('RSSI'))
+    expect((await DELETE_USAGE(req(undefined, 'DELETE'), p({ usageId: 'u1' }))).status).toBe(200)
   })
 })

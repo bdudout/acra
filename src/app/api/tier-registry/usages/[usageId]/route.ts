@@ -6,9 +6,9 @@ import { tierContext } from '@/lib/tier-registry.server'
 
 export const dynamic = 'force-dynamic'
 
-/** Supprime un usage DE L'ORGANISATION ACTIVE (ADMIN, comme sa création). */
+/** Supprime un usage DE L'ORGANISATION ACTIVE (gestionnaires du registre TIC, comme sa création). */
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ usageId: string }> }) {
-  const got = await tierContext({ write: 'admin' }); if ('error' in got) return got.error
+  const got = await tierContext({ write: 'manage' }); if ('error' in got) return got.error
   const { ctx } = got
   const { usageId } = await params
   const usage = await prisma.tierServiceUsage.findUnique({ where: { id: usageId }, select: { id: true, organizationId: true } })
@@ -18,9 +18,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ u
   return NextResponse.json({ ok: true })
 }
 
-/** Qualifie la criticité d'un usage DE L'ORGANISATION ACTIVE (ADMIN) ; vide = non renseignée. */
+/** Qualifie la criticité d'un usage DE L'ORGANISATION ACTIVE (gestionnaires du registre TIC) ; vide = non renseignée. */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ usageId: string }> }) {
-  const got = await tierContext({ write: 'admin' }); if ('error' in got) return got.error
+  const got = await tierContext({ write: 'manage' }); if ('error' in got) return got.error
   const { ctx } = got
   const { usageId } = await params
   const body = await req.json().catch(() => ({}))

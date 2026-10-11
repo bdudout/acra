@@ -12,6 +12,7 @@ import { prisma } from '@/lib/prisma'
 import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
+import QuitterFlashButton from '@/components/QuitterFlashButton'
 import WorkshopProgress from '@/components/WorkshopProgress'
 import AtelierGuidancePanel from '@/components/AtelierGuidancePanel'
 import PageScrollNavigation from '@/components/PageScrollNavigation'
@@ -237,7 +238,8 @@ export default async function AtelierPage({
   const meta = ATELIERS_META[atelierNum - 1]
   // Mode « Flash » (démarche Club EBIOS) : parcours rapide guidé A1→A2→A3→A4→A5,
   // appuyé sur la capitalisation, en se limitant aux scénarios les plus pertinents.
-  const flashMode = resolvedSearchParams.mode === 'flash'
+  // Mémorisée sur l'analyse (recette n° 16) : le retour sans ?mode=flash reste en Flash.
+  const flashMode = resolvedSearchParams.mode === 'flash' || analyse.demarcheFlash === true
 
   // Préparer les initialData selon l'atelier
   let initialData: any = undefined
@@ -395,6 +397,7 @@ export default async function AtelierPage({
             <div className="flex-1">
               <span className="font-semibold text-amber-900 text-sm">{t.analyses.expressTitle} — {t.analyses.expressSubtitle}</span>
               <span className="text-amber-700 text-sm ml-2">{t.analyses.expressInfo}</span>
+              {editable && <span className="ml-2"><QuitterFlashButton analyseId={analyse.id} atelierNum={atelierNum} /></span>}
               {/* Conseil de dimensionnement spécifique à l'atelier en mode Flash */}
               {(t.analyses.flashTips as Record<string, string>)[`a${atelierNum}`] && (
                 <p className="mt-2 text-sm text-amber-900">

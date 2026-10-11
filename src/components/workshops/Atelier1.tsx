@@ -421,6 +421,8 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
   async function doSave() {
     setSaving(true)
     await saveNow()
+    // Recette n° 14 : seul ce bouton fait avancer l'analyse (jamais la sauvegarde automatique).
+    await fetch(`/api/analyses/${analyseId}/workshop/1`, { method: 'POST' }).catch(() => null)
     setSaving(false)
     router.push(`/analyses/${analyseId}/atelier/2${flashMode ? '?mode=flash' : ''}`)
   }
@@ -528,7 +530,11 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
                 <p className="text-sm text-sky-900">{t.workshop.a1.flashSuggestText}</p>
                 <button
                   type="button"
-                  onClick={() => router.push(`/analyses/${analyseId}/atelier/1?mode=flash`)}
+                  onClick={async () => {
+                    // Recette n° 16 : la démarche Flash est mémorisée sur l'analyse (plus seulement dans l'URL).
+                    await fetch(`/api/analyses/${analyseId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ demarcheFlash: true }) }).catch(() => null)
+                    router.push(`/analyses/${analyseId}/atelier/1?mode=flash`)
+                  }}
                   className="text-xs font-semibold text-sky-700 hover:text-sky-900 underline mt-1"
                 >
                   {t.workshop.a1.flashSuggestBtn}

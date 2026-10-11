@@ -63,3 +63,14 @@ describe('PATCH — projet 360 : pré-remplissage du questionnaire par les patte
     expect('qualification' in data).toBe(false)
   })
 })
+
+// Recette n° 16 : la Démarche Flash est mémorisée sur l'analyse (booléen strict), pas seulement dans l'URL.
+describe('PATCH — démarche Flash', () => {
+  it('true / false enregistrés ; toute autre valeur vaut false', async () => {
+    await patch({ demarcheFlash: true })
+    expect(prisma.analyse.update).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ demarcheFlash: true }) }))
+    await patch({ demarcheFlash: 'oui' })
+    expect(prisma.analyse.update).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ demarcheFlash: false }) }))
+  })
+})
+

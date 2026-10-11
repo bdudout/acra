@@ -14,14 +14,15 @@ describe('EntitySyncManager', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => ({ imported: ['DSI'] }) })
     vi.stubGlobal('fetch', fetchMock)
     render(<EntitySyncManager orgId="org-1" />)
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    // Délais allongés : sous la charge de la suite complète, l'aperçu dépasse parfois la seconde par défaut.
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1), { timeout: 5000 })
     fireEvent.click(screen.getByRole('button', { name: 'Preview' }))
-    expect(await screen.findByLabelText('DSI')).toBeChecked()
+    expect(await screen.findByLabelText('DSI', {}, { timeout: 5000 })).toBeChecked()
     fireEvent.click(screen.getByRole('checkbox', { name: 'DSI' }))
     expect(screen.getByRole('button', { name: 'Import' })).toBeDisabled()
     fireEvent.click(screen.getByRole('checkbox', { name: 'DSI' }))
     fireEvent.click(screen.getByRole('button', { name: 'Import' }))
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3), { timeout: 5000 })
     expect(fetchMock.mock.calls[2][1].body).toContain('"entities":["DSI"]')
   })
 

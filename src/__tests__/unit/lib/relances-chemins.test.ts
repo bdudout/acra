@@ -12,4 +12,8 @@ describe('cheminRelance', () => {
     expect(cheminRelance({ categorie: 'PROJET360_A_APPROUVER', chemin: 'https://exemple.test/x' })).toBe('/projets')
     expect(cheminRelance({ categorie: 'PROJET360_A_APPROUVER', chemin: '//exemple.test' })).toBe('/projets')
   })
+  it('recette n° 21 : évaluations et revues de tiers → entités de tiers (pas les parties prenantes d’analyses)', () => {
+    for (const categorie of ['EVALUATION_TIERS_A_VALIDER', 'EVALUATION_TIERS_A_REVOIR', 'REVUE_TIERS'] as const) expect(cheminRelance({ categorie })).toBe('/tiers/entites')
+    expect(cheminRelance({ categorie: 'EVALUATION_TIERS_A_VALIDER', chemin: '/tiers/entites?tier=t1' })).toBe('/tiers/entites?tier=t1')
+  })
 })

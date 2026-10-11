@@ -19,6 +19,8 @@ describe('sanitizeEvaluationTiers', () => {
     expect(s.actuelle).toEqual({ dependance: 4, penetration: 4, maturite: 1, confiance: null })
     expect(s.cible).toEqual({ dependance: 4, penetration: 2, maturite: 3, confiance: 3 })
     expect(s.clauses).toEqual(['securite', 'reversibilite'])
+    // Recette n° 20 : points de DORA art. 30 acceptés ; clé inconnue écartée.
+    expect(sanitizeEvaluationTiers({ clauses: ['dora30.2a', 'dora30.3f', 'dora30.9z'] }, E).clauses).toEqual(['dora30.2a', 'dora30.3f'])
     expect(s.traitementIds).toEqual(['t1'])
     expect(s.risqueIds).toEqual(['r1'])
     expect(s.justification).toBe('Hébergement des données de paie')

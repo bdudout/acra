@@ -48,7 +48,7 @@ export default function ExpressAnalyseButton({ variant = 'button' }: Props) {
       const res = await fetch('/api/analyses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nom: nom.trim() }),
+        body: JSON.stringify({ nom: nom.trim(), demarcheFlash: true }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erreur création')

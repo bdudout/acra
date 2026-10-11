@@ -26,7 +26,8 @@ type Detail = {
 
 const send = (url: string, method: string, body?: object) => fetch(url, { method, headers: { 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) })
 
-export default function TierDetailPanel({ tierId }: { tierId: string }) {
+/** `onChange` : prévient la liste parente (niveau, concentration) après une évaluation enregistrée (recette n° 18). */
+export default function TierDetailPanel({ tierId, onChange }: { tierId: string; onChange?: () => void }) {
   const { t, locale } = useTranslation()
   const c = t.tierDetail
   const types = t.registreTic.typeOpt as Record<string, string>
@@ -52,7 +53,7 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
       setRevue(d.tier?.derniereRevue ?? '')
       setCoverage(Object.fromEntries(d.contracts.filter(k => k.ownedHere).map(k => [k.id, k.serviceIds])))
       setCovDetails(Object.fromEntries(d.contracts.filter(k => k.ownedHere).map(k => [k.id, Object.fromEntries(Object.entries(k.details ?? {}).map(([sid, v]) => [sid, { perimetre: v.perimetre ?? '', dateDebut: v.dateDebut ?? '', dateFin: v.dateFin ?? '' }]))])))
-      if (d.isAdmin) { const p = await fetch('/api/processus').then(r => r.ok ? r.json() : null).catch(() => null); setProcesses(p?.processus ?? []) }
+      if (d.canManage) { const p = await fetch('/api/processus').then(r => r.ok ? r.json() : null).catch(() => null); setProcesses(p?.processus ?? []) }
     } catch { /* fiche indisponible */ }
   }, [tierId])
   useEffect(() => { void load() }, [load])
@@ -110,7 +111,7 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
                     <li key={u.id} className="flex flex-wrap items-center gap-2 text-xs text-gray-800 dark:text-gray-100">
                       <span className="font-medium">{u.useCase}</span>{u.processusNom && <span>— {u.processusNom}</span>}
                       <span className={`rounded-full px-2 py-0.5 ${u.coverage === 'CONFIRMED' ? 'bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-100' : 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100'}`}>{c.coverage[u.coverage]}</span>
-                      {detail.isAdmin
+                      {detail.canManage
                         ? <select aria-label={c.criticalityOf.replace('{name}', u.useCase)} className="input py-0.5 text-xs" value={u.criticite ?? ''} disabled={busy} onChange={e => void run(() => send(`/api/tier-registry/usages/${u.id}`, 'PATCH', { criticite: e.target.value }))}>
                             <option value="">{c.criticalityNone}</option>{Object.entries(c.criticalityLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                           </select>
@@ -120,13 +121,13 @@ export default function TierDetailPanel({ tierId }: { tierId: string }) {
                         ? <span className={`rounded-full px-2 py-0.5 ${ZONE_BADGE[u.evaluation.actuelle.zone]}`}>{niveau(u.evaluation.actuelle)} · {t.tierEval.statuts[u.evaluation.statut as keyof typeof t.tierEval.statuts] ?? u.evaluation.statut}</span>
                         : <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-500 dark:bg-gray-800">{t.tierEval.nonEvalue}</span>}
                       <button type="button" className="btn-secondary px-2 py-0.5 text-xs" aria-expanded={evalOuverte === u.id} onClick={() => setEvalOuverte(evalOuverte === u.id ? null : u.id)}>{evalOuverte === u.id ? t.tierEval.masquer : t.tierEval.evaluer}</button>
-                      {detail.isAdmin && <button type="button" className="btn-secondary px-2 py-0.5 text-xs" disabled={busy} aria-label={c.deleteUsage.replace('{name}', u.useCase)} onClick={() => void run(() => send(`/api/tier-registry/usages/${u.id}`, 'DELETE'))}>✕</button>}
-                      {evalOuverte === u.id && <div className="basis-full"><EvaluationUsagePanel usageId={u.id} usageNom={u.useCase} onChange={() => void load()} /></div>}
+                      {detail.canManage && <button type="button" className="btn-secondary px-2 py-0.5 text-xs" disabled={busy} aria-label={c.deleteUsage.replace('{name}', u.useCase)} onClick={() => void run(() => send(`/api/tier-registry/usages/${u.id}`, 'DELETE'))}>✕</button>}
+                      {evalOuverte === u.id && <div className="basis-full"><EvaluationUsagePanel usageId={u.id} usageNom={u.useCase} onChange={() => { void load(); onChange?.() }} /></div>}
                     </li>
                   ))}
                 </ul>
               )}
-              {detail.isAdmin && s.actif && (
+              {detail.canManage && s.actif && (
                 <div className="mt-2 grid gap-2 sm:grid-cols-[2fr_1fr_1fr_1fr_auto] sm:items-end">
                   <label className="text-xs text-gray-700 dark:text-gray-200">{c.useCase}<input aria-label={c.useCase} className="input mt-1 block w-full text-sm" value={form.useCase} maxLength={1000} onChange={e => setForm({ useCase: e.target.value })} /></label>
                   <label className="text-xs text-gray-700 dark:text-gray-200">{c.process}

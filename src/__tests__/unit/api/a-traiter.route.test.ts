@@ -9,6 +9,7 @@ vi.mock('next-auth', () => ({ getServerSession: m.session }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/relances.server', () => ({ elementsATraiter: m.elements }))
 vi.mock('@/lib/declarations-a-traiter.server', () => ({ declarationsATraiter: m.declarations }))
+vi.mock('@/lib/org-context.server', () => ({ resolveOrgContext: async () => ({ activeOrgId: 'o1' }) }))
 vi.mock('@/lib/prisma', () => ({ prisma: { user: { findUnique: m.user } } }))
 import { GET } from '@/app/api/a-traiter/route'
 

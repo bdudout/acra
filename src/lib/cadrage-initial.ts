@@ -1,21 +1,23 @@
 // ─── Cadrage créé avec une analyse (PUR) ───────────────────────────────────────
 // Projet 360 : la description devient le périmètre et les objectifs saisis dès la page de création sont repris (la
 // phase « contexte » n'est plus laissée vide). Analyse issue d'un socle : héritage du cadrage (hors événements redoutés
-// et socle de sécurité, propres à chaque analyse). Testé : cadrage-initial.test.ts.
+// et socle de sécurité, propres à chaque analyse). Profil « TPE » d'emblée quand le pattern « SI de très petite
+// entreprise » est coché ou que l'organisation est une petite structure (recette n° 16). Testé : cadrage-initial.test.ts.
 
 type SocleCadrage = { perimetre?: unknown; objectifsEtude?: unknown; missions?: unknown; valeursMetier?: unknown; biensSupports?: unknown } | null | undefined
 
 export function cadrageInitial(
-  data: { methode: string; description?: string | null; objectifsEtude?: string | null },
+  data: { methode: string; description?: string | null; objectifsEtude?: string | null; patterns?: readonly string[]; petiteStructure?: boolean },
   socle?: SocleCadrage,
 ): Record<string, unknown> {
   const objectifs = data.objectifsEtude?.trim() || null
+  const profil = data.petiteStructure || data.patterns?.includes('SI_TPE') ? { tailleAnalyse: 'TPE' } : {}
   if (socle) {
     return {
       perimetre: socle.perimetre, objectifsEtude: objectifs ?? socle.objectifsEtude, missions: socle.missions,
-      valeursMetier: socle.valeursMetier, biensSupports: socle.biensSupports,
+      valeursMetier: socle.valeursMetier, biensSupports: socle.biensSupports, ...profil,
     }
   }
-  if (data.methode === 'PROJET_360') return { perimetre: data.description ?? null, objectifsEtude: objectifs }
-  return objectifs ? { objectifsEtude: objectifs } : {}
+  if (data.methode === 'PROJET_360') return { perimetre: data.description ?? null, objectifsEtude: objectifs, ...profil }
+  return { ...(objectifs ? { objectifsEtude: objectifs } : {}), ...profil }
 }
