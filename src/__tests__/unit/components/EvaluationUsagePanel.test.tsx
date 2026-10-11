@@ -53,4 +53,14 @@ describe('EvaluationUsagePanel', () => {
     expect(screen.queryByRole('button', { name: 'Enregistrer' })).toBeNull()
     expect(screen.getByLabelText('Dépendance — actuelle')).toBeDisabled()
   })
+  it('recette n° 24 : « Soumise par X le JJ/MM/AAAA » en tête ; « Validée par Y le … » une fois validée', async () => {
+    const ev = { actuelle: { dependance: 3, penetration: 3, maturite: 3, confiance: 3 }, cible: null, clauses: [], traitementIds: [], risqueIds: [], justification: '' }
+    fetchMock.mockImplementation(() => ok(reponse({ evaluation: { ...ev, statut: 'SOUMISE', evalueParNom: 'Claire Martin', soumisLe: '2026-10-10T08:00:00.000Z' } })))
+    const { unmount } = render(<EvaluationUsagePanel usageId="u1" usageNom="X" onChange={() => {}} />)
+    expect(await screen.findByText('Soumise par Claire Martin le 10/10/2026')).toBeInTheDocument()
+    unmount()
+    fetchMock.mockImplementation(() => ok(reponse({ evaluation: { ...ev, statut: 'VALIDEE', evalueParNom: 'Claire Martin', soumisLe: '2026-10-10T08:00:00.000Z', valideParNom: 'Paul RSSI', valideLe: '2026-10-11T08:00:00.000Z' } })))
+    render(<EvaluationUsagePanel usageId="u1" usageNom="X" onChange={() => {}} />)
+    expect(await screen.findByText('Validée par Paul RSSI le 11/10/2026')).toBeInTheDocument()
+  })
 })

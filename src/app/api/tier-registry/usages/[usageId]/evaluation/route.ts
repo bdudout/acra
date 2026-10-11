@@ -42,8 +42,12 @@ export async function GET(_req: NextRequest, { params }: Params): Promise<NextRe
     prisma.riskItem.findMany({ where: { organizationId: c.ctx.orgId }, select: { id: true, intitule: true, taxonomieCode: true }, orderBy: { intitule: 'asc' }, take: 500 }),
   ])
   const saisie = sanitizeEvaluationTiers(ev ?? {}, c.echelles)
+  // Recette n° 24 : qui a soumis / validé, pour que le valideur sache qui a évalué et quand.
+  const ids = [ev?.evaluePar, ev?.validePar].filter((x): x is string => !!x)
+  const personnes = ids.length ? await prisma.user.findMany({ where: { id: { in: [...new Set(ids)] } }, select: { id: true, name: true, email: true } }) : []
+  const nom = (id: string | null | undefined) => { const u = personnes.find(x => x.id === id); return u ? (u.name || u.email) : null }
   return NextResponse.json({
-    evaluation: ev ? { ...saisie, statut: ev.statut, evaluePar: ev.evaluePar, soumisLe: ev.soumisLe, validePar: ev.validePar, valideLe: ev.valideLe } : null,
+    evaluation: ev ? { ...saisie, statut: ev.statut, evaluePar: ev.evaluePar, evalueParNom: nom(ev.evaluePar), soumisLe: ev.soumisLe, validePar: ev.validePar, valideParNom: nom(ev.validePar), valideLe: ev.valideLe } : null,
     cotation: coterEvaluation(saisie, c.echelles),
     prochaineEvaluation: prochaineEvaluation(ev?.valideLe ?? null),
     droits: { peutEvaluer: peutEvaluerTiers(c.ctx.role), peutValider: peutValiderEvaluationTiers(c.ctx.role, { petiteStructure: c.petiteStructure }) },

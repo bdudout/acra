@@ -776,6 +776,7 @@ export const es: Translations = {
 
   aTraiter: { declaration: 'Notificación de incidente por presentar', titre: 'Pendiente', intro: 'Lo que espera su acción o su decisión en todas sus organizaciones: los mismos elementos que el correo diario de recordatorios, sin esperarlo.', vide: 'Nada le espera por ahora.', chargement: 'Cargando…', erreur: 'No se pudo cargar la lista.', note: 'Lista actualizada cada minuto.', lienCompte: 'Pendiente: {n} elemento(s), {r} con retraso', groupes: { EN_RETARD: 'Con retraso', EN_ATTENTE: 'Decisiones pendientes', ECHEANCE_PROCHE: 'Vencimiento próximo', PERIODIQUE: 'Abiertos' } },
   tierEval: {
+    soumisePar: 'Enviada por {nom} el {date}', validePar: 'Validada por {nom} el {date}',
     aucunValideur: 'Atención: no hay ningún RSSI en esta organización; no podrá validarse hasta que se designe un RSSI (o se active «Organización pequeña»).',
     servicesRattaches: 'Servicios de terceros vinculados',
     colTiers: 'Tercero', colOffre: 'Oferta', colOrganisation: 'Organización', colUsage: 'Caso de uso', colProcessus: 'Proceso', colStatut: 'Estado de la evaluación', colZone: 'Zona', colProchaine: 'Próxima evaluación', exporter: 'Exportar las evaluaciones (Excel)',

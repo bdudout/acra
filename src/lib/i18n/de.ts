@@ -776,6 +776,7 @@ export const de: Translations = {
 
   aTraiter: { declaration: 'Vorfallsmeldung einzureichen', titre: 'Zu erledigen', intro: 'Was in all Ihren Organisationen auf Ihre Aktion oder Entscheidung wartet — dieselben Punkte wie die tägliche Erinnerungs-E-Mail, ohne darauf zu warten.', vide: 'Derzeit wartet nichts auf Sie.', chargement: 'Wird geladen…', erreur: 'Die Liste konnte nicht geladen werden.', note: 'Liste jede Minute aktualisiert.', lienCompte: 'Zu erledigen: {n} Punkt(e), davon {r} überfällig', groupes: { EN_RETARD: 'Überfällig', EN_ATTENTE: 'Ausstehende Entscheidungen', ECHEANCE_PROCHE: 'Bald fällig', PERIODIQUE: 'Offen' } },
   tierEval: {
+    soumisePar: 'Eingereicht von {nom} am {date}', validePar: 'Freigegeben von {nom} am {date}',
     aucunValideur: 'Achtung: kein CISO in dieser Organisation — die Bewertung kann erst freigegeben werden, wenn ein CISO benannt (oder „Kleine Organisation“ aktiviert) ist.',
     servicesRattaches: 'Verknüpfte Drittanbieterdienste',
     colTiers: 'Drittanbieter', colOffre: 'Angebot', colOrganisation: 'Organisation', colUsage: 'Anwendungsfall', colProcessus: 'Prozess', colStatut: 'Status der Bewertung', colZone: 'Zone', colProchaine: 'Nächste Bewertung', exporter: 'Bewertungen exportieren (Excel)',

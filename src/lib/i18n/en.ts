@@ -776,6 +776,7 @@ export const en: Translations = {
 
   aTraiter: { declaration: 'Incident notification to submit', titre: 'To do', intro: 'What awaits your action or decision across all your organisations — the same items as the daily reminder email, without waiting for it.', vide: 'Nothing awaits you right now.', chargement: 'Loading…', erreur: 'The list could not be loaded.', note: 'List refreshed every minute.', lienCompte: 'To do: {n} item(s), {r} overdue', groupes: { EN_RETARD: 'Overdue', EN_ATTENTE: 'Pending decisions', ECHEANCE_PROCHE: 'Due soon', PERIODIQUE: 'Open' } },
   tierEval: {
+    soumisePar: 'Submitted by {nom} on {date}', validePar: 'Approved by {nom} on {date}',
     aucunValideur: 'Warning: no CISO in this organisation — it cannot be approved until a CISO is assigned (or “Small organisation” is enabled).',
     servicesRattaches: 'Linked third-party services',
     colTiers: 'Third party', colOffre: 'Offering', colOrganisation: 'Organisation', colUsage: 'Use case', colProcessus: 'Process', colStatut: 'Assessment status', colZone: 'Zone', colProchaine: 'Next assessment', exporter: 'Export assessments (Excel)',

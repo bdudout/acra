@@ -6,7 +6,7 @@ import { NextRequest } from 'next/server'
 
 const m = vi.hoisted(() => ({
   session: vi.fn(), scope: vi.fn(), rl: vi.fn(), audit: vi.fn(), orgCfg: vi.fn(),
-  usage: vi.fn(), evalFind: vi.fn(), evalUpsert: vi.fn(), evalUpdate: vi.fn(), traitements: vi.fn(), risques: vi.fn(), membres: vi.fn(),
+  usage: vi.fn(), evalFind: vi.fn(), evalUpsert: vi.fn(), evalUpdate: vi.fn(), traitements: vi.fn(), risques: vi.fn(), membres: vi.fn(), users: vi.fn(),
 }))
 vi.mock('next-auth', () => ({ getServerSession: m.session }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
@@ -17,7 +17,7 @@ vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.orgCfg }))
 vi.mock('@/lib/prisma', () => ({ prisma: {
   tierServiceUsage: { findUnique: m.usage },
   evaluationUsageTiers: { findUnique: m.evalFind, upsert: m.evalUpsert, update: m.evalUpdate },
-  traitement: { findMany: m.traitements }, riskItem: { findMany: m.risques }, orgMembership: { count: m.membres },
+  traitement: { findMany: m.traitements }, riskItem: { findMany: m.risques }, orgMembership: { count: m.membres }, user: { findMany: m.users },
 } }))
 import { GET, PUT, POST } from '@/app/api/tier-registry/usages/[usageId]/evaluation/route'
 
@@ -39,6 +39,7 @@ beforeEach(() => {
   m.traitements.mockResolvedValue([{ id: 't1', nom: 'Paie' }])
   m.risques.mockResolvedValue([{ id: 'r1', intitule: 'Risque d’externalisation — hébergement', taxonomieCode: null }])
   m.membres.mockResolvedValue(1)
+  m.users.mockResolvedValue([])
 })
 
 describe('évaluation d’un usage de service tiers', () => {
@@ -83,5 +84,12 @@ describe('évaluation d’un usage de service tiers', () => {
     const j = await (await POST(req('POST', { action: 'SOUMETTRE' }), p)).json()
     expect(j).toEqual({ ok: true, statut: 'SOUMISE', avertissement: 'aucun_validateur' })
     expect(m.membres.mock.calls[0][0].where).toEqual({ organizationId: 'org1', role: { in: ['RSSI'] } })
+  })
+  it('recette n° 24 : GET nomme l’évaluateur (et le valideur) pour le bandeau « soumise par X le JJ/MM »', async () => {
+    m.evalFind.mockResolvedValue({ id: 'e1', statut: 'SOUMISE', actuelle: COMPLETE, cible: null, evaluePar: 'u9', soumisLe: new Date('2026-10-10T08:00:00Z'), validePar: null, valideLe: null })
+    m.users.mockResolvedValue([{ id: 'u9', name: 'Claire Martin', email: 'claire@exemple.test' }])
+    const j = await (await GET(req('GET'), p)).json()
+    expect(j.evaluation).toMatchObject({ evalueParNom: 'Claire Martin', valideParNom: null, soumisLe: '2026-10-10T08:00:00.000Z' })
+    expect(m.users.mock.calls[0][0].where).toEqual({ id: { in: ['u9'] } })
   })
 })

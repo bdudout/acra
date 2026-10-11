@@ -12,7 +12,7 @@ import { CONTRACTUAL_CLAUSE_KEYS } from '@/lib/ecosystem-contractual-clauses'
 import { coterEvaluation, type Cotation } from '@/lib/tier-evaluation'
 
 interface Reponse {
-  evaluation: { statut: 'BROUILLON' | 'SOUMISE' | 'VALIDEE'; actuelle: Cotation; cible: Cotation | null; clauses: string[]; traitementIds: string[]; risqueIds: string[]; justification: string } | null
+  evaluation: { statut: 'BROUILLON' | 'SOUMISE' | 'VALIDEE'; evalueParNom?: string | null; soumisLe?: string | null; valideParNom?: string | null; valideLe?: string | null; actuelle: Cotation; cible: Cotation | null; clauses: string[]; traitementIds: string[]; risqueIds: string[]; justification: string } | null
   prochaineEvaluation: string | null
   droits: { peutEvaluer: boolean; peutValider: boolean }
   echelles: EchellesEcosysteme
@@ -91,6 +91,14 @@ export default function EvaluationUsagePanel({ usageId, usageNom, onChange }: { 
         {statut && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700 dark:bg-gray-700 dark:text-gray-200">{l.statuts[statut]}</span>}
         {data.prochaineEvaluation && <span className="text-[11px] text-gray-500">{l.prochaine.replace('{date}', new Date(data.prochaineEvaluation).toLocaleDateString(locale, { timeZone: 'UTC' }))}</span>}
       </div>
+      {/* Recette n° 24 : le valideur sait qui a évalué et quand. */}
+      {(() => {
+        const e = data.evaluation
+        const date = (d?: string | null) => (d ? new Date(d).toLocaleDateString(locale, { timeZone: 'UTC' }) : '')
+        if (e?.statut === 'VALIDEE' && e.valideParNom) return <p className="text-xs text-gray-700 dark:text-gray-200">{l.validePar.replace('{nom}', e.valideParNom).replace('{date}', date(e.valideLe))}</p>
+        if (e?.statut === 'SOUMISE' && e.evalueParNom) return <p className="text-xs text-gray-700 dark:text-gray-200">{l.soumisePar.replace('{nom}', e.evalueParNom).replace('{date}', date(e.soumisLe))}</p>
+        return null
+      })()}
       <p className="text-[11px] text-gray-500 dark:text-gray-400">{l.aide}</p>
       <div className="grid gap-4 sm:grid-cols-2">
         {colonne(l.actuelle, actuelle, setActuelle, 'actuelle')}
