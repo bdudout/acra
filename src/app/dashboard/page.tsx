@@ -24,6 +24,8 @@ import { formatDate } from '@/lib/format'
 import { sanitizeConformite, conformiteStats, deriveNonConformites } from '@/lib/conformite'
 import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
 import ConformiteTrackingCard, { type ConformiteCardRow } from '@/components/ConformiteTrackingCard'
+import ATraiterClient from '@/components/ATraiterClient'
+import { accueilRole } from '@/lib/accueil-role'
 import { AlertCircle, AlertTriangle, BarChart3, Building2, CheckCircle2, ClipboardList, Globe, Hand, KeyRound, Landmark, Plus, Send, Settings, ShieldCheck, TrendingUp, Upload, VenetianMask, Zap } from 'lucide-react'
 
 // Désactiver le cache Next.js pour toujours afficher les données fraîches
@@ -58,6 +60,8 @@ export default async function DashboardPage() {
       partiesPrenantes: { select: { id: true, nom: true, nomCourt: true, type: true, exposition: true, fiabilite: true, dependance: true, penetration: true, maturite: true, confiance: true, critique: true, rang: true, cle: true, parentCle: true } },
     },
   })
+  // Recette n° 32 : accueil selon le rôle (Métier, Contrôleur, Auditeur, Direction métier sans analyse).
+  const accueil = accueilRole(__org.role ?? userRole, analyses.length, { incidentsActive: !!__cfg?.incidentsActive, controlePermanentActive: !!__cfg?.controlePermanentActive, auditInterneActive: !!__cfg?.auditInterneActive })
 
   // Vue consolidée : le périmètre couvre plusieurs organisations (ex. RSSI groupe)
   // → on indique l'entité d'origine de chaque analyse.
@@ -211,8 +215,22 @@ export default async function DashboardPage() {
           </div>
         </div>
 
+        {/* Recette n° 32 : action principale et « À traiter » pour les rôles sans analyse, au lieu des compteurs à 0. */}
+        {!accueil.centreAnalyses && (
+          <section className="card p-5 mb-8" aria-labelledby="accueil-role-titre">
+            <h2 id="accueil-role-titre" className="font-semibold text-gray-800 mb-3">{t.dashboard.accueilRole.titre}</h2>
+            <div className="flex flex-wrap gap-2 mb-5">
+              {accueil.actions.map((a, i) => (
+                <Link key={a.cle} href={a.href} className={i === 0 ? 'btn-primary' : 'btn-secondary'}>{t.dashboard.accueilRole[a.cle]}</Link>
+              ))}
+            </div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">{t.dashboard.accueilRole.aTraiter}</h3>
+            <ATraiterClient />
+          </section>
+        )}
+
         {/* Stats KPI */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-8">
+        {accueil.centreAnalyses && <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-8">
           {[
             { label: t.dashboard.kpi.total,      value: stats.total,             Icon: ClipboardList, color: 'text-ebios-600',  bg: 'bg-ebios-50',  href: '/analyses' },
             ...(userRole === 'RISK_MANAGER' || userRole === 'RSSI' || isAdminRole(userRole)
@@ -229,7 +247,7 @@ export default async function DashboardPage() {
               <div className="text-xs text-gray-500 mt-1">{s.label}</div>
             </Link>
           ))}
-        </div>
+        </div>}
 
         {/* Main grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -266,7 +284,7 @@ export default async function DashboardPage() {
               </div>
             )}
 
-            <div>
+            {accueil.centreAnalyses && <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-semibold text-gray-800">{t.dashboard.recent}</h2>
                 <Link href="/analyses" className="text-sm text-ebios-600 hover:underline">
@@ -356,7 +374,7 @@ export default async function DashboardPage() {
                   </Link>
                 </div>
               )}
-            </div>
+            </div>}
 
             {analysesAvecCritiques.length > 0 && (
               <div className="card p-5">
@@ -412,9 +430,9 @@ export default async function DashboardPage() {
 
             <div className="card p-5 space-y-2">
               <h2 className="font-semibold text-gray-800 mb-3"><Zap size={20} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.dashboard.quickTitle}</h2>
-              <Link href="/analyses" className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 text-sm text-gray-700">
+              {accueil.centreAnalyses && <Link href="/analyses" className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 text-sm text-gray-700">
                 <ClipboardList size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.dashboard.quickAll}
-              </Link>
+              </Link>}
               {peutCreerAnalyse && (
                 <>
                   <Link href="/analyses/new" className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 text-sm text-gray-700">
@@ -428,7 +446,7 @@ export default async function DashboardPage() {
                   <Upload size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {stats.soumises} {t.dashboard.quickApprove}
                 </Link>
               )}
-              {userRole !== 'LECTEUR' && (
+              {userRole !== 'LECTEUR' && accueil.centreAnalyses && (
                 <Link href="/configuration" className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 text-sm text-gray-700">
                   <Settings size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.dashboard.quickConfig}
                 </Link>
@@ -440,7 +458,7 @@ export default async function DashboardPage() {
               )}
             </div>
 
-            <EbiosGuide />
+            {accueil.centreAnalyses && <EbiosGuide />}
           </div>
         </div>
       </main>

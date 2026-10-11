@@ -130,6 +130,8 @@ describe('normalizeControleAnomalie', () => {
     expect(item.statut).toBe('A_FAIRE')
     expect(item.priorite).toBe('MAJEUR')
     expect(item.titre).toContain('Contrôle des habilitations')
+    // Recette n° 31 : la date d'exécution n'est pas une échéance (l'action naîtrait « En retard ») → sans échéance.
+    expect(item.echeance).toBeNull()
     expect(item.description).toBe('Écart détecté')
   })
 })

@@ -548,6 +548,7 @@ export const fr = {
     quickExpress:   'EBIOS RM flash', newProjet360: 'Nouveau projet 360', importAnalyse: 'Importer une analyse',
     quickApprove:   'analyse(s) à approuver',
     quickConfig:    'Configuration des échelles',
+    accueilRole: { titre: 'Pour commencer', declarerIncident: 'Déclarer un incident', executerControles: 'Exécuter mes contrôles', missionsAudit: 'Mes missions d’audit', planAction: 'Suivre le plan d’action', aTraiter: 'À traiter' },
     quickAdmin:     'Gestion des utilisateurs',
     guideTitle:     'Guide — Ateliers EBIOS RM',
     stepsLabel:     'Étapes :',
