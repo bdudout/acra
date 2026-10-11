@@ -16,6 +16,7 @@ import {
 } from '@/lib/workshop-sanitize'
 import { normalizeCategorieMesure } from '@/lib/mesure-categorie'
 import { touchOrgActivity } from '@/lib/demo-server'
+import { atelierApresAvancement } from '@/lib/analyse-avancement'
 import { sanitizeTierLinks } from '@/lib/tier-registry.server'
 
 /**
@@ -46,12 +47,10 @@ import { sanitizeTierLinks } from '@/lib/tier-registry.server'
  *  - EDITION or APPROBATION permission on the analyse (403 otherwise)
  *  - Analyse must not be in APPROUVE status unless caller is ADMIN (403)
  */
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string; num: string }> }
-) {
+/** Contrôles communs à la sauvegarde et à l'avancement : session, accès, édition, statut, gel. */
+async function chargerPourEdition(params: Promise<{ id: string; num: string }>) {
   const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  if (!session?.user) return { ok: false as const, error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
 
   const { id: analyseId, num } = await params
   const userId = (session.user as any).id
@@ -63,17 +62,17 @@ export async function PUT(
     include: { accesUtilisateurs: true },
   })
   // Analyse en corbeille (soft delete) = introuvable : interdit de sauvegarder dessus.
-  if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
+  if (!analyse || analyse.deletedAt) return { ok: false as const, error: NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 }) }
 
   // F01 (CWE-863) : rôle EFFECTIF dans l'organisation de l'analyse, pas le rôle d'instance.
   const effRole = resolveAnalyseRole(userRole, analyse.organizationId, analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null)
   if (!canEditAnalyse({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
-    return NextResponse.json({ error: 'Accès refusé — édition non autorisée' }, { status: 403 })
+    return { ok: false as const, error: NextResponse.json({ error: 'Accès refusé — édition non autorisée' }, { status: 403 }) }
   }
 
   // Bloquer les modifications si l'analyse est approuvée
   if (analyse.statut === 'APPROUVE' && userRole !== 'ADMIN') {
-    return NextResponse.json({ error: 'L\'analyse est approuvée et ne peut plus être modifiée' }, { status: 403 })
+    return { ok: false as const, error: NextResponse.json({ error: 'L\'analyse est approuvée et ne peut plus être modifiée' }, { status: 403 }) }
   }
 
   // Gel après acceptation des risques résiduels : l'analyse est figée tant que la
@@ -81,9 +80,20 @@ export async function PUT(
   if (analyse.risquesResiduelsStatut === 'ACCEPTES') {
     const orgConfig = await getOrgConfig(analyse.organizationId).catch(() => null)
     if (analyseGelee(analyse.risquesResiduelsStatut, orgConfig?.gelApresAcceptationActive ?? false)) {
-      return NextResponse.json({ error: 'Analyse gelée : les risques résiduels ont été acceptés. Ouvrez une nouvelle version pour la modifier.' }, { status: 403 })
+      return { ok: false as const, error: NextResponse.json({ error: 'Analyse gelée : les risques résiduels ont été acceptés. Ouvrez une nouvelle version pour la modifier.' }, { status: 403 }) }
     }
   }
+
+  return { ok: true as const, analyseId, atelierNum, analyse }
+}
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string; num: string }> }
+): Promise<NextResponse> {
+  const c = await chargerPourEdition(params)
+  if (!c.ok) return c.error
+  const { analyseId, atelierNum, analyse } = c
 
   const body = await req.json()
 
@@ -105,8 +115,8 @@ export async function PUT(
   }
 
   try {
-    // ── Avancement de l'atelier courant (commun à tous les cas) ────────────
-    const newAtelier = Math.max(analyse.atelierCourant, Math.min(atelierNum + 1, 5))
+    // Recette n° 14 : la sauvegarde (y compris automatique) ne fait PAS avancer l'atelier courant ; l'avancement passe
+    // par POST (« Passer à l'atelier suivant »).
 
     switch (atelierNum) {
       case 1: {
@@ -123,7 +133,6 @@ export async function PUT(
         await prisma.analyse.update({
           where: { id: analyseId },
           data: {
-            atelierCourant: newAtelier,
             updatedAt: new Date(),
             ...(referentielMesures !== undefined ? { referentielMesures } : {}),
           },
@@ -145,7 +154,7 @@ export async function PUT(
             : []),
           prisma.analyse.update({
             where: { id: analyseId },
-            data: { atelierCourant: newAtelier, updatedAt: new Date() },
+            data: { updatedAt: new Date() },
           }),
         ])
         break
@@ -170,7 +179,7 @@ export async function PUT(
             : []),
           prisma.analyse.update({
             where: { id: analyseId },
-            data: { atelierCourant: newAtelier, updatedAt: new Date() },
+            data: { updatedAt: new Date() },
           }),
         ])
         break
@@ -187,7 +196,7 @@ export async function PUT(
             : []),
           prisma.analyse.update({
             where: { id: analyseId },
-            data: { atelierCourant: newAtelier, updatedAt: new Date() },
+            data: { updatedAt: new Date() },
           }),
         ])
         break
@@ -238,7 +247,7 @@ export async function PUT(
             : []),
           prisma.analyse.update({
             where: { id: analyseId },
-            data: { atelierCourant: newAtelier, updatedAt: new Date() },
+            data: { updatedAt: new Date() },
           }),
         ])
         break
@@ -257,3 +266,19 @@ export async function PUT(
     return NextResponse.json({ error: 'Erreur lors de la sauvegarde' }, { status: 500 })
   }
 }
+
+/**
+ * POST /api/analyses/[id]/workshop/[num] — « Passer à l'atelier suivant » (recette n° 14) : seul point qui fait avancer
+ * l'atelier courant (lib/analyse-avancement : jamais de recul, plafond 5). Mêmes contrôles que la sauvegarde.
+ */
+export async function POST(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string; num: string }> }
+): Promise<NextResponse> {
+  const c = await chargerPourEdition(params)
+  if (!c.ok) return c.error
+  const atelierCourant = atelierApresAvancement(c.analyse.atelierCourant, c.atelierNum)
+  if (atelierCourant !== c.analyse.atelierCourant) await prisma.analyse.update({ where: { id: c.analyseId }, data: { atelierCourant } })
+  return NextResponse.json({ ok: true, atelierCourant })
+}
+
