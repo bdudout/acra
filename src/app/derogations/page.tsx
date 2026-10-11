@@ -6,9 +6,10 @@ import Navbar from '@/components/Navbar'
 import { analyseWhereClause, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { getServerLocale, getServerT } from '@/lib/i18n'
+import { getServerLocale } from '@/lib/i18n'
 import DerogationsRegistre, { type RegistreRow } from '@/components/DerogationsRegistre'
 import DerogationsDashboard from '@/components/DerogationsDashboard'
+import { getServerTOrg } from '@/lib/i18n-org'
 import { buildDerogationDashboard } from '@/lib/derogation-dashboard'
 
 export const dynamic = 'force-dynamic'
@@ -19,10 +20,10 @@ export default async function DerogationsPage() {
   if (!session?.user) redirect('/auth/signin')
 
   const locale = await getServerLocale()
-  const t = await getServerT()
   const userId = (session.user as { id: string }).id
   const userRole: UserRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
   const scope = await getAnalyseScope(userId, userRole)
+  const t = await getServerTOrg(scope.activeOrgId) // vocabulaire de l'organisation (lot L5)
 
   // Dérogations de toutes les analyses accessibles.
   const analyses = await prisma.analyse.findMany({

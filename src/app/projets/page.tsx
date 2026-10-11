@@ -7,8 +7,8 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { resolvePageOrganizationIds } from '@/lib/org-context'
 import { getOrgConfig, optionsStructure } from '@/lib/org-config.server'
 import { analyseWhereClause, canCreateAnalyse, type UserRole } from '@/lib/permissions'
-import { getServerT } from '@/lib/i18n'
 import Navbar from '@/components/Navbar'
+import { getServerTOrg } from '@/lib/i18n-org'
 import ProjetsManager from '@/components/ProjetsManager'
 
 export const dynamic = 'force-dynamic'
@@ -30,7 +30,7 @@ export default async function ProjetsPage({ searchParams }: { searchParams: Prom
     (await getOrgConfig(orgId)).projets360Active ? orgId : null
   )))).filter((orgId): orgId is string => orgId !== null)
   if (!enabledOrgIds.length) notFound()
-  const t = await getServerT()
+  const t = await getServerTOrg(scope.activeOrgId) // vocabulaire de l'organisation (lot L5)
   // Analyses cyber du projet : seulement celles que l'utilisateur peut ouvrir (mêmes droits que la liste).
   const rows = await prisma.analyse.findMany({
     where: { AND: [analyseWhereClause(userId, scope.role, scope.scope)], organizationId: { in: enabledOrgIds }, methode: 'PROJET_360' },
