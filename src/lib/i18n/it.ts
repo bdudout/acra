@@ -4614,7 +4614,7 @@ export const it: Translations = {
     referentiel: {
       titre: 'Registro delle entità',
       desc: 'Controllate, direzioni, sedi e servizi responsabili delle misure: un elenco unico, con alias e identificativo esterno, per collegare rischi, incidenti, piani e misure all’entità corretta.',
-      ajouter: 'Aggiungi un’entità',
+      ajouter: 'Aggiungi al registro',
       modifier: 'Modifica',
       enregistrer: 'Salva',
       annuler: 'Annulla',

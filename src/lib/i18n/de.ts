@@ -4613,7 +4613,7 @@ export const de: Translations = {
     referentiel: {
       titre: 'Entitätenverzeichnis',
       desc: 'Tochtergesellschaften, Direktionen, Standorte und für Maßnahmen verantwortliche Dienste: eine einzige Liste mit Aliassen und externer Kennung, um Risiken, Vorfälle, Pläne und Maßnahmen der richtigen Entität zuzuordnen.',
-      ajouter: 'Entität hinzufügen',
+      ajouter: 'Zum Verzeichnis hinzufügen',
       modifier: 'Bearbeiten',
       enregistrer: 'Speichern',
       annuler: 'Abbrechen',

@@ -4614,7 +4614,7 @@ export const es: Translations = {
     referentiel: {
       titre: 'Registro de entidades',
       desc: 'Filiales, direcciones, sedes y servicios responsables de medidas: una lista única, con alias e identificador externo, para vincular riesgos, incidentes, planes y medidas a la entidad correcta.',
-      ajouter: 'Añadir una entidad',
+      ajouter: 'Añadir al registro',
       modifier: 'Modificar',
       enregistrer: 'Guardar',
       annuler: 'Cancelar',

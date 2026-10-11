@@ -4614,7 +4614,7 @@ export const en: Translations = {
     referentiel: {
       titre: 'Entity register',
       desc: 'Subsidiaries, departments, sites and measure owner services: a single list, with aliases and external identifier, to link risks, incidents, plans and measures to the right entity.',
-      ajouter: 'Add an entity',
+      ajouter: 'Add to the register',
       modifier: 'Edit',
       enregistrer: 'Save',
       annuler: 'Cancel',

@@ -4663,7 +4663,7 @@ export const fr = {
     referentiel: {
       titre: 'Référentiel des entités',
       desc: 'Filiales, directions, sites et services responsables des mesures : une liste unique, avec alias et identifiant externe, pour rattacher risques, incidents, plans et mesures à la bonne entité.',
-      ajouter: 'Ajouter une entité',
+      ajouter: 'Ajouter au référentiel',
       modifier: 'Modifier',
       enregistrer: 'Enregistrer',
       annuler: 'Annuler',
