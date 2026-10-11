@@ -11,7 +11,7 @@ import { makeOrg, makeUser } from './helpers'
 const mail = vi.hoisted(() => ({ send: vi.fn(async () => ({ ok: true })) }))
 vi.mock('@/lib/email', () => ({ sendEmail: mail.send }))
 
-import { executerRelances } from '@/lib/relances.server'
+import { elementsATraiter, executerRelances, invaliderATraiter } from '@/lib/relances.server'
 
 const J = 86_400_000
 const jour = (n: number) => new Date(Date.now() + n * J)
@@ -123,6 +123,14 @@ describe('relances étendues (vraie base)', () => {
   })
   it('évaluation d’un service tiers soumise → RSSI', () => {
     expect(texte(rssi)).toContain('Évaluation d’un service tiers à valider — Hébergeur Alpha — IaaS — Hébergement de la paie')
+  })
+  it('page « À traiter » : aperçu sans envoi ni marquage, éléments présents même déjà relancés', async () => {
+    mail.send.mockClear(); invaliderATraiter()
+    const items = await elementsATraiter(rssi.email)
+    expect(mail.send).not.toHaveBeenCalled()
+    expect(items.map(i => i.categorie)).toEqual(expect.arrayContaining(['CONTRAT_TIC', 'TEST_RESILIENCE', 'EVALUATION_TIERS_A_VALIDER']))
+    expect(items.find(i => i.categorie === 'TEST_RESILIENCE')).toMatchObject({ type: 'EN_RETARD', lien: '/reglementaire/tests-resilience', organisation: expect.stringContaining('Relances étendues') })
+    expect(await elementsATraiter('personne@inconnu.test')).toEqual([])
   })
   it('anti-doublon : rien au second passage', async () => {
     mail.send.mockClear()

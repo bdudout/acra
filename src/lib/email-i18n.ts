@@ -181,6 +181,16 @@ const relancesLabels: Record<EmailLocale, {
  * message, toutes organisations confondues. Une seule organisation : nommée dans l'objet ;
  * plusieurs : chaque ligne est préfixée par son organisation.
  */
+/** Libellés d'un élément à traiter (catégorie, état) dans la langue de l'utilisateur — mêmes textes que l'e-mail de relance (page « À traiter »). */
+export function libelleRelance(locale: string | null | undefined, item: Pick<RelanceItem, 'categorie' | 'type' | 'echeance'>): { categorie: string; etat: string } {
+  const L = relancesLabels[emailLocale(locale)]
+  return { categorie: L.categories[item.categorie], etat: L.etat[item.type](item.echeance) }
+}
+/** État d'un élément (« en retard (échéance le …) », « échéance le … »…) dans la langue de l'utilisateur. */
+export function libelleEtat(locale: string | null | undefined, type: RelanceEmailType, echeance: string | null): string {
+  return relancesLabels[emailLocale(locale)].etat[type](echeance)
+}
+
 export function relancesEmail(locale: string | null | undefined, p: RelancesParams): BuiltEmail {
   const L = relancesLabels[emailLocale(locale)]
   const organisations = [...new Set(p.items.map(x => x.organisation))]
@@ -375,6 +385,14 @@ const alerteDoraLabels: Record<EmailLocale, {
 }
 
 /** E-mail URGENT des échéances DORA d'une personne (toutes organisations) : date et heure UTC de chaque échéance. */
+/** Nom d'une phase de déclaration (DORA ou autre régime) dans la langue de l'utilisateur — même texte que l'alerte urgente. */
+export function libellePhaseDeclaration(locale: string | null | undefined, i: AlerteDoraItem): string {
+  const L = alerteDoraLabels[emailLocale(locale)]
+  const T = getT(locale ?? 'fr') as unknown as Record<string, unknown>
+  const tr = (key?: string, fallback?: string) => (key ? (key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown> | undefined)?.[k], T) as string | undefined) : undefined) ?? fallback ?? key ?? ''
+  return i.phase ? `DORA — ${L.phases[i.phase]}` : `${tr(i.regimeLabelKey, i.regimeLabel)} — ${tr(i.phaseLabelKey, i.phaseLabel ?? i.phaseCode)}`
+}
+
 export function alertesDoraEmail(locale: string | null | undefined, p: AlertesDoraParams): BuiltEmail {
   const L = alerteDoraLabels[emailLocale(locale)]
   const quand = (d: Date) => `${d.toISOString().slice(0, 16).replace('T', ' ')} UTC`

@@ -10,7 +10,7 @@
 // `alerteeLe`) : le passage est idempotent, quel que soit le nombre d'appels.
 import { prisma } from './prisma'
 import { getOrgConfig } from './org-config.server'
-import { sanitizeRelancesConfig, typeRelance, typeEcheance, controlesNonExecutes, PREAVIS_CONTRAT_TIC_JOURS, PREAVIS_INVITATION_JOURS, relanceAttenteDue, approbateursAnalyse, valideursDerogation, attenteDerogationDepuis, type RelancesConfig } from './relances'
+import { libelleProposition, sanitizeRelancesConfig, typeRelance, typeEcheance, controlesNonExecutes, PREAVIS_CONTRAT_TIC_JOURS, PREAVIS_INVITATION_JOURS, relanceAttenteDue, approbateursAnalyse, valideursDerogation, attenteDerogationDepuis, type RelancesConfig } from './relances'
 import { resolveAuditConfig, type AuditConfig } from './audit-config'
 import { calculerRappels } from './audit-rappels'
 import { prochaineEcheance, etatEcheance, type Periodicite } from './controle'
@@ -57,6 +57,20 @@ const jour = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null)
 const versDest = (u: { email: string; isActive: boolean; locale: string | null } | undefined): Destinataire[] => (u?.isActive && u.email ? [{ email: u.email, locale: u.locale }] : [])
 
 export async function executerRelances(now: Date = new Date()): Promise<ResultatRelances> {
+  return (await passageRelances(now, false)) as ResultatRelances
+}
+
+/** Boîte de relances : par adresse, éléments à traiter (avec l'organisation d'origine). */
+export type BoiteRelances = Map<string, { email: string; locale: string | null; items: (RelanceItem & { orgId: string })[] }>
+/** Champs anti-doublon : ignorés en aperçu (tout ce qui est en attente, pas seulement ce qui est à relancer aujourd'hui). */
+const ANTI_DOUBLON = ['rappelLe', 'rappelEcheanceLe', 'suppressionRappelLe', 'aipdRappelLe', 'revueRappelLe', 'alerteeLe'] as const
+
+/**
+ * Passage unique du moteur. `apercu` (page « À traiter ») : mêmes règles et mêmes destinataires, mais AUCUN envoi, AUCUN
+ * marquage ni journalisation ; anti-doublon et délais d'attente ignorés, relances considérées actives — on obtient ce qui
+ * attend chaque personne maintenant.
+ */
+async function passageRelances(now: Date, apercu: boolean): Promise<ResultatRelances | { boite: BoiteRelances; orgs: Map<string, string> }> {
   const [reponses, preconisations, plans, aVerifier, analyses, derogationsRevue, constats, controles, derogationsActives] = await Promise.all([
     prisma.questionnaireReponse.findMany({
       where: { statut: { in: ['A_REPONDRE', 'A_COMPLETER'] }, envoi: { statut: 'OUVERT' } },
@@ -94,12 +108,12 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
       take: 10000,
     }),
     prisma.controle.findMany({
-      where: { actif: true, alerteeLe: null },
+      where: { actif: true, ...(apercu ? {} : { alerteeLe: null }) },
       select: { id: true, organizationId: true, intitule: true, periodicite: true, createdAt: true, executions: { orderBy: { dateRealisation: 'desc' }, take: 1, select: { dateRealisation: true } } },
       take: 10000,
     }),
     prisma.derogation.findMany({
-      where: { statut: 'ACTIVE', alerteeLe: null },
+      where: { statut: 'ACTIVE', ...(apercu ? {} : { alerteeLe: null }) },
       select: { id: true, organizationId: true, intitule: true, statut: true, dateFin: true, demandeurId: true },
       take: 10000,
     }),
@@ -131,6 +145,11 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     // Évaluations d'usages de services tiers (lot T1) : soumises (validation RSSI) ou validées (réévaluation à 12 mois).
     prisma.evaluationUsageTiers.findMany({ where: { statut: { in: ['SOUMISE', 'VALIDEE'] } }, select: { id: true, organizationId: true, statut: true, soumisLe: true, valideLe: true, evaluePar: true, createdAt: true, rappelLe: true, usage: { select: { useCase: true, tierService: { select: { nom: true, tier: { select: { nom: true } } } } } } }, take: 10000 }),
   ])
+  if (apercu) {
+    for (const liste of [reponses, preconisations, plans, aVerifier, analyses, derogationsRevue, constats, controles, derogationsActives, contrats, tests, kris, documents, campagnes, missions, analysesEcheance, acceptations, invitations, homologations, suppressions, traitementsAipd, plansSoumis, propositionsMcp, revuesIa, revuesTraitements, revuesProcessus, revuesTiers, evaluationsTiers] as Record<string, unknown>[][]) {
+      for (const x of liste) for (const k of ANTI_DOUBLON) if (k in x) x[k] = null
+    }
+  }
   // Versions remplacées d'un document : seule la version en vigueur est à revoir.
   const remplaces = new Set((documents.length ? await prisma.document.findMany({ where: { remplaceId: { in: documents.map(d => d.id) } }, select: { remplaceId: true } }) : []).map(d => d.remplaceId))
   const ctrlIdsCampagnes = [...new Set(campagnes.flatMap(c => (Array.isArray(c.controleIds) ? c.controleIds : []).filter((v): v is string => typeof v === 'string')))]
@@ -142,8 +161,9 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     if (!cfgCache.has(orgId)) {
       const c = await getOrgConfig(orgId)
       cfgCache.set(orgId, {
-        relances: sanitizeRelancesConfig(c.relancesConfig), controle: c.controlePermanentActive,
-        audit: c.auditInterneActive, auditConfig: resolveAuditConfig(c.auditConfig),
+        // Aperçu : relances actives, sans délai d'attente, périodicité minimale (élément ouvert = à traiter).
+        relances: apercu ? { ...sanitizeRelancesConfig(c.relancesConfig), actives: true, attenteJours: 0, periodiciteJours: 1e-6 } : sanitizeRelancesConfig(c.relancesConfig), controle: c.controlePermanentActive,
+        audit: c.auditInterneActive, auditConfig: apercu ? { ...resolveAuditConfig(c.auditConfig), rappelsActifs: true } : resolveAuditConfig(c.auditConfig),
         derogations: c.derogationsActive, derogationAlerteJours: c.derogationAlerteJours ?? 30, secondeLigne: c.secondeLigneActive,
         reglementaire: !!c.reglementaireActive, kri: !!c.kriActive, homologations: !!c.homologationsActive, conformite: c.conformiteActive, acceptationRisques: c.acceptationRisquesActive, petiteStructure: c.petiteStructure,
         mcp: c.mcpActive, planification: sanitizePlanificationConfig(c.planificationConfig), registreIa: !!c.registreIaActive,
@@ -183,7 +203,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
   const responsablePreco = new Map(preconisations.map(p => [p.id, p.responsableId]))
 
   // ─── Boîte d'envoi : une entrée par personne (e-mail), toutes organisations confondues ───
-  const boite = new Map<string, { email: string; locale: string | null; items: (RelanceItem & { orgId: string })[] }>()
+  const boite: BoiteRelances = new Map()
   const ajouter = (orgId: string, dests: Destinataire[], item: RelanceItem) => {
     for (const [cle, d] of new Map(dests.map(x => [x.email.toLowerCase(), x]))) {
       const e = boite.get(cle) ?? { email: d.email, locale: d.locale, items: [] }
@@ -267,7 +287,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     const dests = [...await parRoles(d.organizationId, GOUVERNANCE), ...versDest(users.get(d.demandeurId))]
     ajouter(d.organizationId, dests, { categorie: 'DEROGATION_EXPIRATION', intitule: d.intitule, type: jours < 0 ? 'EN_RETARD' : 'ECHEANCE_PROCHE', echeance: jour(d.dateFin) })
     marques.derogationsExpiration.push(d.id)
-    await auditLog('DEROGATION_EXPIRING', { organizationId: d.organizationId, details: { derogationId: d.id, jours, recipients: new Set(dests.map(x => x.email.toLowerCase())).size } })
+    if (!apercu) await auditLog('DEROGATION_EXPIRING', { organizationId: d.organizationId, details: { derogationId: d.id, jours, recipients: new Set(dests.map(x => x.email.toLowerCase())).size } })
   }
 
   // Homologations à renouveler ou expirées : à la gouvernance, au préparateur et à l'autorité (module actif).
@@ -278,7 +298,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     const dests = [...await parRoles(h.organizationId, GOUVERNANCE), ...await destsParIds(h.organizationId, [h.preparePar, h.autoriteId].filter((v): v is string => !!v))]
     ajouter(h.organizationId, dests, { categorie: 'HOMOLOGATION_RENOUVELLEMENT', intitule: h.systeme, type, echeance: jour(h.dateFin) })
     marques.homologations.push(h.id)
-    await auditLog('HOMOLOGATION_EXPIRING', { organizationId: h.organizationId, targetId: h.id, targetType: 'homologation', details: { type } })
+    if (!apercu) await auditLog('HOMOLOGATION_EXPIRING', { organizationId: h.organizationId, targetId: h.id, targetType: 'homologation', details: { type } })
   }
 
   // ─── Décisions en attente ───
@@ -436,11 +456,6 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     const ids = [...new Set(propositionsMcp.filter(p => p.targetType === 'ANALYSE').map(p => p.targetId))]
     return ids.length ? prisma.analyse.findMany({ where: { id: { in: ids } }, select: { id: true, userId: true } }) : []
   })()).map(a => [a.id, a.userId]))
-  const libelleProposition = (p: { type: string; payload: unknown }) => {
-    const o = p.payload && typeof p.payload === 'object' ? (p.payload as Record<string, unknown>) : {}
-    const v = [o.titre, o.title, o.intitule, o.nom, (o.analysis as Record<string, unknown> | undefined)?.title].find(x => typeof x === 'string' && x.trim())
-    return typeof v === 'string' ? v.trim().slice(0, 200) : p.type
-  }
   for (const p of propositionsMcp) {
     const cfg = await cfgOf(p.organizationId)
     if (!cfg.mcp || !relanceAttenteDue({ depuis: p.createdAt, rappelLe: p.rappelLe }, cfg.relances, now)) continue
@@ -507,6 +522,7 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
   // ─── Envoi : un e-mail de synthèse par personne ───
   const orgIds = [...new Set([...boite.values()].flatMap(e => e.items.map(i => i.orgId)))]
   const orgs = new Map((orgIds.length ? await prisma.organization.findMany({ where: { id: { in: orgIds } }, select: { id: true, nom: true } }) : []).map(o => [o.id, o.nom]))
+  if (apercu) return { boite, orgs }
   let emailsSent = 0, emailsSkipped = 0
   for (const { email, locale, items } of boite.values()) {
     const tries = [...items].sort((a, b) => URGENCE[a.type] - URGENCE[b.type] || (orgs.get(a.orgId) ?? '').localeCompare(orgs.get(b.orgId) ?? ''))
@@ -553,3 +569,26 @@ export async function executerRelances(now: Date = new Date()): Promise<Resultat
     emailsSent, emailsSkipped,
   }
 }
+
+// ─── Page « À traiter » ──────────────────────────────────────────────────────
+// Même moteur que les relances, en APERÇU (aucun envoi, aucun marquage) : ce qui attend la personne maintenant, quel que
+// soit le dernier rappel. Un passage sert tous les utilisateurs pendant 60 s (calcul à l'échelle de l'instance, comme le cron).
+export interface ElementATraiter extends RelanceItem { organisationId: string; organisation: string; lien: string }
+const APERCU_TTL_MS = 60_000
+let apercuCache: { at: number; data: Promise<{ boite: BoiteRelances; orgs: Map<string, string> }> } | null = null
+
+export async function elementsATraiter(email: string, now: Date = new Date()): Promise<ElementATraiter[]> {
+  if (!apercuCache || now.getTime() - apercuCache.at > APERCU_TTL_MS || now.getTime() < apercuCache.at) {
+    const data = passageRelances(now, true) as Promise<{ boite: BoiteRelances; orgs: Map<string, string> }>
+    apercuCache = { at: now.getTime(), data }
+    data.catch(() => { apercuCache = null })
+  }
+  const { boite, orgs } = await apercuCache.data
+  const items = boite.get(email.toLowerCase())?.items ?? []
+  return [...items]
+    .sort((a, b) => URGENCE[a.type] - URGENCE[b.type] || (a.echeance ?? '9999').localeCompare(b.echeance ?? '9999'))
+    .map(({ orgId, ...i }) => ({ ...i, organisationId: orgId, organisation: orgs.get(orgId) ?? '', lien: cheminRelance(i) }))
+}
+
+/** Vide le cache de l'aperçu (tests, ou après une action qui change ce qui est à traiter). */
+export function invaliderATraiter(): void { apercuCache = null }

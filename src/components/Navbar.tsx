@@ -19,6 +19,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import { useBranding } from '@/components/BrandingProvider'
 import GlobalSearch from './GlobalSearch'
 import OrgSwitcher from './OrgSwitcher'
+import ATraiterLien from '@/components/ATraiterLien'
 import {
   LayoutDashboard, FolderKanban, AlertTriangle, Shield, Network, ShieldCheck,
   User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked,
@@ -267,6 +268,8 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           {/* Sélecteur d'organisation (masqué si une seule organisation accessible) */}
           <div className="hidden md:block"><OrgSwitcher /></div>
+          {/* Ce qui attend la personne (moteur des relances en aperçu), avec compteur. */}
+          <ATraiterLien />
           <button
             type="button"
             onClick={() => setMobileNavOpen(v => !v)}

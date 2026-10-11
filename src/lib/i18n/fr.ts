@@ -783,6 +783,7 @@ export const fr = {
   },
 
   // ─── Nouvelle analyse ─────────────────────────────────────────────────────
+  aTraiter: { declaration: 'Déclaration d’incident à effectuer', titre: 'À traiter', intro: 'Ce qui attend votre action ou votre décision, dans toutes vos organisations — les mêmes éléments que l’e-mail quotidien de relances, sans l’attendre.', vide: 'Rien ne vous attend pour le moment.', chargement: 'Chargement…', erreur: 'La liste n’a pas pu être chargée.', note: 'Liste mise à jour toutes les minutes.', lienCompte: 'À traiter : {n} élément(s), dont {r} en retard', groupes: { EN_RETARD: 'En retard', EN_ATTENTE: 'Décisions en attente', ECHEANCE_PROCHE: 'Échéance proche', PERIODIQUE: 'Ouverts' } },
   tierEval: {
     servicesRattaches: 'Services tiers rattachés',
     colTiers: 'Tiers', colOffre: 'Offre', colOrganisation: 'Organisation', colUsage: 'Cas d’usage', colProcessus: 'Processus', colStatut: 'Statut de l’évaluation', colZone: 'Zone', colProchaine: 'Prochaine évaluation', exporter: 'Exporter les évaluations (Excel)',
