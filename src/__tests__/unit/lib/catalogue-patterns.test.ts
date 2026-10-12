@@ -1,7 +1,7 @@
 // Lot A5 — catalogue (contrôles, KRI, audits, risques) rattaché aux patterns d'architecture ; secteur Technique supprimé.
 import { describe, it, expect } from 'vitest'
 import { listSectorSuggestions, searchSectorSuggestions, SECTOR_CODES, sanitizeSectorSelection, CATALOGUE_PACK_VERSION } from '@/lib/sector-suggestions'
-import { CATALOGUE_CHANGELOG } from '@/lib/sector-suggestions-changelog'
+import { CATALOGUE_CHANGELOG, compareCatalogueVersions } from '@/lib/sector-suggestions-changelog'
 import { ARCHI_PATTERNS, LOT1_CODES, isPatternCode } from '@/lib/patterns-archi'
 import { SECTOR_INCIDENT_TYPES } from '@/lib/incident-types-sector'
 import { searchIncidentTypes } from '@/lib/incident-types-catalogue'
@@ -81,7 +81,8 @@ describe('plancher de profondeur du catalogue (patterns du lot 1)', () => {
 
 describe('version du catalogue', () => {
   it('1.15 : les nouveaux éléments rattachés aux patterns figurent dans le journal', () => {
-    expect(CATALOGUE_PACK_VERSION).toBe('1.15')
+    // Version courante au moins 1.15 (1.16 : pack postal) ; l'entrée 1.15 du journal reste celle des patterns.
+    expect(compareCatalogueVersions(CATALOGUE_PACK_VERSION, '1.15')).toBeGreaterThanOrEqual(0)
     const e = CATALOGUE_CHANGELOG.find(x => x.version === '1.15')
     expect(e).toBeTruthy()
     const archi = all(ARCHI_PATTERNS.map(p => p.code)).filter(i => i.key.startsWith('archi.')).map(i => i.key)

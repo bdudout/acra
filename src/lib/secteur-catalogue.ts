@@ -16,8 +16,7 @@ const CODES: Record<string, SectorCode[]> = {
   'Agriculture / Agroalimentaire': ['AGRICOLE'], 'Immobilier / Construction': ['IMMOBILIER'], 'Médias / Culture': ['MEDIA'],
   'Eau / Assainissement': ['ENERGIE'], 'Tourisme / Hôtellerie-restauration': ['TOURISME'], 'Associations / ESS': ['ASSOCIATIONS'],
   'Protection sociale / Sécurité sociale': ['PROTECTION_SOCIALE'],
-  // Provisoire : catalogue transport, remplacé par le code POSTAL au lot L6 du pack postal.
-  'Services postaux et d’expédition': ['TRANSPORT'],
+  'Services postaux et d’expédition': ['POSTAL'],
 }
 const SOUS_SECTEURS_ASSURANCE = new Set(['banque-assurance', 'sante-amc'])
 
