@@ -58,16 +58,19 @@ export function reportUsageNotes(frameworks?: string[] | null, secteur?: string 
   return notes
 }
 
-// NIS2 — Annexe I (haute criticité → entité essentielle) et Annexe II (autres
-// secteurs critiques → entité importante). La défense/sécurité nationale est
-// EXCLUE du champ NIS2. Matching par mots-clés (secteur stocké localisé).
+// NIS2 — directive (UE) 2022/2555 (CELEX 32022L2555) : annexe I « Secteurs hautement critiques » (→ entité
+// essentielle) et annexe II « Autres secteurs critiques » (→ entité importante), intitulés de la version française
+// officielle. La défense/sécurité nationale est EXCLUE du champ NIS2. Matching par mots-clés (secteur stocké localisé).
+// Transports (annexe I, secteur 2) : aérien, ferroviaire, par eau et, pour la route, les seules autorités routières et
+// exploitants de systèmes de transport intelligents — le fret routier pur n'est pas visé ; les services postaux et
+// d'expédition relèvent de l'annexe II (secteur 1). « logistique » seul ne suffit donc pas à déduire « essentielle ».
 const NIS2_ESSENTIELLE_KW = [
   'administration', 'public', 'collectivit', 'état', 'etat', 'government',
   'banque', 'bancaire', 'finance', 'financ', 'assur', 'fintech',
   'énergie', 'energie', 'utilities', 'energy', 'eau', 'assainissement', 'water',
   'santé', 'sante', 'médico', 'medico', 'hospital', 'health',
   'télécom', 'telecom', 'communication',
-  'transport', 'logistique', 'logistics',
+  'transport',
   'informatique', 'numérique', 'numerique', 'digital', 'cloud', 'saas',
 ]
 const NIS2_IMPORTANTE_KW = [
@@ -85,8 +88,13 @@ const NIS2_EXCLUS_KW = ['défense', 'defense', 'militaire', 'defence', 'sécurit
  * 'essentielle' (Annexe I), 'importante' (Annexe II) ou null (hors NIS2).
  * Pur, testé. Ne présume pas de la taille (à confirmer par l'utilisateur).
  */
-export function nis2Classification(secteur?: string | null): 'essentielle' | 'importante' | null {
+export function nis2Classification(secteur?: string | null, sousSecteurs?: readonly string[] | null): 'essentielle' | 'importante' | null {
   const s = (secteur ?? '').toLowerCase()
+  // Sous-secteurs (pack postal, lot L1) : plus précis que le secteur.
+  const ids = (sousSecteurs ?? []).map(x => x.toLowerCase())
+  if (ids.some(x => x.startsWith('postal-'))) return 'importante' // annexe II, 1. Services postaux et d'expédition
+  if (ids.some(x => ['transport-ferroviaire', 'transport-aerien', 'transport-maritime'].includes(x))) return 'essentielle' // annexe I, 2. Transports
+  if (ids.includes('transport-logistique')) return null // fret : à confirmer par l'utilisateur (route : autorités et STI seulement)
   if (!s) return null
   if (NIS2_EXCLUS_KW.some(k => s.includes(k))) return null
   if (NIS2_ESSENTIELLE_KW.some(k => s.includes(k))) return 'essentielle'

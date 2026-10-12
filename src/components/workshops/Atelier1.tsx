@@ -274,7 +274,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
   // Détection NIS2 proactive (issues #85/#92) : si le statut n'est pas déclaré et
   // que le secteur relève de NIS2, signaler le statut probable (essentielle/importante).
   const statutDeclare = analyse?.qualification?.statutReglementaire && analyse.qualification.statutReglementaire !== 'aucun'
-  const nis2Probable = statutDeclare ? null : nis2Classification(analyse?.secteur)
+  const nis2Probable = statutDeclare ? null : nis2Classification(analyse?.secteur, sousSecteursOf(analyse))
   const nis2DoraNote = !!nis2Probable && doraPrevailsOverNis2(analyse?.secteur)
   // Filtrage du sélecteur de référentiels par secteur (réduit la charge cognitive
   // pour un non-expert) — par défaut on n'affiche que les pertinents + CUSTOM + la

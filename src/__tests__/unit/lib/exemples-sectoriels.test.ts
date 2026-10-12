@@ -343,3 +343,24 @@ describe('FINANCE — séparation assurance vs banque (issue #111)', () => {
     expect(noms('Banque / Finance', 'valeursMetier').some(x => /LCB-FT/i.test(x))).toBe(true)
   })
 })
+
+// Pack postal, lot L1 : le fret (sous-secteur logistique) ne reçoit plus les éléments voyageurs (billetterie, régulation
+// du trafic) ; ils restent proposés aux modes ferroviaire, aérien et maritime, et au secteur sans sous-secteur.
+describe('transport — éléments voyageurs réservés aux modes voyageurs', () => {
+  const noms = (cat: SectorExempleCategory, sous?: string) => sectorExemplesFor('Transports / Logistique', cat, 'fr', sous).map(x => String(x.nom))
+  it('logistique : ni billetterie ni régulation du trafic', () => {
+    expect(noms('valeursMetier', 'transport-logistique')).not.toContain('Réservation et billetterie')
+    expect(noms('valeursMetier', 'transport-logistique')).not.toContain('Exploitation et régulation du trafic')
+    expect(noms('biensSupports', 'transport-logistique')).not.toContain('Plateforme de réservation / billettique')
+    expect(noms('biensSupports', 'transport-logistique')).not.toContain('Poste de commandement / supervision du trafic')
+  })
+  it('ferroviaire, aérien, maritime et secteur seul : éléments voyageurs présents', () => {
+    for (const sous of ['transport-ferroviaire', 'transport-aerien', 'transport-maritime', undefined]) {
+      expect(noms('valeursMetier', sous), String(sous)).toContain('Réservation et billetterie')
+      expect(noms('biensSupports', sous), String(sous)).toContain('Poste de commandement / supervision du trafic')
+    }
+  })
+  it('traduction conservée (dictionnaires indexés par position)', () => {
+    expect(sectorExemplesFor('Transports / Logistique', 'valeursMetier', 'en', 'transport-ferroviaire').map(x => String(x.nom))).not.toContain('Réservation et billetterie')
+  })
+})

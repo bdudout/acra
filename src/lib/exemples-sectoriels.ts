@@ -39,6 +39,8 @@ export type SectorExempleCategory =
 // Dictionnaires de traduction (FR = source dans les données ci-dessous, donc absent).
 // Clé : `${famille}.${categorie}.${index}.${champ}` (+ `.impacts.${j}` pour les tableaux).
 const DICTS: Partial<Record<Locale, Record<string, string>>> = { en, de, es, it }
+/** Modes voyageurs du transport : billetterie et régulation du trafic n'ont pas de sens pour le fret (pack postal, L1). */
+const VOYAGEURS = ['ferroviaire', 'aerien', 'maritime']
 const TEXT_FIELDS = ['nom', 'description', 'motivation', 'ressources']
 
 /** Famille sectorielle : motifs reconnus dans le libellé du secteur + exemples associés. */
@@ -407,14 +409,14 @@ const TRANSPORT: SectorFamily = {
     valeursMetier: [
       { nom: 'Planification et suivi des expéditions', type: 'PROCESSUS', description: 'Organisation, suivi et traçabilité des livraisons et du fret', responsable: 'Direction logistique / exploitation', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
       { nom: 'Gestion de la flotte et du transport', type: 'PROCESSUS', description: 'Affectation, géolocalisation et maintenance des véhicules', responsable: 'Direction de flotte / parc', disponibilite: 4, integrite: 3, confidentialite: 2, tracabilite: 3 },
-      { nom: 'Réservation et billetterie', type: 'INFORMATION', description: 'Réservations, titres de transport et données voyageurs', responsable: 'Direction commerciale', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 3 },
-      { nom: 'Exploitation et régulation du trafic', type: 'PROCESSUS', description: 'Supervision et régulation en temps réel des circulations', responsable: 'Poste de commandement / exploitation', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
+      { nom: 'Réservation et billetterie', type: 'INFORMATION', description: 'Réservations, titres de transport et données voyageurs', responsable: 'Direction commerciale', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 3, sousProfession: VOYAGEURS },
+      { nom: 'Exploitation et régulation du trafic', type: 'PROCESSUS', description: 'Supervision et régulation en temps réel des circulations', responsable: 'Poste de commandement / exploitation', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4, sousProfession: VOYAGEURS },
     ],
     biensSupports: [
       { nom: 'Système de gestion d’entrepôt (WMS)', type: 'LOGICIEL', description: 'Pilotage des stocks, préparation et expédition des commandes' },
       { nom: 'Télématique embarquée / géolocalisation', type: 'MATERIEL', description: 'Boîtiers GPS et capteurs embarqués sur les véhicules' },
-      { nom: 'Plateforme de réservation / billettique', type: 'LOGICIEL', description: 'Vente et validation des titres de transport' },
-      { nom: 'Poste de commandement / supervision du trafic', type: 'LOGICIEL', description: 'Supervision et régulation des circulations en temps réel' },
+      { nom: 'Plateforme de réservation / billettique', type: 'LOGICIEL', description: 'Vente et validation des titres de transport', sousProfession: VOYAGEURS },
+      { nom: 'Poste de commandement / supervision du trafic', type: 'LOGICIEL', description: 'Supervision et régulation des circulations en temps réel', sousProfession: VOYAGEURS },
       { nom: 'Système de gestion du transport (TMS)', type: 'LOGICIEL', description: 'Planification, optimisation et suivi des transports et tournées', sousProfession: 'logistique' },
       { nom: 'Chronotachygraphe numérique', type: 'MATERIEL', description: 'Enregistrement réglementaire des temps de conduite et de repos', sousProfession: 'logistique' },
       { nom: 'Échanges de données informatisées (EDI)', type: 'RESEAU', description: 'Interfaces d’échange avec clients, transporteurs et douanes' },
@@ -909,6 +911,9 @@ function professionFromSecteur(famKey: string, secteur: string): string | undefi
  */
 const DETAILED_ONLY = new Set(['cabinet', 'gestionpro', 'amo', 'amc', 'tierspayant', 'labo', 'officine', 'imagerie', 'transport', 'dm', 'esante'])
 
+/** Une sous-profession, ou plusieurs (élément partagé par quelques modes, ex. VOYAGEURS). */
+const profMatch = (sp: unknown, prof: string): boolean => (Array.isArray(sp) ? sp.includes(prof) : sp === prof)
+
 /** Exemple sectoriel et indication « propre à la sous-profession choisie » (par opposition au socle commun de la famille). */
 interface Tagged { item: Record<string, unknown>; specific: boolean }
 
@@ -930,8 +935,8 @@ function exemplesTagged(
   // sous-profession (issue #71), puis retrait du champ technique `sousProfession`.
   const base: Tagged[] = items
     .map((item, idx) => (dict ? localizeItem(item, `${fam.key}.${category}.${idx}`, dict) : { ...item }))
-    .filter(it => (prof ? !it.sousProfession || it.sousProfession === prof : !DETAILED_ONLY.has(String(it.sousProfession ?? ''))))
-    .map(({ sousProfession, ...rest }) => ({ item: rest, specific: Boolean(prof && sousProfession === prof) }))
+    .filter(it => (prof ? !it.sousProfession || profMatch(it.sousProfession, prof) : !DETAILED_ONLY.has(String(it.sousProfession ?? ''))))
+    .map(({ sousProfession, ...rest }) => ({ item: rest, specific: Boolean(prof && profMatch(sousProfession, prof)) }))
   // Extension (textes ×5 dans la donnée) : éléments communs + ceux de la sous-profession choisie.
   const ext: Tagged[] = extItemsFor(fam.key, category, prof).map(x => ({ item: localizeExt(x, locale), specific: Boolean(x.profs) }))
   return [...base, ...ext]
