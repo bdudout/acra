@@ -23,6 +23,10 @@ import {
   localizeQualificationRisks, planQualificationRiskCreation, propositionsDejaPresentes, qualificationRiskChannel, type QualificationRiskCatalogTexts,
 } from '@/lib/qualification-risks'
 import { sanitizeDirectRisque } from '@/lib/risque-direct'
+import { risquesSectorielsProposes } from '@/lib/risques-sectoriels-proposes'
+import { getServerLocale } from '@/lib/i18n'
+import { sousSecteursOf } from '@/lib/sous-secteurs'
+import { patternsOf } from '@/lib/patterns-archi'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ id: string }> }
@@ -49,7 +53,12 @@ async function load(id: string) {
   const questionnaire = config.qualificationQuestionnaire
   const answers = { ...sanitizeQualification(analyse.qualification, questionnaire), ...(is360 ? sanitizeAnswers360(analyse.qualification) : {}) }
   const rules = [...(questionnaire.riskRules ?? []), ...(is360 ? RISK_RULES_360 : [])]
-  const proposals = localizeQualificationRisks(suggestedQualificationRisks(answers, rules, analyse.methode), catalog)
+  const qualifies = localizeQualificationRisks(suggestedQualificationRisks(answers, rules, analyse.methode), catalog)
+  // Pack postal L4.1 : saisie directe → jusqu'à 5 suggestions sectorielles décochées, sans doublon d'intitulé.
+  const sectoriels = qualificationRiskChannel(analyse.methode) === 'DIRECT'
+    ? risquesSectorielsProposes({ secteur: analyse.secteur, sousSecteurs: sousSecteursOf(analyse), patterns: patternsOf(analyse), locale: await getServerLocale(), exclus: [...qualifies.map(p => p.title), ...analyse.risques.map(r => r.nom)] })
+    : []
+  const proposals = [...qualifies, ...sectoriels]
   // Déjà présentes : même règle, même intitulé ou risque par défaut équivalent → ni reproposées, ni recréées.
   const existingRuleIds = [...propositionsDejaPresentes(proposals, analyse.risques)]
   return { ok: true as const, userId: user.id, role, analyse, config, proposals, existingRuleIds }

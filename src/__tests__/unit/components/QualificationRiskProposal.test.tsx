@@ -39,4 +39,15 @@ describe('QualificationRiskProposal', () => {
     render(<QualificationRiskProposal labels={labels} strategies={strategies} risks={[risks[1]]} onCancel={vi.fn()} onConfirm={vi.fn()} />)
     expect(screen.getByText(/Fraude · Gravité 3\/4 · Vraisemblance 2\/4 · Traitement Réduire/)).toBeTruthy()
   })
+  it('pack postal L4.1 : une suggestion sectorielle (preselected: false) est proposée décochée et n’est envoyée que cochée', () => {
+    const onConfirm = vi.fn()
+    const sectoriel = { id: 'secteur:arret-tri', category: 'CYBER' as const, title: 'Arrêt du tri', gravity: 4, likelihood: 2, strategy: 'REDUIRE' as const, mandatory: false, preselected: false }
+    render(<QualificationRiskProposal labels={labels} strategies={strategies} risks={[risks[0], sectoriel]} onCancel={vi.fn()} onConfirm={onConfirm} />)
+    expect((screen.getByLabelText('Arrêt du tri') as HTMLInputElement).checked).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: 'Importer' }))
+    expect(onConfirm).toHaveBeenLastCalledWith(['r1'])
+    fireEvent.click(screen.getByLabelText('Arrêt du tri'))
+    fireEvent.click(screen.getByRole('button', { name: 'Importer' }))
+    expect(onConfirm).toHaveBeenLastCalledWith(['r1', 'secteur:arret-tri'])
+  })
 })

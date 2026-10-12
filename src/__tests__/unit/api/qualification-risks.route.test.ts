@@ -34,6 +34,7 @@ vi.mock('@/lib/org-config.server', () => ({
 const auditLog = vi.fn()
 vi.mock('@/lib/logger', () => ({ auditLog: (...a: unknown[]) => auditLog(...a), getClientIp: vi.fn(() => '') }))
 vi.mock('@/lib/i18n', () => ({
+  getServerLocale: vi.fn(async () => 'fr'),
   getServerT: vi.fn(async () => ({ qualification: { riskCatalog: { personalData: { title: 'Atteinte aux données personnelles', description: 'Divulgation…' } } } })),
 }))
 
@@ -117,3 +118,25 @@ describe('POST qualification-risks', () => {
     expect(createMany).not.toHaveBeenCalled()
   })
 })
+
+// Pack postal L4.1 : saisie directe d'un secteur → jusqu'à 5 suggestions sectorielles décochées après la qualification.
+describe('qualification-risks — suggestions sectorielles', () => {
+  it('ISO 27005 du secteur postal : suggestions « secteur: » décochées, jamais créées sans sélection', async () => {
+    analyseFindFirst.mockResolvedValue({ ...ISO, secteur: 'Services postaux et d’expédition', sousSecteurs: ['postal-colis'], patternsArchi: [] })
+    const g = await (await GET(new Request('http://x') as never, { params: Promise.resolve({ id: 'an1' }) })).json()
+    const sect = g.proposals.filter((p: { id: string }) => p.id.startsWith('secteur:'))
+    expect(sect.length).toBeGreaterThan(0)
+    expect(sect.length).toBeLessThanOrEqual(5)
+    expect(sect.every((p: { preselected: boolean; mandatory: boolean }) => p.preselected === false && !p.mandatory)).toBe(true)
+    createMany.mockClear()
+    await POST(new Request('http://x', { method: 'POST', body: JSON.stringify({ ruleIds: [] }) }) as never, { params: Promise.resolve({ id: 'an1' }) })
+    const created = (createMany.mock.calls[0]?.[0] as { data: { qualificationRuleId: string }[] } | undefined)?.data ?? []
+    expect(created.some(r => r.qualificationRuleId.startsWith('secteur:'))).toBe(false)
+  })
+  it('EBIOS RM (atelier 5) : aucune suggestion sectorielle ici', async () => {
+    analyseFindFirst.mockResolvedValue({ ...ISO, methode: 'EBIOS_RM', secteur: 'Services postaux et d’expédition', sousSecteurs: ['postal-colis'] })
+    const g = await (await GET(new Request('http://x') as never, { params: Promise.resolve({ id: 'an1' }) })).json()
+    expect(g.proposals.some((p: { id: string }) => p.id.startsWith('secteur:'))).toBe(false)
+  })
+})
+

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { codesCatalogueSecteur } from '@/lib/secteur-catalogue'
+import { codesCatalogueSecteur, secteurDepuisCodes } from '@/lib/secteur-catalogue'
 import { SECTEURS_ACTIVITE } from '@/lib/ebios-data'
 import { getEbiosData } from '@/lib/ebios-data-i18n'
 
@@ -34,6 +34,23 @@ describe('secteur postal — même index dans les 5 langues', () => {
       expect(liste, l).toHaveLength(n)
       expect(liste[n - 2], l).toBe(lib)
     }
+  })
+})
+
+// Pack postal L4.2 : secteur pré-rempli à la création quand les secteurs effectifs de l'organisation se ramènent à un
+// seul libellé ; ambiguïté (plusieurs codes, ou un code partagé par plusieurs libellés) → rien.
+describe('secteurDepuisCodes', () => {
+  it('un seul code associé à un seul libellé → ce libellé', () => {
+    expect(secteurDepuisCodes(['PUBLIC'])).toBe('Administration publique')
+    expect(secteurDepuisCodes(['FINANCE'])).toBe('Banque / Finance')
+    expect(secteurDepuisCodes(['PROTECTION_SOCIALE', 'PROTECTION_SOCIALE'])).toBe('Protection sociale / Sécurité sociale')
+  })
+  it('ambiguïté ou absence → null', () => {
+    expect(secteurDepuisCodes([])).toBeNull()
+    expect(secteurDepuisCodes(['PUBLIC', 'FINANCE'])).toBeNull()
+    expect(secteurDepuisCodes(['COMMERCE'])).toBeNull()
+    expect(secteurDepuisCodes(['ENERGIE'])).toBeNull()
+    expect(secteurDepuisCodes(['ASSURANCE'])).toBeNull()
   })
 })
 
