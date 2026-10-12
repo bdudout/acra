@@ -16,7 +16,7 @@ jobs:
     if: github.event.release.prerelease == false && github.event.release.draft == false
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0 (runtime Node 24)
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v5.0.0 (runtime Node 24)
         with:
           fetch-depth: 0
       - name: Avancer stable sur la release publiée
