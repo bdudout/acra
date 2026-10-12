@@ -38,6 +38,8 @@ export const SECTEURS_ACTIVITE = [
   'Tourisme / Hôtellerie-restauration', 'Associations / ESS',
   // Organismes de protection sociale (régimes de base, assurance maladie obligatoire…)
   'Protection sociale / Sécurité sociale',
+  // Directive (UE) 2022/2555 (NIS2), annexe II, secteur 1 — intitulé de la version française officielle (CELEX 32022L2555).
+  'Services postaux et d’expédition',
   'Autre',
 ]
 
@@ -107,6 +109,13 @@ export const SOUS_SECTEURS = [
   { id: 'immobilier-agence', famille: 'immobilier', label: 'Agence / gestion immobilière' },
   { id: 'immobilier-btp', famille: 'immobilier', label: 'Construction / BTP' },
   // Protection sociale — organismes de sécurité sociale organisés en réseau
+  // Services postaux et d'expédition (pack postal, lot L2) — sous-profession = id sans le préfixe « postal- »
+  { id: 'postal-courrier', famille: 'postal', label: 'Courrier et service universel postal (collecte, tri, distribution)' },
+  { id: 'postal-colis', famille: 'postal', label: 'Colis et express (national, international, dernier kilomètre)' },
+  { id: 'postal-reseau', famille: 'postal', label: 'Réseau de points de contact (bureaux, points relais, consignes, guichet multiservices)' },
+  { id: 'postal-international', famille: 'postal', label: 'Échanges internationaux et dédouanement des envois' },
+  { id: 'postal-elogistique', famille: 'postal', label: 'Logistique urbaine et e-logistique (entrepôts e-commerce, livraisons programmées)' },
+  { id: 'postal-domicile', famille: 'postal', label: 'Services de proximité au domicile (visites, portage, relevés, collecte)' },
   { id: 'protsoc-tete-reseau', famille: 'protection_sociale', label: 'Tête de réseau (pilotage national, référentiels, maîtrise des risques du réseau)' },
   { id: 'protsoc-caisse-locale', famille: 'protection_sociale', label: 'Caisse locale (accueil, gestion des droits, liquidation)' },
   { id: 'protsoc-controle-medical', famille: 'protection_sociale', label: 'Service du contrôle médical (avis, arrêts de travail, accords préalables)' },

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { secteurFamily, sousSecteurIdsFor, isSousSecteurOfSecteur, showsHdsCaveat } from '@/lib/sous-secteurs'
+import { secteurFamily, sousSecteurIdsFor, isSousSecteurOfSecteur, showsHdsCaveat, normalizeSousSecteurs } from '@/lib/sous-secteurs'
+import { getEbiosData } from '@/lib/ebios-data-i18n'
 
 // Taxonomie des sous-secteurs (issue #25). Matching par mots-clés multilingue
 // car le secteur est stocké sous son libellé localisé.
@@ -63,3 +64,28 @@ describe('isSousSecteurOfSecteur', () => {
     expect(isSousSecteurOfSecteur('Santé / Médico-social', undefined)).toBe(false)
   })
 })
+
+// Pack postal, lot L2 : secteur « Services postaux et d'expédition » (directive (UE) 2022/2555, annexe II, secteur 1)
+// et ses 6 sous-secteurs ; famille postale résolue avant le transport, sans faire basculer les secteurs existants.
+describe('famille postale', () => {
+  const POSTAL = ['postal-courrier', 'postal-colis', 'postal-reseau', 'postal-international', 'postal-elogistique', 'postal-domicile']
+  it('le secteur postal est reconnu dans les 5 langues, avec ses 6 sous-secteurs', () => {
+    for (const l of ['fr', 'en', 'de', 'es', 'it'] as const) {
+      const lib = (getEbiosData(l).SECTEURS_ACTIVITE as readonly string[]).find(x => secteurFamily(x) === 'postal')
+      expect(lib, l).toBeTruthy()
+      expect(sousSecteurIdsFor(lib), l).toEqual(POSTAL)
+    }
+  })
+  it('aucun secteur existant ne bascule dans la famille postale', () => {
+    expect(secteurFamily('Transports / Logistique')).toBe('transport')
+    expect(secteurFamily('Protection sociale / Sécurité sociale')).toBe('protection_sociale')
+    expect(secteurFamily('Médias / Culture')).toBeNull()
+    const fr = getEbiosData('fr').SECTEURS_ACTIVITE as readonly string[]
+    expect(fr.filter(x => secteurFamily(x) === 'postal')).toHaveLength(1)
+  })
+  it('les sous-secteurs postaux sont refusés sous « Transports / Logistique »', () => {
+    expect(normalizeSousSecteurs('Transports / Logistique', ['postal-colis', 'transport-logistique'])).toEqual(['transport-logistique'])
+    expect(isSousSecteurOfSecteur('Transports / Logistique', 'postal-colis')).toBe(false)
+  })
+})
+

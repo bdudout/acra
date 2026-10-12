@@ -154,3 +154,10 @@ describe('nis2Classification — sous-secteurs', () => {
   })
 })
 
+describe('nis2Classification — secteur postal (annexe II), 5 langues', () => {
+  it('importante, avec ou sans sous-secteur', () => {
+    for (const lib of ['Services postaux et d’expédition', 'Postal and courier services', 'Post- und Kurierdienste', 'Servicios postales y de mensajería', 'Servizi postali e di corriere']) expect(nis2Classification(lib), lib).toBe('importante')
+    expect(nis2Classification("Services postaux et d’expédition", ['postal-colis'])).toBe('importante')
+  })
+})
+

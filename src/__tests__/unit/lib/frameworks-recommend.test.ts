@@ -275,3 +275,17 @@ describe('recommendedFrameworksForSector', () => {
     }
   })
 })
+
+// Pack postal, lot L2 : socle RECYF / ISO 27001 / hygiène ANSSI ; machines de tri (courrier, colis) → IEC 62443 en tête ;
+// réseau de points de contact (encaissements par carte) → PCI DSS.
+describe('secteur postal', () => {
+  const postal = "Services postaux et d’expédition"
+  it('socle et raffinements par sous-secteur', () => {
+    expect(recommendedFrameworksForSector(postal)).toEqual(expect.arrayContaining(['RECYF', 'ISO27001', 'ANSSI_HYG']))
+    expect(recommendedFrameworksForSector(postal, null, 'postal-colis')[0]).toBe('IEC_62443')
+    expect(recommendedFrameworksForSector(postal, null, 'postal-courrier')[0]).toBe('IEC_62443')
+    expect(recommendedFrameworksForSector(postal, null, 'postal-reseau')).toContain('PCI_DSS')
+    expect(recommendedFrameworksForSector('Postal and courier services', null, 'postal-colis')[0]).toBe('IEC_62443')
+  })
+})
+

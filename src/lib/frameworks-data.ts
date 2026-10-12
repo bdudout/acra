@@ -349,6 +349,8 @@ function baseFrameworksForSector(secteur?: string | null): FrameworkId[] {
   // Organismes de protection sociale (autorités administratives : téléservices homologués, données de santé) — en tête,
   // car « Sozialversicherung » / « sécurité sociale » croiseraient d'autres branches.
   if (has('protection sociale', 'sécurité sociale', 'securite sociale', 'social protection', 'social security', 'sozialschutz', 'sozialversicherung', 'protección social', 'seguridad social', 'protezione sociale', 'previdenza sociale')) return ['RGS', 'ANSSI_HYG', 'HDS', 'ISO27001']
+  // Services postaux et d'expédition (NIS2 annexe II) : avant transport (« livraison ») et médias (« expédition » ⊃ « édition »).
+  if (has('postal', 'postaux', 'courrier', 'colis', 'expédition', 'expedition', 'courier', 'post-', 'kurier', 'mensajer', 'postali', 'corriere')) return ['RECYF', 'ISO27001', 'ANSSI_HYG']
   if (has('banque', 'finance', 'bancaire', 'assur', 'fintech', 'financ')) return ['DORA', 'PCI_DSS', 'ISO27001']
   if (has('santé', 'sante', 'médico', 'medico', 'hospital', 'soin', 'health')) return ['HDS', 'ISO27001']
   if (has('défense', 'defense', 'national', 'militaire', 'defence')) return ['NIST_800_53', 'ANSSI_HYG']
@@ -381,7 +383,10 @@ export function refineFrameworksBySousSecteur(base: FrameworkId[], sousSecteur?:
   const s = (sousSecteur ?? '').toLowerCase()
   if (!s) return base
   let priority: FrameworkId[] = []
-  if (/(editeur|logiciel|sih|saas|software)/.test(s)) priority = ['NIST_SSDF', 'SOC2']
+  // Services postaux : machines de tri et convoyeurs (courrier, colis) ; encaissements par carte au guichet (réseau).
+  if (s === 'postal-courrier' || s === 'postal-colis') priority = ['IEC_62443']
+  else if (s === 'postal-reseau') priority = ['PCI_DSS']
+  else if (/(editeur|logiciel|sih|saas|software)/.test(s)) priority = ['NIST_SSDF', 'SOC2']
   else if (/(fintech|paiement|payment|monetique)/.test(s)) priority = ['PCI_DSS']
   // OT / industriel, y compris toute la filière énergie (production, réseau,
   // nucléaire, fossile, renouvelable : éolien/PV/BESS pilotés par SCADA) — issue #94

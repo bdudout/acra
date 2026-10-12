@@ -21,3 +21,19 @@ describe('codesCatalogueSecteur — secteur d’une analyse → secteurs du cata
     expect(codesCatalogueSecteur(null)).toEqual([])
   })
 })
+
+// Pack postal, lot L2 : le secteur postal est inséré juste avant « Autre », au même index dans les 5 langues
+// (canonique() en dépend), avec l'intitulé officiel de l'annexe II de NIS2 dans chaque langue.
+describe('secteur postal — même index dans les 5 langues', () => {
+  it('avant « Autre », intitulé officiel', () => {
+    const n = SECTEURS_ACTIVITE.length
+    expect(SECTEURS_ACTIVITE[n - 1]).toBe('Autre')
+    const attendus = {'fr': 'Services postaux et d’expédition', 'en': 'Postal and courier services', 'de': 'Post- und Kurierdienste', 'es': 'Servicios postales y de mensajería', 'it': 'Servizi postali e di corriere'}
+    for (const [l, lib] of Object.entries(attendus)) {
+      const liste = getEbiosData(l as 'fr').SECTEURS_ACTIVITE as readonly string[]
+      expect(liste, l).toHaveLength(n)
+      expect(liste[n - 2], l).toBe(lib)
+    }
+  })
+})
+

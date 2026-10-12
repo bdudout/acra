@@ -78,7 +78,8 @@ const NIS2_IMPORTANTE_KW = [
   'agro', 'agricol', 'aliment', 'food',
   'e-commerce', 'ecommerce', 'marketplace',
   'recherche', 'research', 'université', 'universite', 'enseignement', 'esr',
-  'poste', 'postal', 'déchet', 'dechet', 'waste', 'chimie', 'chemical',
+  // Annexe II, 1. Services postaux et d'expédition — intitulés officiels fr/en/de/es/it (« postaux », « Kurier »…).
+  'poste', 'postal', 'postaux', 'postales', 'postali', 'kurier', 'courier', 'mensajer', 'corriere', 'déchet', 'dechet', 'waste', 'chimie', 'chemical',
 ]
 // Secteurs explicitement HORS NIS2 (priment sur le matching par mots-clés).
 const NIS2_EXCLUS_KW = ['défense', 'defense', 'militaire', 'defence', 'sécurité nationale', 'securite nationale']
@@ -115,6 +116,8 @@ export function doraPrevailsOverNis2(secteur?: string | null): boolean {
  * ministère de l'Environnement pour l'eau) ; à défaut, texte générique ANSSI.
  * Renvoie le couple de clés [enregistrement, notification d'incident].
  */
+// Services postaux et d'expédition : aucune clé dédiée — TODO(source) : l'autorité désignée pour ce secteur dans le texte
+// français de transposition de NIS2 n'a pas été vérifiée ; le texte générique (ANSSI) s'applique en attendant.
 export function eeiAuthorityKeys(secteur?: string | null): [string, string] {
   const s = secteur ?? ''
   if (/sant|médico|medico|hospital|health/i.test(s)) return ['eeiRegisterSante', 'eeiIncidentSante']

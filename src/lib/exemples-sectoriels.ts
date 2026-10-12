@@ -854,6 +854,8 @@ function professionFromSousSecteur(sousSecteur?: string | null): string | undefi
   const v = (sousSecteur ?? '').toLowerCase()
   // Protection sociale : la sous-profession est l'id sans préfixe (ex. protsoc-fraude → fraude)
   if (v.startsWith('protsoc-')) return v.slice('protsoc-'.length)
+  // Services postaux : idem (postal-domicile → domicile, avant la règle générique « domicile » → saad)
+  if (v.startsWith('postal-')) return v.slice('postal-'.length)
   // Santé : portail, entrepôt de données, délégataire de gestion (avant les règles génériques)
   if (v.includes('sante-portail')) return 'portail'
   if (v.includes('sante-entrepot')) return 'entrepot'
