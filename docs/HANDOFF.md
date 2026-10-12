@@ -6,6 +6,23 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-13 (104) — Claude : pack postal, défauts probables + lots L8 et L7 (consigne : « valeurs les plus probables »)
+
+- `13d3e778` — base légale par défaut des données destinataires reçues des e-commerçants : intérêt légitime (le
+  destinataire n'est pas partie au contrat d'expédition), « proposée, à confirmer par le DPO » ×5. Les durées sans
+  source officielle restent vides (règle : jamais inventées) ; autorité EEI postale : texte ANSSI générique (défaut).
+- L8 `b3aaf8f2` — sous-secteurs `numerique-*` (confiance, identite, coffre, cloud, editeur, esn), `telecom-*` (reseau,
+  virtuel, fai), `banque-reseau-tiers` ; cœur de réseau / antennes / supervision / sabotage réservés à reseau + fai ;
+  NIS2 : `numerique-confiance` → essentielle (annexe I, 8 ; art. 3 § 1 b, vérifié sur le texte officiel).
+- L7 `107a5a5d` — `lib/exemples-autres-familles.ts` : ateliers 3 à 5 banque de détail (sous-profession `banque`),
+  numérique (confiance / identité / coffre + socle), télécoms (opérateur virtuel + socle), accueil public en guichet
+  partagé ; seuils minimaux testés. Correctif : `banque-assurance` → sous-profession `assurance` (avant : contenu
+  bancaire proposé aux assureurs). `numerique-cloud` et `sante-esante` relèvent de deux secteurs distincts : pas de doublon.
+- **Vérifications** : `tsc` 0 erreur ; `npm test` 664 fichiers / 4 968 tests verts (après L7) ; relecture anonymat OK.
+  Non vérifié : fumée navigateur (pas de session). **Non fait** : L9 (référentiels services de confiance), à arbitrer.
+
+---
+
 ## 2026-10-13 (103) — Claude : pack « services postaux et d'expédition », lots L1 à L6
 
 Spec : `docs/specs/pack-services-postaux-spec.md` (contenu détaillé : `pack-services-postaux-multi-activites.md`,
