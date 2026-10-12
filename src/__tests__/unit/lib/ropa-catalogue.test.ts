@@ -70,6 +70,8 @@ describe('traitements types — services postaux', () => {
       if (t.key === 'ropa.postal.home-services') expect(detectPersonnesVulnerables(t.categoriesPersonnes), l).toBe(true)
     })
     expect(fr.find(t => t.key === 'ropa.postal.merchant-recipients')!.finalite).toMatch(/DPO/)
+    // Défaut le plus probable : intérêt légitime (le destinataire n'est pas partie au contrat d'expédition), à confirmer.
+    expect(fr.find(t => t.key === 'ropa.postal.merchant-recipients')!.baseLegale).toBe('interet_legitime')
   })
 })
 
