@@ -867,6 +867,8 @@ function professionFromSousSecteur(sousSecteur?: string | null): string | undefi
   // Numérique et télécoms (lot L8) : idem, avant les règles génériques (« editeur », « cloud »…)
   if (v.startsWith('numerique-')) return v.slice('numerique-'.length)
   if (v.startsWith('telecom-')) return v.slice('telecom-'.length)
+  // Assurance / mutuelle (sous-secteur de la banque) : contenu assurance, pas bancaire (issue #111, lot L7)
+  if (v === 'banque-assurance') return 'assurance'
   // Santé : portail, entrepôt de données, délégataire de gestion (avant les règles génériques)
   if (v.includes('sante-portail')) return 'portail'
   if (v.includes('sante-entrepot')) return 'entrepot'
