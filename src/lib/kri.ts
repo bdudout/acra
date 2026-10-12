@@ -205,3 +205,26 @@ export function cleanMesureInput(body: MesureInput): CleanMesure {
     commentaire: txt(body.commentaire),
   }
 }
+
+// ─── Mesure suggérée depuis les incidents (recette n° 35) ───
+/** Début (UTC) de la période en cours selon la fréquence du KRI : mois, trimestre, semestre ou année civils. */
+export function debutPeriodeKri(frequence: string, now: Date = new Date()): Date {
+  const y = now.getUTCFullYear(), m = now.getUTCMonth()
+  const mois = frequence === 'TRIMESTRIEL' ? m - (m % 3) : frequence === 'SEMESTRIEL' ? m - (m % 6) : frequence === 'ANNUEL' ? 0 : m
+  return new Date(Date.UTC(y, mois, 1))
+}
+
+/**
+ * Nombre d'incidents de la catégorie du KRI (taxonomie, ex. bâloise) survenus — ou déclarés, à défaut de date de
+ * survenance — depuis le début de la période. Suggestion à confirmer, jamais enregistrée d'office. Sans catégorie → null.
+ */
+export function suggestionIncidentsKri(
+  kri: { taxonomieCode: string | null; frequence: string },
+  incidents: { taxonomieCode: string | null; dateSurvenance: Date | null; createdAt: Date }[],
+  now: Date = new Date(),
+): { nombre: number; depuis: string } | null {
+  if (!kri.taxonomieCode) return null
+  const debut = debutPeriodeKri(kri.frequence, now)
+  const nombre = incidents.filter(i => i.taxonomieCode === kri.taxonomieCode && (i.dateSurvenance ?? i.createdAt) >= debut && (i.dateSurvenance ?? i.createdAt) <= now).length
+  return { nombre, depuis: debut.toISOString().slice(0, 10) }
+}

@@ -95,3 +95,29 @@ describe('evaluerKri — seuils non définis (KRI issu du catalogue)', () => {
     expect(evaluerKri(12, { sens: 'HAUSSE', seuilAlerte: null, seuilCritique: 20 })).toBe('INCONNU')
   })
 })
+
+// Recette n° 35 : KRI rattaché à une catégorie de taxonomie (bâloise) → mesure de la période pré-remplie avec le nombre
+// d'incidents de cette catégorie (survenus, ou déclarés à défaut, depuis le début de la période) ; à confirmer par l'utilisateur.
+import { debutPeriodeKri, suggestionIncidentsKri } from '@/lib/kri'
+describe('suggestion de mesure depuis les incidents', () => {
+  const now = new Date('2026-10-12T09:00:00Z')
+  it('début de période selon la fréquence (UTC)', () => {
+    expect(debutPeriodeKri('MENSUEL', now).toISOString()).toBe('2026-10-01T00:00:00.000Z')
+    expect(debutPeriodeKri('TRIMESTRIEL', now).toISOString()).toBe('2026-10-01T00:00:00.000Z')
+    expect(debutPeriodeKri('SEMESTRIEL', now).toISOString()).toBe('2026-07-01T00:00:00.000Z')
+    expect(debutPeriodeKri('ANNUEL', now).toISOString()).toBe('2026-01-01T00:00:00.000Z')
+  })
+  it('compte les incidents de la catégorie dans la période ; sans catégorie → null', () => {
+    const incidents = [
+      { taxonomieCode: 'BALE_2', dateSurvenance: new Date('2026-10-11T00:00:00Z'), createdAt: new Date('2026-10-11T00:00:00Z') },
+      { taxonomieCode: 'BALE_2', dateSurvenance: null, createdAt: new Date('2026-10-03T00:00:00Z') },
+      { taxonomieCode: 'BALE_2', dateSurvenance: new Date('2026-09-28T00:00:00Z'), createdAt: new Date('2026-10-02T00:00:00Z') },
+      { taxonomieCode: 'BALE_1', dateSurvenance: new Date('2026-10-05T00:00:00Z'), createdAt: new Date('2026-10-05T00:00:00Z') },
+    ]
+    expect(suggestionIncidentsKri({ taxonomieCode: 'BALE_2', frequence: 'MENSUEL' }, incidents, now)).toEqual({ nombre: 2, depuis: '2026-10-01' })
+    expect(suggestionIncidentsKri({ taxonomieCode: 'BALE_2', frequence: 'TRIMESTRIEL' }, incidents, now)?.nombre).toBe(2)
+    expect(suggestionIncidentsKri({ taxonomieCode: 'BALE_2', frequence: 'ANNUEL' }, incidents, now)?.nombre).toBe(3)
+    expect(suggestionIncidentsKri({ taxonomieCode: null, frequence: 'MENSUEL' }, incidents, now)).toBeNull()
+  })
+})
+

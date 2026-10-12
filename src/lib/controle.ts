@@ -355,6 +355,24 @@ export function evaluerEfficacite(executions: ExecutionLite[]): ControleEfficaci
   return { evaluees: evaluables.length, conformes, anomalies, tauxConformite: taux, efficacite, vraisemblanceSuggeree }
 }
 
+// ─── Efficacité établie (recette n° 36) ───
+/** En dessous de 3 exécutions évaluées, l'efficacité n'est qu'indicative (pas de « 0 % · Faible » sur une seule exécution). */
+export const SEUIL_EXECUTIONS_EFFICACITE = 3
+export const efficaciteEtablie = (eff: Pick<ControleEfficacite, 'evaluees'>): boolean => eff.evaluees >= SEUIL_EXECUTIONS_EFFICACITE
+
+/** Échantillon cumulé des exécutions : éléments testés et anomalies trouvées ; null si aucun échantillon n'a été saisi. */
+export function echantillonTeste(executions: { tailleTestee?: number | null; anomaliesTrouvees?: number | null }[]): { testes: number; anomalies: number } | null {
+  const avec = executions.filter(e => typeof e.tailleTestee === 'number')
+  if (!avec.length) return null
+  return { testes: avec.reduce((n, e) => n + (e.tailleTestee ?? 0), 0), anomalies: avec.reduce((n, e) => n + (e.anomaliesTrouvees ?? 0), 0) }
+}
+
+/** Libellé tant que l'efficacité n'est pas établie : exécutions, anomalies et, s'il est saisi, l'échantillon testé. */
+export function resumeEfficaciteProvisoire(eff: { evaluees: number; anomalies: number; echantillon?: { testes: number; anomalies: number } | null }, g: { executions: string; echantillon: string }): string {
+  const base = g.executions.replace('{e}', String(eff.evaluees)).replace('{a}', String(eff.anomalies))
+  return eff.echantillon ? `${base} ${g.echantillon.replace('{a}', String(eff.echantillon.anomalies)).replace('{t}', String(eff.echantillon.testes))}` : base
+}
+
 /** Intitulé du plan d'action généré automatiquement sur anomalie. */
 export function libelleActionAnomalie(intituleControle: string): string {
   return `Traiter l'anomalie : ${intituleControle}`

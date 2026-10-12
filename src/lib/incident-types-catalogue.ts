@@ -5,6 +5,7 @@
 // indices de déclaration (nature TIC ou non, cause racine probable, données personnelles possibles).
 
 import { SECTOR_INCIDENT_TYPES } from './incident-types-sector'
+import { ENTETES_A_COMPLETER } from './incident-gabarit'
 
 export type IncidentLocale = 'fr' | 'en' | 'de' | 'es' | 'it'
 type Localized = Record<IncidentLocale, string>
@@ -138,7 +139,7 @@ export function searchIncidentTypes(query: string, locale: IncidentLocale, secto
   })
 }
 
-const TO_COMPLETE: Localized = l('À compléter :', 'To complete:', 'Zu ergänzen:', 'Por completar:', 'Da completare:')
+const TO_COMPLETE: Localized = l(...ENTETES_A_COMPLETER)
 
 export interface IncidentTemplate { catalogueKey: string; intitule: string; description: string; typeEvenement: IncidentCategorie; donneesPersonnelles: boolean; significatif: false; regimes: string[]; tic: boolean }
 

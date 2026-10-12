@@ -8,7 +8,7 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
 import {
   validateControleInput, cleanControleInput, prochaineEcheance,
-  etatEcheance, evaluerEfficacite, type Periodicite,
+  etatEcheance, evaluerEfficacite, efficaciteEtablie, echantillonTeste, type Periodicite,
 } from '@/lib/controle'
 import { comparerExecutions, prefillRejeu } from '@/lib/controle-l3b'
 import { champsL3Creation, vueControleL3 } from '@/lib/controle-l3'
@@ -64,6 +64,9 @@ export async function GET() {
   const now = new Date()
   const controles = rows.map(({ processus, riskItem, executions, ...c }) => {
     const derniere = executions[0]?.dateRealisation ?? null
+    // Recette n° 36 : efficacité établie à partir de 3 exécutions ; en deçà, ni niveau ni « Défaillant » (indicatif).
+    const eff = evaluerEfficacite(executions)
+    const etablie = efficaciteEtablie(eff)
     const echeance = prochaineEcheance(c.periodicite as Periodicite, derniere, c.createdAt)
     return {
       ...c,
@@ -78,8 +81,8 @@ export async function GET() {
       prochaineEcheance: echeance,
       // Un contrôle inactif n'a pas d'échéance à honorer.
       etatEcheance: c.actif ? etatEcheance(echeance, now) : null,
-      efficacite: evaluerEfficacite(executions),
-      l3: vueControleL3({ cle: c.cle, modeControle: c.modeControle, periodicite: c.periodicite, actif: c.actif, creeLe: c.createdAt, conception: c.conception, efficacite: evaluerEfficacite(executions).efficacite, executions }, now),
+      efficacite: { ...eff, etablie, echantillon: echantillonTeste(executions) },
+      l3: vueControleL3({ cle: c.cle, modeControle: c.modeControle, periodicite: c.periodicite, actif: c.actif, creeLe: c.createdAt, conception: c.conception, efficacite: etablie ? eff.efficacite : null, executions }, now),
       executions: executions.slice(0, 5),
       nbExecutions: executions.length,
     }

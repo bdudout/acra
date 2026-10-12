@@ -312,3 +312,14 @@ describe('lienSelonRole', () => {
     expect(lienSelonRole(null, 'RSSI')).toEqual({ lien: null, lecture: false })
   })
 })
+
+// Recette n° 34 : une action issue d'un incident n'affiche pas le gabarit brut « À compléter » — seules les rubriques renseignées.
+describe('normalizeIncident — gabarit de déclaration', () => {
+  it('rubriques vides et en-tête « À compléter » retirés ; rubriques renseignées et texte libre conservés ; tout vide → null', () => {
+    const d = (description: string) => normalizeIncident({ id: 'i1', intitule: 'Fraude au président', statut: 'DECLARE', description } as never)!.description
+    expect(d('À compléter :\n- Pertes estimées : 12 000 €\n- Vecteur d’attaque : \n- Systèmes touchés :')).toBe('- Pertes estimées : 12 000 €')
+    expect(d('Zu ergänzen:\n- Verluste : \nAppel reçu du faux président.')).toBe('Appel reçu du faux président.')
+    expect(d('To complete:\n- Losses : \n- Vector : ')).toBeNull()
+  })
+})
+
