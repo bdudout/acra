@@ -6,6 +6,58 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-13 (103) — Claude : pack « services postaux et d'expédition », lots L1 à L6
+
+Spec : `docs/specs/pack-services-postaux-spec.md` (contenu détaillé : `pack-services-postaux-multi-activites.md`,
+« Lot P3 »). Cas d'étude anonyme : aucune entreprise réelle nommée (code, données, tests, commits, ce journal).
+
+- **Fait (1 commit par lot, branche `feat/historical-excel-import`, non poussé)** :
+  - L1 `d1415d36` — `nis2Classification(secteur, sousSecteurs?)` ; « logistique » seul ne déduit plus « essentielle » ;
+    billetterie / régulation du trafic réservées aux modes voyageurs (`sousProfession` accepte une liste).
+  - L2 `91403f59` — secteur « Services postaux et d’expédition » (intitulé officiel NIS2 annexe II ×5, CELEX
+    32022L2555), avant « Autre », même index ×5 ; 6 sous-secteurs `postal-*` ; famille `postal` avant transport ;
+    référentiels RECYF / ISO 27001 / ANSSI, IEC 62443 (tri), PCI DSS (réseau).
+  - L3 `bf7d0878` — `lib/exemples-postal.ts` (ExtItem ×5) ; famille d'exemples `postal` en tête (« expédition »
+    contient « édition ») ; alimente aussi la saisie directe (`risque-exemples`).
+  - L4 `ccb710e5` — ≤ 5 risques sectoriels décochés dans « Risques proposés » (méthodes directes ;
+    `lib/risques-sectoriels-proposes.ts`, id `secteur:<slug>`) ; secteur présélectionné à la création via
+    `/api/analyses/default-org` (`secteurDepuisCodes`).
+  - L5 `6956bd4a` — 7 incidents types POSTAL ; 8 traitements RGPD types (`secteurs`, en tête pour l'org du secteur).
+  - L6 `8d533ff6` — code catalogue `POSTAL` (1.16) ; `lib/sector-packs-postal.ts` (12 risques bâlois, 20 contrôles,
+    8 KRI, 4 audits, 1 test de résilience) ; grille `catalogue-revue-grille.csv` régénérée.
+- **TODO(source)** : autorité EEI désignée pour le secteur postal (`regulatory-guidance.ts › eeiAuthorityKeys`) ; durées
+  de conservation des traitements postaux sans fiche CNIL trouvée (preuve de distribution, réexpédition, données
+  e-commerçants, domicile, identité au guichet) ; enregistrement des appels (fiche CNIL déclarée obsolète).
+  Durées reprises : géolocalisation des véhicules des salariés ; vidéoprotection au travail (CNIL).
+- **Pièges** : EUR-Lex renvoie un défi anti-robot → texte officiel via `publications.europa.eu/resource/celex/<CELEX>`
+  (Accept-Language). Le test « cliquet » `sector-depth` impose 20 contrôles / 8 KRI / 4 audits / 12 risques à tout
+  nouveau code secteur. Le libellé FR utilise l'apostrophe typographique officielle (’).
+- **Vérifications** : `tsc` 0 erreur ; `npm test` 663 fichiers / 4 961 tests verts (après L6) ; relecture anonymat
+  du diff et des messages (aucun nom d'entreprise) ; `npm run build` OK. **Non vérifié** : fumée navigateur (spec §8) —
+  aucune session ouverte dans le navigateur et lecture du mot de passe de recette refusée ; à rejouer (ISO 27005 et
+  EBIOS RM « Services postaux › Colis et express » dans une org « Bac à sable — … », un écran en anglais).
+- **Prochain pas** : L7 (ateliers 3 à 5 des autres familles), L8 (sous-secteurs numérique / télécoms / banque),
+  L9 (référentiels services de confiance — à arbitrer).
+
+---
+
+## 2026-10-10 (102) — Claude : test instable « update.sh v2 — échec de fumée : retour arrière »
+
+- **Cause trouvée (vrai défaut du script)** : sous charge, le délai `spawnSync` du banc (60 s) tuait le SEUL lanceur
+  `update.sh` pendant que `update-steps.sh` continuait ; le nettoyage `EXIT` du lanceur supprimait `$TMPDIR_RUN`, dont la
+  copie de `acra-snapshot.sh` utilisée par le retour arrière → « No such file », `rollback_failed`, application arrêtée.
+  Reproduit à la main (SIGTERM au lanceur pendant le retour arrière → `FAILED`, `rolledBack: false`). Même risque en prod
+  (kill, SSH coupé).
+- Correctif : `run_target_steps` (update.sh) attend les étapes cible malgré SIGTERM/SIGHUP/SIGINT ; banc à 110 s +
+  `runAsync` ; test `it.each(TERM, HUP, INT)` (rouge avant, vert après, bash 3.2) ; spec sauvegarde-rollback § 2.2.
+- **Vérifié** : `npm test` complet sous charge ~100 → update-script 27/27 ; seuls 2 échecs `tier-registry.route.test.ts`
+  (`syntheseTiersGroupe is not a function`), dus au travail NON commité en cours sur `tier-registry` (pas à ce correctif).
+- **Livré via #253** : le commit `b3c866fb` est parti avec le push de la branche et figure dans le squash de #253
+  (fusionnée le 2026-10-10, CI entièrement verte dont « Tests unitaires » et « Scénarios de mise à jour ») ; pas de PR
+  dédiée (diff vide avec main).
+
+---
+
 ## 2026-10-09 (101) — Claude : parcours plan d'audit en navigateur (comptes de recette)
 
 - #243 (RGPD lots B à D + scénario 5 de CI) fusionnée.
