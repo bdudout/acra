@@ -161,3 +161,11 @@ describe('nis2Classification — secteur postal (annexe II), 5 langues', () => {
   })
 })
 
+// Pack postal, lot L8 : prestataires de services de confiance — directive (UE) 2022/2555, annexe I (8. Infrastructure
+// numérique) ; entités essentielles quelle que soit leur taille s'ils sont qualifiés (art. 3, § 1, b).
+describe('nis2Classification — services de confiance', () => {
+  it('numerique-confiance → essentielle', () => {
+    expect(nis2Classification('Informatique / Numérique', ['numerique-confiance'])).toBe('essentielle')
+  })
+})
+

@@ -94,6 +94,7 @@ export function nis2Classification(secteur?: string | null, sousSecteurs?: reado
   // Sous-secteurs (pack postal, lot L1) : plus précis que le secteur.
   const ids = (sousSecteurs ?? []).map(x => x.toLowerCase())
   if (ids.some(x => x.startsWith('postal-'))) return 'importante' // annexe II, 1. Services postaux et d'expédition
+  if (ids.includes('numerique-confiance')) return 'essentielle' // annexe I, 8. Infrastructure numérique ; qualifiés : art. 3, § 1, b
   if (ids.some(x => ['transport-ferroviaire', 'transport-aerien', 'transport-maritime'].includes(x))) return 'essentielle' // annexe I, 2. Transports
   if (ids.includes('transport-logistique')) return null // fret : à confirmer par l'utilisateur (route : autorités et STI seulement)
   if (!s) return null

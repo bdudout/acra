@@ -11,7 +11,7 @@
 import { SOUS_SECTEURS } from '@/lib/ebios-data'
 
 /** Famille de secteur d'activité (santé, banque, défense, énergie…) regroupant les sous-secteurs. */
-export type SecteurFamille = 'sante' | 'banque' | 'defense' | 'energie' | 'administration' | 'industrie' | 'juridique' | 'transport' | 'immobilier' | 'protection_sociale' | 'postal'
+export type SecteurFamille = 'sante' | 'banque' | 'defense' | 'energie' | 'administration' | 'industrie' | 'juridique' | 'transport' | 'immobilier' | 'protection_sociale' | 'postal' | 'numerique' | 'telecom'
 
 // Mots-clés (minuscules, sous-chaînes) par famille — ordre = priorité de résolution.
 const FAMILY_KEYWORDS: { famille: SecteurFamille; kw: string[] }[] = [
@@ -27,6 +27,9 @@ const FAMILY_KEYWORDS: { famille: SecteurFamille; kw: string[] }[] = [
   // Avant transport (« livraison », « express ») — directive (UE) 2022/2555, annexe II, secteur 1, dans les 5 langues.
   { famille: 'postal', kw: ['postal', 'postaux', 'poste', 'courrier', 'colis', 'express', 'expédition', 'expedition', 'parcel', 'courier', 'post ', 'post-', 'paket', 'postdienst', 'kurier', 'correo', 'mensajer', 'paquetería', 'paqueteria', 'posta', 'pacchi', 'spedizion', 'corriere'] },
   { famille: 'transport', kw: ['transport', 'logistique', 'logistics', 'fret', 'ferroviaire', 'aérien', 'aerien', 'maritime', 'livraison', 'transporte', 'trasporto', 'verkehr'] },
+  // Pack postal, lot L8 — libellés du secteur dans les 5 langues (« IT / Digital », « Telekommunikation »…).
+  { famille: 'telecom', kw: ['télécom', 'telecom', 'telekommunikation'] },
+  { famille: 'numerique', kw: ['informatique', 'numérique', 'numerique', 'digital', 'informática', 'informatica', 'saas', 'logiciel'] },
   { famille: 'immobilier', kw: ['immobilier', 'construction', 'bâtiment', 'batiment', 'btp', 'promoteur', 'real estate', 'foncier', 'inmobili', 'immobili', 'bau'] },
 ]
 

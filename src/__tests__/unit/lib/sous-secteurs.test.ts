@@ -89,3 +89,23 @@ describe('famille postale', () => {
   })
 })
 
+// Pack postal, lot L8 : sous-secteurs numérique, télécoms et banque à réseau tiers (taxonomie existante, aucun écran).
+describe('familles numérique et télécoms ; banque à réseau tiers', () => {
+  const NUM = ['numerique-confiance', 'numerique-identite', 'numerique-coffre', 'numerique-cloud', 'numerique-editeur', 'numerique-esn']
+  const TEL = ['telecom-reseau', 'telecom-virtuel', 'telecom-fai']
+  it('numérique et télécoms reconnus dans les 5 langues avec leurs sous-secteurs', () => {
+    for (const l of ['fr', 'en', 'de', 'es', 'it'] as const) {
+      const liste = getEbiosData(l).SECTEURS_ACTIVITE as readonly string[]
+      expect(sousSecteurIdsFor(liste[6]), `${l} ${liste[6]}`).toEqual(NUM)
+      expect(sousSecteurIdsFor(liste[8]), `${l} ${liste[8]}`).toEqual(TEL)
+    }
+  })
+  it('banque : sous-secteur « réseau de guichets tenu par une autre entité » ; pas de collision', () => {
+    expect(sousSecteurIdsFor('Banque / Finance')).toContain('banque-reseau-tiers')
+    expect(secteurFamily('Transports / Logistique')).toBe('transport')
+    expect(secteurFamily('Services postaux et d’expédition')).toBe('postal')
+    expect(secteurFamily('Commerce / Distribution')).toBeNull()
+    expect(normalizeSousSecteurs('Banque / Finance', ['telecom-virtuel', 'banque-reseau-tiers'])).toEqual(['banque-reseau-tiers'])
+  })
+})
+

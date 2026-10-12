@@ -452,12 +452,12 @@ const TELECOM: SectorFamily = {
     valeursMetier: [
       { nom: 'Fourniture des services de communication', type: 'PROCESSUS', description: 'Acheminement de la voix, des données et de l’accès internet des abonnés', responsable: 'Direction réseau / production', disponibilite: 4, integrite: 3, confidentialite: 3, tracabilite: 3 },
       { nom: 'Gestion des abonnés et facturation', type: 'INFORMATION', description: 'Données d’abonnés, contrats et facturation', responsable: 'Direction commerciale / BSS', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
-      { nom: 'Supervision et conduite du réseau', type: 'PROCESSUS', description: 'Pilotage, supervision et maintenance du réseau de télécommunications', responsable: 'Centre de supervision réseau (NOC)', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
+      { nom: 'Supervision et conduite du réseau', type: 'PROCESSUS', description: 'Pilotage, supervision et maintenance du réseau de télécommunications', responsable: 'Centre de supervision réseau (NOC)', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4, sousProfession: ['reseau', 'fai'] },
       { nom: 'Interconnexion et roaming', type: 'PROCESSUS', description: 'Échanges de trafic avec les autres opérateurs et itinérance', responsable: 'Direction des interconnexions', disponibilite: 4, integrite: 3, confidentialite: 3, tracabilite: 3 },
     ],
     biensSupports: [
-      { nom: 'Cœur de réseau (core network)', type: 'MATERIEL', description: 'Équipements centraux d’acheminement du trafic' },
-      { nom: 'Stations de base / antennes', type: 'MATERIEL', description: 'Équipements radio d’accès des abonnés' },
+      { nom: 'Cœur de réseau (core network)', type: 'MATERIEL', description: 'Équipements centraux d’acheminement du trafic', sousProfession: ['reseau', 'fai'] },
+      { nom: 'Stations de base / antennes', type: 'MATERIEL', description: 'Équipements radio d’accès des abonnés', sousProfession: ['reseau'] },
       { nom: 'Systèmes de gestion des abonnés (BSS / OSS)', type: 'LOGICIEL', description: 'Gestion commerciale et technique des abonnés' },
       { nom: 'DNS et services d’infrastructure', type: 'RESEAU', description: 'Résolution de noms et services réseau critiques' },
     ],
@@ -470,7 +470,7 @@ const TELECOM: SectorFamily = {
       { nom: 'Acteur étatique d’espionnage des communications', categorie: 'ETAT_NATION', description: 'Attaquant étatique cherchant à intercepter ou perturber les communications', motivation: 'Renseignement', ressources: 'Très élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 4, activiteScoreDefaut: 3 },
     ],
     scenariosStrategiques: [
-      { critere: 'D', nom: 'Panne généralisée du réseau par sabotage (D)', description: 'Un attaquant provoque l’indisponibilité du cœur de réseau', vraisemblanceDefaut: 2, graviteDefaut: 4 },
+      { critere: 'D', nom: 'Panne généralisée du réseau par sabotage (D)', description: 'Un attaquant provoque l’indisponibilité du cœur de réseau', vraisemblanceDefaut: 2, graviteDefaut: 4, sousProfession: ['reseau', 'fai'] },
       { critere: 'C', nom: 'Interception des communications des abonnés (C)', description: 'Un attaquant accède au trafic pour écouter les communications', vraisemblanceDefaut: 2, graviteDefaut: 4 },
     ],
   },
@@ -864,6 +864,9 @@ function professionFromSousSecteur(sousSecteur?: string | null): string | undefi
   if (v.startsWith('protsoc-')) return v.slice('protsoc-'.length)
   // Services postaux : idem (postal-domicile → domicile, avant la règle générique « domicile » → saad)
   if (v.startsWith('postal-')) return v.slice('postal-'.length)
+  // Numérique et télécoms (lot L8) : idem, avant les règles génériques (« editeur », « cloud »…)
+  if (v.startsWith('numerique-')) return v.slice('numerique-'.length)
+  if (v.startsWith('telecom-')) return v.slice('telecom-'.length)
   // Santé : portail, entrepôt de données, délégataire de gestion (avant les règles génériques)
   if (v.includes('sante-portail')) return 'portail'
   if (v.includes('sante-entrepot')) return 'entrepot'

@@ -364,3 +364,16 @@ describe('transport — éléments voyageurs réservés aux modes voyageurs', ()
     expect(sectorExemplesFor('Transports / Logistique', 'valeursMetier', 'en', 'transport-ferroviaire').map(x => String(x.nom))).not.toContain('Réservation et billetterie')
   })
 })
+
+// Pack postal, lot L8 : un opérateur virtuel n'exploite ni cœur de réseau ni stations de base.
+describe('télécoms — contenu réseau réservé aux opérateurs de réseau', () => {
+  const noms = (sous?: string) => sectorExemplesFor('Télécommunications', 'biensSupports', 'fr', sous).map(x => String(x.nom))
+  it('virtuel : ni cœur de réseau ni antennes ; réseau et secteur seul : présents', () => {
+    expect(noms('telecom-virtuel')).not.toContain('Cœur de réseau (core network)')
+    expect(noms('telecom-virtuel')).not.toContain('Stations de base / antennes')
+    expect(noms('telecom-reseau')).toContain('Stations de base / antennes')
+    expect(noms()).toContain('Cœur de réseau (core network)')
+    expect(noms('telecom-fai')).toContain('Cœur de réseau (core network)')
+  })
+})
+
