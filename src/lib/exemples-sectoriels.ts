@@ -48,7 +48,7 @@ export interface SectorFamily {
   /** Sous-chaînes (minuscules) reconnues dans le libellé du secteur de l'analyse. */
   match: string[]
   /** Identifiant interne de la famille. */
-  key: 'sante' | 'finance' | 'industrie' | 'public' | 'transport' | 'telecom' | 'education' | 'commerce' | 'juridique' | 'numerique' | 'agri' | 'defense' | 'immobilier' | 'media' | 'tourisme' | 'association' | 'protection_sociale'
+  key: 'sante' | 'finance' | 'industrie' | 'public' | 'transport' | 'telecom' | 'education' | 'commerce' | 'juridique' | 'numerique' | 'agri' | 'defense' | 'immobilier' | 'media' | 'tourisme' | 'association' | 'protection_sociale' | 'postal'
   exemples: Partial<Record<SectorExempleCategory, Record<string, unknown>[]>>
 }
 
@@ -841,8 +841,16 @@ const PROTECTION_SOCIALE: SectorFamily = {
   exemples: {},
 }
 
-// PROTECTION SOCIALE avant SANTÉ et FINANCE : « Sozialversicherung » contient « versicherung ».
-export const SECTOR_FAMILIES: SectorFamily[] = [PROTECTION_SOCIALE, SANTE, FINANCE, INDUSTRIE, PUBLIC, TRANSPORT, TELECOM, EDUCATION, COMMERCE, JURIDIQUE, NUMERIQUE, AGRI, DEFENSE, IMMOBILIER, MEDIA, TOURISME, ASSOCIATION]
+// SERVICES POSTAUX ET D'EXPÉDITION (pack postal) — contenu au format ExtItem (lib/exemples-postal) ; mêmes mots-clés
+// que la famille `postal` de lib/sous-secteurs. En tête : « expédition » contient « édition » (médias), « livraison » (transport).
+const POSTAL: SectorFamily = {
+  key: 'postal',
+  match: ['postal', 'postaux', 'courrier', 'colis', 'expédition', 'expedition', 'parcel', 'courier', 'post-', 'kurier', 'mensajer', 'paquetería', 'paqueteria', 'postali', 'pacchi', 'corriere'],
+  exemples: {},
+}
+
+// POSTAL en tête (cf. ci-dessus) ; PROTECTION SOCIALE avant SANTÉ et FINANCE : « Sozialversicherung » contient « versicherung ».
+export const SECTOR_FAMILIES: SectorFamily[] = [POSTAL, PROTECTION_SOCIALE, SANTE, FINANCE, INDUSTRIE, PUBLIC, TRANSPORT, TELECOM, EDUCATION, COMMERCE, JURIDIQUE, NUMERIQUE, AGRI, DEFENSE, IMMOBILIER, MEDIA, TOURISME, ASSOCIATION]
 
 /**
  * Exemples sectoriels pour un secteur + une catégorie d'atelier.

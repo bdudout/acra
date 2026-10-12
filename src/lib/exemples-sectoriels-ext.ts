@@ -19,6 +19,7 @@
  */
 import type { Locale } from '@/lib/i18n'
 import { PROTECTION_SOCIALE_ITEMS } from '@/lib/exemples-protection-sociale'
+import { POSTAL_ITEMS } from '@/lib/exemples-postal'
 
 export type Tr = readonly [fr: string, en: string, de: string, es: string, it: string]
 export type ExtCategory =
@@ -26,7 +27,7 @@ export type ExtCategory =
   | 'partiesPrenantes' | 'actionsElementaires' | 'mesuresEcosysteme' | 'mesures'
 
 export interface ExtItem {
-  famille: 'sante' | 'protection_sociale'
+  famille: 'sante' | 'protection_sociale' | 'postal'
   category: ExtCategory
   profs?: readonly string[]
   /** Sous-professions pour lesquelles un élément commun à la famille serait incohérent (il ne leur est pas proposé). */
@@ -53,7 +54,7 @@ export function localizeExt(item: ExtItem, locale: Locale): Record<string, unkno
 
 /** Éléments d'extension visibles pour une famille, une catégorie et une sous-profession. */
 export function extItemsFor(famille: string, category: string, prof: string | undefined): ExtItem[] {
-  const visible = [...EXT_ITEMS, ...PROTECTION_SOCIALE_ITEMS].filter(x => x.famille === famille && x.category === category
+  const visible = [...EXT_ITEMS, ...PROTECTION_SOCIALE_ITEMS, ...POSTAL_ITEMS].filter(x => x.famille === famille && x.category === category
     && (!x.profs || (prof !== undefined && x.profs.includes(prof)))
     && !(prof !== undefined && x.notFor?.includes(prof)))
   // Éléments propres à la sous-profession d'abord, puis éléments communs à la famille (tri stable).
