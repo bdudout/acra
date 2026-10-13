@@ -1,0 +1,32 @@
+name: 💡 Proposer une fonctionnalité / Suggest a feature
+description: Un besoin métier, une amélioration, un nouveau référentiel… / A business need, an improvement, a new framework…
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci ! Décrivez le **besoin** plutôt que la solution : nous chercherons la réponse la plus simple, sans alourdir ACRA.
+        Thank you! Describe the **need** rather than the solution. **Aucune donnée réelle / no real data** (analyses, organisation names, personal data).
+  - type: textarea
+    id: besoin
+    attributes:
+      label: Besoin / Need
+      description: Quel problème rencontrez-vous ? / What problem are you facing?
+    validations:
+      required: true
+  - type: dropdown
+    id: profil
+    attributes:
+      label: Profil concerné / Who would use it
+      multiple: true
+      options: [RSSI / CISO, Risk manager, Analyste / Analyst, DPO, Conformité / Compliance, Contrôleur / Controller, Auditeur / Auditor, Direction métier / Business owner, Administrateur / Admin, Autre / Other]
+  - type: textarea
+    id: resultat
+    attributes:
+      label: Résultat attendu / Expected outcome
+      description: Ce que vous pourriez faire une fois la fonctionnalité disponible. / What you could do once it exists.
+  - type: input
+    id: reference
+    attributes:
+      label: Texte ou référentiel concerné (version) / Regulation or framework (version)
+      placeholder: ex. DORA — Règlement (UE) 2022/2554, art. 28

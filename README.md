@@ -17,6 +17,8 @@
 
 **🌐 Langue / Language :** 🇫🇷 Français · [🇬🇧 English](README.en.md) · [🇩🇪 Deutsch](README.de.md) · [🇪🇸 Español](README.es.md) · [🇮🇹 Italiano](README.it.md)
 
+💡 **Une idée, un besoin, un bug ?** [Proposez une fonctionnalité ou signalez un problème](https://github.com/bdudout/acra/issues/new/choose) directement sur GitHub — chaque proposition est lue.
+
 </div>
 
 ---
@@ -1145,6 +1147,19 @@ docker compose exec app env | grep DATABASE
 docker compose down -v
 docker compose up -d
 ```
+
+---
+
+## 💡 Proposer une fonctionnalité ou signaler un problème
+
+Vos retours orientent la feuille de route d'ACRA. Sur GitHub, ouvrez une [issue](https://github.com/bdudout/acra/issues/new/choose) :
+
+- **💡 Proposer une fonctionnalité** : le besoin métier, qui l'utiliserait (RSSI, DPO, contrôleur…), et le résultat attendu ;
+- **🐞 Signaler un problème** : les étapes pour le reproduire, ce qui était attendu, la version d'ACRA et le navigateur.
+
+Avant d'ouvrir une issue, un coup d'œil aux [issues existantes](https://github.com/bdudout/acra/issues) évite les doublons — un 👍 sur une issue existante aide à prioriser.
+**Vulnérabilité de sécurité** : ne pas ouvrir d'issue publique, suivre [SECURITY.md](./SECURITY.md).
+Aucune donnée réelle (analyse de risques, nom d'organisation, données personnelles) dans une issue.
 
 ---
 
