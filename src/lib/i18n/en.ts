@@ -2045,6 +2045,7 @@ export const en: Translations = {
       decisions: 'Decisions to take',
     },
     kpis: {
+      risquesNonCotes: 'Unrated risks',
       total: 'Incidents',
       ouverts: 'Open',
       clotures: 'Closed',
@@ -2091,6 +2092,7 @@ export const en: Translations = {
       ELEVE: 'HIGH',
       MODERE: 'MODERATE',
       MAITRISE: 'CONTROLLED',
+      NON_EVALUABLE: 'NOT ASSESSABLE',
     },
     decisions: {
       constatsCritiques: 'Decide how to handle critical audit findings',
@@ -2232,8 +2234,9 @@ export const en: Translations = {
       validations: { COMPLETE: 'Complete', PARTIELLE: 'Partial', AUCUNE: 'Pending' }, empty: 'No 360 project yet.', voirTous: 'Open the Projects tab',
     },
     heatmapTitle: 'Risk map (residual)', heatmapAxis: 'Likelihood × Severity (1-5)',
-    verdictTitle: 'Overall risk level', verdictNiveaux: { ELEVE: 'HIGH', MODERE: 'MODERATE', MAITRISE: 'UNDER CONTROL' }, verdictAlertes: 'alert(s)',
+    verdictTitle: 'Overall risk level', verdictNiveaux: { ELEVE: 'HIGH', MODERE: 'MODERATE', MAITRISE: 'UNDER CONTROL', NON_EVALUABLE: 'NOT ASSESSABLE' }, verdictPartiel: 'Partial basis', verdictManques: { risquesNonCotes: '{n} unrated risk(s)', conformiteNonEvaluee: 'compliance not assessed', kriNonEvalues: 'no KRI assessed' }, verdictAlertes: 'alert(s)',
     verdictSignaux: {
+      incidentsAQualifier: 'Incidents to classify',
       constatsCritiques: 'Critical audit findings',
       doraMajeurs: 'Major DORA incidents',
       kriCritique: 'KRIs at critical threshold',

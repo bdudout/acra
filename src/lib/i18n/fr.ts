@@ -2069,6 +2069,7 @@ export const fr = {
       decisions: 'Décisions à prendre',
     },
     kpis: {
+      risquesNonCotes: 'Risques non cotés',
       total: 'Incidents',
       ouverts: 'Ouverts',
       clotures: 'Clôturés',
@@ -2115,6 +2116,7 @@ export const fr = {
       ELEVE: 'ÉLEVÉ',
       MODERE: 'MODÉRÉ',
       MAITRISE: 'MAÎTRISÉ',
+      NON_EVALUABLE: 'NON ÉVALUABLE',
     },
     decisions: {
       constatsCritiques: 'Décider du traitement des constats d’audit critiques',
@@ -2256,8 +2258,9 @@ export const fr = {
       validations: { COMPLETE: 'Complète', PARTIELLE: 'Partielle', AUCUNE: 'En attente' }, empty: 'Aucun projet 360 pour le moment.', voirTous: 'Ouvrir l’onglet Projets',
     },
     heatmapTitle: 'Cartographie des risques (résiduel)', heatmapAxis: 'Vraisemblance × Gravité (1-5)',
-    verdictTitle: 'Niveau de risque global', verdictNiveaux: { ELEVE: 'ÉLEVÉ', MODERE: 'MODÉRÉ', MAITRISE: 'MAÎTRISÉ' }, verdictAlertes: "point(s) d'alerte",
+    verdictTitle: 'Niveau de risque global', verdictNiveaux: { ELEVE: 'ÉLEVÉ', MODERE: 'MODÉRÉ', MAITRISE: 'MAÎTRISÉ', NON_EVALUABLE: 'NON ÉVALUABLE' }, verdictPartiel: 'Base partielle', verdictManques: { risquesNonCotes: '{n} risque(s) non coté(s)', conformiteNonEvaluee: 'conformité non évaluée', kriNonEvalues: 'aucun KRI évalué' }, verdictAlertes: "point(s) d'alerte",
     verdictSignaux: {
+      incidentsAQualifier: 'Incidents à qualifier',
       constatsCritiques: "Constats d'audit critiques",
       doraMajeurs: 'Incidents DORA majeurs',
       kriCritique: 'KRI en seuil critique',

@@ -2044,6 +2044,7 @@ export const de: Translations = {
       decisions: 'Zu treffende Entscheidungen',
     },
     kpis: {
+      risquesNonCotes: 'Nicht bewertete Risiken',
       total: 'Vorfälle',
       ouverts: 'Offen',
       clotures: 'Abgeschlossen',
@@ -2090,6 +2091,7 @@ export const de: Translations = {
       ELEVE: 'HOCH',
       MODERE: 'MITTEL',
       MAITRISE: 'BEHERRSCHT',
+      NON_EVALUABLE: 'NICHT BEWERTBAR',
     },
     decisions: {
       constatsCritiques: 'Über den Umgang mit kritischen Prüfungsfeststellungen entscheiden',
@@ -2231,8 +2233,9 @@ export const de: Translations = {
       validations: { COMPLETE: 'Vollständig', PARTIELLE: 'Teilweise', AUCUNE: 'Ausstehend' }, empty: 'Noch kein 360-Projekt.', voirTous: 'Registerkarte Projekte öffnen',
     },
     heatmapTitle: 'Risikokarte (Restrisiko)', heatmapAxis: 'Wahrscheinlichkeit × Schwere (1-5)',
-    verdictTitle: 'Gesamtrisikoniveau', verdictNiveaux: { ELEVE: 'HOCH', MODERE: 'MITTEL', MAITRISE: 'BEHERRSCHT' }, verdictAlertes: 'Alarm(e)',
+    verdictTitle: 'Gesamtrisikoniveau', verdictNiveaux: { ELEVE: 'HOCH', MODERE: 'MITTEL', MAITRISE: 'BEHERRSCHT', NON_EVALUABLE: 'NICHT BEWERTBAR' }, verdictPartiel: 'Teilweise Grundlage', verdictManques: { risquesNonCotes: '{n} nicht bewertete(s) Risiko/Risiken', conformiteNonEvaluee: 'Konformität nicht bewertet', kriNonEvalues: 'kein KRI bewertet' }, verdictAlertes: 'Alarm(e)',
     verdictSignaux: {
+      incidentsAQualifier: 'Zu klassifizierende Vorfälle',
       constatsCritiques: 'Kritische Prüfungsfeststellungen',
       doraMajeurs: 'Schwerwiegende DORA-Vorfälle',
       kriCritique: 'KRIs an kritischer Schwelle',

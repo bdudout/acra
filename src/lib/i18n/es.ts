@@ -2045,6 +2045,7 @@ export const es: Translations = {
       decisions: 'Decisiones por tomar',
     },
     kpis: {
+      risquesNonCotes: 'Riesgos sin valorar',
       total: 'Incidentes',
       ouverts: 'Abiertos',
       clotures: 'Cerrados',
@@ -2091,6 +2092,7 @@ export const es: Translations = {
       ELEVE: 'ALTO',
       MODERE: 'MODERADO',
       MAITRISE: 'CONTROLADO',
+      NON_EVALUABLE: 'NO EVALUABLE',
     },
     decisions: {
       constatsCritiques: 'Decidir el tratamiento de los hallazgos de auditoría críticos',
@@ -2232,8 +2234,9 @@ export const es: Translations = {
       validations: { COMPLETE: 'Completa', PARTIELLE: 'Parcial', AUCUNE: 'Pendiente' }, empty: 'Aún no hay proyectos 360.', voirTous: 'Abrir la pestaña Proyectos',
     },
     heatmapTitle: 'Mapa de riesgos (residual)', heatmapAxis: 'Probabilidad × Gravedad (1-5)',
-    verdictTitle: 'Nivel de riesgo global', verdictNiveaux: { ELEVE: 'ALTO', MODERE: 'MODERADO', MAITRISE: 'CONTROLADO' }, verdictAlertes: 'alerta(s)',
+    verdictTitle: 'Nivel de riesgo global', verdictNiveaux: { ELEVE: 'ALTO', MODERE: 'MODERADO', MAITRISE: 'CONTROLADO', NON_EVALUABLE: 'NO EVALUABLE' }, verdictPartiel: 'Base parcial', verdictManques: { risquesNonCotes: '{n} riesgo(s) sin valorar', conformiteNonEvaluee: 'conformidad no evaluada', kriNonEvalues: 'ningún KRI evaluado' }, verdictAlertes: 'alerta(s)',
     verdictSignaux: {
+      incidentsAQualifier: 'Incidentes por clasificar',
       constatsCritiques: 'Hallazgos de auditoría críticos',
       doraMajeurs: 'Incidentes DORA graves',
       kriCritique: 'KRI en umbral crítico',

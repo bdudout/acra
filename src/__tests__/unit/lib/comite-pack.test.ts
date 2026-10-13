@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildComitePack, verdictGlobal, verdictDispositif, verdictSignauxActifs, COMITE_TYPES, type ComiteConsolide, valeursPack, ajouterTendances, texteTendance } from '../../../lib/comite-pack'
+import { buildComitePack, verdictGlobal, verdictDispositif, verdictSignauxActifs, baseEvaluation, COMITE_TYPES, type ComiteConsolide, valeursPack, ajouterTendances, texteTendance } from '../../../lib/comite-pack'
 
 const MODULES_ON = { risques: true, appetit: true, incidents: true, controles: true, audit: true, regulateur: true, kri: true, dora: true }
 
@@ -179,3 +179,43 @@ describe('texteTendance (PDF, police sans flèches)', () => {
     expect(texteTendance({ precedent: 2, delta: 0, sens: 'STABLE', favorable: null }, 'vs mois préc.')).toBe('= vs mois préc.')
   })
 })
+
+// Recette n° 48 : pas de « MAÎTRISÉ » sans base d'évaluation. 1) « Non évaluable » sans aucun risque coté (motifs
+// listés) ; 2) les alertes l'emportent ; 3) « maîtrisé, base partielle » ; 4) incident à qualifier = alerte ;
+// 5) même règle pour le cockpit, le dossier de comité et le rapport direction.
+describe('verdict — base d’évaluation (recette n° 48)', () => {
+  const vide = baseEvaluation({ risques: { total: 5, eleve: 0, moyen: 0, faible: 0, nonCote: 5 }, controles: { tauxConformite: null, anomalies: 0 }, kri: { enAlerte: 0, critique: 0, total: 2, evalues: 0 } }, { controles: true, kri: true })
+  it('aucun risque coté et aucune alerte → NON_EVALUABLE, avec les motifs', () => {
+    const v = verdictDispositif({}, vide)
+    expect(v.niveau).toBe('NON_EVALUABLE')
+    expect(v.manques).toEqual([{ cle: 'risquesNonCotes', n: 5 }, { cle: 'conformiteNonEvaluee' }, { cle: 'kriNonEvalues' }])
+    expect(verdictDispositif({}, baseEvaluation({}, { controles: false, kri: false })).niveau).toBe('NON_EVALUABLE')
+  })
+  it('les alertes l’emportent sur l’évaluation incomplète', () => {
+    expect(verdictDispositif({ constatsCritiques: 1 }, vide).niveau).toBe('ELEVE')
+    expect(verdictDispositif({ actionsEnRetard: 2 }, vide).niveau).toBe('MODERE')
+  })
+  it('risques cotés mais conformité ou KRI non évalués → MAITRISE, base partielle', () => {
+    const b = baseEvaluation({ risques: { total: 5, eleve: 0, moyen: 2, faible: 1, nonCote: 2 }, controles: { tauxConformite: null, anomalies: 0 } }, { controles: true, kri: false })
+    const v = verdictDispositif({}, b)
+    expect(v.niveau).toBe('MAITRISE')
+    expect(v.partiel).toBe(true)
+    expect(v.manques).toEqual([{ cle: 'risquesNonCotes', n: 2 }, { cle: 'conformiteNonEvaluee' }])
+    const complet = verdictDispositif({}, baseEvaluation({ risques: { total: 3, eleve: 0, moyen: 1, faible: 2, nonCote: 0 }, controles: { tauxConformite: 95, anomalies: 0 }, kri: { enAlerte: 0, critique: 0, total: 1, evalues: 1 } }, { controles: true, kri: true }))
+    expect(complet).toMatchObject({ niveau: 'MAITRISE', partiel: false, manques: [] })
+  })
+  it('un incident à qualifier est un signal d’alerte (non critique)', () => {
+    expect(verdictSignauxActifs({ incidentsAQualifier: 2 })).toEqual(['incidentsAQualifier'])
+    expect(verdictDispositif({ incidentsAQualifier: 2 }).niveau).toBe('MODERE')
+  })
+  it('sans base fournie : comportement inchangé (rétrocompatible)', () => {
+    expect(verdictDispositif({})).toMatchObject({ niveau: 'MAITRISE', manques: [], partiel: false })
+  })
+  it('dossier de comité : même règle (base calculée à la construction du pack)', () => {
+    const pack = buildComitePack('RISQUES', { risques: { total: 5, eleve: 0, moyen: 0, faible: 0, nonCote: 5 }, incidents: { total: 2, ouverts: 2, perteNette: 0, aQualifier: 0 } }, MODULES_ON)
+    expect(verdictGlobal(pack).niveau).toBe('NON_EVALUABLE')
+    const avecIncident = buildComitePack('RISQUES', { risques: { total: 5, eleve: 0, moyen: 0, faible: 0, nonCote: 5 }, incidents: { total: 2, ouverts: 2, perteNette: 0, aQualifier: 1 } }, MODULES_ON)
+    expect(verdictGlobal(avecIncident).niveau).toBe('MODERE')
+  })
+})
+

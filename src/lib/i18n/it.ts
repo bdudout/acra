@@ -2045,6 +2045,7 @@ export const it: Translations = {
       decisions: 'Decisioni da prendere',
     },
     kpis: {
+      risquesNonCotes: 'Rischi non valutati',
       total: 'Incidenti',
       ouverts: 'Aperti',
       clotures: 'Chiusi',
@@ -2091,6 +2092,7 @@ export const it: Translations = {
       ELEVE: 'ELEVATO',
       MODERE: 'MODERATO',
       MAITRISE: 'SOTTO CONTROLLO',
+      NON_EVALUABLE: 'NON VALUTABILE',
     },
     decisions: {
       constatsCritiques: 'Decidere il trattamento delle risultanze di audit critiche',
@@ -2232,8 +2234,9 @@ export const it: Translations = {
       validations: { COMPLETE: 'Completa', PARTIELLE: 'Parziale', AUCUNE: 'In attesa' }, empty: 'Ancora nessun progetto 360.', voirTous: 'Apri la scheda Progetti',
     },
     heatmapTitle: 'Mappatura dei rischi (residuo)', heatmapAxis: 'Probabilità × Gravità (1-5)',
-    verdictTitle: 'Livello di rischio complessivo', verdictNiveaux: { ELEVE: 'ALTO', MODERE: 'MODERATO', MAITRISE: 'SOTTO CONTROLLO' }, verdictAlertes: 'allerta/e',
+    verdictTitle: 'Livello di rischio complessivo', verdictNiveaux: { ELEVE: 'ALTO', MODERE: 'MODERATO', MAITRISE: 'SOTTO CONTROLLO', NON_EVALUABLE: 'NON VALUTABILE' }, verdictPartiel: 'Base parziale', verdictManques: { risquesNonCotes: '{n} rischio/i non valutato/i', conformiteNonEvaluee: 'conformità non valutata', kriNonEvalues: 'nessun KRI valutato' }, verdictAlertes: 'allerta/e',
     verdictSignaux: {
+      incidentsAQualifier: 'Incidenti da classificare',
       constatsCritiques: 'Rilievi di audit critici',
       doraMajeurs: 'Incidenti DORA gravi',
       kriCritique: 'KRI a soglia critica',

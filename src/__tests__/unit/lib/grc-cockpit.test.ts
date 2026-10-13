@@ -21,16 +21,18 @@ describe('grc-cockpit — incidents (LDC)', () => {
     expect(t.total).toBe(3)
     expect(t.ouverts).toBe(2)
     expect(t.perteNette).toBe(1300)
+    // Recette n° 48 : incidents signalés pas encore qualifiés (DECLARE).
+    expect(t.aQualifier).toBe(rows.filter(r => r.statut === 'DECLARE').length)
   })
 
   it('ventile par organisation', () => {
     const m = incidentsByOrg(rows)
-    expect(m.get('a')).toEqual({ total: 2, ouverts: 1, perteNette: 1300 })
-    expect(m.get('b')).toEqual({ total: 1, ouverts: 1, perteNette: 0 })
+    expect(m.get('a')).toMatchObject({ total: 2, ouverts: 1, perteNette: 1300 })
+    expect(m.get('b')).toMatchObject({ total: 1, ouverts: 1, perteNette: 0 })
   })
 
   it('liste vide → tout à zéro', () => {
-    expect(rollupIncidents([])).toEqual({ total: 0, ouverts: 0, perteNette: 0 })
+    expect(rollupIncidents([])).toEqual({ total: 0, ouverts: 0, perteNette: 0, aQualifier: 0 })
   })
 })
 

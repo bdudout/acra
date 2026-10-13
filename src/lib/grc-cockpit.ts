@@ -35,15 +35,17 @@ export interface IncidentTotals {
   total: number // incidents retenus (les REJETE sont exclus : faux positifs)
   ouverts: number // non terminaux (DECLARE + QUALIFIE)
   perteNette: number // € cumulés, net des récupérations (hors REJETE)
+  aQualifier: number // signalés, pas encore qualifiés (DECLARE) — recette n° 48
 }
 
 /** Consolide les incidents (M2) : total/ouverts + perte nette €, en excluant les REJETE (faux positifs). */
 export function rollupIncidents(rows: CockpitIncident[]): IncidentTotals {
-  const t: IncidentTotals = { total: 0, ouverts: 0, perteNette: 0 }
+  const t: IncidentTotals = { total: 0, ouverts: 0, perteNette: 0, aQualifier: 0 }
   for (const i of rows) {
     if (i.statut === 'REJETE') continue
     t.total++
     if (!estTerminal(i.statut)) t.ouverts++
+    if (i.statut === 'DECLARE') t.aQualifier++
     t.perteNette += perteNette(i.montantBrut, i.recuperations) ?? 0
   }
   t.perteNette = Math.round(t.perteNette * 100) / 100

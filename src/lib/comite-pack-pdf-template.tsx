@@ -25,7 +25,7 @@ const COLORS = {
 
 // Couleur du bandeau de verdict global (RAG) selon le niveau.
 const VERDICT_COLOR: Record<VerdictNiveau, string> = {
-  ELEVE: COLORS.danger, MODERE: COLORS.warn, MAITRISE: COLORS.ok,
+  ELEVE: COLORS.danger, MODERE: COLORS.warn, MAITRISE: COLORS.ok, NON_EVALUABLE: COLORS.muted,
 }
 
 const s = StyleSheet.create({
@@ -54,7 +54,7 @@ type Dict = Record<string, string>
 type Strings = {
   docTitle: string; comiteType: Dict; section: Dict; metric: Dict; highlight: Dict
   highlightsTitle: string; noAlert: string; generatedOn: string
-  verdictTitle: string; verdict: Record<VerdictNiveau, string>; verdictAlertes: string; cible: string; minimum: string; vsMoisPrecedent: string
+  verdictTitle: string; verdict: Record<VerdictNiveau, string>; verdictAlertes: string; verdictPartiel: string; manque: { risquesNonCotes: string; conformiteNonEvaluee: string; kriNonEvalues: string }; cible: string; minimum: string; vsMoisPrecedent: string
 }
 
 const COMMON_METRIC = {
@@ -71,9 +71,9 @@ const STRINGS: Record<string, Strings> = {
     comiteType: { RISQUES: 'Comité des risques', CONFORMITE: 'Comité de conformité', INCIDENTS: 'Comité incidents & sécurité' },
     section: { risques: 'Cartographie des risques', appetit: 'Appétit au risque', incidents: 'Incidents & pertes', controles: 'Contrôle permanent', audit: 'Audit interne', regulateur: 'Suivi régulateur', kri: 'Indicateurs clés (KRI)', dora: 'Résilience TIC (DORA)' },
     metric: { ...COMMON_METRIC, total: 'Total', eleve: 'Élevés', moyen: 'Moyens', faible: 'Faibles', nonCote: 'Non cotés', actionsTotal: 'Actions', avancement: 'Avancement', actionsEnRetard: 'Actions en retard', horsAppetit: 'Hors appétit', dansAppetit: 'Dans l\'appétit', evalues: 'Évalués', ouverts: 'Ouverts', perteNette: 'Perte nette (€)', tauxConformite: 'Taux de conformité', anomalies: 'Anomalies', critiques: 'Constats critiques', recosEnRetard: 'Recos en retard', echues: 'Échéances dépassées', sous30j: 'Sous 30 jours', enAlerte: 'En alerte', critique: 'Critiques', majeurs: 'Incidents majeurs' },
-    highlight: { horsAppetit: 'risque(s) hors appétit', actionsEnRetard: 'action(s) de traitement en retard', conformiteFaible: '% de conformité du contrôle permanent (sous le seuil)', constatsCritiques: 'constat(s) d\'audit critiques ouverts', regulateurEchu: 'recommandation(s) régulateur échue(s)', kriCritique: 'KRI en zone critique', doraMajeurs: 'incident(s) TIC majeur(s) (DORA)', incidentsOuverts: 'incident(s) opérationnel(s) ouvert(s)' },
+    highlight: { horsAppetit: 'risque(s) hors appétit', actionsEnRetard: 'action(s) de traitement en retard', conformiteFaible: '% de conformité du contrôle permanent (sous le seuil)', constatsCritiques: 'constat(s) d\'audit critiques ouverts', regulateurEchu: 'recommandation(s) régulateur échue(s)', kriCritique: 'KRI en zone critique', doraMajeurs: 'incident(s) TIC majeur(s) (DORA)', incidentsOuverts: 'incident(s) opérationnel(s) ouvert(s)', incidentsAQualifier: 'incident(s) signalé(s) à qualifier' },
     highlightsTitle: 'Points d\'attention', noAlert: 'Aucun point d\'alerte : les indicateurs des modules actifs sont dans les seuils.', generatedOn: 'Généré le',
-    verdictTitle: 'Niveau de risque global', verdict: { ELEVE: 'ÉLEVÉ', MODERE: 'MODÉRÉ', MAITRISE: 'MAÎTRISÉ' }, verdictAlertes: 'point(s) d\'alerte',
+    verdictTitle: 'Niveau de risque global', verdict: { ELEVE: 'ÉLEVÉ', MODERE: 'MODÉRÉ', MAITRISE: 'MAÎTRISÉ', NON_EVALUABLE: 'NON ÉVALUABLE' }, verdictPartiel: 'Base partielle', manque: { risquesNonCotes: '{n} risque(s) non coté(s)', conformiteNonEvaluee: 'conformité non évaluée', kriNonEvalues: 'aucun KRI évalué' }, verdictAlertes: 'point(s) d\'alerte',
   },
   en: {
     cible: 'target', minimum: 'minimum', vsMoisPrecedent: 'vs prev. month',
@@ -81,9 +81,9 @@ const STRINGS: Record<string, Strings> = {
     comiteType: { RISQUES: 'Risk committee', CONFORMITE: 'Compliance committee', INCIDENTS: 'Incidents & security committee' },
     section: { risques: 'Risk map', appetit: 'Risk appetite', incidents: 'Incidents & losses', controles: 'Permanent control', audit: 'Internal audit', regulateur: 'Regulator tracking', kri: 'Key risk indicators (KRI)', dora: 'ICT resilience (DORA)' },
     metric: { ...COMMON_METRIC, total: 'Total', eleve: 'High', moyen: 'Medium', faible: 'Low', nonCote: 'Unrated', actionsTotal: 'Actions', avancement: 'Progress', actionsEnRetard: 'Overdue actions', horsAppetit: 'Outside appetite', dansAppetit: 'Within appetite', evalues: 'Evaluated', ouverts: 'Open', perteNette: 'Net loss (€)', tauxConformite: 'Compliance rate', anomalies: 'Anomalies', critiques: 'Critical findings', recosEnRetard: 'Overdue recs', echues: 'Overdue', sous30j: 'Within 30 days', enAlerte: 'In alert', critique: 'Critical', majeurs: 'Major incidents' },
-    highlight: { horsAppetit: 'risk(s) outside appetite', actionsEnRetard: 'overdue treatment action(s)', conformiteFaible: '% permanent-control compliance (below threshold)', constatsCritiques: 'open critical audit finding(s)', regulateurEchu: 'overdue regulator recommendation(s)', kriCritique: 'KRI in critical zone', doraMajeurs: 'major ICT incident(s) (DORA)', incidentsOuverts: 'open operational incident(s)' },
+    highlight: { horsAppetit: 'risk(s) outside appetite', actionsEnRetard: 'overdue treatment action(s)', conformiteFaible: '% permanent-control compliance (below threshold)', constatsCritiques: 'open critical audit finding(s)', regulateurEchu: 'overdue regulator recommendation(s)', kriCritique: 'KRI in critical zone', doraMajeurs: 'major ICT incident(s) (DORA)', incidentsOuverts: 'open operational incident(s)', incidentsAQualifier: 'reported incident(s) to classify' },
     highlightsTitle: 'Points of attention', noAlert: 'No alert: active-module indicators are within thresholds.', generatedOn: 'Generated on',
-    verdictTitle: 'Overall risk level', verdict: { ELEVE: 'HIGH', MODERE: 'MODERATE', MAITRISE: 'UNDER CONTROL' }, verdictAlertes: 'alert(s)',
+    verdictTitle: 'Overall risk level', verdict: { ELEVE: 'HIGH', MODERE: 'MODERATE', MAITRISE: 'UNDER CONTROL', NON_EVALUABLE: 'NOT ASSESSABLE' }, verdictPartiel: 'Partial basis', manque: { risquesNonCotes: '{n} unrated risk(s)', conformiteNonEvaluee: 'compliance not assessed', kriNonEvalues: 'no KRI assessed' }, verdictAlertes: 'alert(s)',
   },
   de: {
     cible: 'Ziel', minimum: 'Minimum', vsMoisPrecedent: 'ggü. Vormonat',
@@ -91,9 +91,9 @@ const STRINGS: Record<string, Strings> = {
     comiteType: { RISQUES: 'Risikoausschuss', CONFORMITE: 'Compliance-Ausschuss', INCIDENTS: 'Vorfall- & Sicherheitsausschuss' },
     section: { risques: 'Risikokarte', appetit: 'Risikoappetit', incidents: 'Vorfälle & Verluste', controles: 'Permanente Kontrolle', audit: 'Interne Revision', regulateur: 'Aufsichtsverfolgung', kri: 'Schlüsselindikatoren (KRI)', dora: 'IKT-Resilienz (DORA)' },
     metric: { ...COMMON_METRIC, total: 'Gesamt', eleve: 'Hoch', moyen: 'Mittel', faible: 'Niedrig', nonCote: 'Unbewertet', actionsTotal: 'Maßnahmen', avancement: 'Fortschritt', actionsEnRetard: 'Überfällige Maßnahmen', horsAppetit: 'Außerhalb', dansAppetit: 'Innerhalb', evalues: 'Bewertet', ouverts: 'Offen', perteNette: 'Nettoverlust (€)', tauxConformite: 'Konformitätsgrad', anomalies: 'Anomalien', critiques: 'Kritische Feststellungen', recosEnRetard: 'Überfällige Empf.', echues: 'Überfällig', sous30j: 'Binnen 30 Tagen', enAlerte: 'In Alarm', critique: 'Kritisch', majeurs: 'Schwere Vorfälle' },
-    highlight: { horsAppetit: 'Risiko(en) außerhalb des Appetits', actionsEnRetard: 'überfällige Behandlungsmaßnahme(n)', conformiteFaible: '% Konformität der permanenten Kontrolle (unter Schwelle)', constatsCritiques: 'offene kritische Revisionsfeststellung(en)', regulateurEchu: 'überfällige Aufsichtsempfehlung(en)', kriCritique: 'KRI in kritischer Zone', doraMajeurs: 'schwere(r) IKT-Vorfall/-Vorfälle (DORA)', incidentsOuverts: 'offene(r) operative(r) Vorfall/Vorfälle' },
+    highlight: { horsAppetit: 'Risiko(en) außerhalb des Appetits', actionsEnRetard: 'überfällige Behandlungsmaßnahme(n)', conformiteFaible: '% Konformität der permanenten Kontrolle (unter Schwelle)', constatsCritiques: 'offene kritische Revisionsfeststellung(en)', regulateurEchu: 'überfällige Aufsichtsempfehlung(en)', kriCritique: 'KRI in kritischer Zone', doraMajeurs: 'schwere(r) IKT-Vorfall/-Vorfälle (DORA)', incidentsOuverts: 'offene(r) operative(r) Vorfall/Vorfälle', incidentsAQualifier: 'gemeldete(r) Vorfall/Vorfälle zu klassifizieren' },
     highlightsTitle: 'Aufmerksamkeitspunkte', noAlert: 'Kein Alarm: die Indikatoren der aktiven Module liegen innerhalb der Schwellen.', generatedOn: 'Erstellt am',
-    verdictTitle: 'Gesamtrisikoniveau', verdict: { ELEVE: 'HOCH', MODERE: 'MITTEL', MAITRISE: 'BEHERRSCHT' }, verdictAlertes: 'Alarm(e)',
+    verdictTitle: 'Gesamtrisikoniveau', verdict: { ELEVE: 'HOCH', MODERE: 'MITTEL', MAITRISE: 'BEHERRSCHT', NON_EVALUABLE: 'NICHT BEWERTBAR' }, verdictPartiel: 'Teilweise Grundlage', manque: { risquesNonCotes: '{n} nicht bewertete(s) Risiko/Risiken', conformiteNonEvaluee: 'Konformität nicht bewertet', kriNonEvalues: 'kein KRI bewertet' }, verdictAlertes: 'Alarm(e)',
   },
   es: {
     cible: 'objetivo', minimum: 'mínimo', vsMoisPrecedent: 'vs mes anterior',
@@ -101,9 +101,9 @@ const STRINGS: Record<string, Strings> = {
     comiteType: { RISQUES: 'Comité de riesgos', CONFORMITE: 'Comité de cumplimiento', INCIDENTS: 'Comité de incidentes y seguridad' },
     section: { risques: 'Mapa de riesgos', appetit: 'Apetito de riesgo', incidents: 'Incidentes y pérdidas', controles: 'Control permanente', audit: 'Auditoría interna', regulateur: 'Seguimiento regulador', kri: 'Indicadores clave (KRI)', dora: 'Resiliencia TIC (DORA)' },
     metric: { ...COMMON_METRIC, total: 'Total', eleve: 'Altos', moyen: 'Medios', faible: 'Bajos', nonCote: 'Sin valorar', actionsTotal: 'Acciones', avancement: 'Avance', actionsEnRetard: 'Acciones atrasadas', horsAppetit: 'Fuera del apetito', dansAppetit: 'Dentro del apetito', evalues: 'Evaluados', ouverts: 'Abiertos', perteNette: 'Pérdida neta (€)', tauxConformite: 'Tasa de conformidad', anomalies: 'Anomalías', critiques: 'Hallazgos críticos', recosEnRetard: 'Recs atrasadas', echues: 'Vencidos', sous30j: 'En 30 días', enAlerte: 'En alerta', critique: 'Críticos', majeurs: 'Incidentes graves' },
-    highlight: { horsAppetit: 'riesgo(s) fuera del apetito', actionsEnRetard: 'acción(es) de tratamiento atrasada(s)', conformiteFaible: '% de conformidad del control permanente (bajo el umbral)', constatsCritiques: 'hallazgo(s) de auditoría crítico(s) abierto(s)', regulateurEchu: 'recomendación(es) del regulador vencida(s)', kriCritique: 'KRI en zona crítica', doraMajeurs: 'incidente(s) TIC grave(s) (DORA)', incidentsOuverts: 'incidente(s) operativo(s) abierto(s)' },
+    highlight: { horsAppetit: 'riesgo(s) fuera del apetito', actionsEnRetard: 'acción(es) de tratamiento atrasada(s)', conformiteFaible: '% de conformidad del control permanente (bajo el umbral)', constatsCritiques: 'hallazgo(s) de auditoría crítico(s) abierto(s)', regulateurEchu: 'recomendación(es) del regulador vencida(s)', kriCritique: 'KRI en zona crítica', doraMajeurs: 'incidente(s) TIC grave(s) (DORA)', incidentsOuverts: 'incidente(s) operativo(s) abierto(s)', incidentsAQualifier: 'incidente(s) notificado(s) por clasificar' },
     highlightsTitle: 'Puntos de atención', noAlert: 'Sin alertas: los indicadores de los módulos activos están dentro de los umbrales.', generatedOn: 'Generado el',
-    verdictTitle: 'Nivel de riesgo global', verdict: { ELEVE: 'ALTO', MODERE: 'MODERADO', MAITRISE: 'CONTROLADO' }, verdictAlertes: 'alerta(s)',
+    verdictTitle: 'Nivel de riesgo global', verdict: { ELEVE: 'ALTO', MODERE: 'MODERADO', MAITRISE: 'CONTROLADO', NON_EVALUABLE: 'NO EVALUABLE' }, verdictPartiel: 'Base parcial', manque: { risquesNonCotes: '{n} riesgo(s) sin valorar', conformiteNonEvaluee: 'conformidad no evaluada', kriNonEvalues: 'ningún KRI evaluado' }, verdictAlertes: 'alerta(s)',
   },
   it: {
     cible: 'obiettivo', minimum: 'minimo', vsMoisPrecedent: 'vs mese prec.',
@@ -111,9 +111,9 @@ const STRINGS: Record<string, Strings> = {
     comiteType: { RISQUES: 'Comitato rischi', CONFORMITE: 'Comitato conformità', INCIDENTS: 'Comitato incidenti e sicurezza' },
     section: { risques: 'Mappatura dei rischi', appetit: 'Propensione al rischio', incidents: 'Incidenti e perdite', controles: 'Controllo permanente', audit: 'Audit interno', regulateur: 'Monitoraggio regolatore', kri: 'Indicatori chiave (KRI)', dora: 'Resilienza TIC (DORA)' },
     metric: { ...COMMON_METRIC, total: 'Totale', eleve: 'Alti', moyen: 'Medi', faible: 'Bassi', nonCote: 'Non valutati', actionsTotal: 'Azioni', avancement: 'Avanzamento', actionsEnRetard: 'Azioni in ritardo', horsAppetit: 'Fuori propensione', dansAppetit: 'Entro la propensione', evalues: 'Valutati', ouverts: 'Aperti', perteNette: 'Perdita netta (€)', tauxConformite: 'Tasso di conformità', anomalies: 'Anomalie', critiques: 'Rilievi critici', recosEnRetard: 'Racc. in ritardo', echues: 'Scaduti', sous30j: 'Entro 30 giorni', enAlerte: 'In allerta', critique: 'Critici', majeurs: 'Incidenti gravi' },
-    highlight: { horsAppetit: 'rischio/i fuori propensione', actionsEnRetard: 'azione/i di trattamento in ritardo', conformiteFaible: '% conformità del controllo permanente (sotto soglia)', constatsCritiques: 'rilievo/i di audit critici aperti', regulateurEchu: 'raccomandazione/i del regolatore scaduta/e', kriCritique: 'KRI in zona critica', doraMajeurs: 'incidente/i TIC grave/i (DORA)', incidentsOuverts: 'incidente/i operativo/i aperto/i' },
+    highlight: { horsAppetit: 'rischio/i fuori propensione', actionsEnRetard: 'azione/i di trattamento in ritardo', conformiteFaible: '% conformità del controllo permanente (sotto soglia)', constatsCritiques: 'rilievo/i di audit critici aperti', regulateurEchu: 'raccomandazione/i del regolatore scaduta/e', kriCritique: 'KRI in zona critica', doraMajeurs: 'incidente/i TIC grave/i (DORA)', incidentsOuverts: 'incidente/i operativo/i aperto/i', incidentsAQualifier: 'incidente/i segnalato/i da classificare' },
     highlightsTitle: 'Punti di attenzione', noAlert: 'Nessuna allerta: gli indicatori dei moduli attivi sono entro le soglie.', generatedOn: 'Generato il',
-    verdictTitle: 'Livello di rischio complessivo', verdict: { ELEVE: 'ALTO', MODERE: 'MODERATO', MAITRISE: 'SOTTO CONTROLLO' }, verdictAlertes: 'allerta/e',
+    verdictTitle: 'Livello di rischio complessivo', verdict: { ELEVE: 'ALTO', MODERE: 'MODERATO', MAITRISE: 'SOTTO CONTROLLO', NON_EVALUABLE: 'NON VALUTABILE' }, verdictPartiel: 'Base parziale', manque: { risquesNonCotes: '{n} rischio/i non valutato/i', conformiteNonEvaluee: 'conformità non valutata', kriNonEvalues: 'nessun KRI valutato' }, verdictAlertes: 'allerta/e',
   },
 }
 
@@ -133,6 +133,10 @@ function ComitePackPDF({ pack, locale, orgNom, dateStr }: { pack: ComitePack; lo
         <View style={[s.verdictBox, { backgroundColor: VERDICT_COLOR[v.niveau] }]}>
           <Text style={s.verdictLabel}>{`${S.verdictTitle} : ${S.verdict[v.niveau]}`}</Text>
           <Text style={s.verdictSub}>{`${v.alertes} ${S.verdictAlertes}`}</Text>
+          {/* Recette n° 48 : motifs d'un verdict non évaluable, ou base partielle. */}
+          {v.manques.length > 0 && (
+            <Text style={s.verdictSub}>{`${v.partiel ? `${S.verdictPartiel} : ` : ''}${v.manques.map(m => (m.cle === 'risquesNonCotes' ? S.manque.risquesNonCotes.replace('{n}', String(m.n)) : S.manque[m.cle])).join(' · ')}`}</Text>
+          )}
         </View>
 
         {/* Points d'attention */}
