@@ -538,7 +538,7 @@ export const es: Translations = {
     quickExpress:   'EBIOS RM flash', newProjet360: 'Nuevo proyecto 360', importAnalyse: 'Importar un análisis',
     quickApprove:   'análisis a aprobar',
     quickConfig:    'Configuración de escalas',
-    accueilRole: { titre: 'Para empezar', declarerIncident: 'Declarar un incidente', executerControles: 'Ejecutar mis controles', missionsAudit: 'Mis misiones de auditoría', planAction: 'Seguir el plan de acción', aTraiter: 'Pendiente' },
+    accueilRole: { titre: 'Para empezar', registreTraitements: 'Registro de las actividades de tratamiento', pilotage: 'Cuadro de mando', registreRisques: 'Registro de riesgos', suivreKri: 'Seguir los KRI', conformite: 'Seguir la conformidad', declarerIncident: 'Declarar un incidente', executerControles: 'Ejecutar mis controles', missionsAudit: 'Mis misiones de auditoría', planAction: 'Seguir el plan de acción', aTraiter: 'Pendiente' },
     quickAdmin:     'Gestión de usuarios',
     guideTitle:     'Guía — Talleres EBIOS RM',
     stepsLabel:     'Pasos:',
