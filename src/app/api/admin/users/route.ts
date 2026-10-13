@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 
   const parsed = createSchema.safeParse(body)
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Données invalides', details: parsed.error.errors }, { status: 400 })
+    return NextResponse.json({ error: 'Données invalides', details: parsed.error.issues }, { status: 400 })
   }
   const { name, email, role } = parsed.data
   const emailNorm = email.toLowerCase().trim()
