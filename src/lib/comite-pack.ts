@@ -15,7 +15,7 @@ export interface ComiteConsolide {
   risques?: { total: number; eleve: number; moyen: number; faible: number; nonCote: number; grid?: HeatGrid }
   actions?: { total: number; faits: number; enRetard: number; tauxAvancement: number }
   appetit?: { horsAppetit: number; dansAppetit: number; evalues: number }
-  incidents?: { total: number; ouverts: number; perteNette: number }
+  incidents?: { total: number; ouverts: number; perteNette: number; aQualifier?: number }
   controles?: {
     tauxConformite: number | null; anomalies: number
     // Segmentation optionnelle par niveau (N1 = 1ʳᵉ ligne, N2 = 2ᵉ ligne) pour le
@@ -24,7 +24,7 @@ export interface ComiteConsolide {
   }
   audit?: { critiques: number; recosEnRetard: number }
   regulateur?: { echues: number; sous30j: number }
-  kri?: { enAlerte: number; critique: number }
+  kri?: { enAlerte: number; critique: number; total?: number; evalues?: number }
   dora?: { majeurs: number; evalues: number }
 }
 
@@ -52,6 +52,8 @@ export interface ComitePack {
   highlights: ComiteHighlight[]
   /** Heatmap gravité × vraisemblance (si le consolidé la fournit) — rendu décideur (#134). */
   heatmap?: HeatGrid
+  /** Base d'évaluation du verdict (recette n° 48) : sans risque coté, le verdict est « non évaluable ». */
+  base?: BaseEvaluation
 }
 
 const CONFORMITE_SEUIL = 80
@@ -156,15 +158,53 @@ export function buildComitePack(type: ComiteType, c: ComiteConsolide, m: ComiteM
   if (m.kri && c.kri) push(c.kri.critique > 0, 'kriCritique', 'alerte', c.kri.critique)
   if (m.dora && c.dora) push(c.dora.majeurs > 0, 'doraMajeurs', 'alerte', c.dora.majeurs)
   if (m.incidents && c.incidents) push(c.incidents.ouverts > 0, 'incidentsOuverts', 'info', c.incidents.ouverts)
+  if (m.incidents && c.incidents) push((c.incidents.aQualifier ?? 0) > 0, 'incidentsAQualifier', 'alerte', c.incidents.aQualifier ?? 0)
 
-  return { type, sections, highlights, ...(c.risques?.grid ? { heatmap: c.risques.grid } : {}) }
+  return { type, sections, highlights, base: baseEvaluation(c, m), ...(c.risques?.grid ? { heatmap: c.risques.grid } : {}) }
 }
 
 // Signaux d'alerte considérés comme « de crise » pour le verdict global (#134 M5).
 const HIGHLIGHTS_CRITIQUES = new Set(['doraMajeurs', 'kriCritique', 'constatsCritiques', 'regulateurEchu'])
 
 /** Verdict global du dispositif : élevé (préoccupant), modéré ou maîtrisé. */
-export type VerdictNiveau = 'ELEVE' | 'MODERE' | 'MAITRISE'
+export type VerdictNiveau = 'ELEVE' | 'MODERE' | 'MAITRISE' | 'NON_EVALUABLE'
+
+// ─── Base d'évaluation du verdict (recette n° 48) ───
+// Pas de « MAÎTRISÉ » sans base : sans aucun risque coté, le verdict est « non évaluable » (motifs listés) ; les alertes
+// l'emportent toujours ; risques cotés mais conformité ou KRI non évalués → « maîtrisé, base partielle ».
+export interface BaseEvaluation {
+  risquesTotal: number; risquesNonCotes: number
+  /** null : module inactif (pas un manque). */
+  conformiteEvaluee: boolean | null
+  /** null : module inactif. */
+  kriEvalues: boolean | null
+}
+export type ManqueEvaluation = { cle: 'risquesNonCotes'; n: number } | { cle: 'conformiteNonEvaluee' } | { cle: 'kriNonEvalues' }
+
+/** Base d'évaluation d'après le consolidé et les modules actifs (cockpit, dossier de comité, rapport direction). */
+export function baseEvaluation(c: ComiteConsolide, m: { controles?: boolean; kri?: boolean }): BaseEvaluation {
+  return {
+    risquesTotal: c.risques?.total ?? 0, risquesNonCotes: c.risques?.nonCote ?? 0,
+    conformiteEvaluee: m.controles ? c.controles?.tauxConformite != null : null,
+    kriEvalues: m.kri ? (c.kri?.evalues ?? (c.kri && (c.kri.enAlerte > 0 || c.kri.critique > 0) ? 1 : 0)) > 0 : null,
+  }
+}
+
+function manques(b: BaseEvaluation): ManqueEvaluation[] {
+  const out: ManqueEvaluation[] = []
+  if (b.risquesNonCotes > 0) out.push({ cle: 'risquesNonCotes', n: b.risquesNonCotes })
+  if (b.conformiteEvaluee === false) out.push({ cle: 'conformiteNonEvaluee' })
+  if (b.kriEvalues === false) out.push({ cle: 'kriNonEvalues' })
+  return out
+}
+
+/** Applique la base au niveau issu des alertes : les alertes priment ; sinon « non évaluable » sans risque coté. */
+function appliquerBase(niveau: Exclude<VerdictNiveau, 'NON_EVALUABLE'>, base?: BaseEvaluation): { niveau: VerdictNiveau; manques: ManqueEvaluation[]; partiel: boolean } {
+  if (!base) return { niveau, manques: [], partiel: false }
+  const m = manques(base)
+  if (niveau === 'MAITRISE' && base.risquesTotal - base.risquesNonCotes <= 0) return { niveau: 'NON_EVALUABLE', manques: m, partiel: false }
+  return { niveau, manques: m, partiel: m.length > 0 }
+}
 
 /**
  * Verdict global du dossier de comité (bandeau RAG en tête, pour que le décideur
@@ -172,17 +212,19 @@ export type VerdictNiveau = 'ELEVE' | 'MODERE' | 'MAITRISE'
  * incident DORA majeur, KRI critique, recommandation régulateur échue) OU ≥4 alertes ;
  * MODÉRÉ si ≥1 alerte ; MAÎTRISÉ sinon. Pur → testable.
  */
-export function verdictGlobal(pack: ComitePack): { niveau: VerdictNiveau; alertes: number } {
+export function verdictGlobal(pack: ComitePack): { niveau: VerdictNiveau; alertes: number; manques: ManqueEvaluation[]; partiel: boolean } {
   const alertes = pack.highlights.filter(h => h.niveau === 'alerte')
   const critiques = alertes.filter(h => HIGHLIGHTS_CRITIQUES.has(h.key)).length
-  const niveau: VerdictNiveau = critiques > 0 || alertes.length >= 4 ? 'ELEVE' : alertes.length > 0 ? 'MODERE' : 'MAITRISE'
-  return { niveau, alertes: alertes.length }
+  const niveau = critiques > 0 || alertes.length >= 4 ? 'ELEVE' : alertes.length > 0 ? 'MODERE' : 'MAITRISE'
+  return { alertes: alertes.length, ...appliquerBase(niveau, pack.base) }
 }
 
 /** Signaux d'alerte agrégés servant à calculer le verdict du dispositif (constats critiques, DORA majeurs, KRI…). */
 export interface VerdictSignaux {
   constatsCritiques?: number; doraMajeurs?: number; kriCritique?: number; regulateurEchues?: number
   horsAppetit?: number; conformiteSousSeuil?: boolean; actionsEnRetard?: number
+  /** Recette n° 48 : incidents signalés non qualifiés (alerte non critique). */
+  incidentsAQualifier?: number
 }
 
 /**
@@ -191,18 +233,18 @@ export interface VerdictSignaux {
  * ÉLEVÉ si ≥1 signal de crise (constat critique, DORA majeur, KRI critique, régulateur
  * échu) OU ≥4 alertes ; MODÉRÉ si ≥1 ; MAÎTRISÉ sinon. Pur → testable.
  */
-export function verdictDispositif(s: VerdictSignaux): { niveau: VerdictNiveau; alertes: number } {
+export function verdictDispositif(s: VerdictSignaux, base?: BaseEvaluation): { niveau: VerdictNiveau; alertes: number; manques: ManqueEvaluation[]; partiel: boolean } {
   const critique = (s.constatsCritiques ?? 0) > 0 || (s.doraMajeurs ?? 0) > 0 || (s.kriCritique ?? 0) > 0 || (s.regulateurEchues ?? 0) > 0
   const alertes = verdictSignauxActifs(s).length
-  const niveau: VerdictNiveau = critique || alertes >= 4 ? 'ELEVE' : alertes > 0 ? 'MODERE' : 'MAITRISE'
-  return { niveau, alertes }
+  const niveau = critique || alertes >= 4 ? 'ELEVE' : alertes > 0 ? 'MODERE' : 'MAITRISE'
+  return { alertes, ...appliquerBase(niveau, base) }
 }
 
 // Clés des signaux d'alerte du verdict, ordonnées des plus critiques (crise) aux
 // moins critiques → sert à DÉTAILLER « X point(s) d'alerte » dans le cockpit.
 export const VERDICT_SIGNAUX_KEYS = [
   'constatsCritiques', 'doraMajeurs', 'kriCritique', 'regulateurEchues',
-  'horsAppetit', 'conformiteSousSeuil', 'actionsEnRetard',
+  'incidentsAQualifier', 'horsAppetit', 'conformiteSousSeuil', 'actionsEnRetard',
 ] as const
 /** Clé d'un signal d'alerte du verdict (identifie « lequel » parmi les signaux actifs). */
 export type VerdictSignalKey = (typeof VERDICT_SIGNAUX_KEYS)[number]
@@ -214,6 +256,7 @@ export function verdictSignauxActifs(s: VerdictSignaux): VerdictSignalKey[] {
     doraMajeurs: (s.doraMajeurs ?? 0) > 0,
     kriCritique: (s.kriCritique ?? 0) > 0,
     regulateurEchues: (s.regulateurEchues ?? 0) > 0,
+    incidentsAQualifier: (s.incidentsAQualifier ?? 0) > 0,
     horsAppetit: (s.horsAppetit ?? 0) > 0,
     conformiteSousSeuil: s.conformiteSousSeuil === true,
     actionsEnRetard: (s.actionsEnRetard ?? 0) > 0,

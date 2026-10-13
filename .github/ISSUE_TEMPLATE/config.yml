@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 🔒 Vulnérabilité de sécurité / Security vulnerability
+    url: https://github.com/bdudout/acra/blob/main/SECURITY.md
+    about: Signalement privé, jamais d'issue publique. / Private disclosure, never a public issue.

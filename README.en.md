@@ -17,6 +17,8 @@
 
 **🌐 Langue / Language:** [🇫🇷 Français](README.md) · 🇬🇧 English · [🇩🇪 Deutsch](README.de.md) · [🇪🇸 Español](README.es.md) · [🇮🇹 Italiano](README.it.md)
 
+💡 **An idea, a need, a bug?** [Suggest a feature or report a problem](https://github.com/bdudout/acra/issues/new/choose) directly on GitHub — every suggestion is read.
+
 </div>
 
 ---
@@ -984,6 +986,19 @@ docker compose exec app env | grep DATABASE
 docker compose down -v
 docker compose up -d
 ```
+
+---
+
+## 💡 Suggest a feature or report a problem
+
+Your feedback shapes ACRA's roadmap. On GitHub, open an [issue](https://github.com/bdudout/acra/issues/new/choose):
+
+- **💡 Suggest a feature**: the business need, who would use it (CISO, DPO, controller…), and the expected outcome;
+- **🐞 Report a problem**: steps to reproduce, what you expected, the ACRA version and your browser.
+
+Before opening an issue, a quick look at [existing issues](https://github.com/bdudout/acra/issues) avoids duplicates — a 👍 on an existing issue helps prioritise.
+**Security vulnerability**: do not open a public issue, follow [SECURITY.md](./SECURITY.md).
+No real data (risk analysis, organisation name, personal data) in an issue.
 
 ---
 

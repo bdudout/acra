@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { codesCatalogueSecteur } from '@/lib/secteur-catalogue'
+import { codesCatalogueSecteur, secteurDepuisCodes } from '@/lib/secteur-catalogue'
 import { SECTEURS_ACTIVITE } from '@/lib/ebios-data'
 import { getEbiosData } from '@/lib/ebios-data-i18n'
 
@@ -21,3 +21,36 @@ describe('codesCatalogueSecteur — secteur d’une analyse → secteurs du cata
     expect(codesCatalogueSecteur(null)).toEqual([])
   })
 })
+
+// Pack postal, lot L2 : le secteur postal est inséré juste avant « Autre », au même index dans les 5 langues
+// (canonique() en dépend), avec l'intitulé officiel de l'annexe II de NIS2 dans chaque langue.
+describe('secteur postal — même index dans les 5 langues', () => {
+  it('avant « Autre », intitulé officiel', () => {
+    const n = SECTEURS_ACTIVITE.length
+    expect(SECTEURS_ACTIVITE[n - 1]).toBe('Autre')
+    const attendus = {'fr': 'Services postaux et d’expédition', 'en': 'Postal and courier services', 'de': 'Post- und Kurierdienste', 'es': 'Servicios postales y de mensajería', 'it': 'Servizi postali e di corriere'}
+    for (const [l, lib] of Object.entries(attendus)) {
+      const liste = getEbiosData(l as 'fr').SECTEURS_ACTIVITE as readonly string[]
+      expect(liste, l).toHaveLength(n)
+      expect(liste[n - 2], l).toBe(lib)
+    }
+  })
+})
+
+// Pack postal L4.2 : secteur pré-rempli à la création quand les secteurs effectifs de l'organisation se ramènent à un
+// seul libellé ; ambiguïté (plusieurs codes, ou un code partagé par plusieurs libellés) → rien.
+describe('secteurDepuisCodes', () => {
+  it('un seul code associé à un seul libellé → ce libellé', () => {
+    expect(secteurDepuisCodes(['PUBLIC'])).toBe('Administration publique')
+    expect(secteurDepuisCodes(['FINANCE'])).toBe('Banque / Finance')
+    expect(secteurDepuisCodes(['PROTECTION_SOCIALE', 'PROTECTION_SOCIALE'])).toBe('Protection sociale / Sécurité sociale')
+  })
+  it('ambiguïté ou absence → null', () => {
+    expect(secteurDepuisCodes([])).toBeNull()
+    expect(secteurDepuisCodes(['PUBLIC', 'FINANCE'])).toBeNull()
+    expect(secteurDepuisCodes(['COMMERCE'])).toBeNull()
+    expect(secteurDepuisCodes(['ENERGIE'])).toBeNull()
+    expect(secteurDepuisCodes(['ASSURANCE'])).toBeNull()
+  })
+})
+

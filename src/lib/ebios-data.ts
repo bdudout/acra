@@ -38,6 +38,8 @@ export const SECTEURS_ACTIVITE = [
   'Tourisme / Hôtellerie-restauration', 'Associations / ESS',
   // Organismes de protection sociale (régimes de base, assurance maladie obligatoire…)
   'Protection sociale / Sécurité sociale',
+  // Directive (UE) 2022/2555 (NIS2), annexe II, secteur 1 — intitulé de la version française officielle (CELEX 32022L2555).
+  'Services postaux et d’expédition',
   'Autre',
 ]
 
@@ -74,6 +76,8 @@ export const SOUS_SECTEURS = [
   { id: 'banque-gestion', famille: 'banque', label: 'Gestion d\'actifs' },
   { id: 'banque-fintech', famille: 'banque', label: 'Fintech / établissement de paiement' },
   { id: 'banque-marche', famille: 'banque', label: 'Infrastructure de marché financier' },
+  // Pack postal, lot L8 — externalisation intragroupe, personnel non salarié de la banque au guichet, LCB-FT au guichet
+  { id: 'banque-reseau-tiers', famille: 'banque', label: 'Banque de détail dont le réseau de guichets est tenu par une autre entité (groupe ou partenaire)' },
   // Défense / Sécurité nationale
   { id: 'defense-bitd', famille: 'defense', label: 'Industrie de défense (BITD)' },
   { id: 'defense-forces', famille: 'defense', label: 'Forces armées / ministère' },
@@ -107,6 +111,24 @@ export const SOUS_SECTEURS = [
   { id: 'immobilier-agence', famille: 'immobilier', label: 'Agence / gestion immobilière' },
   { id: 'immobilier-btp', famille: 'immobilier', label: 'Construction / BTP' },
   // Protection sociale — organismes de sécurité sociale organisés en réseau
+  // Informatique / Numérique (pack postal, lot L8)
+  { id: 'numerique-confiance', famille: 'numerique', label: 'Prestataire de services de confiance (signature, cachet, horodatage, envoi recommandé électronique)' },
+  { id: 'numerique-identite', famille: 'numerique', label: 'Identité numérique et vérification d’identité à distance' },
+  { id: 'numerique-coffre', famille: 'numerique', label: 'Coffre-fort numérique et archivage électronique à valeur probante' },
+  { id: 'numerique-cloud', famille: 'numerique', label: 'Hébergement et services d’informatique en nuage' },
+  { id: 'numerique-editeur', famille: 'numerique', label: 'Éditeur de logiciel en ligne (SaaS)' },
+  { id: 'numerique-esn', famille: 'numerique', label: 'Infogérance et entreprise de services du numérique' },
+  // Télécommunications (pack postal, lot L8)
+  { id: 'telecom-reseau', famille: 'telecom', label: 'Opérateur de réseau' },
+  { id: 'telecom-virtuel', famille: 'telecom', label: 'Opérateur virtuel (dépend du réseau d’un opérateur hôte)' },
+  { id: 'telecom-fai', famille: 'telecom', label: 'Fournisseur d’accès et de services de communications' },
+  // Services postaux et d'expédition (pack postal, lot L2) — sous-profession = id sans le préfixe « postal- »
+  { id: 'postal-courrier', famille: 'postal', label: 'Courrier et service universel postal (collecte, tri, distribution)' },
+  { id: 'postal-colis', famille: 'postal', label: 'Colis et express (national, international, dernier kilomètre)' },
+  { id: 'postal-reseau', famille: 'postal', label: 'Réseau de points de contact (bureaux, points relais, consignes, guichet multiservices)' },
+  { id: 'postal-international', famille: 'postal', label: 'Échanges internationaux et dédouanement des envois' },
+  { id: 'postal-elogistique', famille: 'postal', label: 'Logistique urbaine et e-logistique (entrepôts e-commerce, livraisons programmées)' },
+  { id: 'postal-domicile', famille: 'postal', label: 'Services de proximité au domicile (visites, portage, relevés, collecte)' },
   { id: 'protsoc-tete-reseau', famille: 'protection_sociale', label: 'Tête de réseau (pilotage national, référentiels, maîtrise des risques du réseau)' },
   { id: 'protsoc-caisse-locale', famille: 'protection_sociale', label: 'Caisse locale (accueil, gestion des droits, liquidation)' },
   { id: 'protsoc-controle-medical', famille: 'protection_sociale', label: 'Service du contrôle médical (avis, arrêts de travail, accords préalables)' },

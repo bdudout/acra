@@ -96,6 +96,8 @@ type RopaTemplate = {
   categoriesPersonnes: LL; categoriesDonnees: LL; destinataires: LL
   dureeConservation: L | null; mesuresSecurite: LL | null
   surveillanceSystematique?: boolean
+  /** Codes de secteur (catalogue) : traitement propre au métier, proposé seulement à ces secteurs, en tête. */
+  secteurs?: readonly string[]
 }
 const EMPTY: LL = { fr: [], en: [], de: [], es: [], it: [] }
 
@@ -184,11 +186,106 @@ export const ROPA_TEMPLATES: RopaTemplate[] = [
     categoriesPersonnes: EMPTY, categoriesDonnees: EMPTY, destinataires: EMPTY, dureeConservation: null, mesuresSecurite: null },
 ]
 
+// ─── Services postaux et d'expédition (pack postal, lot L5) ───
+// Durées reprises des fiches de la CNIL citées en commentaire ; à défaut de source officielle trouvée : null (« à
+// compléter »), jamais inventée. Bases légales : suggestions à confirmer par le DPO.
+const P = {
+  agents: l('Agents de distribution', 'Delivery staff', 'Zusteller', 'Agentes de reparto', 'Addetti al recapito'),
+  sousTraitants: l('Livreurs sous-traitants', 'Subcontracted couriers', 'Zusteller von Subunternehmern', 'Repartidores subcontratados', 'Corrieri subappaltatori'),
+  destinataires: l('Destinataires', 'Recipients', 'Empfänger', 'Destinatarios', 'Destinatari'),
+  expediteurs: l('Expéditeurs', 'Senders', 'Absender', 'Remitentes', 'Mittenti'),
+  mandataires: l('Mandataires et procurations', 'Authorised representatives', 'Bevollmächtigte', 'Apoderados', 'Delegati'),
+  agees: l('Personnes âgées ou isolées', 'Elderly or isolated people', 'Ältere oder alleinstehende Personen', 'Personas mayores o aisladas', 'Persone anziane o isolate'),
+  appelants: l('Appelants du service client', 'Customer service callers', 'Anrufer beim Kundenservice', 'Personas que llaman al servicio de atención al cliente', 'Chiamanti del servizio clienti'),
+  conseillers: l('Conseillers du service client', 'Customer service agents', 'Kundenberater', 'Agentes de atención al cliente', 'Operatori del servizio clienti'),
+  localisation: l('Données de localisation', 'Location data', 'Standortdaten', 'Datos de localización', 'Dati di localizzazione'),
+  vehicule: l('Véhicule ou terminal utilisé', 'Vehicle or device used', 'Verwendetes Fahrzeug oder Gerät', 'Vehículo o terminal utilizado', 'Veicolo o terminale utilizzato'),
+  adresse: l('Adresse de livraison', 'Delivery address', 'Lieferadresse', 'Dirección de entrega', 'Indirizzo di consegna'),
+  signature: l('Signature ou photo de remise', 'Signature or delivery photo', 'Unterschrift oder Zustellfoto', 'Firma o foto de entrega', 'Firma o foto di consegna'),
+  evenements: l('Événements de suivi de l’envoi', 'Item tracking events', 'Sendungsverfolgungsereignisse', 'Eventos de seguimiento del envío', 'Eventi di tracciamento della spedizione'),
+  ancienneAdresse: l('Ancienne et nouvelle adresses', 'Former and new addresses', 'Alte und neue Adresse', 'Dirección antigua y nueva', 'Vecchio e nuovo indirizzo'),
+  pieceIdentite: l('Pièce d’identité présentée', 'Identity document presented', 'Vorgelegter Ausweis', 'Documento de identidad presentado', 'Documento d’identità presentato'),
+  consignes: l('Consignes de livraison', 'Delivery instructions', 'Zustellanweisungen', 'Instrucciones de entrega', 'Istruzioni di consegna'),
+  accesDomicile: l('Informations utiles à l’intervention (accès au domicile, consignes)', 'Information needed for the visit (home access, instructions)', 'Für den Einsatz nötige Angaben (Zugang zur Wohnung, Hinweise)', 'Información necesaria para la intervención (acceso al domicilio, instrucciones)', 'Informazioni utili all’intervento (accesso al domicilio, istruzioni)'),
+  enregistrement: l('Enregistrement de la conversation', 'Call recording', 'Gesprächsaufzeichnung', 'Grabación de la conversación', 'Registrazione della conversazione'),
+  distribution: l('Direction de la distribution', 'Delivery department', 'Abteilung Zustellung', 'Dirección de distribución', 'Direzione distribuzione'),
+  serviceClient: l('Service client et réclamations', 'Customer service and claims', 'Kundenservice und Reklamationen', 'Atención al cliente y reclamaciones', 'Servizio clienti e reclami'),
+  ecommercants: l('E-commerçants donneurs d’ordre', 'Ordering e-merchants', 'Auftraggebende Online-Händler', 'Comercios electrónicos ordenantes', 'E-commerce committenti'),
+  guichet: l('Agents de guichet', 'Counter staff', 'Schalterpersonal', 'Agentes de ventanilla', 'Addetti allo sportello'),
+  proximite: l('Direction des services de proximité', 'Local services department', 'Abteilung Dienstleistungen vor Ort', 'Dirección de servicios de proximidad', 'Direzione servizi di prossimità'),
+}
+const POSTAL = ['POSTAL'] as const
+
+const POSTAL_TEMPLATES: RopaTemplate[] = [
+  // CNIL, « La géolocalisation des véhicules des salariés » : 2 mois en principe ; 1 an pour optimiser les tournées ou
+  // prouver les interventions (à défaut d'autre moyen) ; 5 ans pour le suivi du temps de travail.
+  { key: 'ropa.postal.geolocation', baseLegale: 'interet_legitime', secteurs: POSTAL,
+    nom: l('Géolocalisation des véhicules et terminaux des agents de distribution', 'Geolocation of delivery staff vehicles and devices', 'Ortung der Fahrzeuge und Geräte der Zusteller', 'Geolocalización de los vehículos y terminales de los agentes de reparto', 'Geolocalizzazione dei veicoli e dei terminali degli addetti al recapito'),
+    finalite: l('Sécurité des agents, des envois et des véhicules ; organisation et optimisation des tournées ; preuve des interventions lorsqu’elle ne peut être apportée autrement.', 'Safety of staff, items and vehicles; organising and optimising routes; proof of visits where it cannot be provided otherwise.', 'Sicherheit der Zusteller, Sendungen und Fahrzeuge; Organisation und Optimierung der Touren; Nachweis der Einsätze, wenn er nicht anders erbracht werden kann.', 'Seguridad de los agentes, envíos y vehículos; organización y optimización de las rutas; prueba de las intervenciones cuando no pueda aportarse de otro modo.', 'Sicurezza degli addetti, delle spedizioni e dei veicoli; organizzazione e ottimizzazione dei giri; prova degli interventi quando non può essere fornita altrimenti.'),
+    categoriesPersonnes: ll(P.agents, P.sousTraitants), categoriesDonnees: ll(V.identite, P.localisation, P.vehicule),
+    destinataires: ll(P.distribution, V.encadrement),
+    dureeConservation: duree('2 mois en principe ; 1 an pour l’optimisation des tournées ou la preuve des interventions ; 5 ans pour le suivi du temps de travail (CNIL).', 'in principle 2 months; 1 year to optimise routes or prove visits; 5 years for working-time tracking (CNIL).', 'grundsätzlich 2 Monate; 1 Jahr zur Tourenoptimierung oder als Einsatznachweis; 5 Jahre für die Arbeitszeiterfassung (CNIL).', 'en principio 2 meses; 1 año para optimizar las rutas o probar las intervenciones; 5 años para el seguimiento del tiempo de trabajo (CNIL).', 'in linea di principio 2 mesi; 1 anno per ottimizzare i giri o provare gli interventi; 5 anni per il monitoraggio dell’orario di lavoro (CNIL).'),
+    mesuresSecurite: SECU_BASE },
+  { key: 'ropa.postal.proof-of-delivery', baseLegale: 'contrat', secteurs: POSTAL,
+    nom: l('Preuve de distribution des envois', 'Proof of delivery of items', 'Zustellnachweis für Sendungen', 'Prueba de entrega de los envíos', 'Prova di consegna delle spedizioni'),
+    finalite: l('Attester la remise des envois (signature, photo, localisation du flashage) et traiter les litiges.', 'Proving delivery of items (signature, photo, scan location) and handling disputes.', 'Nachweis der Zustellung (Unterschrift, Foto, Scan-Standort) und Bearbeitung von Streitfällen.', 'Acreditar la entrega de los envíos (firma, foto, localización del escaneo) y tramitar los litigios.', 'Attestare la consegna delle spedizioni (firma, foto, posizione della scansione) e gestire le controversie.'),
+    categoriesPersonnes: ll(P.destinataires, P.mandataires, P.agents), categoriesDonnees: ll(V.identite, P.signature, P.localisation, P.evenements),
+    destinataires: ll(P.serviceClient, P.distribution),
+    dureeConservation: null, mesuresSecurite: SECU_BASE }, // TODO(source) : aucune durée officielle CNIL trouvée
+  { key: 'ropa.postal.forwarding', baseLegale: 'contrat', secteurs: POSTAL,
+    nom: l('Réexpédition, garde du courrier et procurations', 'Mail forwarding, mail holding and powers of attorney', 'Nachsendung, Lagerung der Post und Vollmachten', 'Reexpedición, custodia del correo y poderes', 'Rispedizione, giacenza della corrispondenza e deleghe'),
+    finalite: l('Exécuter les demandes de réexpédition, de garde du courrier et de procuration, et vérifier l’identité du demandeur.', 'Carrying out forwarding, mail-holding and power-of-attorney requests, and checking the requester’s identity.', 'Ausführung von Nachsende-, Lagerungs- und Vollmachtsaufträgen sowie Prüfung der Identität des Antragstellers.', 'Ejecutar las solicitudes de reexpedición, custodia del correo y poderes, y verificar la identidad del solicitante.', 'Eseguire le richieste di rispedizione, giacenza e delega, e verificare l’identità del richiedente.'),
+    categoriesPersonnes: ll(V.clients, P.mandataires), categoriesDonnees: ll(V.identite, P.ancienneAdresse, P.pieceIdentite),
+    destinataires: ll(P.serviceClient, P.distribution),
+    dureeConservation: null, mesuresSecurite: SECU_BASE }, // TODO(source)
+  { key: 'ropa.postal.merchant-recipients', baseLegale: 'interet_legitime', secteurs: POSTAL, // défaut probable : le destinataire n'est pas partie au contrat d'expédition — à confirmer par le DPO
+    nom: l('Données des destinataires reçues des e-commerçants', 'Recipient data received from e-merchants', 'Von Online-Händlern erhaltene Empfängerdaten', 'Datos de destinatarios recibidos de los comercios electrónicos', 'Dati dei destinatari ricevuti dagli e-commerce'),
+    finalite: l('Acheminer et livrer les colis confiés par les e-commerçants. Rôle (responsable de traitement ou sous-traitant) et base légale proposée (intérêt légitime) à confirmer par le DPO.', 'Routing and delivering parcels entrusted by e-merchants. Role (controller or processor) and proposed legal basis (legitimate interests) to be confirmed by the DPO.', 'Beförderung und Zustellung der von Online-Händlern übergebenen Pakete. Rolle (Verantwortlicher oder Auftragsverarbeiter) und vorgeschlagene Rechtsgrundlage (berechtigte Interessen) vom DSB zu bestätigen.', 'Encaminar y entregar los paquetes confiados por los comercios electrónicos. Función (responsable o encargado del tratamiento) y base jurídica propuesta (interés legítimo) que debe confirmar el DPD.', 'Instradare e consegnare i pacchi affidati dagli e-commerce. Ruolo (titolare o responsabile del trattamento) e base giuridica proposta (legittimo interesse) da confermare a cura del DPO.'),
+    categoriesPersonnes: ll(P.destinataires), categoriesDonnees: ll(V.identite, P.adresse, V.coordonnees, P.consignes),
+    destinataires: ll(P.distribution, P.ecommercants, P.serviceClient),
+    dureeConservation: null, mesuresSecurite: SECU_BASE }, // TODO(source)
+  { key: 'ropa.postal.home-services', baseLegale: 'contrat', secteurs: POSTAL,
+    nom: l('Prestations au domicile des personnes', 'Services at people’s homes', 'Dienstleistungen bei Personen zu Hause', 'Prestaciones en el domicilio de las personas', 'Prestazioni al domicilio delle persone'),
+    finalite: l('Organiser et réaliser les visites, portages et relevés au domicile, et en rendre compte au commanditaire.', 'Organising and carrying out home visits, deliveries and readings, and reporting to the client.', 'Organisation und Durchführung von Besuchen, Lieferungen und Ablesungen zu Hause sowie Bericht an den Auftraggeber.', 'Organizar y realizar las visitas, repartos y lecturas a domicilio, e informar al ordenante.', 'Organizzare ed effettuare visite, consegne e letture a domicilio, e riferirne al committente.'),
+    categoriesPersonnes: ll(P.agees, V.clients), categoriesDonnees: ll(V.identite, V.coordonnees, P.accesDomicile),
+    destinataires: ll(P.proximite, P.agents),
+    dureeConservation: null, mesuresSecurite: SECU_BASE }, // TODO(source)
+  { key: 'ropa.postal.counter-identity', baseLegale: 'contrat', secteurs: POSTAL,
+    nom: l('Vérification d’identité au guichet', 'Identity checks at the counter', 'Identitätsprüfung am Schalter', 'Verificación de identidad en ventanilla', 'Verifica dell’identità allo sportello'),
+    finalite: l('Vérifier l’identité des personnes qui retirent un envoi ou réalisent une opération au guichet, y compris pour compte de tiers.', 'Checking the identity of people collecting an item or carrying out an operation at the counter, including on behalf of third parties.', 'Prüfung der Identität von Personen, die eine Sendung abholen oder einen Vorgang am Schalter ausführen, auch im Auftrag Dritter.', 'Verificar la identidad de las personas que retiran un envío o realizan una operación en ventanilla, incluso por cuenta de terceros.', 'Verificare l’identità delle persone che ritirano una spedizione o effettuano un’operazione allo sportello, anche per conto terzi.'),
+    categoriesPersonnes: ll(V.clients, P.mandataires), categoriesDonnees: ll(V.identite, P.pieceIdentite),
+    destinataires: ll(P.guichet),
+    dureeConservation: null, mesuresSecurite: SECU_BASE }, // TODO(source)
+  // CNIL, « La vidéosurveillance – vidéoprotection au travail » : en principe, la durée n'excède pas un mois.
+  { key: 'ropa.postal.cctv', baseLegale: 'interet_legitime', surveillanceSystematique: true, secteurs: POSTAL,
+    nom: l('Vidéoprotection des plateformes de tri et des bureaux', 'Video surveillance of sorting platforms and post offices', 'Videoüberwachung der Sortierzentren und Filialen', 'Videovigilancia de las plataformas de clasificación y oficinas', 'Videosorveglianza delle piattaforme di smistamento e degli uffici'),
+    finalite: l('Sécurité des biens, des envois et des personnes sur les plateformes et dans les bureaux.', 'Protection of property, items and people on platforms and in post offices.', 'Schutz von Sachen, Sendungen und Personen in Sortierzentren und Filialen.', 'Seguridad de bienes, envíos y personas en las plataformas y oficinas.', 'Sicurezza di beni, spedizioni e persone nelle piattaforme e negli uffici.'),
+    categoriesPersonnes: ll(V.salaries, V.visiteurs, V.public), categoriesDonnees: ll(V.images),
+    destinataires: ll(V.habilitesSecu, V.forcesOrdre),
+    dureeConservation: duree('En principe, un mois au plus (CNIL).', 'in principle, one month at most (CNIL).', 'grundsätzlich höchstens ein Monat (CNIL).', 'en principio, un mes como máximo (CNIL).', 'in linea di principio, al massimo un mese (CNIL).'),
+    mesuresSecurite: SECU_BASE },
+  // TODO(source) : la fiche CNIL « L’écoute et l’enregistrement des appels sur le lieu de travail » se déclare
+  // obsolète et en cours de mise à jour — durée non reprise tant que la version à jour n'est pas publiée.
+  { key: 'ropa.postal.call-recording', baseLegale: 'interet_legitime', secteurs: POSTAL,
+    nom: l('Enregistrement des appels du service client', 'Recording of customer service calls', 'Aufzeichnung von Kundenservice-Anrufen', 'Grabación de las llamadas del servicio de atención al cliente', 'Registrazione delle chiamate del servizio clienti'),
+    finalite: l('Formation et évaluation des conseillers, amélioration de la qualité du service.', 'Training and assessing agents, improving service quality.', 'Schulung und Beurteilung der Berater, Verbesserung der Servicequalität.', 'Formación y evaluación de los agentes, mejora de la calidad del servicio.', 'Formazione e valutazione degli operatori, miglioramento della qualità del servizio.'),
+    categoriesPersonnes: ll(P.appelants, P.conseillers), categoriesDonnees: ll(V.identite, P.enregistrement),
+    destinataires: ll(P.serviceClient, V.encadrement),
+    dureeConservation: null, mesuresSecurite: SECU_BASE },
+]
+
+/** Traitements types propres à un métier (filtrés par secteur de l'organisation, présentés en tête). */
+export const ROPA_SECTOR_TEMPLATES: RopaTemplate[] = [...POSTAL_TEMPLATES]
+
 export const ROPA_PLACEHOLDER_KEY = 'ropa.business-specific'
 
-/** Traitements types dans la langue demandée (clé stable incluse). */
-export function listRopaTemplates(locale: RopaLocale): Array<Traitement & { key: string }> {
-  return ROPA_TEMPLATES.map(t => ({
+/**
+ * Traitements types dans la langue demandée (clé stable incluse). `secteurs` (codes du catalogue de l'organisation) :
+ * les traitements propres à ces secteurs sont présentés en tête ; sans secteur correspondant, comportement inchangé.
+ */
+export function listRopaTemplates(locale: RopaLocale, secteurs: readonly string[] = []): Array<Traitement & { key: string }> {
+  const propres = ROPA_SECTOR_TEMPLATES.filter(t => t.secteurs?.some(c => secteurs.includes(c)))
+  return [...propres, ...ROPA_TEMPLATES].map(t => ({
     key: t.key,
     nom: t.nom[locale],
     finalite: t.finalite[locale],

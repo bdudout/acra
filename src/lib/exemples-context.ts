@@ -36,6 +36,9 @@ const SOUS_SECTEUR_STOPWORDS = new Set(['avec', 'sans', 'pour', 'dans', 'and', '
 // Vocabulaire indicatif par famille de secteur (mots-clés en minuscules, sous-chaînes).
 // Étendu volontairement « large » : sert au scoring par recouvrement, pas à une taxonomie.
 const SECTOR_VOCAB: { match: string[]; vocab: string[] }[] = [
+  // Services postaux (pack postal) — en tête : « expédition » contient « édition » (médias).
+  { match: ['postal', 'postaux', 'courrier', 'colis', 'expédition', 'expedition', 'parcel', 'courier', 'kurier', 'mensajer', 'postali', 'corriere'],
+    vocab: ['colis', 'courrier', 'tri', 'tournée', 'tournee', 'distribution', 'recommandé', 'recommande', 'suivi', 'guichet', 'réexpédition', 'reexpedition', 'douane', 'livraison'] },
   { match: ['santé', 'sante', 'médico', 'medico', 'hôpital', 'hopital', 'health', 'soin', 'clinique'],
     vocab: ['patient', 'médical', 'medical', 'soin', 'hôpital', 'hopital', 'dpi', 'dossier patient', 'prescription', 'médicament', 'medicament', 'santé', 'sante', 'ehpad', 'imagerie', 'laboratoire'] },
   { match: ['banque', 'finance', 'bancaire', 'assur', 'fintech', 'financ'],

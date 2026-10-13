@@ -137,3 +137,35 @@ describe('doraPrevailsOverNis2 (issue #84)', () => {
     expect(doraPrevailsOverNis2(null)).toBe(false)
   })
 })
+
+// Pack postal, lot L1 : classification NIS2 par sous-secteur (directive (UE) 2022/2555, annexes I et II).
+describe('nis2Classification — sous-secteurs', () => {
+  it('fret / logistique seul : à confirmer (null) ; modes voyageurs : essentielle', () => {
+    expect(nis2Classification('Transports / Logistique', ['transport-logistique'])).toBeNull()
+    expect(nis2Classification('Transports / Logistique', ['transport-ferroviaire'])).toBe('essentielle')
+    expect(nis2Classification('Transports / Logistique', ['transport-logistique', 'transport-aerien'])).toBe('essentielle')
+  })
+  it('sans sous-secteur : « logistique » seul ne suffit plus à déduire « essentielle »', () => {
+    expect(nis2Classification('Transports / Logistique')).toBe('essentielle')
+    expect(nis2Classification('Logistique')).toBeNull()
+  })
+  it('sous-secteur postal → importante (annexe II)', () => {
+    expect(nis2Classification('Autre', ['postal-colis'])).toBe('importante')
+  })
+})
+
+describe('nis2Classification — secteur postal (annexe II), 5 langues', () => {
+  it('importante, avec ou sans sous-secteur', () => {
+    for (const lib of ['Services postaux et d’expédition', 'Postal and courier services', 'Post- und Kurierdienste', 'Servicios postales y de mensajería', 'Servizi postali e di corriere']) expect(nis2Classification(lib), lib).toBe('importante')
+    expect(nis2Classification("Services postaux et d’expédition", ['postal-colis'])).toBe('importante')
+  })
+})
+
+// Pack postal, lot L8 : prestataires de services de confiance — directive (UE) 2022/2555, annexe I (8. Infrastructure
+// numérique) ; entités essentielles quelle que soit leur taille s'ils sont qualifiés (art. 3, § 1, b).
+describe('nis2Classification — services de confiance', () => {
+  it('numerique-confiance → essentielle', () => {
+    expect(nis2Classification('Informatique / Numérique', ['numerique-confiance'])).toBe('essentielle')
+  })
+})
+

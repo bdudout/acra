@@ -24,7 +24,7 @@ import type { ProjetsSynthese } from '@/lib/projet360'
 
 interface RiskTotals { total: number; eleve: number; moyen: number; faible: number; nonCote: number; grid?: HeatGrid }
 interface ActionsSummary { total: number; faits: number; enCours: number; aFaire: number; enRetard: number; tauxAvancement: number }
-interface IncidentTotals { total: number; ouverts: number; perteNette: number }
+interface IncidentTotals { total: number; ouverts: number; perteNette: number; aQualifier?: number }
 interface ControleTotals { controles: number; evaluees: number; conformes: number; anomalies: number; tauxConformite: number | null }
 interface AuditTotals { missions: number; constats: number; critiques: number; recosEnRetard: number; tauxResolution: number }
 interface AppetitSynthese { total: number; evalues: number; horsAppetit: number; dansAppetit: number; sansSeuil: number }
@@ -127,17 +127,25 @@ export default function PilotageGrc({ canCreateAnalyse = false, projets360 = fal
     constatsCritiques: cau?.critiques, doraMajeurs: cd?.majeurs, kriCritique: ck?.critique,
     regulateurEchues: creg?.echues,
     horsAppetit: cap?.horsAppetit, conformiteSousSeuil: cc?.tauxConformite != null && cc.tauxConformite < 80,
-    actionsEnRetard: ca?.enRetard,
+    actionsEnRetard: ca?.enRetard, incidentsAQualifier: mod.incidents ? ci?.aQualifier : undefined,
   }
-  const verdict = verdictDispositif(signauxVerdict)
+  // Recette n° 48 : base d'évaluation — sans risque coté, pas de « maîtrisé » (motifs affichés).
+  const baseVerdict = {
+    risquesTotal: cr?.total ?? 0, risquesNonCotes: cr?.nonCote ?? 0,
+    conformiteEvaluee: mod.controles ? cc?.tauxConformite != null : null,
+    kriEvalues: mod.kri ? (ck ? ck.total - ck.inconnu > 0 : false) : null,
+  }
+  const verdict = verdictDispositif(signauxVerdict, baseVerdict)
   const alertesActives = verdictSignauxActifs(signauxVerdict)
-  const verdictBg = verdict.niveau === 'ELEVE' ? 'bg-red-600' : verdict.niveau === 'MODERE' ? 'bg-amber-500' : 'bg-green-600'
+  const verdictBg = verdict.niveau === 'ELEVE' ? 'bg-red-600' : verdict.niveau === 'MODERE' ? 'bg-amber-500' : verdict.niveau === 'NON_EVALUABLE' ? 'bg-gray-500' : 'bg-green-600'
+  const texteManques = verdict.manques.map(m => (m.cle === 'risquesNonCotes' ? p.verdictManques.risquesNonCotes.replace('{n}', String(m.n)) : p.verdictManques[m.cle])).join(' · ')
   // Lien profond de chaque signal d'alerte vers la vue filtrée correspondante.
   const SIGNAL_HREF: Record<VerdictSignalKey, string> = {
     constatsCritiques: '/audit?constat=critique',
     doraMajeurs: '/incidents',
     kriCritique: '/kri?statut=critique',
     regulateurEchues: '/reglementaire/suivi-regulateur',
+    incidentsAQualifier: '/incidents',
     horsAppetit: '/cartographie',
     conformiteSousSeuil: '/conformite',
     actionsEnRetard: '/plans-actions?statut=EN_RETARD',
@@ -177,6 +185,9 @@ export default function PilotageGrc({ canCreateAnalyse = false, projets360 = fal
             <span className="text-white/90 text-sm">{verdict.alertes} {p.verdictAlertes}</span>
           )}
         </div>
+        {verdict.manques.length > 0 && (
+          <p className="mt-1 text-white/90 text-xs">{verdict.partiel ? `${p.verdictPartiel} : ` : ''}{texteManques}</p>
+        )}
         {showAlertes && alertesActives.length > 0 && (
           <ul className="mt-2 flex flex-wrap gap-2">
             {alertesActives.map(k => (

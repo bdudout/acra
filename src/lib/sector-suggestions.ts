@@ -14,7 +14,7 @@ import type { TestResilienceType } from './tests-resilience'
 // Ordre = celui des secteurs de l'analyse de risque cyber (SECTEURS_ACTIVITE) ; l'assurance suit « Banque / Finance »
 // dont elle relève dans l'analyse. Seuls les secteurs choisis par l'organisation sont proposés (cf. sector-selection).
 export const SECTOR_CODES = [
-  'PUBLIC', 'FINANCE', 'ASSURANCE', 'DEFENSE', 'EDUCATION', 'ENERGIE', 'INDUSTRIE', 'SAAS', 'SANTE', 'TELECOM', 'TRANSPORT',
+  'PUBLIC', 'FINANCE', 'ASSURANCE', 'DEFENSE', 'EDUCATION', 'ENERGIE', 'INDUSTRIE', 'SAAS', 'SANTE', 'TELECOM', 'TRANSPORT', 'POSTAL',
   'COMMERCE', 'SERVICES', 'AGRICOLE', 'IMMOBILIER', 'MEDIA', 'TOURISME', 'ASSOCIATIONS', 'PROTECTION_SOCIALE',
 ] as const
 export type SectorCode = (typeof SECTOR_CODES)[number]
@@ -300,7 +300,7 @@ export function adaptPeriodicite<T extends NonNullable<CatalogueItem['periodicit
   return (next[p] ?? p) as T
 }
 
-export const CATALOGUE_PACK_VERSION = '1.15'
+export const CATALOGUE_PACK_VERSION = '1.16'
 
 /** Jusqu'à trois activités déclarées ; aucune n'est déduite automatiquement. */
 export function sanitizeSectorSelection(value: unknown): SectorCode[] | null {

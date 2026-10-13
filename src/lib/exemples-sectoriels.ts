@@ -39,6 +39,8 @@ export type SectorExempleCategory =
 // Dictionnaires de traduction (FR = source dans les données ci-dessous, donc absent).
 // Clé : `${famille}.${categorie}.${index}.${champ}` (+ `.impacts.${j}` pour les tableaux).
 const DICTS: Partial<Record<Locale, Record<string, string>>> = { en, de, es, it }
+/** Modes voyageurs du transport : billetterie et régulation du trafic n'ont pas de sens pour le fret (pack postal, L1). */
+const VOYAGEURS = ['ferroviaire', 'aerien', 'maritime']
 const TEXT_FIELDS = ['nom', 'description', 'motivation', 'ressources']
 
 /** Famille sectorielle : motifs reconnus dans le libellé du secteur + exemples associés. */
@@ -46,7 +48,7 @@ export interface SectorFamily {
   /** Sous-chaînes (minuscules) reconnues dans le libellé du secteur de l'analyse. */
   match: string[]
   /** Identifiant interne de la famille. */
-  key: 'sante' | 'finance' | 'industrie' | 'public' | 'transport' | 'telecom' | 'education' | 'commerce' | 'juridique' | 'numerique' | 'agri' | 'defense' | 'immobilier' | 'media' | 'tourisme' | 'association' | 'protection_sociale'
+  key: 'sante' | 'finance' | 'industrie' | 'public' | 'transport' | 'telecom' | 'education' | 'commerce' | 'juridique' | 'numerique' | 'agri' | 'defense' | 'immobilier' | 'media' | 'tourisme' | 'association' | 'protection_sociale' | 'postal'
   exemples: Partial<Record<SectorExempleCategory, Record<string, unknown>[]>>
 }
 
@@ -407,14 +409,14 @@ const TRANSPORT: SectorFamily = {
     valeursMetier: [
       { nom: 'Planification et suivi des expéditions', type: 'PROCESSUS', description: 'Organisation, suivi et traçabilité des livraisons et du fret', responsable: 'Direction logistique / exploitation', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
       { nom: 'Gestion de la flotte et du transport', type: 'PROCESSUS', description: 'Affectation, géolocalisation et maintenance des véhicules', responsable: 'Direction de flotte / parc', disponibilite: 4, integrite: 3, confidentialite: 2, tracabilite: 3 },
-      { nom: 'Réservation et billetterie', type: 'INFORMATION', description: 'Réservations, titres de transport et données voyageurs', responsable: 'Direction commerciale', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 3 },
-      { nom: 'Exploitation et régulation du trafic', type: 'PROCESSUS', description: 'Supervision et régulation en temps réel des circulations', responsable: 'Poste de commandement / exploitation', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
+      { nom: 'Réservation et billetterie', type: 'INFORMATION', description: 'Réservations, titres de transport et données voyageurs', responsable: 'Direction commerciale', disponibilite: 4, integrite: 4, confidentialite: 3, tracabilite: 3, sousProfession: VOYAGEURS },
+      { nom: 'Exploitation et régulation du trafic', type: 'PROCESSUS', description: 'Supervision et régulation en temps réel des circulations', responsable: 'Poste de commandement / exploitation', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4, sousProfession: VOYAGEURS },
     ],
     biensSupports: [
       { nom: 'Système de gestion d’entrepôt (WMS)', type: 'LOGICIEL', description: 'Pilotage des stocks, préparation et expédition des commandes' },
       { nom: 'Télématique embarquée / géolocalisation', type: 'MATERIEL', description: 'Boîtiers GPS et capteurs embarqués sur les véhicules' },
-      { nom: 'Plateforme de réservation / billettique', type: 'LOGICIEL', description: 'Vente et validation des titres de transport' },
-      { nom: 'Poste de commandement / supervision du trafic', type: 'LOGICIEL', description: 'Supervision et régulation des circulations en temps réel' },
+      { nom: 'Plateforme de réservation / billettique', type: 'LOGICIEL', description: 'Vente et validation des titres de transport', sousProfession: VOYAGEURS },
+      { nom: 'Poste de commandement / supervision du trafic', type: 'LOGICIEL', description: 'Supervision et régulation des circulations en temps réel', sousProfession: VOYAGEURS },
       { nom: 'Système de gestion du transport (TMS)', type: 'LOGICIEL', description: 'Planification, optimisation et suivi des transports et tournées', sousProfession: 'logistique' },
       { nom: 'Chronotachygraphe numérique', type: 'MATERIEL', description: 'Enregistrement réglementaire des temps de conduite et de repos', sousProfession: 'logistique' },
       { nom: 'Échanges de données informatisées (EDI)', type: 'RESEAU', description: 'Interfaces d’échange avec clients, transporteurs et douanes' },
@@ -450,12 +452,12 @@ const TELECOM: SectorFamily = {
     valeursMetier: [
       { nom: 'Fourniture des services de communication', type: 'PROCESSUS', description: 'Acheminement de la voix, des données et de l’accès internet des abonnés', responsable: 'Direction réseau / production', disponibilite: 4, integrite: 3, confidentialite: 3, tracabilite: 3 },
       { nom: 'Gestion des abonnés et facturation', type: 'INFORMATION', description: 'Données d’abonnés, contrats et facturation', responsable: 'Direction commerciale / BSS', disponibilite: 3, integrite: 4, confidentialite: 4, tracabilite: 4 },
-      { nom: 'Supervision et conduite du réseau', type: 'PROCESSUS', description: 'Pilotage, supervision et maintenance du réseau de télécommunications', responsable: 'Centre de supervision réseau (NOC)', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4 },
+      { nom: 'Supervision et conduite du réseau', type: 'PROCESSUS', description: 'Pilotage, supervision et maintenance du réseau de télécommunications', responsable: 'Centre de supervision réseau (NOC)', disponibilite: 4, integrite: 4, confidentialite: 2, tracabilite: 4, sousProfession: ['reseau', 'fai'] },
       { nom: 'Interconnexion et roaming', type: 'PROCESSUS', description: 'Échanges de trafic avec les autres opérateurs et itinérance', responsable: 'Direction des interconnexions', disponibilite: 4, integrite: 3, confidentialite: 3, tracabilite: 3 },
     ],
     biensSupports: [
-      { nom: 'Cœur de réseau (core network)', type: 'MATERIEL', description: 'Équipements centraux d’acheminement du trafic' },
-      { nom: 'Stations de base / antennes', type: 'MATERIEL', description: 'Équipements radio d’accès des abonnés' },
+      { nom: 'Cœur de réseau (core network)', type: 'MATERIEL', description: 'Équipements centraux d’acheminement du trafic', sousProfession: ['reseau', 'fai'] },
+      { nom: 'Stations de base / antennes', type: 'MATERIEL', description: 'Équipements radio d’accès des abonnés', sousProfession: ['reseau'] },
       { nom: 'Systèmes de gestion des abonnés (BSS / OSS)', type: 'LOGICIEL', description: 'Gestion commerciale et technique des abonnés' },
       { nom: 'DNS et services d’infrastructure', type: 'RESEAU', description: 'Résolution de noms et services réseau critiques' },
     ],
@@ -468,7 +470,7 @@ const TELECOM: SectorFamily = {
       { nom: 'Acteur étatique d’espionnage des communications', categorie: 'ETAT_NATION', description: 'Attaquant étatique cherchant à intercepter ou perturber les communications', motivation: 'Renseignement', ressources: 'Très élevées', pertinenceDefaut: 3, motivationScoreDefaut: 4, ressourcesScoreDefaut: 4, activiteScoreDefaut: 3 },
     ],
     scenariosStrategiques: [
-      { critere: 'D', nom: 'Panne généralisée du réseau par sabotage (D)', description: 'Un attaquant provoque l’indisponibilité du cœur de réseau', vraisemblanceDefaut: 2, graviteDefaut: 4 },
+      { critere: 'D', nom: 'Panne généralisée du réseau par sabotage (D)', description: 'Un attaquant provoque l’indisponibilité du cœur de réseau', vraisemblanceDefaut: 2, graviteDefaut: 4, sousProfession: ['reseau', 'fai'] },
       { critere: 'C', nom: 'Interception des communications des abonnés (C)', description: 'Un attaquant accède au trafic pour écouter les communications', vraisemblanceDefaut: 2, graviteDefaut: 4 },
     ],
   },
@@ -839,8 +841,16 @@ const PROTECTION_SOCIALE: SectorFamily = {
   exemples: {},
 }
 
-// PROTECTION SOCIALE avant SANTÉ et FINANCE : « Sozialversicherung » contient « versicherung ».
-export const SECTOR_FAMILIES: SectorFamily[] = [PROTECTION_SOCIALE, SANTE, FINANCE, INDUSTRIE, PUBLIC, TRANSPORT, TELECOM, EDUCATION, COMMERCE, JURIDIQUE, NUMERIQUE, AGRI, DEFENSE, IMMOBILIER, MEDIA, TOURISME, ASSOCIATION]
+// SERVICES POSTAUX ET D'EXPÉDITION (pack postal) — contenu au format ExtItem (lib/exemples-postal) ; mêmes mots-clés
+// que la famille `postal` de lib/sous-secteurs. En tête : « expédition » contient « édition » (médias), « livraison » (transport).
+const POSTAL: SectorFamily = {
+  key: 'postal',
+  match: ['postal', 'postaux', 'courrier', 'colis', 'expédition', 'expedition', 'parcel', 'courier', 'post-', 'kurier', 'mensajer', 'paquetería', 'paqueteria', 'postali', 'pacchi', 'corriere'],
+  exemples: {},
+}
+
+// POSTAL en tête (cf. ci-dessus) ; PROTECTION SOCIALE avant SANTÉ et FINANCE : « Sozialversicherung » contient « versicherung ».
+export const SECTOR_FAMILIES: SectorFamily[] = [POSTAL, PROTECTION_SOCIALE, SANTE, FINANCE, INDUSTRIE, PUBLIC, TRANSPORT, TELECOM, EDUCATION, COMMERCE, JURIDIQUE, NUMERIQUE, AGRI, DEFENSE, IMMOBILIER, MEDIA, TOURISME, ASSOCIATION]
 
 /**
  * Exemples sectoriels pour un secteur + une catégorie d'atelier.
@@ -852,6 +862,13 @@ function professionFromSousSecteur(sousSecteur?: string | null): string | undefi
   const v = (sousSecteur ?? '').toLowerCase()
   // Protection sociale : la sous-profession est l'id sans préfixe (ex. protsoc-fraude → fraude)
   if (v.startsWith('protsoc-')) return v.slice('protsoc-'.length)
+  // Services postaux : idem (postal-domicile → domicile, avant la règle générique « domicile » → saad)
+  if (v.startsWith('postal-')) return v.slice('postal-'.length)
+  // Numérique et télécoms (lot L8) : idem, avant les règles génériques (« editeur », « cloud »…)
+  if (v.startsWith('numerique-')) return v.slice('numerique-'.length)
+  if (v.startsWith('telecom-')) return v.slice('telecom-'.length)
+  // Assurance / mutuelle (sous-secteur de la banque) : contenu assurance, pas bancaire (issue #111, lot L7)
+  if (v === 'banque-assurance') return 'assurance'
   // Santé : portail, entrepôt de données, délégataire de gestion (avant les règles génériques)
   if (v.includes('sante-portail')) return 'portail'
   if (v.includes('sante-entrepot')) return 'entrepot'
@@ -909,6 +926,9 @@ function professionFromSecteur(famKey: string, secteur: string): string | undefi
  */
 const DETAILED_ONLY = new Set(['cabinet', 'gestionpro', 'amo', 'amc', 'tierspayant', 'labo', 'officine', 'imagerie', 'transport', 'dm', 'esante'])
 
+/** Une sous-profession, ou plusieurs (élément partagé par quelques modes, ex. VOYAGEURS). */
+const profMatch = (sp: unknown, prof: string): boolean => (Array.isArray(sp) ? sp.includes(prof) : sp === prof)
+
 /** Exemple sectoriel et indication « propre à la sous-profession choisie » (par opposition au socle commun de la famille). */
 interface Tagged { item: Record<string, unknown>; specific: boolean }
 
@@ -930,8 +950,8 @@ function exemplesTagged(
   // sous-profession (issue #71), puis retrait du champ technique `sousProfession`.
   const base: Tagged[] = items
     .map((item, idx) => (dict ? localizeItem(item, `${fam.key}.${category}.${idx}`, dict) : { ...item }))
-    .filter(it => (prof ? !it.sousProfession || it.sousProfession === prof : !DETAILED_ONLY.has(String(it.sousProfession ?? ''))))
-    .map(({ sousProfession, ...rest }) => ({ item: rest, specific: Boolean(prof && sousProfession === prof) }))
+    .filter(it => (prof ? !it.sousProfession || profMatch(it.sousProfession, prof) : !DETAILED_ONLY.has(String(it.sousProfession ?? ''))))
+    .map(({ sousProfession, ...rest }) => ({ item: rest, specific: Boolean(prof && profMatch(sousProfession, prof)) }))
   // Extension (textes ×5 dans la donnée) : éléments communs + ceux de la sous-profession choisie.
   const ext: Tagged[] = extItemsFor(fam.key, category, prof).map(x => ({ item: localizeExt(x, locale), specific: Boolean(x.profs) }))
   return [...base, ...ext]

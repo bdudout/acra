@@ -14,6 +14,8 @@ export type ProposedRisk = {
   id: string; title: string; description?: string; mandatory: boolean
   category: QualificationRiskRule['risk']['category']; gravity: number; likelihood: number
   strategy: QualificationRiskRule['risk']['strategy']
+  /** false : proposé décoché (suggestion sectorielle, pack postal L4.1) ; défaut : coché. */
+  preselected?: boolean
 }
 export type ProposalLabels = {
   title: string; explanation: string; confirm: string; cancel: string
@@ -25,7 +27,7 @@ export default function QualificationRiskProposal({ risks, labels, strategies, o
   risks: ProposedRisk[]; labels: ProposalLabels; strategies: Record<string, string>
   onConfirm: (ids: string[]) => void; onCancel?: () => void; inline?: boolean; busy?: boolean; error?: string | null
 }) {
-  const [selected, setSelected] = useState(() => new Set(risks.map(risk => risk.id)))
+  const [selected, setSelected] = useState(() => new Set(risks.filter(risk => risk.preselected !== false).map(risk => risk.id)))
   function toggle(risk: ProposedRisk) {
     if (risk.mandatory) return
     setSelected(previous => { const next = new Set(previous); if (next.has(risk.id)) next.delete(risk.id); else next.add(risk.id); return next })

@@ -26,6 +26,7 @@ import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/f
 import ConformiteTrackingCard, { type ConformiteCardRow } from '@/components/ConformiteTrackingCard'
 import ATraiterClient from '@/components/ATraiterClient'
 import { accueilRole } from '@/lib/accueil-role'
+import { isGrcActive } from '@/lib/projet360'
 import { AlertCircle, AlertTriangle, BarChart3, Building2, CheckCircle2, ClipboardList, Globe, Hand, KeyRound, Landmark, Plus, Send, Settings, ShieldCheck, TrendingUp, Upload, VenetianMask, Zap } from 'lucide-react'
 
 // Désactiver le cache Next.js pour toujours afficher les données fraîches
@@ -61,7 +62,11 @@ export default async function DashboardPage() {
     },
   })
   // Recette n° 32 : accueil selon le rôle (Métier, Contrôleur, Auditeur, Direction métier sans analyse).
-  const accueil = accueilRole(__org.role ?? userRole, analyses.length, { incidentsActive: !!__cfg?.incidentsActive, controlePermanentActive: !!__cfg?.controlePermanentActive, auditInterneActive: !!__cfg?.auditInterneActive })
+  // Rôle EFFECTIF dans l'entité active (recette n° 32, option a : un rôle par entité, pas de cumul).
+  const accueil = accueilRole(__org.role ?? userRole, analyses.length, {
+    incidentsActive: !!__cfg?.incidentsActive, controlePermanentActive: !!__cfg?.controlePermanentActive, auditInterneActive: !!__cfg?.auditInterneActive,
+    conformiteActive: !!__cfg?.conformiteActive, registreRisquesActive: !!__cfg?.registreRisquesActive, kriActive: !!__cfg?.kriActive, grcActive: __cfg ? isGrcActive(__cfg) : false,
+  })
 
   // Vue consolidée : le périmètre couvre plusieurs organisations (ex. RSSI groupe)
   // → on indique l'entité d'origine de chaque analyse.

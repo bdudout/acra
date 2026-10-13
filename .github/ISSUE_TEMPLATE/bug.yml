@@ -1,0 +1,31 @@
+name: 🐞 Signaler un problème / Report a problem
+description: Un comportement inattendu ou une erreur / Unexpected behaviour or an error
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Vulnérabilité de sécurité ? / Security vulnerability?** N'ouvrez pas d'issue publique : suivez [SECURITY.md](../blob/main/SECURITY.md).
+        **Aucune donnée réelle / no real data** dans les captures ou descriptions.
+  - type: textarea
+    id: etapes
+    attributes:
+      label: Étapes pour reproduire / Steps to reproduce
+      placeholder: "1. … 2. … 3. …"
+    validations:
+      required: true
+  - type: textarea
+    id: attendu
+    attributes:
+      label: Attendu et constaté / Expected vs actual
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version d'ACRA / ACRA version
+      description: Visible dans l'administration ou via /api/health. / Shown in the admin page or via /api/health.
+  - type: input
+    id: navigateur
+    attributes:
+      label: Navigateur et langue de l'interface / Browser and interface language

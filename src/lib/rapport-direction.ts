@@ -5,7 +5,7 @@
  * même lecture. Une donnée dont le module est inactif est omise (jamais inventée).
  */
 
-import { verdictDispositif, verdictSignauxActifs, type VerdictSignaux, type ComiteConsolide, type ComiteModules } from './comite-pack'
+import { verdictDispositif, baseEvaluation, verdictSignauxActifs, type VerdictSignaux, type ComiteConsolide, type ComiteModules } from './comite-pack'
 import type { Periode, RapportContenu, Cellule } from './rapport-model'
 
 export interface DirectionInput {
@@ -28,8 +28,11 @@ export function buildRapportDirection(i: DirectionInput): RapportContenu {
     constatsCritiques: c.audit?.critiques, doraMajeurs: c.dora?.majeurs, kriCritique: c.kri?.critique, regulateurEchues: c.regulateur?.echues,
     horsAppetit: c.appetit?.horsAppetit, actionsEnRetard: c.actions?.enRetard,
     conformiteSousSeuil: c.controles?.tauxConformite != null && c.controles.tauxConformite < CONFORMITE_SEUIL,
+    incidentsAQualifier: i.modules.incidents ? c.incidents?.aQualifier : undefined,
   }
-  const verdict = verdictDispositif(signaux)
+  // Recette n° 48 : même base d'évaluation que le cockpit et le dossier de comité.
+  const verdict = verdictDispositif(signaux, baseEvaluation(c, i.modules))
+  const nonCotes = verdict.manques.find(m => m.cle === 'risquesNonCotes')
   const valeurs: Record<(typeof ORDRE_DECISIONS)[number], number> = {
     constatsCritiques: c.audit?.critiques ?? 0, doraMajeurs: c.dora?.majeurs ?? 0, kriCritique: c.kri?.critique ?? 0, regulateurEchues: c.regulateur?.echues ?? 0,
     notifsEnRetard: i.incidents?.notifsEnRetard ?? 0, grandesPertes: i.incidents?.grandesPertes ?? 0,
@@ -50,7 +53,7 @@ export function buildRapportDirection(i: DirectionInput): RapportContenu {
   return {
     code: 'R-GRC-3', periode: i.periode, genereLe: i.now.toISOString(), deviseReference: i.deviseReference,
     sections: [
-      { id: 'voyant', blocs: [{ type: 'kpis', items: [{ cle: 'niveau', valeur: verdict.niveau, alerte: verdict.niveau !== 'MAITRISE' }, { cle: 'alertes', valeur: verdict.alertes }] }] },
+      { id: 'voyant', blocs: [{ type: 'kpis', items: [{ cle: 'niveau', valeur: verdict.niveau, alerte: verdict.niveau !== 'MAITRISE' }, { cle: 'alertes', valeur: verdict.alertes }, ...(nonCotes && nonCotes.cle === 'risquesNonCotes' ? [{ cle: 'risquesNonCotes', valeur: nonCotes.n, alerte: true }] : [])] }] },
       { id: 'chiffres', blocs: [{ type: 'kpis', items: chiffres }] },
       { id: 'decisions', blocs: [{ type: 'tableau', colonnes: ['rapports.cols.decision', 'rapports.cols.valeur'], lignes: decisions }] },
     ],

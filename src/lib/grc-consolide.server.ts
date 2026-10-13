@@ -116,7 +116,8 @@ export async function gatherGrcConsolide(
   if (withKri) {
     const statuts = kriRows.map(k => ({ statut: evaluerKri(k.mesures[0]?.valeur ?? null, { sens: k.sens as KriSens, seuilAlerte: k.seuilAlerte, seuilCritique: k.seuilCritique }) }))
     const k = synthetiserKri(statuts)
-    consolide.kri = { enAlerte: k.enAlerte, critique: k.critique }
+    // Recette n° 48 : KRI évalués (seuils et mesure) pour la base d'évaluation du verdict.
+    consolide.kri = { enAlerte: k.enAlerte, critique: k.critique, total: k.total, evalues: k.total - k.inconnu }
   }
 
   const modules: ComiteModules = {

@@ -30,3 +30,24 @@ describe('incidents types propres à un secteur', () => {
     expect(searchIncidentTypes('', 'fr', ['SANTE', 'DEFENSE']).some(t => t.sector === 'DEFENSE')).toBe(true) // multisecteur
   })
 })
+
+// Pack postal L5.1 : 7 incidents types du secteur POSTAL, proposés par la recherche quand le secteur est actif.
+describe('incidents types — services postaux', () => {
+  it('7 entrées postal.*, régimes et liste « à compléter » valides', () => {
+    const own = INCIDENT_TYPES.filter(t => t.sector === 'POSTAL')
+    expect(own.map(t => t.key).sort()).toEqual(['postal.brand-impersonation', 'postal.customs-rejection', 'postal.forwarding-fraud', 'postal.insider-parcel-theft', 'postal.proof-dispute', 'postal.sorting-outage', 'postal.tracking-scraping'])
+    const regimes = new Set(CATALOGUE_REGIMES.map(r => r.code))
+    for (const t of own) {
+      for (const l of LOCALES) expect(t.title[l].trim(), `${t.key}/${l}`).not.toBe('')
+      for (const id of t.aCompleter) expect(INCIDENT_CHECKLIST[id], `${t.key} → ${id}`).toBeDefined()
+      for (const r of t.regimes) expect(regimes.has(r), `${t.key} → ${r}`).toBe(true)
+      expect(incidentTemplate(t.key, 'fr')!.significatif).toBe(false)
+    }
+  })
+  it('la recherche « colis » ou « SMS » propose les entrées postales quand le secteur est actif', () => {
+    expect(searchIncidentTypes('colis', 'fr', ['POSTAL']).some(t => t.sector === 'POSTAL')).toBe(true)
+    expect(searchIncidentTypes('SMS', 'fr', ['POSTAL']).some(t => t.key === 'postal.brand-impersonation')).toBe(true)
+    expect(searchIncidentTypes('colis', 'fr', ['SANTE']).some(t => t.sector === 'POSTAL')).toBe(false)
+  })
+})
+

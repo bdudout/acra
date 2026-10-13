@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar'
 import { useTranslation } from '@/lib/i18n/context'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { secteursVisibles } from '@/lib/secteurs-masques'
+import { SECTEURS_ACTIVITE as SECTEURS_FR } from '@/lib/ebios-data'
 import { normalizeSousSecteurs } from '@/lib/sous-secteurs'
 import SousSecteursPicker from '@/components/SousSecteursPicker'
 import PatternsArchiPicker from '@/components/PatternsArchiPicker'
@@ -142,8 +143,12 @@ export default function NewAnalysePage() {
       .then(r => (r.ok ? r.json() : null))
       .then(d => {
         if (d?.name) setForm(f => (f.organisation ? f : { ...f, organisation: d.name }))
+        // Pack postal L4.2 : secteur unique de l'organisation présélectionné (libellé traduit), sans écraser une saisie.
+        const i = typeof d?.secteur === 'string' ? (SECTEURS_FR as readonly string[]).indexOf(d.secteur) : -1
+        if (i >= 0 && SECTEURS_ACTIVITE[i]) setForm(f => (f.secteur ? f : { ...f, secteur: SECTEURS_ACTIVITE[i] }))
       })
       .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function handleSubmit(e: React.FormEvent) {

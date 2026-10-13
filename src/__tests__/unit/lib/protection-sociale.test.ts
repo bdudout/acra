@@ -17,9 +17,9 @@ const idx = () => SECTEURS_ACTIVITE.indexOf(PS)
 const textOf = (x: Record<string, unknown>) => String(x.nom ?? x.mesure ?? x.description ?? '')
 
 describe('famille « Protection sociale » — taxonomie', () => {
-  it('secteur présent juste avant « Autre », reconnu comme sa propre famille dans les 5 langues', () => {
+  it('secteur présent avant « Autre » (suivi du secteur postal), reconnu comme sa propre famille dans les 5 langues', () => {
     expect(idx()).toBeGreaterThan(-1)
-    expect(SECTEURS_ACTIVITE[idx() + 1]).toBe('Autre')
+    expect(SECTEURS_ACTIVITE.indexOf('Autre')).toBe(idx() + 2)
     for (const loc of ['fr', ...LOCS] as Locale[]) {
       const label = getEbiosData(loc).SECTEURS_ACTIVITE[idx()]
       expect(secteurFamily(label), `${loc}: ${label}`).toBe('protection_sociale')
