@@ -16,4 +16,9 @@ describe('cheminRelance', () => {
     for (const categorie of ['EVALUATION_TIERS_A_VALIDER', 'EVALUATION_TIERS_A_REVOIR', 'REVUE_TIERS'] as const) expect(cheminRelance({ categorie })).toBe('/tiers/entites')
     expect(cheminRelance({ categorie: 'EVALUATION_TIERS_A_VALIDER', chemin: '/tiers/entites?tier=t1' })).toBe('/tiers/entites?tier=t1')
   })
+  it('recette n° 45 : incident à qualifier → l’incident ; KRI en alerte → KRI filtrés sur l’alerte', () => {
+    expect(cheminRelance({ categorie: 'INCIDENT_A_QUALIFIER' })).toBe('/incidents')
+    expect(cheminRelance({ categorie: 'INCIDENT_A_QUALIFIER', chemin: '/incidents?incident=i1' })).toBe('/incidents?incident=i1')
+    expect(cheminRelance({ categorie: 'KRI_ALERTE' })).toBe('/kri?statut=ALERTE')
+  })
 })

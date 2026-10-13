@@ -195,3 +195,15 @@ describe('catalogueKey (incident type)', () => {
     expect(cleanIncidentInput({ intitule: 'x' }).catalogueKey).toBeNull()
   })
 })
+
+// Recette n° 45 : règle pure de qualification d'un incident, partagée par l'API et par les relances « incident à qualifier ».
+import { peutQualifierIncident } from '@/lib/incident'
+describe('peutQualifierIncident', () => {
+  it('2ᵉ ligne active : risk manager, RSSI, administrateurs ; ligne unique : tout rôle sauf lecteur', () => {
+    for (const r of ['RISK_MANAGER', 'RSSI', 'ADMIN', 'SUPER_ADMIN'] as const) expect(peutQualifierIncident(r, true), r).toBe(true)
+    for (const r of ['ANALYSTE', 'METIER', 'CONTROLEUR', 'LECTEUR'] as const) expect(peutQualifierIncident(r, true), r).toBe(false)
+    expect(peutQualifierIncident('METIER', false)).toBe(true)
+    expect(peutQualifierIncident('LECTEUR', false)).toBe(false)
+  })
+})
+

@@ -352,3 +352,13 @@ export function promoteToRisk(i: PromotableIncident): PromotedRisk {
     sourceId: i.id,
   }
 }
+
+/**
+ * Qualification d'un incident (recette n° 45 : partagée par l'API et les relances « incident à qualifier ») : 2ᵉ ligne
+ * (gestionnaire des risques, RSSI, administrateurs) ; en mode « ligne unique », tout rôle sauf lecteur.
+ */
+export function peutQualifierIncident(role: string, secondeLigneActive: boolean): boolean {
+  if (!secondeLigneActive) return role !== 'LECTEUR'
+  return role === 'RISK_MANAGER' || role === 'RSSI' || role === 'ADMIN' || role === 'SUPER_ADMIN'
+}
+

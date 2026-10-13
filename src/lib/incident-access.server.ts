@@ -3,17 +3,17 @@
 // actif, rôle EFFECTIF dans l'organisation de la ressource.
 
 import { NextResponse } from 'next/server'
+import { peutQualifierIncident } from './incident'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { type UserRole } from '@/lib/permissions'
 
 // La QUALIFICATION relève de la 2ᵉ ligne (risk manager / RSSI / admin). En mode
 // « ligne unique » (2ᵉ ligne désactivée), elle est ouverte à la 1ʳᵉ ligne (tout
 // rôle sauf lecteur) : taxonomie, coût réel, rattachement au registre.
 export function peutQualifier(role: UserRole, secondeLigneActive: boolean): boolean {
-  if (!secondeLigneActive) return role !== 'LECTEUR'
-  return isAdminRole(role) || role === 'RISK_MANAGER' || role === 'RSSI'
+  return peutQualifierIncident(role, secondeLigneActive)
 }
 
 export async function loadIncidentInScope(session: { user: { id: string; role?: string } }, id: string) {

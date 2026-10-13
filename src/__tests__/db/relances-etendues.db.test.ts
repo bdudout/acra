@@ -26,7 +26,7 @@ beforeAll(async () => {
   const org = await makeOrg('Relances étendues')
   await prisma.organizationConfig.create({ data: {
     id: org.id, reglementaireActive: true, kriActive: true, conformiteActive: true, controlePermanentActive: true,
-    auditInterneActive: true, acceptationRisquesActive: true, secondeLigneActive: true, mcpActive: true, registreIaActive: true,
+    auditInterneActive: true, acceptationRisquesActive: true, secondeLigneActive: true, mcpActive: true, registreIaActive: true, incidentsActive: true,
   } })
   rssi = await makeUser('ANALYSTE', [{ id: org.id, role: 'RSSI' }])
   dm = await makeUser('ANALYSTE', [{ id: org.id, role: 'DIRECTION_METIER' }])
@@ -76,6 +76,12 @@ beforeAll(async () => {
   await prisma.systemeIA.create({ data: { ...o, nom: 'Tri des CV', finalite: 'Présélection', typeDecision: 'AIDE', usage: 'EMPLOI', statut: 'EN_SERVICE', derniereRevue: jour(-730), createdBy: auteur.id } as never })
   await prisma.traitement.create({ data: { ...tr, nom: 'Annuaire interne', derniereRevue: jour(-30) } as never })
 
+  // Recette n° 45 : incident signalé non qualifié → qui qualifie (2ᵉ ligne : RSSI) ; KRI au-dessus du seuil d'alerte → son responsable.
+  await prisma.incident.create({ data: { ...o, intitule: 'Fraude au président', statut: 'DECLARE', declarantId: auteur.id, createdAt: jour(-10) } as never })
+  await prisma.incident.create({ data: { ...o, intitule: 'Incident déjà qualifié', statut: 'QUALIFIE', declarantId: auteur.id, createdAt: jour(-3) } as never })
+  const fraude = await prisma.kri.create({ data: { ...o, intitule: 'Taux de fraude externe', frequence: 'MENSUEL', responsable: porteurKri.email, sens: 'HAUSSE', seuilAlerte: 2, seuilCritique: 5 } as never })
+  await prisma.kriMesure.create({ data: { kriId: fraude.id, organizationId: org.id, valeur: 3, dateMesure: jour(-10), saisiPar: auteur.id } })
+
   mail.send.mockClear()
   await executerRelances()
   captures = (mail.send.mock.calls as unknown as [Envoye][]).map(c => c[0])
@@ -123,6 +129,12 @@ describe('relances étendues (vraie base)', () => {
   })
   it('évaluation d’un service tiers soumise → RSSI', () => {
     expect(texte(rssi)).toContain('Évaluation d’un service tiers à valider — Hébergeur Alpha — IaaS — Hébergement de la paie')
+  })
+  it('recette n° 45 : incident à qualifier → RSSI (2ᵉ ligne), pas un incident déjà qualifié ; KRI en alerte → son responsable', () => {
+    expect(texte(rssi)).toContain('Incident à qualifier — Fraude au président')
+    expect(texte(rssi)).not.toContain('Incident déjà qualifié')
+    expect(texte(dm)).not.toContain('Incident à qualifier')
+    expect(texte(porteurKri)).toContain('KRI en alerte ou critique — Taux de fraude externe')
   })
   it('page « À traiter » : aperçu sans envoi ni marquage, éléments présents même déjà relancés', async () => {
     mail.send.mockClear(); invaliderATraiter()

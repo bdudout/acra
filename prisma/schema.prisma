@@ -814,6 +814,8 @@ model Incident {
   doraFinaleSoumiseLe        DateTime?
   // Alertes DORA déjà envoyées : { "PHASE:STATUT": iso } (cron « alertes-dora », anti-doublon).
   alertesDora                Json      @default("{}")
+  // Dernière relance « incident à qualifier » (cron « relances », anti-doublon — recette n° 45).
+  rappelLe       DateTime?
   // Compléments de déclaration à une autorité (champs de l'ITS DORA 2025/302 que l'incident ne porte pas) : { "2.8": "…" } — cf. lib/incident-declaration.ts.
   declaration                Json      @default("{}")
 
@@ -1283,6 +1285,8 @@ model Kri {
   actif         Boolean @default(true)
   // Dernière relance automatique (cron « relances », anti-doublon).
   rappelLe       DateTime?
+  // Dernière relance « KRI en alerte ou critique » (anti-doublon ; repart à chaque nouvelle mesure — recette n° 45).
+  alerteeLe      DateTime?
 
   // Rattachement optionnel à la maille : catégorie de taxonomie / risque / processus.
   taxonomieCode String?

@@ -10,6 +10,8 @@
 // `alerteeLe`) : le passage est idempotent, quel que soit le nombre d'appels.
 import { prisma } from './prisma'
 import { getOrgConfig } from './org-config.server'
+import { evaluerKri, type KriSens } from './kri'
+import { peutQualifierIncident } from './incident'
 import { libelleProposition, sanitizeRelancesConfig, typeRelance, typeEcheance, controlesNonExecutes, PREAVIS_CONTRAT_TIC_JOURS, PREAVIS_INVITATION_JOURS, relanceAttenteDue, approbateursAnalyse, valideursDerogation, attenteDerogationDepuis, type RelancesConfig } from './relances'
 import { resolveAuditConfig, type AuditConfig } from './audit-config'
 import { calculerRappels } from './audit-rappels'
@@ -43,7 +45,7 @@ type Membre = { role: string; user: { id: string; email: string; name: string | 
 type Config = {
   relances: RelancesConfig; controle: boolean; audit: boolean; auditConfig: AuditConfig; derogations: boolean; derogationAlerteJours: number; secondeLigne: boolean
   reglementaire: boolean; kri: boolean; homologations: boolean; conformite: boolean; acceptationRisques: boolean; petiteStructure: boolean
-  mcp: boolean; planification: ReturnType<typeof sanitizePlanificationConfig>; registreIa: boolean
+  incidents: boolean; mcp: boolean; planification: ReturnType<typeof sanitizePlanificationConfig>; registreIa: boolean
 }
 
 export interface ResultatRelances {
@@ -122,7 +124,7 @@ async function passageRelances(now: Date, apercu: boolean): Promise<ResultatRela
   const [contrats, tests, kris, documents, campagnes, missions, analysesEcheance, acceptations, invitations, homologations, suppressions, traitementsAipd, plansSoumis, propositionsMcp, revuesIa, revuesTraitements, revuesProcessus, revuesTiers, evaluationsTiers] = await Promise.all([
     prisma.arrangementTic.findMany({ where: { dateFin: { not: null } }, select: { id: true, organizationId: true, reference: true, prestataireNom: true, dateFin: true, createdAt: true, rappelLe: true }, take: 10000 }),
     prisma.testResilience.findMany({ where: { statut: { in: ['PLANIFIE', 'EN_COURS'] }, datePrevue: { not: null } }, select: { id: true, organizationId: true, intitule: true, datePrevue: true, createdAt: true, rappelLe: true }, take: 10000 }),
-    prisma.kri.findMany({ where: { actif: true }, select: { id: true, organizationId: true, intitule: true, frequence: true, responsable: true, createdAt: true, rappelLe: true, mesures: { orderBy: { dateMesure: 'desc' }, take: 1, select: { dateMesure: true } } }, take: 10000 }),
+    prisma.kri.findMany({ where: { actif: true }, select: { id: true, organizationId: true, intitule: true, frequence: true, responsable: true, createdAt: true, rappelLe: true, alerteeLe: true, sens: true, seuilAlerte: true, seuilCritique: true, mesures: { orderBy: { dateMesure: 'desc' }, take: 1, select: { dateMesure: true, valeur: true } } }, take: 10000 }),
     prisma.document.findMany({ where: { dateRevue: { not: null } }, select: { id: true, organizationId: true, titre: true, dateRevue: true, createdAt: true, rappelLe: true, uploadedBy: true }, take: 10000 }),
     prisma.campagneControle.findMany({ where: { statut: { not: 'CLOTUREE' }, archiveLe: null, dateFin: { not: null } }, select: { id: true, organizationId: true, intitule: true, dateDebut: true, dateFin: true, createdAt: true, rappelLe: true, controleIds: true }, take: 10000 }),
     prisma.auditMission.findMany({ where: { statut: 'PLANIFIEE', dateDebut: { not: null } }, select: { id: true, organizationId: true, intitule: true, dateDebut: true, createdAt: true, rappelLe: true }, take: 10000 }),
@@ -145,8 +147,10 @@ async function passageRelances(now: Date, apercu: boolean): Promise<ResultatRela
     // Évaluations d'usages de services tiers (lot T1) : soumises (validation RSSI) ou validées (réévaluation à 12 mois).
     prisma.evaluationUsageTiers.findMany({ where: { statut: { in: ['SOUMISE', 'VALIDEE'] } }, select: { id: true, organizationId: true, statut: true, soumisLe: true, valideLe: true, evaluePar: true, createdAt: true, rappelLe: true, usage: { select: { useCase: true, tierService: { select: { nom: true, tier: { select: { id: true, nom: true } } } } } } }, take: 10000 }),
   ])
+  // Recette n° 45 : incidents signalés, pas encore qualifiés.
+  const incidentsAQualifier = await prisma.incident.findMany({ where: { statut: 'DECLARE' }, select: { id: true, organizationId: true, intitule: true, createdAt: true, rappelLe: true }, take: 10000 })
   if (apercu) {
-    for (const liste of [reponses, preconisations, plans, aVerifier, analyses, derogationsRevue, constats, controles, derogationsActives, contrats, tests, kris, documents, campagnes, missions, analysesEcheance, acceptations, invitations, homologations, suppressions, traitementsAipd, plansSoumis, propositionsMcp, revuesIa, revuesTraitements, revuesProcessus, revuesTiers, evaluationsTiers] as Record<string, unknown>[][]) {
+    for (const liste of [incidentsAQualifier, reponses, preconisations, plans, aVerifier, analyses, derogationsRevue, constats, controles, derogationsActives, contrats, tests, kris, documents, campagnes, missions, analysesEcheance, acceptations, invitations, homologations, suppressions, traitementsAipd, plansSoumis, propositionsMcp, revuesIa, revuesTraitements, revuesProcessus, revuesTiers, evaluationsTiers] as Record<string, unknown>[][]) {
       for (const x of liste) for (const k of ANTI_DOUBLON) if (k in x) x[k] = null
     }
   }
@@ -166,7 +170,7 @@ async function passageRelances(now: Date, apercu: boolean): Promise<ResultatRela
         audit: c.auditInterneActive, auditConfig: apercu ? { ...resolveAuditConfig(c.auditConfig), rappelsActifs: true } : resolveAuditConfig(c.auditConfig),
         derogations: c.derogationsActive, derogationAlerteJours: c.derogationAlerteJours ?? 30, secondeLigne: c.secondeLigneActive,
         reglementaire: !!c.reglementaireActive, kri: !!c.kriActive, homologations: !!c.homologationsActive, conformite: c.conformiteActive, acceptationRisques: c.acceptationRisquesActive, petiteStructure: c.petiteStructure,
-        mcp: c.mcpActive, planification: sanitizePlanificationConfig(c.planificationConfig), registreIa: !!c.registreIaActive,
+        incidents: !!c.incidentsActive, mcp: c.mcpActive, planification: sanitizePlanificationConfig(c.planificationConfig), registreIa: !!c.registreIaActive,
       })
     }
     return cfgCache.get(orgId)!
@@ -218,7 +222,7 @@ async function passageRelances(now: Date, apercu: boolean): Promise<ResultatRela
     missionsAudit: [] as string[], analysesEcheance: [] as string[], acceptationsRisques: [] as string[], invitations: [] as string[], homologations: [] as string[], suppressions: [] as string[],
     aipd: [] as string[], plansAnnee: [] as string[], propositionsMcp: [] as string[],
     revuesIa: [] as string[], revuesTraitements: [] as string[], revuesProcessus: [] as string[], revuesTiers: [] as string[],
-    evaluationsTiers: [] as string[],
+    evaluationsTiers: [] as string[], incidentsAQualifier: [] as string[], kriAlertes: [] as string[],
   }
 
   // ─── Éléments à traiter ───
@@ -357,11 +361,26 @@ async function passageRelances(now: Date, apercu: boolean): Promise<ResultatRela
   for (const k of kris) {
     const cfg = await cfgOf(k.organizationId)
     if (!cfg.kri) continue
+    // Recette n° 45 : dernière mesure en alerte ou critique → responsable du KRI (sinon gouvernance) ; repart à chaque mesure.
+    const derniere = k.mesures[0]
+    const statutKri = derniere ? evaluerKri(derniere.valeur, { sens: k.sens as KriSens, seuilAlerte: k.seuilAlerte, seuilCritique: k.seuilCritique }) : 'INCONNU'
+    if ((statutKri === 'ALERTE' || statutKri === 'CRITIQUE') && relanceAttenteDue({ depuis: derniere!.dateMesure, rappelLe: k.alerteeLe }, cfg.relances, now)) {
+      ajouter(k.organizationId, await parPorteur(k.organizationId, k.responsable), { categorie: 'KRI_ALERTE', intitule: k.intitule, type: 'EN_ATTENTE', echeance: jour(derniere!.dateMesure), chemin: `/kri?statut=${statutKri}` })
+      marques.kriAlertes.push(k.id)
+    }
     // Mesure attendue selon la fréquence du KRI (même calcul que l'échéance d'un contrôle) ; relance du seul retard.
     const attendue = prochaineEcheance(k.frequence as Periodicite, k.mesures[0]?.dateMesure ?? null, k.createdAt)
     if (typeEcheance({ echeance: attendue, rappelLe: k.rappelLe, createdAt: k.createdAt }, cfg.relances, now) !== 'EN_RETARD') continue
     ajouter(k.organizationId, await parPorteur(k.organizationId, k.responsable), { categorie: 'KRI_MESURE', intitule: k.intitule, type: 'EN_RETARD', echeance: jour(attendue) })
     marques.kri.push(k.id)
+  }
+  // Recette n° 45 : incident à qualifier → qui peut le qualifier dans l'organisation (2ᵉ ligne, ou tout rôle sauf lecteur).
+  for (const inc of incidentsAQualifier) {
+    const cfg = await cfgOf(inc.organizationId)
+    if (!cfg.incidents || !relanceAttenteDue({ depuis: inc.createdAt, rappelLe: inc.rappelLe }, cfg.relances, now)) continue
+    const dests = (await membres(inc.organizationId)).filter(m => peutQualifierIncident(m.role, cfg.secondeLigne)).flatMap(m => versDest(m.user))
+    ajouter(inc.organizationId, dests.length ? dests : await parRoles(inc.organizationId, ['ADMIN']), { categorie: 'INCIDENT_A_QUALIFIER', intitule: inc.intitule, type: 'EN_ATTENTE', echeance: jour(inc.createdAt), chemin: `/incidents?incident=${inc.id}` })
+    marques.incidentsAQualifier.push(inc.id)
   }
   for (const d of documents) {
     const cfg = await cfgOf(d.organizationId)
@@ -561,11 +580,13 @@ async function passageRelances(now: Date, apercu: boolean): Promise<ResultatRela
     maj(marques.revuesProcessus, ids => prisma.processus.updateMany({ where: { id: { in: ids } }, data: { revueRappelLe: now } })),
     maj(marques.revuesTiers, ids => prisma.tier.updateMany({ where: { id: { in: ids } }, data: { revueRappelLe: now } })),
     maj(marques.evaluationsTiers, ids => prisma.evaluationUsageTiers.updateMany({ where: { id: { in: ids } }, data: { rappelLe: now } })),
+    maj(marques.incidentsAQualifier, ids => prisma.incident.updateMany({ where: { id: { in: ids } }, data: { rappelLe: now } })),
+    maj(marques.kriAlertes, ids => prisma.kri.updateMany({ where: { id: { in: ids } }, data: { alerteeLe: now } })),
   ])
 
   return {
     checked: reponses.length + preconisations.length + plans.length + aVerifier.length + analyses.length + derogationsRevue.length + constats.length + controles.length + derogationsActives.length
-      + contrats.length + tests.length + kris.length + documents.length + campagnes.length + missions.length + analysesEcheance.length + acceptations.length + invitations.length + homologations.length + suppressions.length + traitementsAipd.length + plansSoumis.length + propositionsMcp.length + revuesIa.length + revuesTraitements.length + revuesProcessus.length + revuesTiers.length + evaluationsTiers.length,
+      + contrats.length + tests.length + kris.length + documents.length + campagnes.length + missions.length + analysesEcheance.length + acceptations.length + invitations.length + homologations.length + suppressions.length + traitementsAipd.length + plansSoumis.length + propositionsMcp.length + revuesIa.length + revuesTraitements.length + revuesProcessus.length + revuesTiers.length + evaluationsTiers.length + incidentsAQualifier.length,
     reminded: Object.fromEntries(Object.entries(marques).map(([k, v]) => [k, v.length])),
     emailsSent, emailsSkipped,
   }
