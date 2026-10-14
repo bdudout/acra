@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ user }, { status: 201 })
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Données invalides', details: err.errors }, { status: 400 })
+      return NextResponse.json({ error: 'Données invalides', details: err.issues }, { status: 400 })
     }
     console.error(err)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

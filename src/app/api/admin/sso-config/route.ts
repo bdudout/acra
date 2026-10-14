@@ -44,7 +44,7 @@ const SSOSchema = z.object({
 
   // RBAC piloté par l'IdP : claim de groupes + mapping groupe→rôle
   oidcGroupsClaim: z.string().max(128).nullable().optional(),
-  roleMapping:     z.union([z.string().max(8192), z.record(z.string())]).nullable().optional(),
+  roleMapping:     z.union([z.string().max(8192), z.record(z.string(), z.string())]).nullable().optional(),
 })
 
 
