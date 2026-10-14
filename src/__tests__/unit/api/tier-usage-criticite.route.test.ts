@@ -41,3 +41,18 @@ describe('PATCH usage — criticité', () => {
     expect(m.update).not.toHaveBeenCalled()
   })
 })
+
+describe('PATCH usage — exposition à Internet (mise à jour partielle)', () => {
+  it('oui / non / non renseignée, sans toucher à la criticité', async () => {
+    await call({ exposeInternet: true })
+    expect(m.update).toHaveBeenLastCalledWith({ where: { id: 'u1' }, data: { exposeInternet: true } })
+    await call({ exposeInternet: null })
+    expect(m.update).toHaveBeenLastCalledWith({ where: { id: 'u1' }, data: { exposeInternet: null } })
+  })
+  it('valeur inconnue : 400 ; aucun champ : 400 ; rien écrit', async () => {
+    expect((await call({ exposeInternet: 'oui' })).status).toBe(400)
+    expect((await call({})).status).toBe(400)
+    expect(m.update).not.toHaveBeenCalled()
+  })
+})
+

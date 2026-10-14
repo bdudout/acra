@@ -17,7 +17,7 @@ const detail = {
       coveredBy: [{ arrangementId: 'a1', reference: 'C-1', contractServiceId: 'cs1' }, { arrangementId: 'aG', reference: 'C-G', contractServiceId: 'cs2' }],
       usages: [
         { id: 'u1', useCase: 'Contrats fournisseurs', processusId: 'p1', processusNom: 'Achats', contractServiceId: 'cs1', coverage: 'CONFIRMED' },
-        { id: 'u2', useCase: 'Contrats de travail', processusId: 'p2', processusNom: 'RH', contractServiceId: null, coverage: 'UNCONFIRMED' },
+        { id: 'u2', useCase: 'Contrats de travail', processusId: 'p2', processusNom: 'RH', contractServiceId: null, coverage: 'UNCONFIRMED', exposeInternet: true },
       ] },
     { id: 's2', nom: 'SignNow Archivage', typeService: 'LOGICIEL', description: null, actif: true, coveredBy: [], usages: [] },
   ],
@@ -165,5 +165,24 @@ describe('TierDetailPanel — évaluation des usages (lot T1)', () => {
     expect(within(li).getAllByText(/Pire niveau évalué/).length).toBeGreaterThan(0)
     fireEvent.click(within(li).getAllByRole('button', { name: 'Évaluer' })[0])
     expect(await screen.findByRole('region', { name: 'Évaluation — Contrats fournisseurs' })).toBeInTheDocument()
+  })
+  it('exposition à Internet par usage : oui / non / non renseignée (PATCH partiel) ; à la création ; badge en lecture', async () => {
+    render(<TierDetailPanel tierId="t1" />)
+    const sel = await screen.findByLabelText('Exposition à Internet — Contrats fournisseurs')
+    fireEvent.change(sel, { target: { value: 'OUI' } })
+    await waitFor(() => expect(posts().some(c => c[1].method === 'PATCH' && JSON.parse(c[1].body).exposeInternet === true)).toBe(true))
+    expect(JSON.parse(posts().find(c => c[1].method === 'PATCH')![1].body)).toEqual({ exposeInternet: true })
+    expect((screen.getByLabelText('Exposition à Internet — Contrats de travail') as HTMLSelectElement).value).toBe('OUI')
+    const item = await offerItem('SignNow Signature')
+    fireEvent.change(within(item).getByLabelText('Cas d’usage'), { target: { value: 'Portail clients' } })
+    fireEvent.change(within(item).getByLabelText('Exposition à Internet'), { target: { value: 'NON' } })
+    fireEvent.click(within(item).getByRole('button', { name: 'Ajouter l’usage' }))
+    await waitFor(() => expect(posts().some(c => c[1].method === 'POST' && JSON.parse(c[1].body).useCase === 'Portail clients')).toBe(true))
+    expect(JSON.parse(posts().find(c => c[1].method === 'POST' && JSON.parse(c[1].body).useCase === 'Portail clients')![1].body).exposeInternet).toBe(false)
+  })
+  it('lecture seule : badge « Exposé à Internet »', async () => {
+    fetchMock.mockImplementation((url: string) => (url.startsWith('/api/processus') ? ok(processus) : ok({ ...detail, canManage: false, isAdmin: false })))
+    render(<TierDetailPanel tierId="t1" />)
+    expect(await screen.findByText('Exposé à Internet')).toBeInTheDocument()
   })
 })

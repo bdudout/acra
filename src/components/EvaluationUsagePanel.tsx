@@ -18,6 +18,7 @@ interface Reponse {
   droits: { peutEvaluer: boolean; peutValider: boolean }
   echelles: EchellesEcosysteme
   cadreDora?: { actif: boolean; critique: boolean }
+  exposeInternet?: boolean | null
   options: { traitements: { id: string; nom: string }[]; risques: { id: string; intitule: string }[] }
 }
 const VIDE: Cotation = { dependance: null, penetration: null, maturite: null, confiance: null }
@@ -102,6 +103,8 @@ export default function EvaluationUsagePanel({ usageId, usageNom, onChange }: { 
         return null
       })()}
       <p className="text-[11px] text-gray-500 dark:text-gray-400">{l.aide}</p>
+      {/* Usage exposé à Internet : rappel, sans cotation automatique. */}
+      {data.exposeInternet === true && <p role="note" className="rounded-sm bg-orange-50 px-2 py-1 text-[11px] text-orange-900 dark:bg-orange-900/30 dark:text-orange-100">{l.expositionAide}</p>}
       <div className="grid gap-4 sm:grid-cols-2">
         {colonne(l.actuelle, actuelle, setActuelle, 'actuelle')}
         {colonne(l.cible, cible, setCible, 'cible')}

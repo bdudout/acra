@@ -6,7 +6,7 @@ import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { peutGererRegistreTic, type UserRole } from '@/lib/permissions'
-import { cleanUsageCriticality } from '@/lib/tier-offers'
+import { cleanUsageCriticality, cleanExpositionInternet } from '@/lib/tier-offers'
 import { validateServiceUsage } from '@/lib/tier-contract-coverage'
 
 export const dynamic = 'force-dynamic'
@@ -29,7 +29,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const crit = cleanUsageCriticality(body.criticite)
-  if (!crit.ok) return NextResponse.json({ error: 'invalid_usage_input' }, { status: 400 })
+  const expo = cleanExpositionInternet(body.exposeInternet)
+  if (!crit.ok || !expo.ok) return NextResponse.json({ error: 'invalid_usage_input' }, { status: 400 })
 
   const role = await getEffectiveRoleForOrg(userId, instanceRole, organizationId)
   // Recette n° 13 : les gestionnaires du registre TIC (RSSI, gestionnaire des risques, conformité, DPO, ADMIN) déclarent
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!decision.ok) return NextResponse.json({ error: decision.error }, { status: decision.error === 'beneficiary_not_confirmed' || decision.error === 'beneficiary_contract_mismatch' ? 409 : 400 })
 
   const created = await prisma.tierServiceUsage.create({
-    data: { organizationId, tierServiceId: id, processusId: process?.id ?? null, contractServiceId: contractService?.id ?? null, useCase, description, criticite: crit.value },
+    data: { organizationId, tierServiceId: id, processusId: process?.id ?? null, contractServiceId: contractService?.id ?? null, useCase, description, criticite: crit.value, exposeInternet: expo.value },
   })
   await auditLog('TIER_SERVICE_USAGE_CREATED', {
     userId, userRole: role, organizationId, ip: getClientIp(req),

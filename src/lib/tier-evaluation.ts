@@ -99,6 +99,8 @@ export interface UsageGroupe {
   /** Criticité de l'usage (CRITIQUE | IMPORTANTE | NON_CRITIQUE). */
   criticite: string | null
   processus: { id: string; criticite: number | null; criticiteDora: string | null } | null
+  /** Exposition à Internet de l'usage : oui / non / non renseignée. */
+  exposeInternet?: boolean | null
 }
 /** Processus critique ou important : même règle que la complétude des processus (DORA critique / importante, ou criticité ≥ 3). */
 const processusSensible = (p: UsageGroupe['processus']) => !!p && (p.criticiteDora === 'CRITIQUE' || p.criticiteDora === 'IMPORTANTE' || (p.criticite ?? 0) >= 3)
@@ -118,6 +120,8 @@ export function syntheseTiersGroupe(usages: UsageGroupe[]) {
     concentration: {
       usagesCritiques: usages.filter(u => u.criticite === 'CRITIQUE' || u.criticite === 'IMPORTANTE').length,
       processusCritiques: new Set(usages.filter(u => processusSensible(u.processus)).map(u => u.processus!.id)).size,
+      // Combinaison la plus risquée : usage exposé à Internet ET critique ou important.
+      exposesCritiques: usages.filter(u => u.exposeInternet === true && (u.criticite === 'CRITIQUE' || u.criticite === 'IMPORTANTE')).length,
     },
   }
 }
