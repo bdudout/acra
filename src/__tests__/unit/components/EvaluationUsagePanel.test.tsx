@@ -75,4 +75,10 @@ describe('EvaluationUsagePanel', () => {
     await waitFor(() => expect(fetchMock.mock.calls.some(c => c[1]?.method === 'PUT')).toBe(true))
     expect(JSON.parse(fetchMock.mock.calls.find(c => c[1]?.method === 'PUT')![1].body).clauses).toEqual(['dora30.2h'])
   })
+  it('usage exposé à Internet : rappel sur la pénétration (aucune cotation automatique)', async () => {
+    fetchMock.mockImplementation(() => ok(reponse({ exposeInternet: true })))
+    render(<EvaluationUsagePanel usageId="u1" usageNom="X" onChange={() => {}} />)
+    expect(await screen.findByText(/exposé à Internet/i)).toBeInTheDocument()
+    expect((screen.getByLabelText('Pénétration — actuelle') as HTMLSelectElement).value).toBe('')
+  })
 })

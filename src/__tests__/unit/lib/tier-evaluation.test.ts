@@ -85,6 +85,16 @@ describe('syntheseTiersGroupe', () => {
       { organizationId: 'f1', organisation: 'Filiale Nord', synthese: { menace: 3, zone: 'danger', evalues: 2 }, usages: 2 },
       { organizationId: 'f2', organisation: 'Filiale Sud', synthese: null, usages: 2 },
     ])
-    expect(s.concentration).toEqual({ usagesCritiques: 2, processusCritiques: 2 })
+    expect(s.concentration).toEqual({ usagesCritiques: 2, processusCritiques: 2, exposesCritiques: 0 })
   })
 })
+
+// Exposition à Internet : la combinaison « exposé et critique ou important » est remontée dans la concentration.
+describe('syntheseTiersGroupe — usages exposés à Internet', () => {
+  it('compte les usages exposés ET critiques ou importants (pas les exposés non critiques, ni les non renseignés)', () => {
+    const u = (criticite: string | null, exposeInternet: boolean | null) => ({ organizationId: 'f1', organisation: 'F', niveau: null, criticite, processus: null, exposeInternet })
+    const s = syntheseTiersGroupe([u('CRITIQUE', true), u('IMPORTANTE', true), u('NON_CRITIQUE', true), u('CRITIQUE', null), u('CRITIQUE', false)])
+    expect(s.concentration.exposesCritiques).toBe(2)
+  })
+})
+

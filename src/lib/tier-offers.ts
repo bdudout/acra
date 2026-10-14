@@ -48,6 +48,12 @@ export function cleanUsageCriticality(raw: unknown): { ok: true; value: NiveauCr
   return (NIVEAUX_CRITICITE as readonly string[]).includes(String(raw)) ? { ok: true, value: raw as NiveauCriticite } : { ok: false, error: 'criticite_invalide' }
 }
 
+/** Exposition à Internet d'un usage : oui / non / non renseignée (null). Une valeur inconnue est refusée. */
+export function cleanExpositionInternet(raw: unknown): { ok: true; value: boolean | null } | { ok: false; error: 'exposition_invalide' } {
+  if (raw === undefined || raw === null || raw === '') return { ok: true, value: null }
+  return typeof raw === 'boolean' ? { ok: true, value: raw } : { ok: false, error: 'exposition_invalide' }
+}
+
 /** Vrai si l'usage est plus critique que le contrat qui le couvre : le contrat est sous-qualifié (à revoir), sans jamais le modifier seul. */
 export function usageCriticalityGap(usage: NiveauCriticite | null, contract: NiveauCriticite | null): boolean {
   if (!usage || !contract) return false

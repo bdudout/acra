@@ -1120,6 +1120,8 @@ model TierServiceUsage {
   useCase           String
   description       String? @db.Text
   criticite         String? // CRITIQUE | IMPORTANTE | NON_CRITIQUE — facultative (cf. lib/tier-offers.ts)
+  // Exposition à Internet de l'usage : true / false / null (non renseignée).
+  exposeInternet    Boolean?
   evaluation        EvaluationUsageTiers?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

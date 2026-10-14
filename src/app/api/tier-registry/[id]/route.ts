@@ -30,7 +30,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     }),
     prisma.tierServiceUsage.findMany({
       where: { organizationId: ctx.orgId, tierService: { tierId: id } },
-      select: { id: true, useCase: true, description: true, tierServiceId: true, processusId: true, processus: { select: { nom: true } }, contractServiceId: true, criticite: true, evaluation: { select: { statut: true, actuelle: true, cible: true, valideLe: true } } },
+      select: { id: true, useCase: true, description: true, tierServiceId: true, processusId: true, processus: { select: { nom: true } }, contractServiceId: true, criticite: true, exposeInternet: true, evaluation: { select: { statut: true, actuelle: true, cible: true, valideLe: true } } },
       orderBy: { createdAt: 'asc' },
     }),
   ])
@@ -75,7 +75,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       coveredBy: contractServices.filter(cs => cs.serviceId === s.id).map(cs => ({ arrangementId: cs.arrangementId, reference: cs.reference, contractServiceId: cs.id })),
       usages: usages.filter(u => u.tierServiceId === s.id).map(u => {
         const cs = u.contractServiceId ? csById.get(u.contractServiceId) : undefined
-        return { id: u.id, useCase: u.useCase, description: u.description, processusId: u.processusId, processusNom: u.processus?.nom ?? null, contractServiceId: u.contractServiceId, criticite: u.criticite,
+        return { id: u.id, useCase: u.useCase, description: u.description, processusId: u.processusId, processusNom: u.processus?.nom ?? null, contractServiceId: u.contractServiceId, criticite: u.criticite, exposeInternet: u.exposeInternet,
           evaluation: resumeEvaluation(u.evaluation),
           criticiteContrat: cs?.criticite ?? null, criticiteEcart: usageCriticalityGap(u.criticite as NiveauCriticite | null, cs?.criticite ?? null),
           coverage: usageCoverage({ organizationId: ctx.orgId, contractService: cs ? { ownerOrganizationId: cs.owner, beneficiaryStatus: cs.status as 'PROPOSED' | 'CONFIRMED' | 'REJECTED' | null } : null }) }

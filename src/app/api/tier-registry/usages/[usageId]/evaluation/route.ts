@@ -18,17 +18,17 @@ type Params = { params: Promise<{ usageId: string }> }
 // GET : évaluation, cotation (menace et zone actuelle / cible), droits, échelles et listes de rattachement de l'organisation.
 // PUT : enregistre (brouillon) — propriétaire du risque / analyste ; modifier une évaluation soumise ou validée la repasse en
 // brouillon. POST { action } : SOUMETTRE (évaluateur), VALIDER / RENVOYER (RSSI). Usage de l'organisation active seulement.
-type Charge = { error: NextResponse } | { ctx: { userId: string; orgId: string; role: UserRole }; echelles: EchellesEcosysteme; petiteStructure: boolean; cadreDora: { actif: boolean; critique: boolean } }
+type Charge = { error: NextResponse } | { ctx: { userId: string; orgId: string; role: UserRole }; echelles: EchellesEcosysteme; petiteStructure: boolean; cadreDora: { actif: boolean; critique: boolean }; exposeInternet: boolean | null }
 async function charger(usageId: string): Promise<Charge> {
   const got = await tierContext(); if ('error' in got) return { error: got.error }
   const { ctx } = got
-  const usage = await prisma.tierServiceUsage.findUnique({ where: { id: usageId }, select: { id: true, organizationId: true, criticite: true, tierService: { select: { tier: { select: { _count: { select: { arrangementsTic: true } } } } } } } })
+  const usage = await prisma.tierServiceUsage.findUnique({ where: { id: usageId }, select: { id: true, organizationId: true, criticite: true, exposeInternet: true, tierService: { select: { tier: { select: { _count: { select: { arrangementsTic: true } } } } } } } })
   if (!usage || usage.organizationId !== ctx.orgId) return { error: NextResponse.json({ error: 'not_found' }, { status: 404 }) }
   const cfg = await getOrgConfig(ctx.orgId)
   const echelles = resolveEchelles(cfg.echellesEcosysteme as Partial<EchellesEcosysteme> | null)
   // Recette n° 20 : tiers au registre d'information TIC (DORA) → clauses de l'art. 30 ; § 3 si fonction critique ou importante.
   const cadreDora = { actif: (usage.tierService?.tier?._count?.arrangementsTic ?? 0) > 0, critique: usage.criticite === 'CRITIQUE' || usage.criticite === 'IMPORTANTE' }
-  return { ctx, echelles, petiteStructure: !!cfg.petiteStructure, cadreDora }
+  return { ctx, echelles, petiteStructure: !!cfg.petiteStructure, cadreDora, exposeInternet: usage.exposeInternet }
 }
 const limiter = async (userId: string) => {
   const rl = await rateLimit(`tier-registry:${userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
@@ -55,6 +55,8 @@ export async function GET(_req: NextRequest, { params }: Params): Promise<NextRe
     droits: { peutEvaluer: peutEvaluerTiers(c.ctx.role), peutValider: peutValiderEvaluationTiers(c.ctx.role, { petiteStructure: c.petiteStructure }) },
     echelles: c.echelles,
     cadreDora: c.cadreDora,
+    // Exposition à Internet de l'usage : rappel sur la pénétration dans le panneau (aucune cotation automatique).
+    exposeInternet: c.exposeInternet,
     options: { traitements, risques },
   })
 }

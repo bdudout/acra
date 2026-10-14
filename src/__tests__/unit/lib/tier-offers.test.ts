@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cleanServiceInput, planCoverageChange, usageCoverage } from '@/lib/tier-offers'
+import { cleanServiceInput, planCoverageChange, usageCoverage, cleanExpositionInternet } from '@/lib/tier-offers'
 
 describe('cleanServiceInput — offre d’un prestataire', () => {
   it('nettoie nom, catégorie (défaut AUTRE) et description', () => {
@@ -36,3 +36,14 @@ describe('usageCoverage — couverture contractuelle d’un usage', () => {
     expect(usageCoverage({ organizationId: 'f1', contractService: { ownerOrganizationId: 'grp', beneficiaryStatus: null } })).toBe('UNCONFIRMED')
   })
 })
+
+// Exposition à Internet d'un usage : oui / non / non renseignée (null) ; toute autre valeur est refusée.
+describe('cleanExpositionInternet', () => {
+  it('true, false, ou non renseignée ; valeur inconnue refusée', () => {
+    expect(cleanExpositionInternet(true)).toEqual({ ok: true, value: true })
+    expect(cleanExpositionInternet(false)).toEqual({ ok: true, value: false })
+    for (const v of [null, undefined, '']) expect(cleanExpositionInternet(v)).toEqual({ ok: true, value: null })
+    expect(cleanExpositionInternet('oui')).toEqual({ ok: false, error: 'exposition_invalide' })
+  })
+})
+

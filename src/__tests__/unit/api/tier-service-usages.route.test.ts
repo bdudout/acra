@@ -42,6 +42,14 @@ describe('usages locaux d’une offre de tiers', () => {
     expect(db.usage.create).toHaveBeenNthCalledWith(2, expect.objectContaining({ data: expect.objectContaining({ useCase: 'Signature des achats' }) }))
   })
 
+  it('exposition à Internet enregistrée à la création ; valeur inconnue refusée', async () => {
+    expect((await POST(request({ ...body, exposeInternet: true }), ctx)).status).toBe(201)
+    expect(db.usage.create).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ exposeInternet: true }) }))
+    db.usage.create.mockClear()
+    expect((await POST(request({ ...body, exposeInternet: 'oui' }), ctx)).status).toBe(400)
+    expect(db.usage.create).not.toHaveBeenCalled()
+  })
+
   it('conserve un usage sans contrat mais le marque explicitement non couvert', async () => {
     const res = await POST(request({ organizationId: 'sub1', useCase: 'Signature des avenants' }), ctx)
     expect(res.status).toBe(201)

@@ -148,13 +148,15 @@ describe('POST /api/tier-registry/link — rattacher ou détacher un arrangement
     m.orgFindMany.mockResolvedValue([{ id: 'grp', nom: 'Groupe' }, { id: 'fil1', nom: 'Filiale 1' }, { id: 'fil2', nom: 'Filiale invisible' }])
     m.tierOrgFindMany.mockResolvedValue([{ tier: { id: 't1', nom: 'Hébergeur', lei: null, pays: 'FR', aliases: [] } }])
     m.usageFindMany.mockResolvedValue([
-      { organizationId: 'grp', criticite: 'CRITIQUE', processus: { id: 'p1', criticite: 4, criticiteDora: null }, evaluation: { actuelle: { dependance: 2, penetration: 2, maturite: 2, confiance: 2 } }, tierService: { tierId: 't1' } },
+      { organizationId: 'grp', criticite: 'CRITIQUE', exposeInternet: true, processus: { id: 'p1', criticite: 4, criticiteDora: null }, evaluation: { actuelle: { dependance: 2, penetration: 2, maturite: 2, confiance: 2 } }, tierService: { tierId: 't1' } },
       { organizationId: 'fil1', criticite: null, processus: null, evaluation: { actuelle: { dependance: 4, penetration: 3, maturite: 2, confiance: 2 } }, tierService: { tierId: 't1' } },
     ])
     const j = await (await GET(req('/api/tier-registry'))).json()
     const ev = j.tiers[0].evaluation
     expect(ev.pire).toEqual({ menace: 1, zone: 'veille', evalues: 1 })
-    expect(ev.concentration).toEqual({ usagesCritiques: 1, processusCritiques: 1 })
+    // Exposition à Internet : usage critique exposé dans l'organisation active → compté et repérable (filtre).
+    expect(ev.concentration).toEqual({ usagesCritiques: 1, processusCritiques: 1, exposesCritiques: 1 })
+    expect(j.tiers[0].exposeInternet).toBe(true)
     expect(ev.groupe.pire).toMatchObject({ menace: 3, zone: 'danger' })
     expect(ev.groupe.parOrganisation.map((o: { organisation: string }) => o.organisation)).toEqual(['Groupe', 'Filiale 1'])
     // Usages cherchés dans les seules organisations visibles du sous-arbre (jamais une filiale hors périmètre).
