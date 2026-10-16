@@ -9,18 +9,34 @@ import {
 } from '@/lib/derogation'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { NextResponse } from 'next/server'
+import { lirePagination, paginer } from '@/lib/pagination'
+import { TRIS_REGISTRE, compterParFiltre, filtrerRegistre, lireFiltreRegistre, trierRegistre } from '@/lib/derogations-registre'
+import { chargerRegistreDerogations } from '@/lib/derogations-registre.server'
 
 // GET /api/derogations — nombre de dérogations en attente de l'ACTION de
 // l'utilisateur courant (file d'attente du valideur) : avis RSSI, double regard,
 // validation métier — dans son périmètre d'organisations. Alimente le badge de
 // la navbar. Réutilise les gardes RBAC pures (mêmes règles que les transitions).
 // org: 'none' : périmètre multi-organisation (scope.scope), sans organisation active requise.
-export const GET = withAccess({ org: 'none' }, async (_req, { user }) => {
+// `?page=N&taille=&tri=&ordre=&q=&filtre=` : registre paginé de l'écran /derogations (lot V1) —
+// lignes visibles (analyses accessibles + dérogations autonomes des organisations visibles), compteurs
+// des filtres sur tout le registre. Sans `page` : réponse historique `{ pending }` (badge de la navbar).
+export const GET = withAccess({ org: 'none' }, async (req, { user }) => {
   const userId = user.id
   const scope = await getAnalyseScope(userId, user.role)
   // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
   const userRole = scope.role
   const sessionUser = { id: userId, role: userRole }
+
+  const sp = req.nextUrl.searchParams
+  const pg = lirePagination(sp, { tris: TRIS_REGISTRE, triDefaut: 'defaut' })
+  if (pg) {
+    const now = new Date()
+    const tous = await chargerRegistreDerogations(userId, userRole, scope.scope)
+    const filtres = filtrerRegistre(tous, { filtre: lireFiltreRegistre(sp.get('filtre')), q: pg.q }, now)
+    const page = paginer(trierRegistre(filtres, pg.tri, pg.ordre, now), pg)
+    return NextResponse.json({ rows: page.items, pagination: page.pagination, synthese: { total: tous.length, compteurs: compterParFiltre(tous, now) } })
+  }
 
   // Seuls les rôles susceptibles d'agir font la requête complète.
   // (RISK_MANAGER : peut agir en petite structure, où il exerce aussi le rôle RSSI.)

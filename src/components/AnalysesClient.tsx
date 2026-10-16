@@ -1,7 +1,7 @@
 'use client'
 
 import VueListeToggle, { useModeVue } from '@/components/VueListeToggle'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { ATELIER_ICONS } from '@/lib/atelier-icons'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -10,7 +10,10 @@ import { getRiskTier } from '@/lib/risk-scale'
 import { useTranslation } from '@/lib/i18n/context'
 import { formatDate } from '@/lib/format'
 import { AlertCircle, AlertTriangle, ArrowDown, Calendar, CheckCircle2, Circle, ClipboardList, Clock, Download, FileJson, FileSpreadsheet, FileText, FolderOpen, Landmark, Link2, Pencil, Presentation, Search, Settings, ShieldCheck, Sparkles, Trash2, Trophy, Upload, VenetianMask } from 'lucide-react'
-import { filtrerParTag, tagsUniques } from '@/lib/analyse-tags'
+import { statutDepuisParam, type FiltreStatutAnalyse } from '@/lib/analyses-liste'
+import { useListePaginee } from '@/lib/use-liste-paginee'
+import type { MetaPagination } from '@/lib/pagination'
+import Pagination from '@/components/Pagination'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import ExpressAnalyseButton from '@/components/ExpressAnalyseButton'
 import NouvelleAnalyseMenu from '@/components/NouvelleAnalyseMenu'
@@ -20,7 +23,9 @@ import HistoricImportSummaryDialog from '@/components/HistoricImportSummaryDialo
 import { checkAcraUpload, checkTabularUpload, looksLikeAcraCsv, looksLikeAcraJson } from '@/lib/import-file-format'
 import type { HistoricImportDecision, HistoricSheetType } from '@/lib/historic-import'
 
-type FilterValue = 'ALL' | 'EN_COURS' | 'TERMINE' | 'SOUMIS' | 'APPROUVE'
+type FilterValue = FiltreStatutAnalyse
+/** Réponse paginée de GET /api/analyses?page=… (compteurs sur toutes les analyses visibles). */
+interface AnalysesPage { analyses: any[]; pagination?: MetaPagination; synthese?: { total: number; tags: string[] } }
 
 type ExcelImportErrorLabels = Record<string, { title: string; likelyCauses: string; solution: string }>
 type ImportErrorDetails = string | { line?: number; column?: number; snippet?: string; hint?: string }
@@ -49,32 +54,24 @@ function readHead(file: File): Promise<Uint8Array> {
   return new Promise(resolve => { const r = new FileReader(); r.onload = () => resolve(new Uint8Array(r.result as ArrayBuffer)); r.onerror = () => resolve(new Uint8Array()); r.readAsArrayBuffer(blob) })
 }
 
-function urlParamToFilter(p: string | null): FilterValue {
-  switch (p) {
-    case 'en_cours': return 'EN_COURS'
-    case 'termine':  return 'TERMINE'
-    case 'soumis':   return 'SOUMIS'
-    case 'approuve': return 'APPROUVE'
-    default:         return 'ALL'
-  }
-}
-
 /**
  * Liste des analyses — partie interactive (recherche, filtre, import, suppression).
- * Les données initiales sont chargées côté SERVEUR (issue #104) : premier rendu
- * instantané, sans FOUC réseau ; on rafraîchit ensuite localement après import/suppr.
+ * Liste paginée côté SERVEUR (lot V1, GET /api/analyses?page=…) : filtres (statut, tag),
+ * recherche, tri et page dans l'URL ; compteurs calculés sur toutes les analyses visibles.
  */
-export default function AnalysesClient({ initialAnalyses, demo = false, projets360 = false, canCreate = true }: { initialAnalyses: any[]; demo?: boolean; projets360?: boolean; canCreate?: boolean }) {
+export default function AnalysesClient({ demo = false, projets360 = false, canCreate = true }: { demo?: boolean; projets360?: boolean; canCreate?: boolean }) {
   const { t, locale } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [analyses, setAnalyses] = useState<any[]>(initialAnalyses)
+  const liste = useListePaginee<AnalysesPage>('/api/analyses')
+  const analyses = liste.data?.analyses ?? []
   // « Importer une analyse » du menu « Nouvelle analyse » rouvre le menu d'import sur place (remontage avec ouverture).
   const [importMenuKey, setImportMenuKey] = useState(0)
-  const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<FilterValue>(() => urlParamToFilter(searchParams.get('filter')))
-  const [tagFilter, setTagFilter] = useState('')
+  // Filtres appliqués par le serveur ; `filter` (statut) est le deep-link historique.
+  const filter: FilterValue = statutDepuisParam(liste.param('filter'))
+  const tagFilter = liste.param('tag')
+  const setTagFilter = (tag: string) => liste.definir({ tag: tag || null })
   // Présentation : cartes détaillées (défaut) ou tableau compact, mémorisée par navigateur.
   const [modeVue, setModeVue] = useModeVue('acra-vue-analyses', 'detail')
   const [deleting, setDeleting] = useState<string | null>(null)
@@ -96,26 +93,14 @@ export default function AnalysesClient({ initialAnalyses, demo = false, projets3
       const result = await res.json()
       if (!res.ok) throw new Error(result.error || 'Erreur')
       if (result.analyseId) router.push(`/analyses/${result.analyseId}`)
-      else router.refresh()
+      else { router.refresh(); liste.recharger() }
     } catch (err: any) {
       alert(`Erreur : ${err.message}`)
       setLoadingExample(false)
     }
   }
-  // Sync filtre avec l'URL
-  useEffect(() => {
-    setFilter(urlParamToFilter(searchParams.get('filter')))
-  }, [searchParams])
-
   function handleFilterChange(value: FilterValue) {
-    setFilter(value)
-    const params = new URLSearchParams(searchParams.toString())
-    if (value === 'ALL') {
-      params.delete('filter')
-    } else {
-      params.set('filter', value.toLowerCase())
-    }
-    router.replace(`/analyses${params.size ? `?${params}` : ''}`, { scroll: false })
+    liste.definir({ filter: value === 'ALL' ? null : value.toLowerCase() })
   }
 
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
@@ -139,9 +124,8 @@ export default function AnalysesClient({ initialAnalyses, demo = false, projets3
       })
       const result = await res.json()
       if (!res.ok) { setExcelImportError({ code: result.error || 'import_failed', details: result.details }); return }
-      // Reload analyses list
-      const d = await fetch('/api/analyses').then(r => r.json())
-      setAnalyses(d.analyses || [])
+      // Recharge la page courante de la liste
+      liste.recharger()
       alert(`✅ Analyse importée : "${result.nom}"`)
     } catch {
       setExcelImportError({ code: 'import_failed' })
@@ -196,8 +180,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false, projets3
       const res = await fetch('/api/analysis-imports', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       const result = await res.json()
       if (!res.ok) { setExcelImportError({ code: result.error || 'excel_import_invalid', details: result.details }); return }
-      const d = await fetch('/api/analyses').then(r => r.json())
-      setAnalyses(d.analyses || []); setExcelMissingReview(null)
+      liste.recharger(); setExcelMissingReview(null)
       setExcelPreview(null)
       setExcelImportSummary({ selection, result: { imported: result.imported ?? 0, results: Array.isArray(result.results) ? result.results : [], decisions: Array.isArray(result.decisions) ? result.decisions : [], warnings: Array.isArray(result.warnings) ? result.warnings : undefined, ateliers: result.ateliers } })
     } catch { setExcelImportError({ code: 'excel_import_invalid' }) } finally { setImporting(false) }
@@ -207,27 +190,23 @@ export default function AnalysesClient({ initialAnalyses, demo = false, projets3
     setDeleting(id)
     setPendingDelete(null)
     await fetch(`/api/analyses/${id}`, { method: 'DELETE' })
-    setAnalyses(prev => prev.filter(a => a.id !== id))
+    liste.recharger()
     setDeleting(null)
   }
 
-  // Tri : max niveau risque desc, puis nombre de risques desc, puis updatedAt desc
-  const sorted = [...analyses].sort((a, b) => {
-    const maxA = a.riskSummary?.maxRisk ?? 0
-    const maxB = b.riskSummary?.maxRisk ?? 0
-    if (maxB !== maxA) return maxB - maxA
-    if (b._count.risques !== a._count.risques) return b._count.risques - a._count.risques
-    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-  })
-
-  const allTags = tagsUniques(analyses)
-  const filtered = filtrerParTag(sorted, tagFilter)
-    .filter(a => filter === 'ALL' || a.statut === filter)
-    .filter(a =>
-      !search ||
-      a.nom.toLowerCase().includes(search.toLowerCase()) ||
-      (a.organisation || '').toLowerCase().includes(search.toLowerCase())
-    )
+  // Page courante déjà filtrée et triée par le serveur (tri par défaut : risque max, nb de risques, modification).
+  const filtered = analyses
+  const allTags = liste.data?.synthese?.tags ?? []
+  const totalAnalyses = liste.data?.synthese?.total ?? 0
+  // Tri par colonne (vue liste simple) : un second clic inverse l'ordre.
+  const tri = liste.param('tri')
+  const ordre = liste.param('ordre') === 'desc' ? 'desc' : 'asc'
+  const trierPar = (cle: string) => liste.definir({ tri: cle, ordre: tri === cle && ordre === 'asc' ? 'desc' : 'asc' })
+  const enTete = (cle: string, label: string, cls: string) => (
+    <th className={cls} aria-sort={tri === cle ? (ordre === 'asc' ? 'ascending' : 'descending') : undefined}>
+      <button type="button" onClick={() => trierPar(cle)} className="uppercase hover:text-gray-800">{label}{tri === cle ? (ordre === 'asc' ? ' ▲' : ' ▼') : ''}</button>
+    </th>
+  )
 
   return (
     <>
@@ -235,7 +214,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false, projets3
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{t.analyses.title}</h1>
-            <p className="text-gray-500 text-sm mt-1">{analyses.length} {analyses.length === 1 ? t.analyses.totalLabelSg : t.analyses.totalLabel}</p>
+            <p className="text-gray-500 text-sm mt-1">{totalAnalyses} {totalAnalyses === 1 ? t.analyses.totalLabelSg : t.analyses.totalLabel}</p>
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
             {/* Import */}
@@ -275,8 +254,8 @@ export default function AnalysesClient({ initialAnalyses, demo = false, projets3
         {/* Filters */}
         <div className="flex gap-3 mb-6 flex-wrap">
           <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
+            value={liste.recherche}
+            onChange={e => liste.setRecherche(e.target.value)}
             placeholder={t.analyses.searchPh}
             className="input max-w-xs text-sm"
           />
@@ -308,7 +287,9 @@ export default function AnalysesClient({ initialAnalyses, demo = false, projets3
           )}
         </div>
 
-        {filtered.length === 0 ? (
+        {liste.loading && !liste.data ? (
+          <div className="card p-12 text-center text-gray-500">{t.loading}</div>
+        ) : filtered.length === 0 ? (
           <div className="card p-12 text-center">
             <div className="text-5xl mb-4"><Search size={40} aria-hidden="true" /></div>
             <p className="text-gray-500">{t.analyses.notFound}</p>
@@ -325,9 +306,9 @@ export default function AnalysesClient({ initialAnalyses, demo = false, projets3
           <div className="card overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="border-b border-gray-200 text-left text-xs uppercase text-gray-500 dark:border-gray-700">
-                <th className="px-4 py-2">{t.analyses.colNom}</th><th className="px-3 py-2">{t.analyses.colStatut}</th>
-                <th className="hidden px-3 py-2 md:table-cell">{t.analyses.colOrganisation}</th><th className="px-3 py-2">{t.analyses.workshop}</th>
-                <th className="px-3 py-2 text-right">{t.analyses.risks}</th><th className="hidden px-3 py-2 sm:table-cell">{t.analyses.modified}</th>
+                {enTete('nom', t.analyses.colNom, 'px-4 py-2')}{enTete('statut', t.analyses.colStatut, 'px-3 py-2')}
+                {enTete('organisation', t.analyses.colOrganisation, 'hidden px-3 py-2 md:table-cell')}{enTete('atelier', t.analyses.workshop, 'px-3 py-2')}
+                {enTete('risques', t.analyses.risks, 'px-3 py-2 text-right')}{enTete('modifie', t.analyses.modified, 'hidden px-3 py-2 sm:table-cell')}
               </tr></thead>
               <tbody>
                 {filtered.map(a => (
@@ -487,6 +468,7 @@ export default function AnalysesClient({ initialAnalyses, demo = false, projets3
             })}
           </div>
         )}
+        {liste.data && filtered.length > 0 && <Pagination pagination={liste.pagination} onPage={page => liste.definir({ page })} onTaille={taille => liste.definir({ taille })} />}
       </main>
 
       {pendingDelete && (

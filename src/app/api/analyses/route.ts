@@ -6,7 +6,10 @@ import { NextResponse } from 'next/server'
 import { withAccess } from '@/lib/with-access.server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { cleanTags } from '@/lib/analyse-tags'
+import { cleanTags, tagsUniques } from '@/lib/analyse-tags'
+import { Prisma } from '@prisma/client'
+import { lirePagination, paginer } from '@/lib/pagination'
+import { TRIS_ANALYSES, filtrerAnalyses, statutDepuisParam, trierAnalyses } from '@/lib/analyses-liste'
 import { analyseWhereClause } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -42,23 +45,59 @@ const createSchema = z.object({
 
 // GET /api/analyses — liste des analyses de l'utilisateur
 // Fonctionne sans organisation active (périmètre multi-organisation) : `org: 'none'`.
-export const GET = withAccess({ org: 'none' }, async (_req, { user }) => {
+// Sans `page` : réponse complète historique (exports, e2e, autres consommateurs).
+// `?vue=options` : menus de sélection d'analyse (identifiant, nom, statut, organisation).
+// `?page=N&taille=&tri=&ordre=&q=&filter=&tag=` : liste paginée de l'écran « Analyses » (lot V1).
+const SELECT_LISTE = {
+  id: true, nom: true, description: true, organisation: true,
+  secteur: true, statut: true, atelierCourant: true, tags: true,
+  isSocle: true, socleId: true,
+  socle: { select: { id: true, nom: true } },
+  createdAt: true, updatedAt: true,
+  _count: { select: { sourcesRisque: true, scenariosStrategiques: true, risques: true, mesures: true } },
+} satisfies Prisma.AnalyseSelect
+
+export const GET = withAccess({ org: 'none' }, async (req, { user }) => {
   const userId = user.id
   const userRole = user.role
   const __org = await getAnalyseScope(userId, userRole)
+  // Isolation et visibilité par rôle : MÊME clause pour toutes les vues (complète, options, paginée).
+  const where = analyseWhereClause(userId, __org.role, __org.scope)
+  const sp = req.nextUrl.searchParams
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (sp.get('vue') === 'options') {
+    const analyses = await prisma.analyse.findMany({ where, orderBy: { updatedAt: 'desc' }, select: { id: true, nom: true, statut: true, organisation: true } })
+    return NextResponse.json({ analyses })
+  }
+
+  const pg = lirePagination(sp, { tris: TRIS_ANALYSES, triDefaut: 'defaut', ordreDefaut: 'asc' })
+  if (pg) {
+    // Requête LÉGÈRE sur tout le périmètre (filtres, tri, compteurs), risque max agrégé en base.
+    const [legers, maxParAnalyse] = await Promise.all([
+      prisma.analyse.findMany({
+        where, orderBy: { updatedAt: 'desc' },
+        select: { id: true, nom: true, organisation: true, statut: true, tags: true, atelierCourant: true, updatedAt: true, _count: { select: { risques: true } } },
+      }),
+      prisma.risque.groupBy({ by: ['analyseId'], where: { analyse: where }, _max: { niveauRisque: true } }),
+    ])
+    const maxRisk = new Map(maxParAnalyse.map(r => [r.analyseId, r._max.niveauRisque ?? 0]))
+    const tous = legers.map(a => ({ ...a, tags: Array.isArray(a.tags) ? (a.tags as string[]) : [], riskSummary: { maxRisk: maxRisk.get(a.id) ?? 0 } }))
+    const synthese = { total: tous.length, tags: tagsUniques(tous) }
+    const filtres = filtrerAnalyses(tous, { q: pg.q, statut: statutDepuisParam(sp.get('filter')), tag: sp.get('tag') ?? '' })
+    const page = paginer(trierAnalyses(filtres, pg.tri, pg.ordre), pg)
+    // Détail (compteurs, socle, indicateurs de risque) des seules lignes de la page, ordre préservé.
+    const ordre = new Map(page.items.map((a, i) => [a.id, i]))
+    const detail = page.items.length
+      ? await prisma.analyse.findMany({ where: { AND: [where, { id: { in: page.items.map(a => a.id) } }] }, select: SELECT_LISTE })
+      : []
+    detail.sort((a, b) => (ordre.get(a.id) ?? 0) - (ordre.get(b.id) ?? 0))
+    return NextResponse.json({ analyses: await withRiskSummary(detail), pagination: page.pagination, synthese })
+  }
+
   const analyses = await prisma.analyse.findMany({
-    where: analyseWhereClause(userId, __org.role, __org.scope),
+    where,
     orderBy: { updatedAt: 'desc' },
-    select: {
-      id: true, nom: true, description: true, organisation: true,
-      secteur: true, statut: true, atelierCourant: true, tags: true,
-      isSocle: true, socleId: true,
-      socle: { select: { id: true, nom: true } },
-      createdAt: true, updatedAt: true,
-      _count: { select: { sourcesRisque: true, scenariosStrategiques: true, risques: true, mesures: true } },
-    },
+    select: SELECT_LISTE,
   })
 
   // Indicateurs de risque calculés en base (T13) au lieu de renvoyer tous les risques et mesures.

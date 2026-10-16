@@ -28,7 +28,7 @@ export default function AipdSuiviPanel({ traitement, peutCreerAnalyse, onEnregis
   const [erreur, setErreur] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/analyses').then(x => (x.ok ? x.json() : null))
+    fetch('/api/analyses?vue=options').then(x => (x.ok ? x.json() : null))
       .then((j: { analyses?: { id: string; nom: string }[] } | null) => setAnalyses((j?.analyses ?? []).map(x => ({ id: x.id, nom: x.nom })))).catch(() => setAnalyses([]))
   }, [])
 

@@ -16,11 +16,20 @@ import { formatDate } from '@/lib/format'
 import AutocompleteInput from '@/components/AutocompleteInput'
 import ExampleChips from '@/components/ExampleChips'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
+import Pagination from '@/components/Pagination'
+import { useListePaginee } from '@/lib/use-liste-paginee'
+import type { MetaPagination } from '@/lib/pagination'
 import {
-  etatDerogation, joursAvantExpiration,
+  FILTRE_REGISTRE_DEFAUT, ajusterCompteurs, etatLigne, lireFiltreRegistre,
+  type CompteursRegistre, type FiltreRegistre, type RegistreRow,
+} from '@/lib/derogations-registre'
+import {
+  joursAvantExpiration,
   canAvisRssiDerogation, canDoubleRegardDerogation, canValiderDerogation, canCloturerDerogation, canRevoquerDerogation, canModifierDerogation, canRetirerDerogation,
   type DerogationEtat, type DerogationStatut,
 } from '@/lib/derogation'
+
+export type { RegistreRow } from '@/lib/derogations-registre'
 
 interface DerogDetail {
   id: string; statut: string; portee: string; referentiel: string | null; ref: string | null; intitule: string
@@ -30,18 +39,6 @@ interface DerogDetail {
   retireeLe?: string | null; retraitMotif?: string | null
   valideePar: string | null; valideeLe: string | null; rejetMotif: string | null; clotureCommentaire: string | null
   createdAt: string
-}
-
-export interface RegistreRow {
-  id: string
-  analyseId: string | null
-  analyseNom: string | null
-  portee: string
-  referentiel: string | null
-  ref: string | null
-  intitule: string
-  statut: string
-  dateFin: string | null
 }
 
 const BADGE: Record<DerogationEtat, string> = {
@@ -57,30 +54,18 @@ const BADGE: Record<DerogationEtat, string> = {
   RETIREE: 'bg-gray-200 text-gray-700 dark:bg-gray-600/40 dark:text-gray-300',
 }
 
-// Fenêtre d'alerte par défaut pour l'affichage du registre (le seuil précis par
-// organisation pilote les e-mails, pas cet aperçu).
-const ALERTE_DEFAUT = 30
+/** Réponse paginée du registre (GET /api/derogations?page=…). */
+interface RegistrePage { rows: RegistreRow[]; pagination?: MetaPagination; synthese?: { total: number; compteurs: CompteursRegistre } }
+// Paramètres par défaut (stables) de la liste paginée.
+const DEFAUTS_LISTE = { filtre: FILTRE_REGISTRE_DEFAUT }
 
-type Filtre = 'EN_COURS_EXP' | 'EN_COURS' | 'EXPIREES' | 'EN_REVUE' | 'CLOTUREES'
-
-const REVIEW = ['DEMANDEE', 'DOUBLE_REGARD', 'VALIDATION_METIER']
-const TERMINAL = ['CLOTUREE', 'REJETEE', 'REVOQUEE', 'RETIREE']
-// Prédicat d'appartenance d'une ligne (état effectif calculé) à un filtre.
-function matchFiltre(f: Filtre, statut: string, etat: DerogationEtat): boolean {
-  switch (f) {
-    case 'EN_COURS_EXP': return etat === 'ACTIVE' || etat === 'EXPIRE_BIENTOT' || etat === 'EXPIREE'
-    case 'EN_COURS':     return etat === 'ACTIVE' || etat === 'EXPIRE_BIENTOT'
-    case 'EXPIREES':     return etat === 'EXPIREE'
-    case 'EN_REVUE':     return REVIEW.includes(statut)
-    case 'CLOTUREES':    return TERMINAL.includes(statut)
-  }
-}
-
-export default function DerogationsRegistre({ rows, locale, canCreate = false, dureeDefaut = 180, dureeMax = 365, userId = '', userRole = 'ANALYSTE', secondeLigneActive = true, petiteStructure = false }: { rows: RegistreRow[]; locale: string; canCreate?: boolean; dureeDefaut?: number; dureeMax?: number; userId?: string; userRole?: UserRole; secondeLigneActive?: boolean; petiteStructure?: boolean }) {
+export default function DerogationsRegistre({ locale, canCreate = false, dureeDefaut = 180, dureeMax = 365, userId = '', userRole = 'ANALYSTE', secondeLigneActive = true, petiteStructure = false }: { locale: string; canCreate?: boolean; dureeDefaut?: number; dureeMax?: number; userId?: string; userRole?: UserRole; secondeLigneActive?: boolean; petiteStructure?: boolean }) {
   const { t } = useTranslation()
   const d = t.derogations
   const router = useRouter()
-  const [filtre, setFiltre] = useState<Filtre>('EN_COURS_EXP')
+  // Registre paginé côté serveur (lot V1) : filtre, recherche, tri et page dans l'URL.
+  const liste = useListePaginee<RegistrePage>('/api/derogations', DEFAUTS_LISTE)
+  const filtre: FiltreRegistre = lireFiltreRegistre(liste.param('filtre'))
   const [creating, setCreating] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -95,8 +80,13 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
   const [editForm, setEditForm] = useState<{ intitule: string; motif: string; mesures: string } | null>(null)
   // Mise à jour EN PLACE après une action (plus de rechargement complet qui refermait
   // les lignes ouvertes) : copie locale des lignes + message de confirmation.
-  const [localRows, setLocalRows] = useState(rows)
-  useEffect(() => { setLocalRows(rows) }, [rows])
+  const [localRows, setLocalRows] = useState<RegistreRow[]>([])
+  const [compteurs, setCompteurs] = useState<CompteursRegistre | null>(null)
+  // Nouvelle page reçue du serveur → copie locale (ajustement d'état pendant le rendu, sans effet).
+  const [pageVue, setPageVue] = useState<RegistrePage | null>(null)
+  if (liste.data && liste.data !== pageVue) {
+    setPageVue(liste.data); setLocalRows(liste.data.rows ?? []); setCompteurs(liste.data.synthese?.compteurs ?? null)
+  }
   const [actionOk, setActionOk] = useState<string | null>(null)
 
   const sessionUser = useMemo(() => ({ id: userId, role: userRole }), [userId, userRole])
@@ -122,7 +112,15 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
     if (!res.ok) { const j = await res.json().catch(() => ({})); setActionError(apiErrorMessage(j.error, t, 'Erreur')); return }
     const updated = await res.json().catch(() => null) as { statut?: string; intitule?: string; dateFin?: string | null } | null
     const id = openId
-    if (updated) setLocalRows(prev => prev.map(r => r.id === id ? { ...r, statut: updated.statut ?? r.statut, intitule: updated.intitule ?? r.intitule, dateFin: updated.dateFin ?? null } : r))
+    if (updated) {
+      const avant = localRows.find(r => r.id === id)
+      const apres = avant && { ...avant, statut: updated.statut ?? avant.statut, intitule: updated.intitule ?? avant.intitule, dateFin: updated.dateFin ?? null }
+      if (avant && apres) {
+        setLocalRows(prev => prev.map(r => r.id === id ? apres : r))
+        // Compteurs des filtres ajustés en place (calculés par le serveur sur tout le registre).
+        setCompteurs(c => (c ? ajusterCompteurs(c, avant, apres) : c))
+      }
+    }
     setActionComment(''); setEditForm(null)
     // La ligne reste ouverte : on recharge seulement son détail pour montrer le résultat.
     try {
@@ -168,20 +166,31 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
     setBusy(false)
     if (!res.ok) { setError((d.errors as Record<string, string>)[data.error] ?? apiErrorMessage(data.error, t, 'Erreur')); return }
     setCreating(false); setForm({ referentiel: '', ref: '', intitule: '', motif: '', mesures: '', dureeJours: '' })
+    liste.recharger()
     router.refresh()
   }
 
-  const enriched = useMemo(() => localRows.map(r => ({
+  // Lignes de la page (filtrées par le serveur). La ligne ouverte reste affichée même si l'action la
+  // fait sortir du filtre courant : elle n'est retirée qu'au prochain chargement de la page.
+  const filtered = useMemo(() => localRows.map(r => ({
     ...r,
-    etat: etatDerogation({ statut: r.statut as DerogationStatut, dateFin: r.dateFin }, ALERTE_DEFAUT),
+    etat: etatLigne(r) as DerogationEtat,
     jours: joursAvantExpiration(r.dateFin),
   })), [localRows])
+  const count = (f: FiltreRegistre) => compteurs?.[f] ?? 0
+  const tri = liste.param('tri')
+  const ordre = liste.param('ordre') === 'desc' ? 'desc' : 'asc'
+  const trierPar = (cle: string) => liste.definir({ tri: cle, ordre: tri === cle && ordre === 'asc' ? 'desc' : 'asc' })
+  const sens = (cle: string): 'ascending' | 'descending' | undefined => (tri === cle ? (ordre === 'asc' ? 'ascending' : 'descending') : undefined)
+  const enTete = (cle: string, label: string) => (
+    <th className="px-4 py-3" aria-sort={sens(cle)}>
+      <button type="button" onClick={() => trierPar(cle)} className="uppercase hover:text-gray-800 dark:hover:text-gray-200">
+        {label}{tri === cle ? (ordre === 'asc' ? ' ▲' : ' ▼') : ''}
+      </button>
+    </th>
+  )
 
-  // La ligne ouverte reste affichée même si l'action la fait sortir du filtre courant.
-  const filtered = useMemo(() => enriched.filter(r => matchFiltre(filtre, r.statut, r.etat) || r.id === openId), [enriched, filtre, openId])
-  const count = (f: Filtre) => enriched.filter(r => matchFiltre(f, r.statut, r.etat)).length
-
-  const filtres: { key: Filtre; label: string }[] = [
+  const filtres: { key: FiltreRegistre; label: string }[] = [
     { key: 'EN_COURS_EXP', label: `${d.filterCurrentExpired} (${count('EN_COURS_EXP')})` },
     { key: 'EN_COURS', label: `${d.filterCurrent} (${count('EN_COURS')})` },
     { key: 'EXPIREES', label: `${d.filterExpired} (${count('EXPIREES')})` },
@@ -270,28 +279,32 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4 items-center">
         {filtres.map(f => (
-          <button key={f.key} onClick={() => setFiltre(f.key)}
+          <button key={f.key} onClick={() => { setOpenId(null); setDetail(null); liste.definir({ filtre: f.key }) }}
             className={`text-sm px-3 py-1 rounded-full font-medium transition-colors ${filtre === f.key ? 'bg-ebios-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700'}`}>
             {f.label}
           </button>
         ))}
+        <input value={liste.recherche} onChange={e => liste.setRecherche(e.target.value)} placeholder={t.search} aria-label={t.search}
+          className="ml-auto min-w-[200px] px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
       </div>
 
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-              <th className="px-4 py-3">{d.intitule}</th>
-              <th className="px-4 py-3">{d.colAnalyse}</th>
+              {enTete('intitule', d.intitule)}
+              {enTete('analyse', d.colAnalyse)}
               <th className="px-4 py-3">{d.portee}</th>
-              <th className="px-4 py-3">{d.colEtat}</th>
-              <th className="px-4 py-3">{d.colEcheance}</th>
+              {enTete('etat', d.colEtat)}
+              {enTete('echeance', d.colEcheance)}
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {liste.loading && !liste.data ? (
+              <tr><td colSpan={5} className="px-4 py-6 text-gray-400">{t.loading}</td></tr>
+            ) : filtered.length === 0 ? (
               <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400 italic">{d.empty}</td></tr>
             ) : filtered.flatMap(r => [
               <tr key={r.id} onClick={() => toggleRow(r.id)}
@@ -426,6 +439,7 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
           </tbody>
         </table>
       </div>
+      <Pagination pagination={liste.pagination} onPage={page => liste.definir({ page })} onTaille={taille => liste.definir({ taille })} />
     </div>
   )
 }
