@@ -43,7 +43,7 @@ export default function QuestionnaireModeles({ conformiteActive }: { conformiteA
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     type Any = any
     const j = (u: string): Promise<Any> => fetch(u).then(r => (r.ok ? r.json() : {})).catch(() => ({}))
-    void Promise.all([j('/api/controles'), j('/api/risk-items'), j('/api/processus'), conformiteActive ? j('/api/referentiels') : Promise.resolve({})]).then(([c, r, p, ref]: Any[]) => {
+    void Promise.all([j('/api/controles?vue=options'), j('/api/risk-items?vue=options'), j('/api/processus'), conformiteActive ? j('/api/referentiels') : Promise.resolve({})]).then(([c, r, p, ref]: Any[]) => {
       setOptions({
         CONTROLE: (c.controles ?? []).map((x: { id: string; intitule: string }) => ({ id: x.id, label: x.intitule })),
         RISQUE: (r.risks ?? r.riskItems ?? []).map((x: { id: string; intitule: string }) => ({ id: x.id, label: x.intitule })),

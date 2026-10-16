@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { requireSession } from '@/lib/route-guard.server'
 import { withAccess } from '@/lib/with-access.server'
 import { validateRiskItemInput, cleanRiskItem, niveauRisque } from '@/lib/risk-item'
 import { summarizeActions } from '@/lib/risk-action'
@@ -13,34 +12,82 @@ import { evaluerEfficacite } from '@/lib/controle'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { emitWebhookEvent } from '@/lib/webhook.server'
 import { entiteIdPourTexte } from '@/lib/entites.server'
+import { lirePagination, paginer, trier } from '@/lib/pagination'
+import { lireFiltresColonnes } from '@/lib/liste-colonnes'
+import { TRIS_RISQUES, COLONNES_RISQUES, baseRisques, filtrerRisques, lireNiveau, syntheseRisques, valeurTriRisque, type RisqueLeger } from '@/lib/risk-items-liste'
 
 export const dynamic = 'force-dynamic'
 
 // GET /api/risk-items — registre de l'organisation active (avec niveau calculé).
 // Sans organisation active : liste vide (pas d'erreur) → session seule, org active résolue ici.
-export async function GET() {
-  const g = await requireSession()
-  if (g.error) return g.error
-  const { activeOrgId: orgId } = await getAnalyseScope(g.user.id, g.user.role)
+export const GET = withAccess({ org: 'none' }, async (req, { user }) => {
+  const { activeOrgId: orgId } = await getAnalyseScope(user.id, user.role)
   if (!orgId) return NextResponse.json({ risks: [], active: false })
   const orgConfig = await getOrgConfig(orgId)
   if (!orgConfig.registreRisquesActive) return NextResponse.json({ risks: [], active: false })
 
-  const rows = await prisma.riskItem.findMany({
-    where: { organizationId: orgId },
-    orderBy: [{ createdAt: 'desc' }],
-    include: { processus: { select: { nom: true } } },
-  })
+  // Menus de sélection (contrôles, KRI, constats, questionnaires…) : identifiants et libellés seulement (lot V1).
+  if (req.nextUrl.searchParams.get('vue') === 'options') {
+    const risks = await prisma.riskItem.findMany({ where: { organizationId: orgId }, orderBy: { intitule: 'asc' }, select: { id: true, intitule: true } })
+    return NextResponse.json({ risks, active: true })
+  }
+
+  const sp = req.nextUrl.searchParams
+  const pg = lirePagination(sp, { tris: TRIS_RISQUES, triDefaut: 'defaut' })
+  let rows
+  let pagination = null
+  let synthese = null
+  // Jointures (actions, incidents, exécutions de contrôles) limitées aux risques renvoyés : toute la liste sans
+  // `page` (réponse historique), la seule page sinon.
+  let restreint: string[] | null = null
+  if (pg) {
+    // Lot V1 : requête LÉGÈRE sur tout le registre (filtres, tri, compteurs), détail de la seule page.
+    const legers: RisqueLeger[] = (await prisma.riskItem.findMany({
+      where: { organizationId: orgId },
+      orderBy: [{ createdAt: 'desc' }],
+      select: { id: true, intitule: true, taxonomieCode: true, entite: true, proprietaire: true, statut: true, graviteInherente: true, vraisemblanceInherente: true, graviteResiduelle: true, vraisemblanceResiduelle: true, processus: { select: { nom: true } } },
+    })).map(r => ({
+      id: r.id, intitule: r.intitule, taxonomieCode: r.taxonomieCode, entite: r.entite, proprietaire: r.proprietaire, statut: r.statut,
+      processusNom: r.processus?.nom ?? null,
+      niveauInherent: niveauRisque(r.graviteInherente, r.vraisemblanceInherente),
+      niveauResiduel: niveauRisque(r.graviteResiduelle, r.vraisemblanceResiduelle),
+    }))
+    const base = baseRisques(legers, lireNiveau(sp.get('niveau')))
+    synthese = syntheseRisques(legers, base)
+    const filtres = filtrerRisques(base, { q: pg.q, colonnes: lireFiltresColonnes(sp, COLONNES_RISQUES) })
+    // Tri par avancement du plan d'action : seul cas où les actions de tout le registre sont lues (statut + échéance).
+    if (pg.tri === 'actions') {
+      const toutes = await riskActionsByRiskItem(prisma, orgId)
+      const now0 = new Date()
+      for (const x of filtres) x.tauxAvancement = summarizeActions(toutes.get(x.id) ?? [], now0).tauxAvancement
+    }
+    const k = valeurTriRisque(pg.tri)
+    const page = paginer(k ? trier(filtres, k, pg.ordre) : filtres, pg)
+    pagination = page.pagination
+    restreint = page.items.map(x => x.id)
+    const ordre = new Map(restreint.map((id, i) => [id, i]))
+    rows = (await prisma.riskItem.findMany({ where: { id: { in: restreint }, organizationId: orgId }, include: { processus: { select: { nom: true } } } }))
+      .sort((a, b) => (ordre.get(a.id) ?? 0) - (ordre.get(b.id) ?? 0))
+  } else {
+    rows = await prisma.riskItem.findMany({
+      where: { organizationId: orgId },
+      orderBy: [{ createdAt: 'desc' }],
+      include: { processus: { select: { nom: true } } },
+    })
+  }
   // Actions du registre = PlanAction à lien RISQUE, regroupées par risque.
-  const actionsParRisque = await riskActionsByRiskItem(prisma, orgId)
+  const actionsParRisque = restreint ? await actionsDesRisques(orgId, restreint) : await riskActionsByRiskItem(prisma, orgId)
 
   // Boucle M2 : si le module incidents est actif, on joint la fréquence observée
   // pour proposer une vraisemblance résiduelle (SUGGESTION, jamais appliquée).
   let incidentsLies: IncidentLite[] = []
-  if (orgConfig.incidentsActive) {
+  if (orgConfig.incidentsActive && restreint?.length !== 0) {
     // Un incident associé à plusieurs risques compte pour chacun (table IncidentRisque ; repli sur le principal).
+    const lien = restreint
+      ? [{ riskItemId: { in: restreint } }, { risquesLies: { some: { riskItemId: { in: restreint } } } }]
+      : [{ riskItemId: { not: null } }, { risquesLies: { some: {} } }]
     const inc = await prisma.incident.findMany({
-      where: { organizationId: orgId, statut: { in: ['QUALIFIE', 'CLOTURE'] }, OR: [{ riskItemId: { not: null } }, { risquesLies: { some: {} } }] },
+      where: { organizationId: orgId, statut: { in: ['QUALIFIE', 'CLOTURE'] }, OR: lien },
       select: { riskItemId: true, dateSurvenance: true, montantBrut: true, recuperations: true, risquesLies: { select: { riskItemId: true } } },
     })
     incidentsLies = incidentsParRisque(inc.map(i => ({
@@ -54,9 +101,9 @@ export async function GET() {
   // Boucle M3 : efficacité des contrôles rattachés au risque → suggestion de
   // vraisemblance résiduelle (les contrôles inactifs ne comptent pas).
   const execsParRisque = new Map<string, { resultat: string; dateRealisation: Date }[]>()
-  if (orgConfig.controlePermanentActive) {
+  if (orgConfig.controlePermanentActive && restreint?.length !== 0) {
     const ctrls = await prisma.controle.findMany({
-      where: { organizationId: orgId, actif: true, riskItemId: { not: null } },
+      where: { organizationId: orgId, actif: true, riskItemId: restreint ? { in: restreint } : { not: null } },
       select: { riskItemId: true, executions: { select: { resultat: true, dateRealisation: true } } },
     })
     for (const c of ctrls) {
@@ -77,7 +124,27 @@ export async function GET() {
     calibration: orgConfig.incidentsActive ? suggestCalibration(incidentsLies, r.id) : null,
     controleEfficacite: orgConfig.controlePermanentActive ? evaluerEfficacite(execsParRisque.get(r.id) ?? []) : null,
   }))
-  return NextResponse.json({ risks, active: true })
+  return NextResponse.json({ risks, active: true, ...(pagination ? { pagination, synthese } : {}) })
+})
+
+/** Actions (statut, échéance) des seuls risques de la page : PlanAction à lien RISQUE vers l'un d'eux. */
+async function actionsDesRisques(orgId: string, ids: string[]): Promise<Map<string, { statut: string; echeance: Date | null }[]>> {
+  const map = new Map<string, { statut: string; echeance: Date | null }[]>()
+  if (!ids.length) return map
+  const page = new Set(ids)
+  const rows = await prisma.planAction.findMany({
+    where: { organizationId: orgId, liens: { some: { type: 'RISQUE', targetId: { in: ids } } } },
+    select: { statut: true, echeance: true, liens: { where: { type: 'RISQUE' }, select: { targetId: true }, take: 1 } },
+  })
+  // Même rattachement que riskActionsByRiskItem : le PREMIER lien RISQUE de l'action.
+  for (const r of rows) {
+    const id = r.liens[0]?.targetId
+    if (!id || !page.has(id)) continue
+    const arr = map.get(id) ?? []
+    arr.push({ statut: r.statut, echeance: r.echeance })
+    map.set(id, arr)
+  }
+  return map
 }
 
 // POST /api/risk-items — déclarer un risque (tout rôle sauf LECTEUR, module actif).

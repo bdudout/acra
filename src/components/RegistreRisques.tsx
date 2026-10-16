@@ -6,25 +6,29 @@
 // selon l'échelle configurée (lib/risk-scale), taxonomie, actions par risque
 // (RiskActionsPanel). Colonnes triables et filtrables « façon tableur » via
 // ColumnMenu (lib/table-sort + table-filter). Pendant analyse : RisquesClient.
+// Liste paginée côté serveur (lot V1) : filtres, tri, recherche et page dans l'URL (lib/use-liste-paginee),
+// exécutés par GET /api/risk-items?page= (lib/risk-items-liste).
 
 import RisquesViewTabs from '@/components/RisquesViewTabs'
 import { AlertTriangle, NotebookText, X } from 'lucide-react'
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import { apiErrorMessage } from '@/lib/api-error'
-import { useSearchParams } from 'next/navigation'
-import { niveauBucket } from '@/lib/cartographie'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
 import { RISK_STATUTS } from '@/lib/risk-item'
 import RiskActionsPanel, { type ActionsSummary } from '@/components/RiskActionsPanel'
 import RiskTiersPanel from '@/components/RiskTiersPanel'
 import AutocompleteInput from '@/components/AutocompleteInput'
-import { mostFrequentString } from '@/lib/most-frequent'
 import { resolveScaleConfig, getRiskLevelFromSeuils, type ScaleConfig, type EchelleNiveau, type Seuil } from '@/lib/risk-scale'
 import { readableTextColor } from '@/lib/contrast-color'
 import ColumnMenu from '@/components/ColumnMenu'
-import { nextSort, sortRows, type SortState, type SortDir } from '@/lib/table-sort'
-import { distinctValues, applyColumnFilters, toggleColumnValue, onlyColumnValue, clearColumnFilter, type ColumnFilters } from '@/lib/table-filter'
+import { nextSort, type SortState, type SortDir } from '@/lib/table-sort'
+import { toggleColumnValue, onlyColumnValue, clearColumnFilter, type ColumnFilters } from '@/lib/table-filter'
+import { useListePaginee } from '@/lib/use-liste-paginee'
+import Pagination from '@/components/Pagination'
+import type { MetaPagination } from '@/lib/pagination'
+import { PREFIXE_COLONNE, lireFiltreColonne, ecrireFiltreColonne, libellesColonne, libellesDepuisCles, clesDepuisLibelles } from '@/lib/liste-colonnes'
+import { COLONNES_RISQUES, lireNiveau, type SyntheseRisques } from '@/lib/risk-items-liste'
 import SectorSuggestionsPanel from '@/components/SectorSuggestionsPanel'
 
 /** Couleur (#) d'un niveau selon les seuils CONFIGURÉS (repli gris si absent). */
@@ -59,26 +63,28 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
   const scale = resolveScaleConfig(scaleConfig)
   const graviteLevels = [...scale.echelleGravite].sort((a, b) => a.niveau - b.niveau)
   const vraisLevels = [...scale.echelleVraisemblance].sort((a, b) => a.niveau - b.niveau)
-  const [risks, setRisks] = useState<Risk[]>([])
-  // Deep-link pilotage : ?niveau=eleve|moyen|faible → pré-filtre par palier du niveau résiduel.
-  const _sp = useSearchParams()
-  const _nivInit = (_sp.get('niveau') || '').toLowerCase()
-  const [filtreNiveau, setFiltreNiveau] = useState<string>(['eleve','moyen','faible'].includes(_nivInit) ? _nivInit : '')
+  const liste = useListePaginee<{ risks: Risk[]; pagination?: MetaPagination; synthese?: SyntheseRisques }>('/api/risk-items')
+  const risks = useMemo(() => liste.data?.risks ?? [], [liste.data])
+  const synthese = liste.data?.synthese ?? null
+  const loading = liste.loading && !liste.data
+  // Deep-link pilotage : ?niveau=eleve|moyen|faible → pré-filtre par palier du niveau résiduel (appliqué par le serveur).
+  const filtreNiveau = lireNiveau(liste.param('niveau'))
   const [taxo, setTaxo] = useState<TaxonomieNode[]>([])
   const [procs, setProcs] = useState<Proc[]>([])
-  const [loading, setLoading] = useState(true)
   const [form, setForm] = useState<Form>(EMPTY)
   const [editId, setEditId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // Valeur par défaut de l'entité : la plus fréquemment saisie dans le registre.
-  const defaultEntite = useMemo(() => mostFrequentString(risks.map(x => x.entite)), [risks])
+  const defaultEntite = synthese?.entiteFrequente ?? ''
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [sort, setSort] = useState<SortState | null>(null)
-  const onSort = (key: string) => setSort((s) => nextSort(s, key))
+  // Tri des colonnes : dans l'URL (tri, ordre), exécuté par le serveur.
+  const triUrl = liste.param('tri')
+  const sort: SortState | null = triUrl && triUrl !== 'defaut' ? { key: triUrl, dir: liste.param('ordre') === 'desc' ? 'desc' : 'asc' } : null
+  const setSort = (s: SortState | null) => liste.definir({ tri: s?.key ?? null, ordre: s?.dir ?? null })
+  const onSort = (key: string) => setSort(nextSort(sort, key))
   const onSortDir = (key: string, dir: SortDir) => setSort({ key, dir })
-  const [colFilters, setColFilters] = useState<ColumnFilters>({})
 
   const tr = useMemo(() => (key: string) => key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], t) as string ?? '', [t])
   const taxoLabel = (code: string | null) => {
@@ -87,16 +93,14 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
     return node ? taxonomieLabel(node, tr) : code
   }
 
-  async function reload() {
-    const [rr, tt, pp] = await Promise.all([
-      fetch('/api/risk-items').then(x => x.ok ? x.json() : { risks: [] }),
+  // Référentiels du formulaire (une fois) ; la liste elle-même est rechargée par la pagination.
+  useEffect(() => {
+    void Promise.all([
       fetch('/api/taxonomie').then(x => x.ok ? x.json() : { taxonomie: [] }),
       fetch('/api/processus').then(x => x.ok ? x.json() : { processus: [] }),
-    ])
-    setRisks(rr.risks ?? []); setTaxo(tt.taxonomie ?? []); setProcs(pp.processus ?? [])
-    setLoading(false)
-  }
-  useEffect(() => { reload() }, [])
+    ]).then(([tt, pp]) => { setTaxo(tt.taxonomie ?? []); setProcs(pp.processus ?? []) })
+  }, [])
+  const reload = liste.recharger
 
   function err(code: string) { return (r.errors as Record<string, string>)[code] ?? apiErrorMessage(code, t, code) }
   const num = (s: string) => (s ? Number(s) : null)
@@ -162,33 +166,31 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
     </select>
   )
 
-  // Tri de colonnes (statut par rang métier, catégorie par libellé, avancement par taux).
-  const RISK_STATUT_RANK: Record<string, number> = Object.fromEntries(RISK_STATUTS.map((s, i) => [s, i]))
-  const riskAccessor = (x: Risk, key: string): unknown => {
-    switch (key) {
-      case 'intitule': return x.intitule
-      case 'category': return taxoLabel(x.taxonomieCode)
-      case 'process': return x.processusNom
-      case 'inherent': return x.niveauInherent
-      case 'residual': return x.niveauResiduel
-      case 'statut': return RISK_STATUT_RANK[x.statut] ?? 99
-      case 'actions': return x.actionsSummary?.tauxAvancement
-      default: return ''
+  // Filtres de colonnes « façon tableur » : le serveur fournit les clés distinctes (code, nom, statut), l'écran
+  // en affiche les libellés et place les clés autorisées dans l'URL (col_<colonne>).
+  const libelleCol = (col: string) => (cle: string): string => {
+    switch (col) {
+      case 'category': return taxoLabel(cle || null)
+      case 'statut': return (r.statuts as Record<string, string>)[cle] ?? cle
+      default: return cle
     }
   }
-  // Libellé affiché d'une colonne (base des filtres auto « façon tableur »).
-  const riskDisplay = (x: Risk, key: string): unknown => {
-    switch (key) {
-      case 'category': return taxoLabel(x.taxonomieCode)
-      case 'process': return x.processusNom ?? ''
-      case 'statut': return (r.statuts as Record<string, string>)[x.statut] ?? x.statut
-      default: return ''
-    }
+  const clesCol = (col: string): string[] => synthese?.valeurs[col as (typeof COLONNES_RISQUES)[number]] ?? []
+  const distinctRisk = (col: string) => libellesColonne(clesCol(col), libelleCol(col))
+  const colFilters: ColumnFilters = {}
+  for (const col of COLONNES_RISQUES) {
+    const autorises = libellesDepuisCles(lireFiltreColonne(liste.param(PREFIXE_COLONNE + col) || null), libelleCol(col))
+    if (autorises) colFilters[col] = autorises
   }
-  const baseRisks = filtreNiveau ? risks.filter(x => x.niveauResiduel != null && niveauBucket(x.niveauResiduel) === filtreNiveau) : risks
-  const distinctRisk = (key: string) => distinctValues(baseRisks, (x) => riskDisplay(x, key))
-  const colFiltered = applyColumnFilters(baseRisks, colFilters, riskDisplay)
-  const shown = sort ? sortRows(colFiltered, sort, riskAccessor) : colFiltered
+  // Plusieurs bascules dans le même geste (« Aucun ») se cumulent avant que l'URL ne soit relue.
+  const filtresEnCours = useRef<ColumnFilters | null>(null)
+  const setColFilters = (maj: (f: ColumnFilters) => ColumnFilters) => {
+    const suivant = maj(filtresEnCours.current ?? colFilters)
+    filtresEnCours.current = suivant
+    queueMicrotask(() => { filtresEnCours.current = null })
+    liste.definir(Object.fromEntries(COLONNES_RISQUES.map(col => [PREFIXE_COLONNE + col, ecrireFiltreColonne(clesDepuisLibelles(clesCol(col), libelleCol(col), suivant[col]))])))
+  }
+  const shown = risks
   const onColToggle = (key: string, value: string) => setColFilters((f) => toggleColumnValue(f, key, value, distinctRisk(key)))
   const onColOnly = (key: string, value: string) => setColFilters((f) => onlyColumnValue(f, key, value))
   const onColClear = (key: string) => setColFilters((f) => clearColumnFilter(f, key))
@@ -235,12 +237,15 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
         </div>
       )}
 
+      <div className="mb-3">
+        <input type="search" value={liste.recherche} onChange={e => liste.setRecherche(e.target.value)} placeholder={t.risques.searchPh} aria-label={t.risques.searchPh} className={`${sel} w-full sm:w-72`} />
+      </div>
       {filtreNiveau && (
         <div className="mb-3 flex items-center gap-2 text-sm">
           <span className="px-2 py-0.5 rounded-full bg-ebios-100 text-ebios-800 dark:bg-ebios-500/15 dark:text-ebios-300 font-medium">
             {filtreNiveau === 'eleve' ? t.pilotage.eleves : filtreNiveau === 'moyen' ? t.pilotage.moyens : t.pilotage.faibles}
           </span>
-          <button onClick={() => setFiltreNiveau('')} className="inline-flex items-center gap-1 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"><X size={14} /> {t.actions.clearFilters}</button>
+          <button onClick={() => liste.definir({ niveau: null })} className="inline-flex items-center gap-1 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"><X size={14} /> {t.actions.clearFilters}</button>
         </div>
       )}
       <div className="card overflow-x-auto">
@@ -327,6 +332,7 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
           </tbody>
         </table>
       </div>
+      <Pagination pagination={liste.pagination} onPage={page => liste.definir({ page })} onTaille={taille => liste.definir({ taille })} />
     </div>
   )
 }
