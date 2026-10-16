@@ -101,15 +101,37 @@ réponse < 500 Ko, vue consolidée p95 < 2 s.
 Journal d'accès (Caddy), identifiant de corrélation par requête, métriques (`/api/metrics`,
 activable), alerte en cas d'échec de sauvegarde, séparation vivacité / disponibilité du contrôle de santé.
 
-## 5. Décisions attendues
+## 5. Décisions (arbitrées le 16/10/2026)
 
-1. **Cible de service** : disponibilité visée (ex. 99,5 % ou 99,9 %), perte de données maximale (RPO),
-   délai de reprise (RTO). Elles déterminent le lot H1.
-2. **Hébergement de la base** : base managée (le plus simple pour la bascule et l'archivage continu)
-   ou base auto-hébergée répliquée.
-3. **Stockage des documents** en multi-instance : stockage objet S3 compatible (souverain) ou volume
-   partagé.
-4. **Présentation des grandes listes** (lot V1) : pagination classique ou chargement progressif.
+1. **Intégrité avant disponibilité.** Aucune donnée validée ne doit être perdue ; une écriture qui échoue est
+   **signalée** et **reprise ou récupérable**. Conséquences :
+   - base : réplication **synchrone** (une transaction n'est confirmée qu'une fois écrite sur deux serveurs, RPO = 0) ;
+     en cas de doute, la base refuse d'écrire plutôt que de diverger ; archivage continu (restauration à un instant donné) ;
+   - application : les saisies non enregistrées sont conservées dans le navigateur et renvoyées automatiquement, avec un
+     état « non enregistré » visible ; les traitements de fond en échec (envois, exports, imports) sont journalisés, visibles
+     par l'administrateur et relançables ; les tâches et envois sont idempotents (reprise sans doublon).
+2. **Hébergement : les deux options sont supportées**, au choix de l'architecture de déploiement :
+   base **managée** (réplication synchrone et archivage fournis par l'hébergeur) **ou** PostgreSQL **auto-hébergé**
+   répliqué (Patroni + etcd, réplication synchrone, pgBackRest). Contrainte technique : l'auto-hébergé exige au moins
+   **3 nœuds** (quorum) pour une bascule automatique sans risque de double primaire.
+3. **Stockage des documents : selon l'architecture.** Mono-instance → disque local (défaut actuel) ; multi-instance →
+   stockage objet **S3 compatible** (souverain), versionné, chiffré, activé par `DOCUMENT_STORAGE=s3`.
+4. **Grandes listes : tableau paginé côté serveur** (voir § 5 bis).
+
+### 5 bis. Grandes listes — choix retenu et raisons
+
+**Tableau paginé côté serveur** (pages de 50 lignes, 25/50/100 au choix), **tri, filtres et recherche exécutés par la
+base**, état de la vue dans l'URL (lien partageable, retour arrière du navigateur), **total affiché**, compteurs et
+synthèses calculés en SQL, **export complet** en tâche de fond (fichier téléchargeable, pas limité à la page).
+
+Pourquoi pas le chargement progressif (défilement infini) : sur un registre GRC on trie, on filtre, on retrouve une
+ligne précise, on la cite à un comité ou à un auditeur, on revient à la même position ; le défilement infini rend ces
+usages difficiles (pas de position stable, pas de lien, mauvaise accessibilité au clavier et au lecteur d'écran, mémoire
+du navigateur qui croît). La pagination reste la référence des outils de registre et d'audit.
+
+Technique : pagination par **décalage** (`skip/take`) avec tri indexé dans l'interface — suffisante jusqu'à quelques
+centaines de milliers de lignes par organisation ; pagination par **curseur** pour l'API publique et les exports
+(stable même si des lignes sont ajoutées pendant le parcours).
 
 ## 6. Mesures restant à faire
 
