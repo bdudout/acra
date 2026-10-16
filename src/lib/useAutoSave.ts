@@ -32,6 +32,9 @@ export interface AutoSaveResult {
   saveNow: () => Promise<void>
 }
 
+/** Délais des nouvelles tentatives après un échec réessayable (puis toutes les 60 s). */
+export const DELAIS_REPRISE_MS = [2_000, 5_000, 15_000, 30_000, 60_000]
+
 /** Hook de sauvegarde automatique : appelle `saveFn` (débattue) quand `data` change ; expose l'état (idle/saving/saved/error). */
 export function useAutoSave<T>(
   data: T,
@@ -55,19 +58,35 @@ export function useAutoSave<T>(
   saveFnRef.current = saveFn
   dataRef.current = data
 
-  const save = useCallback(async (valueToSave: T) => {
+  // Reprise automatique (intégrité, 16/10/2026) : un échec RÉESSAYABLE (réseau, serveur) est retenté
+  // avec un délai croissant tant que la page est ouverte ; un conflit d'édition ne l'est jamais.
+  const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const tentativesRef = useRef(0)
+  // Vrai tant que la dernière saisie n'est pas enregistrée (échec en cours de reprise).
+  const nonEnregistreRef = useRef(false)
+
+  const save = useCallback(async (valueToSave: T): Promise<void> => {
     pendingRef.current = false
+    if (retryRef.current) { clearTimeout(retryRef.current); retryRef.current = null }
     setStatus('saving')
     setError(null)
     try {
       await saveFnRef.current(valueToSave)
+      tentativesRef.current = 0
+      nonEnregistreRef.current = false
       setStatus('saved')
       setLastSaved(new Date())
       // Revenir à idle après 3s pour ne pas afficher "sauvegardé" indéfiniment
       setTimeout(() => setStatus('idle'), 3000)
     } catch (err) {
+      nonEnregistreRef.current = true
       setStatus('error')
       setError(err instanceof Error ? err.message : 'Erreur de sauvegarde')
+      if ((err as { reessayable?: unknown })?.reessayable === true) {
+        const d = DELAIS_REPRISE_MS[Math.min(tentativesRef.current, DELAIS_REPRISE_MS.length - 1)]
+        tentativesRef.current++
+        retryRef.current = setTimeout(() => { void save(dataRef.current) }, d)
+      }
     }
   }, [])
 
@@ -99,6 +118,9 @@ export function useAutoSave<T>(
   // démontage (navigation SPA, clic Navbar) ou fermeture d'onglet (beforeunload/pagehide).
   // Évite la perte silencieuse de la dernière saisie pendant la fenêtre de debounce.
   useEffect(() => {
+    // Saisie non enregistrée (échec en cours de reprise) : le navigateur demande confirmation avant de quitter.
+    const avertir = (e: BeforeUnloadEvent) => { if (nonEnregistreRef.current) { e.preventDefault(); e.returnValue = '' } }
+    window.addEventListener('beforeunload', avertir)
     const flush = () => {
       if (!pendingRef.current) return
       pendingRef.current = false
@@ -110,6 +132,8 @@ export function useAutoSave<T>(
     window.addEventListener('beforeunload', flush)
     window.addEventListener('pagehide', flush)
     return () => {
+      window.removeEventListener('beforeunload', avertir)
+      if (retryRef.current) clearTimeout(retryRef.current)
       window.removeEventListener('beforeunload', flush)
       window.removeEventListener('pagehide', flush)
       flush()

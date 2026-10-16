@@ -28,6 +28,7 @@ import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { uid } from '@/lib/uid'
 import ConfirmDialog from '@/components/ConfirmDialog'
+import BrouillonAtelier from '@/components/BrouillonAtelier'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
 import { enregistrerAtelier } from '@/lib/atelier-save'
 import { useAutoSave } from '@/lib/useAutoSave'
@@ -307,7 +308,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
   const { status: autoStatus, lastSaved, error: autoError, saveNow } = useAutoSave(
     autoSaveData,
     // Verrou optimiste (T9) : un autre éditeur a enregistré cet atelier → 409, rien n'est écrasé.
-    (data) => enregistrerAtelier(analyseId, 1, data, revisionRef, { conflit: t.apiErrors.CONFLIT_EDITION, echec: 'Sauvegarde échouée' }),
+    (data) => enregistrerAtelier(analyseId, 1, data, revisionRef, { conflit: t.apiErrors.CONFLIT_EDITION, echec: t.brouillonAtelier.reprise }),
     { delay: 1500, disabled: !editable }
   )
 
@@ -457,7 +458,7 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
             <div className="flex items-center justify-between mb-1">
               {/* h3 commenté : titre déjà affiché en h1 par la page atelier */}
               {/* <h3 className="font-semibold text-indigo-900">{t.workshop.a1.title}</h3> */}
-              <AutoSaveBadge status={autoStatus} lastSaved={lastSaved} error={autoError} />
+              <AutoSaveBadge status={autoStatus} lastSaved={lastSaved} error={autoError} /><BrouillonAtelier analyseId={analyseId} num={1} />
             </div>
             <p className="text-sm text-indigo-800 mb-3">{t.workshop.a1.desc}</p>
             <div className="flex items-center gap-2">
