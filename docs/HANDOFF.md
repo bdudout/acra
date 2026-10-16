@@ -36,9 +36,9 @@ base managée **ou** Patroni ; S3 si multi-instance ; tableau paginé côté ser
   de la connexion ; `S3_SSE` et style « chemin » par défaut ; mise à jour sans interruption (H1.4) non faite,
   `update.sh` non pris en charge en profil « ha ».
 - **Vérifications** : `tsc` 0 ; `i18n:check` OK (1 681 clés) ; `npm run test:db` 21 fichiers / 98 tests verts ;
-  `prisma migrate diff` sans dérive ; `npm run build` OK sans avertissement ; `npm test` 695/698 fichiers, 5 189 tests
-  verts, 5 échecs dans les tests des scripts shell `acra-offsite`/`acra-schedule`/`acra-snapshot` (« service db non
-  démarré ») pendant un build simultané — ces 3 fichiers passent seuls (69/69), scripts non modifiés.
+  `prisma migrate diff` sans dérive ; `npm run build` OK sans avertissement ; `npm test` 698 fichiers / 5 194 tests
+  verts (lancé seul ; pendant un build simultané, 5 tests des scripts shell `acra-offsite`/`acra-schedule`/
+  `acra-snapshot` échouaient — « service db non démarré », interférence sous charge, scripts non modifiés).
   **Non vérifié** : profil « ha » démarré (pas de démon Docker), S3 et Redis réels, vecteurs SigV4 relus contre la doc
   AWS, mesures de charge après pagination, parcours navigateur.
 
