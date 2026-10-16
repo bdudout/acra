@@ -73,7 +73,7 @@ export const metadata: Metadata = {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Nonce CSP (issue #108) posé par le middleware en production — appliqué au
+  // Nonce CSP (issue #108) posé par le proxy (src/proxy.ts) en production — appliqué au
   // script de thème inline pour qu'il soit autorisé sans `'unsafe-inline'`.
   const nonce = (await headers()).get('x-nonce') ?? undefined
   // Bandeau démo : uniquement sur une instance de démo PROUVÉE (env + marqueur figé).

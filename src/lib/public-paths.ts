@@ -1,7 +1,7 @@
 /**
  * Détermine si un chemin est accessible SANS authentification.
  *
- * Centralise la liste des routes publiques utilisée par le middleware
+ * Centralise la liste des routes publiques utilisée par le proxy (src/proxy.ts)
  * (`authorized`). En particulier, `/api/health` doit rester public : c'est le
  * endpoint sondé par le healthcheck Docker / les orchestrateurs ; le placer
  * derrière l'auth provoque une redirection 307 et un conteneur « unhealthy ».
@@ -16,10 +16,10 @@ export function isPublicPath(pathname: string): boolean {
     pathname === '/api/health' ||
     pathname === '/api/health/' ||
     // Endpoints cron (planificateur externe) : auth propre par CRON_SECRET dans le
-    // handler, donc exemptés de l'auth par session du middleware.
+    // handler, donc exemptés de l'auth par session du proxy.
     pathname.startsWith('/api/cron/') ||
     // API publique v1 : authentification propre par clé d'API (Bearer) dans le
-    // handler, donc exemptée de l'auth par session du middleware.
+    // handler, donc exemptée de l'auth par session du proxy.
     pathname.startsWith('/api/v1/') ||
     // SCIM 2.0 : provisioning par l'IdP (SailPoint/Azure AD), auth Bearer (clé
     // d'API scope provision) dans le handler → exempté de l'auth par session.

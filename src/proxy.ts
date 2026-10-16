@@ -1,3 +1,6 @@
+// Proxy Next 16 (ex-« middleware », convention dépréciée — T21) : authentification des pages,
+// CSP à nonce par requête, redirection du changement de mot de passe obligatoire.
+// Exécuté dans le runtime Node.js (défaut de `proxy`), et non plus Edge.
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse, type NextRequest } from 'next/server'
 import { isPublicPath } from '@/lib/public-paths'
@@ -5,7 +8,7 @@ import { buildCsp } from '@/lib/csp'
 
 export default withAuth(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function middleware(req: NextRequest & { nextauth?: { token?: any } }) {
+  function proxy(req: NextRequest & { nextauth?: { token?: any } }) {
     const { pathname } = req.nextUrl
     const token = req.nextauth?.token
 
@@ -59,6 +62,6 @@ export default withAuth(
 export const config = {
   // Exclut les internes Next ET les fichiers statiques servis depuis /public
   // (servis à la racine, ex. /logo-mark.png) : sans l'exclusion par extension, le
-  // middleware redirigeait ces requêtes vers /auth/signin → images cassées.
+  // proxy redirigeait ces requêtes vers /auth/signin → images cassées.
   matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)'],
 }

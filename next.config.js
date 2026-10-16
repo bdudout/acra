@@ -46,7 +46,7 @@ const nextConfig = {
         }] : []),
 
         // ── Content Security Policy ────────────────────────────────────────
-        // La CSP est désormais posée par le MIDDLEWARE (src/middleware.ts) pour
+        // La CSP est désormais posée par le PROXY (src/proxy.ts, ex-middleware) pour
         // permettre un `script-src` à nonce + strict-dynamic en production (issue
         // #108). Ne pas la redéfinir ici : deux en-têtes CSP ⇒ intersection stricte
         // qui casserait le rendu.
