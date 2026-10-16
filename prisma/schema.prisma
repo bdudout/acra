@@ -3027,3 +3027,21 @@ model CronVerrou {
   jusqua DateTime
   jeton  String
 }
+
+/// Journal d'exécution des tâches planifiées (intégrité, 16/10/2026) : chaque exécution est tracée
+/// (début, fin, durée, statut, erreur, déclencheur) ; un échec est signalé (journal d'audit → SIEM)
+/// et la tâche est relançable depuis l'administration. Rétention 90 jours. Cf. lib/taches.server.
+model ExecutionTache {
+  id          String    @id @default(cuid())
+  tache       String
+  declencheur String    @default("CRON") // CRON | MANUEL
+  statut      String    @default("EN_COURS") // EN_COURS | OK | ECHEC
+  debut       DateTime  @default(now())
+  fin         DateTime?
+  dureeMs     Int?
+  erreur      String?
+  resume      Json?
+
+  @@index([tache, debut])
+  @@index([statut, debut])
+}

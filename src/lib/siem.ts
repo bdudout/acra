@@ -52,6 +52,7 @@ const CATEGORY: Record<AuditAction, SiemCategory> = {
   INSTANCE_ROLLBACK_REQUESTED: 'CONFIGURATION', INSTANCE_BACKUP_POLICY_CHANGED: 'CONFIGURATION', INSTANCE_BACKUP_PRUNED: 'CONFIGURATION', INSTANCE_BACKUP_REQUESTED: 'CONFIGURATION', INSTANCE_CACHE_CLEANED: 'CONFIGURATION', INSTANCE_VACUUM_RUN: 'CONFIGURATION', INSTANCE_STORAGE_THRESHOLDS_CHANGED: 'CONFIGURATION', INSTANCE_RESTORED: 'CONFIGURATION', INSTANCE_UPDATED: 'CONFIGURATION', INSTANCE_UPDATE_ROLLED_BACK: 'CONFIGURATION', // cycle de vie de l'instance (mise à jour, retour arrière)
   MCP_PROPOSAL_REVIEWED: 'GOUVERNANCE', // validation humaine d'une proposition MCP (accept/reject)
   PLAN_PROGRAMME_UPDATED: 'GOUVERNANCE', // plan d'audit ou de contrôle : création, lignes, soumission, validation, révision
+  TACHE_PLANIFIEE_ECHEC: 'CONFIGURATION', TACHE_PLANIFIEE_RELANCEE: 'CONFIGURATION', // tâche planifiée en échec (à surveiller) / relancée par un administrateur
   PLAN_ACTION_UPDATED: 'GOUVERNANCE', // plan d'action unifié : création, modification, suppression (details.action)
   CONFORMITE_UPDATED: 'GOUVERNANCE', // suivi de conformité d'organisation : arrêt, reprise d'analyse, traitements d'écart
   ENTITE_REFERENTIEL_UPDATED: 'CONFIGURATION', // référentiel des entités : création, modification, clôture, suppression
