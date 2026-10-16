@@ -62,6 +62,9 @@ function SignInForm() {
         setError(t.auth.signIn.errorLockedFor(minutes))
         return
       }
+      // Store partagé (Redis) injoignable : connexion refusée (comportement « fermé »), message dédié
+      // plutôt que « mot de passe incorrect » (code stable de lib/redis-resp.ts).
+      if (err.includes('redis_indisponible')) { setError(t.auth.signIn.errorUnavailable); return }
       const blocked = ['ACCOUNT_LOCKED', 'ACCOUNT_SUSPENDED', 'TOO_MANY_ATTEMPTS']
       setError(blocked.some(c => err.includes(c)) ? t.auth.signIn.errorBlocked : t.auth.signIn.error)
     } else {

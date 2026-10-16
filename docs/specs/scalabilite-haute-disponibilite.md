@@ -98,6 +98,10 @@ réponse < 500 Ko, vue consolidée p95 < 2 s.
    wal-g) vers un stockage objet, restauration à un instant donné.
 4. **Déploiement sans interruption** : migrations « expand/contract », démarrage de la nouvelle
    version à côté de l'ancienne, bascule par contrôle de santé.
+   *Livré le 16/10/2026* (`scripts/update-ha.sh` : point de restauration exigé, migrations une seule fois, réplicas
+   remplacés un par un avec drainage et retour arrière ; clé des Server Functions fixe, `deploymentId`, affinité par
+   cookie ; règle expand/contract avec marque `-- contract:` contrôlée en CI) — recette réelle à faire :
+   [`../deploiement-haute-disponibilite.md`](../deploiement-haute-disponibilite.md) § 6.1.
 
 ### Lot O1 — Observabilité
 Journal d'accès (Caddy), identifiant de corrélation par requête, métriques (`/api/metrics`,
@@ -118,7 +122,16 @@ activable), alerte en cas d'échec de sauvegarde, séparation vivacité / dispon
    **3 nœuds** (quorum) pour une bascule automatique sans risque de double primaire.
 3. **Stockage des documents : selon l'architecture.** Mono-instance → disque local (défaut actuel) ; multi-instance →
    stockage objet **S3 compatible** (souverain), versionné, chiffré, activé par `DOCUMENT_STORAGE=s3`.
+   Chiffrement au repos : `S3_SSE` reste **désactivé par défaut** (certains fournisseurs refusent l'en-tête), mais
+   il est **recommandé** — chiffrement par défaut du bucket, ou `S3_SSE=AES256` si le fournisseur l'accepte — avec
+   le versioning (guide HA § 4).
 4. **Grandes listes : tableau paginé côté serveur** (voir § 5 bis).
+5. **Redis (limites de débit, verrouillage de compte) : comportement « fermé » conservé, borné dans le temps**
+   (`REDIS_TIMEOUT_MS`, défaut 2 s ; message stable « connexion momentanément indisponible »). Pour qu'il ne soit
+   pas un point de défaillance unique, deux options au choix de l'hébergement : Redis **managé** (point d'entrée
+   unique, bascule par l'hébergeur ; le client se reconnecte seul) **ou** **Redis Sentinel** auto-hébergé
+   (`REDIS_SENTINELS`, 3 sentinelles sur 3 hôtes, quorum 2), pris en charge par le client intégré
+   (guide HA § 5).
 
 ### 5 bis. Grandes listes — choix retenu et raisons
 
