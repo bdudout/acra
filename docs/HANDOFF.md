@@ -28,19 +28,29 @@ base managée **ou** Patroni ; S3 si multi-instance ; tableau paginé côté ser
   arrêt au démarrage (`REDIS_OPTIONNEL=1` pour un repli). `DOCUMENT_STORAGE=s3` (`lib/document-storage-s3`, SigV4
   sans dépendance). `docker-compose.ha.yml` + `Caddyfile.ha`. Guide `docs/deploiement-haute-disponibilite.md`
   (paramètres Patroni/pgBackRest marqués « [à vérifier] »).
-- **L9 — eIDAS** : 23 points (art. 19 bis, 20, 21, 24 ; art. 19 abrogé par NIS2 art. 42), proposé à
-  `numerique-confiance`. **Texte officiel inaccessible depuis la session** : tous les points portent
-  `TODO(source): à confirmer sur EUR-Lex CELEX 02014R0910`.
-- **Questions ouvertes** : relecture eIDAS sur EUR-Lex ; 19 bis dans le même référentiel ? eIDAS aussi pour
-  `numerique-identite` ? Redis HA (managé ou Sentinel) — en mode « fermé », Redis seul est un point de défaillance
-  de la connexion ; `S3_SSE` et style « chemin » par défaut ; mise à jour sans interruption (H1.4) non faite,
-  `update.sh` non pris en charge en profil « ha ».
-- **Vérifications** : `tsc` 0 ; `i18n:check` OK (1 681 clés) ; `npm run test:db` 21 fichiers / 98 tests verts ;
-  `prisma migrate diff` sans dérive ; `npm run build` OK sans avertissement ; `npm test` 698 fichiers / 5 194 tests
-  verts (lancé seul ; pendant un build simultané, 5 tests des scripts shell `acra-offsite`/`acra-schedule`/
-  `acra-snapshot` échouaient — « service db non démarré », interférence sous charge, scripts non modifiés).
-  **Non vérifié** : profil « ha » démarré (pas de démon Docker), S3 et Redis réels, vecteurs SigV4 relus contre la doc
-  AWS, mesures de charge après pagination, parcours navigateur.
+- **L9 — eIDAS** : 24 points relus sur le texte consolidé officiel fourni par l'utilisateur (CELEX 02014R0910,
+  FR, 18.10.2024, 002.008) : notification d'incident au point f ter (24 h **à compter de l'incident**), point g
+  (falsification), point j supprimé (abrogé), 24 § 4 bis ajouté ; art. 19 abrogé (NIS2 art. 42). Proposé à
+  `numerique-confiance` et `numerique-identite`. Traductions EN/DE/ES/IT non relues contre les versions officielles ;
+  rectificatifs C1-C4 non relus un à un.
+- **Suite (décisions utilisateur)** : **Redis HA** — client intégré : reconnexion après bascule (coupure, délai,
+  `-READONLY`), **Sentinel** (`REDIS_SENTINELS`, `REDIS_SENTINEL_MASTER`, 3 hôtes, quorum 2), délais bornés
+  (`REDIS_TIMEOUT_MS`, 2 s), erreur `redis_indisponible` affichée à la connexion ; essai réel Redis 7.0.15
+  (1 primaire, 1 réplique, 3 sentinelles) : reprise 2,25 s après `SIGKILL` du primaire. **S3_SSE** désactivé par
+  défaut, chiffrement et versioning recommandés (guide § 4). **H1.4 mise à jour sans interruption** :
+  `scripts/update-ha.sh` (point de restauration exigé, migrations une fois, réplicas remplacés un par un avec
+  drainage `/api/health` 503, retour arrière vers `acra-app:ha-rollback`), `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` et
+  `NEXT_DEPLOYMENT_ID` partagés, affinité Caddy par cookie, cliquet expand/contract (`-- contract:` exigé sur les
+  migrations destructives depuis 20261016000000), bouton « Mettre à jour » remplacé par la procédure en « ha ».
+- **Questions ouvertes** : un point eIDAS par méthode de vérification d'identité (choix actuel : regroupées par
+  paragraphe) ; `scripts/setup.sh` ne génère pas encore la clé Server Actions ; sauvegardes planifiées de l'agent
+  inadaptées au profil « ha » (base externe).
+- **Vérifications (état final)** : `tsc` 0 ; `i18n:check` OK (1 683 clés) ; `npm test` 702 fichiers / 5 263 tests
+  verts (lancé seul ; sous charge, les tests des scripts shell `acra-*`/`update*` échouent parfois au hasard et passent
+  seuls — minutage) ; `npm run test:db` 21 fichiers / 98 tests verts ; `prisma migrate diff` sans dérive ;
+  `npm run build` OK sans avertissement. **Non vérifié** : profil « ha » démarré (pas de démon Docker), `up --no-recreate
+  --scale` réel, Caddy `lb_policy cookie` + santé sur réplicas dynamiques, S3 réel, Redis TLS et managé, vecteurs
+  SigV4 relus contre la doc AWS, mesures de charge après pagination, parcours navigateur.
 
 ---
 
