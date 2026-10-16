@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Pencil, X } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { secteursVisibles } from '@/lib/secteurs-masques'
 import { normalizeSousSecteurs } from '@/lib/sous-secteurs'
@@ -60,7 +61,7 @@ export default function AnalyseMetaEditor({ analyseId, nom, organisation, secteu
       body: JSON.stringify({ nom: form.nom, organisation: form.organisation, secteur: form.secteur, sousSecteurs: form.sousSecteurs, patternsArchi: form.patternsArchi }),
     })
     setSaving(false)
-    if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.error || t.error); return }
+    if (!res.ok) { const d = await res.json().catch(() => ({})); setError(apiErrorMessage(d.error, t, t.error)); return }
     setOpen(false)
     router.refresh()
   }

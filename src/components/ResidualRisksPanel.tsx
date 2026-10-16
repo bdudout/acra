@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Lock } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 
 type Statut = 'EN_ATTENTE' | 'ACCEPTES' | 'REFUSES' | string
 
@@ -44,7 +45,7 @@ export default function ResidualRisksPanel({
         body: JSON.stringify({ cycle: 'STRATEGIQUE', note: r.reopenNote, ateliers: [] }),
       })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) { setError(data.error || 'Erreur'); return }
+      if (!res.ok) { setError(apiErrorMessage(data.error, t, 'Erreur')); return }
       // La nouvelle version a remis le statut à « en attente » et déverrouillé l'analyse.
       if (typeof window !== 'undefined') window.location.reload()
     } finally { setBusy(false) }
@@ -58,7 +59,7 @@ export default function ResidualRisksPanel({
         body: JSON.stringify({ action, commentaire }),
       })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) { setError(data.error || 'Erreur'); return }
+      if (!res.ok) { setError(apiErrorMessage(data.error, t, 'Erreur')); return }
       // Si le gel est actif, l'acceptation fige toute l'analyse (ateliers en lecture
       // seule) : on recharge pour refléter l'état gelé partout, pas seulement ici.
       if (action === 'ACCEPTER' && gelActive && data.risquesResiduelsStatut === 'ACCEPTES') {

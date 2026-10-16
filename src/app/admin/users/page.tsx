@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { formatDate } from '@/lib/format'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { AlertTriangle, CheckCircle2, Download, FileText, KeyRound, UserPlus, Users, X, XCircle } from 'lucide-react'
@@ -103,7 +104,7 @@ export default function AdminUsersPage() {
         body: JSON.stringify(newUser),
       })
       const data = await res.json()
-      if (!res.ok) { setCreateError(data.error || t.networkError); return }
+      if (!res.ok) { setCreateError(apiErrorMessage(data.error, t, t.networkError)); return }
       setUsers(prev => [...prev, data.user])
       // Affiche le mot de passe temporaire généré (une seule fois)
       setCreatedCreds({ email: data.user.email, password: data.tempPassword })
@@ -127,7 +128,7 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ csv: csvText }),
       })
       const data = await res.json()
-      if (!res.ok) { setImportError(data.error || t.networkError); return }
+      if (!res.ok) { setImportError(apiErrorMessage(data.error, t, t.networkError)); return }
       setImportResults(data)
       // Recharger la liste des utilisateurs
       fetch('/api/admin/users').then(r => r.json()).then(d => setUsers(d.users ?? [])).catch(() => {})
@@ -167,7 +168,7 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ userId, role }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error); return }
+      if (!res.ok) { setError(apiErrorMessage(data.error, t, t.networkError)); return }
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: data.user.role } : u))
       showSuccess(`${t.admin.roleUpdatedMsg} ${data.user.name || data.user.email}`)
     } catch {
@@ -203,7 +204,7 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ userId: user.id, action: 'reset-password' }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error || t.networkError); return }
+      if (!res.ok) { setError(apiErrorMessage(data.error, t, t.networkError)); return }
       setCreatedCreds({ email: user.email, password: data.tempPassword })
       setCopied(false)
       showSuccess(t.admin.resetPwdSuccessMsg)
@@ -225,7 +226,7 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ userId: user.id, action }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error); return }
+      if (!res.ok) { setError(apiErrorMessage(data.error, t, t.networkError)); return }
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, isActive: data.user.isActive } : u))
       showSuccess(user.isActive ? t.admin.suspendSuccessMsg : t.admin.activateSuccessMsg)
     } catch {
@@ -247,7 +248,7 @@ export default function AdminUsersPage() {
       const data = await res.json()
       // Propriétaire d'analyses : proposer d'abord de les réattribuer (les analyses sont des preuves).
       if (res.status === 409 && data.code === 'OWNS_ANALYSES') { setReassignFor(user); return }
-      if (!res.ok) { setError(data.error); return }
+      if (!res.ok) { setError(apiErrorMessage(data.error, t, t.networkError)); return }
       setUsers(prev => prev.filter(u => u.id !== user.id))
       showSuccess(t.admin.deleteSuccessMsg)
     } catch {
@@ -267,7 +268,7 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ userId: user.id, action: 'reassign-analyses', toUserId }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error); return }
+      if (!res.ok) { setError(apiErrorMessage(data.error, t, t.networkError)); return }
       setReassignFor(null)
       if (data.remaining > 0) { setError(t.admin.reassignPartial(data.remaining)); return }
       const del = await fetch('/api/admin/users', {
@@ -276,7 +277,7 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ userId: user.id }),
       })
       const delData = await del.json()
-      if (!del.ok) { setError(delData.error); return }
+      if (!del.ok) { setError(apiErrorMessage(delData.error, t, t.networkError)); return }
       setUsers(prev => prev.filter(u => u.id !== user.id))
       showSuccess(t.admin.reassignSuccessMsg(data.transferred))
     } catch {

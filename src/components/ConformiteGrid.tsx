@@ -21,6 +21,7 @@ import { formatDate } from '@/lib/format'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import type { ConstatSurExigence } from '@/lib/conformite-constats'
 import type { FrameworkControl } from '@/lib/frameworks-data'
 import {
@@ -177,7 +178,7 @@ export default function ConformiteGrid({ controles, entries, onChange, readOnly 
     })
     const data = await res.json().catch(() => ({}))
     setDerogBusy(false)
-    if (!res.ok) { setDerogError((d.errors as Record<string, string>)[data.error] ?? data.error ?? 'Erreur'); return }
+    if (!res.ok) { setDerogError((d.errors as Record<string, string>)[data.error] ?? apiErrorMessage(data.error, t, 'Erreur')); return }
     setDerogFormRef(null); setDerogMotif(''); setDerogMesures(''); setDerogDuree('')
     reloadDerogations()
   }
