@@ -245,3 +245,17 @@ describe('PATCH /api/mcp-proposals/[id]', () => {
     expect((await PATCH(req({ action: 'reject' }), params)).status).toBe(200)
   })
 })
+
+describe('aucune divulgation hors périmètre', () => {
+  it('une proposition déjà traitée d\'une analyse inaccessible répond comme une proposition inaccessible, pas « déjà traitée » (409)', async () => {
+    proposalFindUnique.mockResolvedValue({ ...PENDING, statut: 'ACCEPTEE' })
+    analyseFindFirst.mockResolvedValue(null)
+    const res = await PATCH(req({ action: 'accept' }), params)
+    expect(res.status).not.toBe(409)
+    expect([403, 404]).toContain(res.status)
+  })
+  it('dans le périmètre, une proposition déjà traitée reste signalée en 409', async () => {
+    proposalFindUnique.mockResolvedValue({ ...PENDING, statut: 'ACCEPTEE' })
+    expect((await PATCH(req({ action: 'accept' }), params)).status).toBe(409)
+  })
+})

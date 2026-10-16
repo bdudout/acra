@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere, getAccessibleOrgIds, getEffectiveRoleForOrg } from '@/lib/org-context.server'
+import { analyseAccessWhere, getAccessibleOrgIds, roleSurRessource } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { canEditAnalyse } from '@/lib/permissions'
 import { withAccess } from '@/lib/with-access.server'
@@ -62,10 +62,12 @@ export const GET = withAccess({ org: 'none' }, async (_req, { user, params: { id
 export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'derogations' } }, async (req, { user, params: { id } }) => {
   const userId = user.id
   const userRole = user.role
-  const sessionUser = { id: userId, role: userRole }
 
   const derog = await prisma.derogation.findUnique({ where: { id } })
   if (!derog) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+  // Édition et transitions : rôle EFFECTIF dans l'organisation de la dérogation (F01, CWE-863),
+  // jamais le rôle d'instance ; aucune appartenance couvrante → LECTEUR.
+  const decideur = { id: userId, role: await roleSurRessource(userId, userRole, derog.organizationId) }
 
   // Contrôle d'accès : dérogation portée par une analyse → l'analyse doit rester
   // accessible ; dérogation autonome (org) → l'organisation doit être visible.
@@ -76,7 +78,7 @@ export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'derogations
       select: { id: true, userId: true, accesUtilisateurs: true, deletedAt: true },
     })
     if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
-    peutEditer = canEditAnalyse(sessionUser, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })
+    peutEditer = canEditAnalyse(decideur, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })
   } else {
     const { all, ids } = await getAccessibleOrgIds(userId, userRole)
     if (!all && !ids.includes(derog.organizationId)) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
@@ -86,10 +88,6 @@ export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'derogations
 
   const orgConfig = await getOrgConfig(derog.organizationId)
   const rbac = { statut: derog.statut as DerogationStatut, demandeurId: derog.demandeurId, avisRssiPar: derog.avisRssiPar }
-  // Transitions (avis RSSI, double regard, validation…) : rôle EFFECTIF dans l'organisation de la
-  // dérogation, pas le rôle d'instance (un RSSI d'organisation au compte « analyste » doit pouvoir agir).
-  const roleOrg = await getEffectiveRoleForOrg(userId, userRole, derog.organizationId)
-  const decideur = { id: userId, role: roleOrg ?? userRole }
 
   const body = await req.json().catch(() => ({})) as Record<string, unknown>
   const action = String(body.action ?? '')
@@ -97,7 +95,7 @@ export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'derogations
   const now = new Date()
 
   const audit = (a: AuditAction, details: Record<string, unknown>) =>
-    auditLog(a, { userId, userRole, targetId: id, targetType: 'derogation', ip: getClientIp(req), details: { nom: derog.intitule, ...details } })
+    auditLog(a, { userId, userRole: decideur.role, organizationId: derog.organizationId, targetId: id, targetType: 'derogation', ip: getClientIp(req), details: { nom: derog.intitule, ...details } })
 
   const save = (data: Record<string, unknown>) => prisma.derogation.update({ where: { id }, data })
   // Niveau de workflow effectif + activation (fixe la période quand la dérogation devient active).
@@ -176,7 +174,7 @@ export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'derogations
 
     // ── Demande de prolongation (rouvre un cycle de revue) ──
     case 'PROLONGER': {
-      if (!(peutEditer || userRole === 'RSSI') || derog.statut !== 'ACTIVE') return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
+      if (!(peutEditer || decideur.role === 'RSSI') || derog.statut !== 'ACTIVE') return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
       if (!commentaire?.trim()) return NextResponse.json({ error: 'Un motif de prolongation est requis' }, { status: 400 })
       const nd = body.nouvelleDateFin ? new Date(String(body.nouvelleDateFin)) : calcDateFin(derog.dateFin ?? now, orgConfig.derogationDureeDefautJours)
       if (isNaN(nd.getTime())) return NextResponse.json({ error: 'Date de fin invalide' }, { status: 400 })
@@ -221,7 +219,7 @@ export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'derogations
 
     // ── Modification de la demande par son demandeur (avant tout avis RSSI) ──
     case 'MODIFIER': {
-      if (!canModifierDerogation(sessionUser, rbac)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
+      if (!canModifierDerogation(decideur, rbac)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
       const texte = (v: unknown, max: number) => String(v ?? '').trim().slice(0, max)
       const data = { intitule: texte(body.intitule, 300), motif: texte(body.motif, 5000), mesuresCompensatoires: texte(body.mesuresCompensatoires, 5000) }
       const invalid = validateDerogationInput({ ...data, portee: derog.portee, referentiel: derog.referentiel, ref: derog.ref, risqueId: derog.risqueId })
@@ -233,7 +231,7 @@ export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'derogations
 
     // ── Retrait de la demande par son demandeur (en revue) — conservée pour l'audit ──
     case 'RETIRER': {
-      if (!canRetirerDerogation(sessionUser, rbac)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
+      if (!canRetirerDerogation(decideur, rbac)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
       const updated = await save({ statut: 'RETIREE', retireeLe: now, retraitMotif: commentaire?.trim() || null })
       await audit('DEROGATION_WITHDRAWN', { statutPrecedent: derog.statut })
       return NextResponse.json(updated)

@@ -62,12 +62,13 @@ export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'mcp-proposa
 
   const proposal = await prisma.mcpProposal.findUnique({ where: { id } })
   if (!proposal) return NextResponse.json({ error: 'Proposition introuvable' }, { status: 404 })
+
+  // Contrôle d'accès AVANT tout autre signal : le statut d'une proposition hors périmètre ne doit pas fuiter (409).
+  const gate = await resolveGate(proposal, userId, instanceRole)
+  if (!gate.ok) return NextResponse.json({ error: gate.error }, { status: gate.status })
   if (proposal.statut !== 'EN_ATTENTE') {
     return NextResponse.json({ error: 'Proposition déjà traitée' }, { status: 409 })
   }
-
-  const gate = await resolveGate(proposal, userId, instanceRole)
-  if (!gate.ok) return NextResponse.json({ error: gate.error }, { status: gate.status })
 
   const ip = getClientIp(req)
   const auditDetails = { type: proposal.type, targetType: proposal.targetType, targetId: proposal.targetId }
