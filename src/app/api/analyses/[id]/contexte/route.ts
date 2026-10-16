@@ -2,31 +2,20 @@
 // PATCH — met à jour périmètre + objectifs/critères (upsert Cadrage). Réservé aux
 // analyses dont la méthode autorise la saisie directe (ISO 31000 / ISO 27005 /
 // NIST) ; même garde que `/risques` (accès, méthode, édition F01, gel).
+// Session et rate limit : withAccess (org 'none') ; garde métier : guardDirectRisk, inchangée.
 
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import type { UserRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { guardDirectRisk } from '@/lib/analyse-direct-risk.server'
 import { sanitizeContexte } from '@/lib/analyse-contexte'
 
 export const dynamic = 'force-dynamic'
-type Params = { params: Promise<{ id: string }> }
-
-function auth(session: unknown): { userId: string; role: UserRole } | null {
-  const u = (session as { user?: { id?: string; role?: string } } | null)?.user
-  if (!u?.id) return null
-  return { userId: u.id, role: (u.role ?? 'ANALYSTE') as UserRole }
-}
 
 // PATCH /api/analyses/:id/contexte — met à jour le contexte (périmètre + objectifs).
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const a = auth(await getServerSession(authOptions))
-  if (!a) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const g = await guardDirectRisk(id, a.userId, a.role)
+export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'analyse-contexte' } }, async (req, { user, params }) => {
+  const g = await guardDirectRisk(params.id, user.id, user.role)
   if (!g.ok) return NextResponse.json({ error: g.error }, { status: g.status })
 
   const contexte = sanitizeContexte(await req.json().catch(() => ({})))
@@ -39,10 +28,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   await prisma.analyse.update({ where: { id: g.analyse.id }, data: { updatedAt: new Date() } })
 
   await auditLog('WORKSHOP_SAVED', {
-    userId: a.userId, userRole: a.role, organizationId: g.analyse.organizationId,
+    userId: user.id, userRole: user.role, organizationId: g.analyse.organizationId,
     targetId: g.analyse.id, targetType: 'analyse', ip: getClientIp(req),
     details: { scope: 'contexte-direct', action: 'update' },
   })
 
   return NextResponse.json({ contexte })
-}
+})

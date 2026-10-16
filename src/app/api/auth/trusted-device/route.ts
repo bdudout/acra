@@ -1,17 +1,18 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { auditLog } from '@/lib/logger'
 import { resolveSessionCookie } from '@/lib/auth-cookies'
 import { canIssueTrustedDevice, TRUSTED_DEVICE_COOKIE } from '@/lib/trusted-device'
 import { createTrustedDevice } from '@/lib/trusted-device.server'
+import { requireSession } from '@/lib/route-guard.server'
+import { withAccess } from '@/lib/with-access.server'
 
 /** POST : après un OTP récent, crée le cookie HttpOnly d'un appareil approuvé. */
-export async function POST() {
-  const session = await getServerSession(authOptions)
-  const user = session?.user as { id?: string; mfaVerifiedAt?: number } | undefined
-  if (!user?.id) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+// `mfaVerifiedAt` (horodatage OTP du JWT) n'est pas porté par le contexte de withAccess : relu via requireSession.
+export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'trusted-device' } }, async () => {
+  const g = await requireSession()
+  if (g.error) return g.error
+  const user = { id: g.user.id, mfaVerifiedAt: (g.session.user as { mfaVerifiedAt?: number }).mfaVerifiedAt }
 
   const policy = await prisma.passwordPolicy.findUnique({
     where: { id: 'global' },
@@ -39,4 +40,4 @@ export async function POST() {
   })
   await auditLog('TRUSTED_DEVICE_CREATED', { userId: user.id, targetType: 'trusted_device' })
   return response
-}
+})

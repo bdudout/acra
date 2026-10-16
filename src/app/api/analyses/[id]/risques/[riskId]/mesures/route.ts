@@ -4,23 +4,14 @@
 // Mêmes gardes que la collection risques (accès, méthode à saisie directe, édition,
 // gel) + le risque doit appartenir à l'analyse ciblée (sinon 404, sans divulgation).
 
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import type { UserRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { guardDirectRisk } from '@/lib/analyse-direct-risk.server'
 import { sanitizeRiskMesure, isRiskMesureValid, RISK_MESURE_SELECT } from '@/lib/risque-mesure'
 
 export const dynamic = 'force-dynamic'
-type Params = { params: Promise<{ id: string; riskId: string }> }
-
-function auth(session: unknown): { userId: string; role: UserRole } | null {
-  const u = (session as { user?: { id?: string; role?: string } } | null)?.user
-  if (!u?.id) return null
-  return { userId: u.id, role: (u.role ?? 'ANALYSTE') as UserRole }
-}
 
 /** Vrai si le risque appartient bien à l'analyse ciblée. */
 async function riskInAnalyse(riskId: string, analyseId: string): Promise<boolean> {
@@ -28,11 +19,9 @@ async function riskInAnalyse(riskId: string, analyseId: string): Promise<boolean
 }
 
 // GET /api/analyses/:id/risques/:riskId/mesures
-export async function GET(_req: NextRequest, { params }: Params) {
-  const a = auth(await getServerSession(authOptions))
-  if (!a) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id, riskId } = await params
-  const g = await guardDirectRisk(id, a.userId, a.role)
+// Garde déléguée à guardDirectRisk (accès, méthode, édition, gel) avec le rôle d'instance.
+export const GET = withAccess({ org: 'none' }, async (_req, { user, params: { id, riskId } }) => {
+  const g = await guardDirectRisk(id, user.id, user.role)
   if (!g.ok) return NextResponse.json({ error: g.error }, { status: g.status })
   if (!(await riskInAnalyse(riskId, g.analyse.id))) return NextResponse.json({ error: 'Risque introuvable' }, { status: 404 })
 
@@ -42,14 +31,11 @@ export async function GET(_req: NextRequest, { params }: Params) {
     select: RISK_MESURE_SELECT,
   })
   return NextResponse.json({ mesures })
-}
+})
 
 // POST /api/analyses/:id/risques/:riskId/mesures — rattache une mesure au risque.
-export async function POST(req: NextRequest, { params }: Params) {
-  const a = auth(await getServerSession(authOptions))
-  if (!a) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id, riskId } = await params
-  const g = await guardDirectRisk(id, a.userId, a.role)
+export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'analyse-risques' } }, async (req, { user, params: { id, riskId } }) => {
+  const g = await guardDirectRisk(id, user.id, user.role)
   if (!g.ok) return NextResponse.json({ error: g.error }, { status: g.status })
   if (!(await riskInAnalyse(riskId, g.analyse.id))) return NextResponse.json({ error: 'Risque introuvable' }, { status: 404 })
 
@@ -71,9 +57,9 @@ export async function POST(req: NextRequest, { params }: Params) {
     select: RISK_MESURE_SELECT,
   })
   await auditLog('WORKSHOP_SAVED', {
-    userId: a.userId, userRole: a.role, organizationId: g.analyse.organizationId,
+    userId: user.id, userRole: user.role, organizationId: g.analyse.organizationId,
     targetId: g.analyse.id, targetType: 'analyse', ip: getClientIp(req),
     details: { scope: 'risque-mesure', action: 'create', riskId, mesureId: mesure.id },
   })
   return NextResponse.json({ mesure }, { status: 201 })
-}
+})

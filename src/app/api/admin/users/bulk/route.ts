@@ -7,11 +7,10 @@
  * pour communication par l'administrateur. Les lignes invalides ou déjà
  * existantes sont ignorées et rapportées.
  */
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { canAdmin } from '@/lib/permissions'
+import { isAdminRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { getAdminScope } from '@/lib/org-context.server'
 import { UserRole as PrismaUserRole } from '@prisma/client'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -43,15 +42,10 @@ interface RowResult {
 }
 
 // POST /api/admin/users/bulk — import en masse d'utilisateurs (CSV parsé) dans le périmètre de l'admin.
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const currentUserId = (session.user as any).id
-  const userRole = (session.user as any).role ?? 'ANALYSTE'
-  if (!canAdmin({ id: currentUserId, role: userRole })) {
-    return NextResponse.json({ error: 'Accès réservé aux administrateurs' }, { status: 403 })
-  }
+// Réservé aux administrateurs (rôle d'instance, `canAdmin`).
+export const POST = withAccess({ org: 'none', allow: isAdminRole, rateLimit: { bucket: 'admin-users-bulk' } }, async (req, { user: actor }) => {
+  const currentUserId = actor.id
+  const userRole = actor.role
 
   let body: { csv?: string }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Corps invalide' }, { status: 400 }) }
@@ -121,4 +115,4 @@ export async function POST(req: NextRequest) {
   })
 
   return NextResponse.json({ summary, results })
-}
+})

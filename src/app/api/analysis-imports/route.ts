@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { optionsStructure } from '@/lib/org-config.server'
-import { getServerSession } from 'next-auth'
 import { z } from 'zod'
 import { HISTORIC_SHEET_TYPES } from '@/lib/historic-import'
-import { authOptions } from '@/lib/auth'
-import { canCreateAnalyse, type UserRole } from '@/lib/permissions'
+import { canCreateAnalyse } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { paquetsClasseur, repartirClasseur } from '@/lib/analysis-import-classeur.server'
 import { executeAnalysisImport, parseAnalysisImportRequest, truncateImportRequest } from '@/lib/analysis-import'
@@ -21,11 +20,11 @@ const rowOverrides = z.record(z.string(), z.record(z.string(), z.record(z.string
 const schema = z.object({ filename: z.string().max(255), data: z.string().min(1).max(14_000_000), organizationId: z.string().trim().min(1).max(191).optional(), mappings: z.record(z.string(), z.record(z.string(), z.string().optional())), sheetTypes: z.record(z.string(), sheetType).default({}), transforms: z.record(z.string(), z.record(z.string(), valueTransform.optional())).default({}), statusMappings: z.record(z.string(), z.record(z.string(), z.enum(['A_FAIRE', 'EN_COURS', 'REALISE', 'REPORTE']))).default({}), scoreMappings: z.record(z.string(), z.record(z.string(), z.record(z.string(), z.enum(['1', '2', '3', '4'])))).default({}), partialImport: z.boolean().default(true), valueMaps: z.record(z.string(), z.object({ category: z.record(z.string().max(200), z.enum(['CYBERCRIMINEL','ETAT_NATION','CONCURRENT','ACTIVISTE','EMPLOYE_MALVEILLANT','PRESTATAIRE','AMATEUR','TERRORISTE','AUTRE'])).optional(), type: z.record(z.string().max(200), z.enum(['FOURNISSEUR','CLIENT','PARTENAIRE','PRESTATAIRE','ORGANISME_REGULATION','AUTRE'])).optional() })).default({}), refAliases: z.record(z.string(), z.record(z.string().regex(/^[A-Za-z/]{1,10}$/), z.string().regex(/^[A-Za-z/]{1,10}$/))).default({}), dryRun: z.boolean().default(false), rowOverrides })
 
 /** Exécute un import Excel après la prévisualisation et le mapping humain obligatoire. */
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const role = ((session.user as { role?: UserRole }).role ?? 'LECTEUR') as UserRole
+// Organisation cible du corps (sinon active) : rôle effectif résolu dans le handler (`org: 'none'`).
+// Débit `excel-parse` (code dédié `excel_rate_limited`) vérifié après le droit de création : gardé ici.
+export const POST = withAccess({ org: 'none' }, async (req, { user }) => {
+  const userId = user.id
+  const role = user.role
   const scope = await getAnalyseScope(userId, role)
   try {
     const body = schema.parse(await req.json())
@@ -65,4 +64,4 @@ export async function POST(req: NextRequest) {
         : undefined
     return NextResponse.json({ error: errorCode, details }, { status: errorCode === 'excel_mapping_incomplete' || errorCode === 'excel_no_importable_sheet' ? 400 : errorCode === 'excel_too_many_rows' ? 413 : 422 })
   }
-}
+})

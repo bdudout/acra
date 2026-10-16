@@ -20,7 +20,7 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { analyseGelee, STATUT_GEL } from '@/lib/gel-analyse'
 import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE, type RateLimitResult } from '@/lib/rate-limit'
 import { sessionUser, type SessionUser } from '@/lib/route-guard.server'
-import { canEditAnalyse, resolveAnalyseRole, type OrgScopeContext, type UserRole } from '@/lib/permissions'
+import { canEditAnalyse, resolveAnalyseRole, type AnalysePermission, type OrgScopeContext, type UserRole } from '@/lib/permissions'
 
 /**
  * Organisation dont le rôle effectif est résolu :
@@ -43,7 +43,7 @@ export interface AnalyseAccess {
   statut: string
   methode: string
   risquesResiduelsStatut: string | null
-  accesUtilisateurs: { userId: string; permission: string }[]
+  accesUtilisateurs: { userId: string; permission: AnalysePermission }[]
 }
 
 export interface AccessOptions<B> {

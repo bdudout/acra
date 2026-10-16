@@ -4,23 +4,14 @@
 // Mêmes gardes que la collection + le plan doit appartenir à l'org de l'analyse ET
 // porter un lien RISQUE_ANALYSE vers le risque ciblé (isolation, sinon 404).
 
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import type { UserRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { guardDirectRisk } from '@/lib/analyse-direct-risk.server'
 import { cleanPriorite, RISK_ACTION_STATUTS } from '@/lib/risk-action'
 
 export const dynamic = 'force-dynamic'
-type Params = { params: Promise<{ id: string; riskId: string; planId: string }> }
-
-function auth(session: unknown): { userId: string; role: UserRole } | null {
-  const u = (session as { user?: { id?: string; role?: string } } | null)?.user
-  if (!u?.id) return null
-  return { userId: u.id, role: (u.role ?? 'ANALYSTE') as UserRole }
-}
 
 /** Vrai si le risque appartient à l'analyse éditée ET le plan (de l'org) porte un lien RISQUE_ANALYSE vers lui. */
 async function planOfRisk(planId: string, riskId: string, analyseId: string, organizationId: string): Promise<boolean> {
@@ -45,11 +36,8 @@ function sanitizePlanPatch(body: Record<string, unknown>): Record<string, unknow
 }
 
 // PATCH /api/analyses/:id/risques/:riskId/plans/:planId
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const a = auth(await getServerSession(authOptions))
-  if (!a) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id, riskId, planId } = await params
-  const g = await guardDirectRisk(id, a.userId, a.role)
+export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'analyse-risques' } }, async (req, { user, params: { id, riskId, planId } }) => {
+  const g = await guardDirectRisk(id, user.id, user.role)
   if (!g.ok) return NextResponse.json({ error: g.error }, { status: g.status })
   const organizationId = g.analyse.organizationId
   if (!organizationId) return NextResponse.json({ error: 'org_requise' }, { status: 400 })
@@ -62,19 +50,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     select: { id: true, titre: true, statut: true, priorite: true, echeance: true, porteur: true },
   })
   await auditLog('WORKSHOP_SAVED', {
-    userId: a.userId, userRole: a.role, organizationId: g.analyse.organizationId,
+    userId: user.id, userRole: user.role, organizationId: g.analyse.organizationId,
     targetId: g.analyse.id, targetType: 'analyse', ip: getClientIp(req),
     details: { scope: 'risque-plan-action', action: 'update', riskId, planId },
   })
   return NextResponse.json({ plan: { ...p, echeance: p.echeance ? p.echeance.toISOString() : null } })
-}
+})
 
 // DELETE /api/analyses/:id/risques/:riskId/plans/:planId
-export async function DELETE(req: NextRequest, { params }: Params) {
-  const a = auth(await getServerSession(authOptions))
-  if (!a) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id, riskId, planId } = await params
-  const g = await guardDirectRisk(id, a.userId, a.role)
+export const DELETE = withAccess({ org: 'none', rateLimit: { bucket: 'analyse-risques' } }, async (req, { user, params: { id, riskId, planId } }) => {
+  const g = await guardDirectRisk(id, user.id, user.role)
   if (!g.ok) return NextResponse.json({ error: g.error }, { status: g.status })
   const organizationId = g.analyse.organizationId
   if (!organizationId) return NextResponse.json({ error: 'org_requise' }, { status: 400 })
@@ -82,9 +67,9 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
   await prisma.planAction.delete({ where: { id: planId } })
   await auditLog('WORKSHOP_SAVED', {
-    userId: a.userId, userRole: a.role, organizationId: g.analyse.organizationId,
+    userId: user.id, userRole: user.role, organizationId: g.analyse.organizationId,
     targetId: g.analyse.id, targetType: 'analyse', ip: getClientIp(req),
     details: { scope: 'risque-plan-action', action: 'delete', riskId, planId },
   })
   return NextResponse.json({ ok: true })
-}
+})

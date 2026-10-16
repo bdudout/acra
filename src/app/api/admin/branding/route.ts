@@ -1,18 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { canAdminInstance } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { requireInstanceAdmin } from '@/lib/route-guard.server'
+import { withAccess } from '@/lib/with-access.server'
 
 // GET /api/admin/branding — identité configurée de l'instance (nom + baseline).
 // Renvoie les valeurs brutes (vides = défauts i18n appliqués ailleurs).
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  if (!canAdminInstance({ id: (session.user as any).id, role: (session.user as any).role })) {
-    return NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 })
-  }
+  const g = await requireInstanceAdmin()
+  if (g.error) return g.error
   const cfg = await prisma.configuration.findUnique({
     where: { id: 'global' }, select: { appName: true, appBaseline: true },
   })
@@ -20,11 +17,9 @@ export async function GET() {
 }
 
 // PUT /api/admin/branding — définit le nom/baseline de l'instance (SUPER_ADMIN).
-export async function PUT(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as any).id
-  const userRole = (session.user as any).role
+export const PUT = withAccess({ org: 'none', rateLimit: { bucket: 'admin-branding' } }, async (req, { user }) => {
+  const userId = user.id
+  const userRole = user.role
   if (!canAdminInstance({ id: userId, role: userRole })) {
     return NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 })
   }
@@ -42,4 +37,4 @@ export async function PUT(req: NextRequest) {
     details: { scope: 'branding', appName: data.appName, appBaseline: data.appBaseline },
   })
   return NextResponse.json({ ok: true, ...data })
-}
+})

@@ -5,16 +5,13 @@
 //        transaction, idempotent par règle (contrainte unique analyse × règle).
 // EBIOS RM : les risques naissent en atelier 5 (état local de l'atelier, persisté
 // par son auto-save) → POST refusé ici pour ne pas être écrasé par cet auto-save.
-// Gardes : accès (404 sans divulgation), édition (403), gel après acceptation (403).
+// Gardes : accès (404 sans divulgation), édition (403), gel après acceptation (403) —
+// `withAccess` (mode analyse ; `write` pour le POST : rôle EFFECTIF de l'org de l'analyse).
 
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
-import { canEditAnalyse, resolveAnalyseRole, type UserRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { analyseGelee } from '@/lib/gel-analyse'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { getServerT } from '@/lib/i18n'
 import { sanitizeQualification, suggestedQualificationRisks } from '@/lib/qualification'
@@ -29,19 +26,14 @@ import { sousSecteursOf } from '@/lib/sous-secteurs'
 import { patternsOf } from '@/lib/patterns-archi'
 
 export const dynamic = 'force-dynamic'
-type Params = { params: Promise<{ id: string }> }
 
-/** Charge l'analyse accessible, ses propositions traduites et les règles déjà créées. */
+/** Charge l'analyse (accès déjà vérifié par withAccess), ses propositions traduites et les règles déjà créées. */
 async function load(id: string) {
-  const session = await getServerSession(authOptions)
-  const user = session?.user as { id?: string; role?: string } | undefined
-  if (!user?.id) return { ok: false as const, res: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
-  const role = (user.role ?? 'ANALYSTE') as UserRole
   const analyse = await prisma.analyse.findFirst({
-    where: await analyseAccessWhere(user.id, role, id),
-    include: { accesUtilisateurs: true, risques: { select: { nom: true, qualificationRuleId: true } } },
+    where: { id },
+    include: { risques: { select: { nom: true, qualificationRuleId: true } } },
   })
-  if (!analyse || analyse.deletedAt) return { ok: false as const, res: NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 }) }
+  if (!analyse) return { ok: false as const, res: NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 }) }
   const config = await getOrgConfig(analyse.organizationId)
   const t = await getServerT()
   // Analyse projet 360 : règles et catalogue 360 en plus de ceux de l'organisation.
@@ -61,30 +53,28 @@ async function load(id: string) {
   const proposals = [...qualifies, ...sectoriels]
   // Déjà présentes : même règle, même intitulé ou risque par défaut équivalent → ni reproposées, ni recréées.
   const existingRuleIds = [...propositionsDejaPresentes(proposals, analyse.risques)]
-  return { ok: true as const, userId: user.id, role, analyse, config, proposals, existingRuleIds }
+  return { ok: true as const, analyse, config, proposals, existingRuleIds }
 }
 
 // GET /api/analyses/:id/qualification-risks
-export async function GET(_req: NextRequest, { params }: Params) {
-  const ctx = await load((await params).id)
+export const GET = withAccess({ org: { analyse: 'id' } }, async (_req, { analyse }) => {
+  const ctx = await load(analyse.id)
   if (!ctx.ok) return ctx.res
   const existing = new Set(ctx.existingRuleIds)
   return NextResponse.json({
     channel: qualificationRiskChannel(ctx.analyse.methode),
     proposals: ctx.proposals.map(p => ({ ...p, alreadyCreated: existing.has(p.id) })),
   })
-}
+})
 
 // POST /api/analyses/:id/qualification-risks — { ruleIds: string[] }
-export async function POST(req: NextRequest, { params }: Params) {
-  const ctx = await load((await params).id)
+// Édition (403) et gel après acceptation (403 ANALYSE_GELEE) : withAccess (`write`).
+export const POST = withAccess({ org: { analyse: 'id', write: true }, rateLimit: { bucket: 'qualification-risks' } }, async (req, { user, analyse: acces }) => {
+  const ctx = await load(acces.id)
   if (!ctx.ok) return ctx.res
-  const { analyse, userId, role } = ctx
-  const effRole = resolveAnalyseRole(role, analyse.organizationId, analyse.organizationId ? await getEffectiveRoleForOrg(userId, role, analyse.organizationId) : null)
-  if (!canEditAnalyse({ id: userId, role: effRole }, analyse)) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
-  if (analyseGelee(analyse.risquesResiduelsStatut, ctx.config.gelApresAcceptationActive)) {
-    return NextResponse.json({ error: 'ANALYSE_GELEE' }, { status: 403 })
-  }
+  const { analyse } = ctx
+  const userId = user.id
+  const role = user.role
   if (qualificationRiskChannel(analyse.methode) === 'ATELIER5') {
     return NextResponse.json({ error: 'ebios_via_atelier5' }, { status: 400 })
   }
@@ -116,4 +106,4 @@ export async function POST(req: NextRequest, { params }: Params) {
     details: { scope: 'qualification-risks', created: plan.toCreate.map(p => p.id), skipped: plan.skipped },
   })
   return NextResponse.json({ created: result.count, createdRuleIds: plan.toCreate.map(p => p.id), skipped: plan.skipped }, { status: 201 })
-}
+})

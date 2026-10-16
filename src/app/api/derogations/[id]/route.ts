@@ -1,9 +1,8 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { analyseAccessWhere, getAccessibleOrgIds, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { canEditAnalyse, type UserRole } from '@/lib/permissions'
+import { canEditAnalyse } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import {
   calcDateFin, depasseDelaiMax, statutApresAvisRssi, statutApresDoubleRegard, prolongationEntry,
   canAvisRssiDerogation, canDoubleRegardDerogation, canValiderDerogation,
@@ -12,19 +11,15 @@ import {
 } from '@/lib/derogation'
 import { auditLog, getClientIp, type AuditAction } from '@/lib/logger'
 import { sanitizePreuves } from '@/lib/preuves'
-import { NextRequest, NextResponse } from 'next/server'
-
-type Params = { params: Promise<{ id: string }> }
+import { NextResponse } from 'next/server'
 
 // GET /api/derogations/[id] — détail complet d'une dérogation (motif, mesures
 // compensatoires, dates, avis RSSI…), pour la vue « voir le contenu » du registre.
-export async function GET(_req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
+// Pas d'organisation ciblée par la route : périmètre contrôlé ci-dessous (rôle d'instance, inchangé).
+export const GET = withAccess({ org: 'none' }, async (_req, { user, params: { id } }) => {
+  const userId = user.id
+  const userRole = user.role
 
-  const { id } = await params
   const derog = await prisma.derogation.findUnique({
     where: { id },
     include: { analyse: { select: { nom: true } } },
@@ -60,17 +55,15 @@ export async function GET(_req: NextRequest, { params }: Params) {
     analyseId: derog.analyseId, analyseNom: derog.analyse?.nom ?? null,
     createdAt: derog.createdAt,
   })
-}
+})
 
 // PATCH /api/derogations/[id] — transition du workflow (body: { action, ... }).
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
+// Périmètre et permissions de transition résolus ci-dessous (rôle effectif de l'org de la dérogation).
+export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'derogations' } }, async (req, { user, params: { id } }) => {
+  const userId = user.id
+  const userRole = user.role
   const sessionUser = { id: userId, role: userRole }
 
-  const { id } = await params
   const derog = await prisma.derogation.findUnique({ where: { id } })
   if (!derog) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
 
@@ -249,4 +242,4 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     default:
       return NextResponse.json({ error: 'Action inconnue' }, { status: 400 })
   }
-}
+})

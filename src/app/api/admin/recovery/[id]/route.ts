@@ -1,62 +1,47 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { canAdmin } from '@/lib/permissions'
+import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { getAdminOrgIds } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
-
-type Params = { params: Promise<{ id: string }> }
+import { withAccess } from '@/lib/with-access.server'
 
 // Filtre d'organisation pour la corbeille (SUPER_ADMIN : tout ; sinon son périmètre).
-async function recoveryOrgFilter(userId: string, userRole: string) {
-  const { all, ids } = await getAdminOrgIds(userId, userRole as any)
+async function recoveryOrgFilter(userId: string, userRole: UserRole) {
+  const { all, ids } = await getAdminOrgIds(userId, userRole)
   return all ? {} : { organizationId: { in: ids } }
 }
 
-async function authoriseAdmin() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
-  const userId   = (session.user as any).id
-  const userRole = (session.user as any).role ?? 'ANALYSTE'
-  if (!canAdmin({ id: userId, role: userRole })) {
-    return { error: NextResponse.json({ error: 'Accès réservé aux administrateurs' }, { status: 403 }) }
-  }
-  return { userId, userRole }
-}
+// Corbeille : réservée aux administrateurs (rôle d'instance, `canAdmin`).
+const ADMIN = { org: 'none', allow: isAdminRole, rateLimit: { bucket: 'admin-recovery' } } as const
 
 // PATCH /api/admin/recovery/:id — restaurer une analyse de la corbeille (ADMIN).
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const auth = await authoriseAdmin()
-  if (auth.error) return auth.error
-  const { id } = await params
+export const PATCH = withAccess(ADMIN, async (req, { user, params }) => {
+  const { id } = params
 
-  const a = await prisma.analyse.findFirst({ where: { id, ...(await recoveryOrgFilter(auth.userId!, auth.userRole!)) }, select: { id: true, nom: true, deletedAt: true } })
+  const a = await prisma.analyse.findFirst({ where: { id, ...(await recoveryOrgFilter(user.id, user.role)) }, select: { id: true, nom: true, deletedAt: true } })
   if (!a || !a.deletedAt) return NextResponse.json({ error: 'Analyse introuvable dans la corbeille' }, { status: 404 })
 
   await prisma.analyse.update({ where: { id }, data: { deletedAt: null, deletedById: null } })
   await auditLog('ANALYSE_RESTORED', {
-    userId: auth.userId, userRole: auth.userRole,
+    userId: user.id, userRole: user.role,
     targetId: id, targetType: 'analyse', ip: getClientIp(req),
     details: { nom: a.nom },
   })
   return NextResponse.json({ ok: true })
-}
+})
 
 // DELETE /api/admin/recovery/:id — purge définitive (ADMIN). Cascade sur les ateliers.
-export async function DELETE(req: NextRequest, { params }: Params) {
-  const auth = await authoriseAdmin()
-  if (auth.error) return auth.error
-  const { id } = await params
+export const DELETE = withAccess(ADMIN, async (req, { user, params }) => {
+  const { id } = params
 
-  const a = await prisma.analyse.findFirst({ where: { id, ...(await recoveryOrgFilter(auth.userId!, auth.userRole!)) }, select: { id: true, nom: true, deletedAt: true } })
+  const a = await prisma.analyse.findFirst({ where: { id, ...(await recoveryOrgFilter(user.id, user.role)) }, select: { id: true, nom: true, deletedAt: true } })
   if (!a || !a.deletedAt) return NextResponse.json({ error: 'Analyse introuvable dans la corbeille' }, { status: 404 })
 
   await prisma.analyse.delete({ where: { id } })
   await auditLog('ANALYSE_PURGED', {
-    userId: auth.userId, userRole: auth.userRole,
+    userId: user.id, userRole: user.role,
     targetId: id, targetType: 'analyse', ip: getClientIp(req),
     details: { nom: a.nom },
   })
   return NextResponse.json({ ok: true })
-}
+})

@@ -6,13 +6,12 @@
 //    ANALYSE) : rôle de gouvernance de l'organisation (comme /plans-actions).
 // L'ancre doit exister et être dans l'organisation (sinon 404, sans divulgation).
 
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { lockConformite } from '@/lib/row-lock.server'
 import { canCreateAnalyse, canEditAnalyse, peutGererConformite, peutGererPlansAction, peutGererReferentiels, resolveAnalyseRole, type UserRole } from '@/lib/permissions'
 import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
+import { withAccess } from '@/lib/with-access.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { getOrgConfig, optionsStructure } from '@/lib/org-config.server'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
@@ -36,7 +35,6 @@ import { importerPssi } from '@/lib/mcp/pssi-import.server'
 import { usesConformiteEntity } from '@/lib/conformite-config'
 
 export const dynamic = 'force-dynamic'
-type Params = { params: Promise<{ id: string }> }
 
 /** Rôles de gouvernance autorisés à gérer les plans d'action (cf. /plans-actions). */
 const canManagePlanAction = peutGererPlansAction
@@ -51,13 +49,11 @@ type Gate =
   | { ok: false; status: number; error: string }
 
 // PATCH /api/mcp-proposals/:id — { action: 'accept' | 'reject', note?: string }
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
+// Organisation et RBAC résolus par `resolveGate` selon l'ancre de la proposition (rôle d'instance en entrée).
+export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'mcp-proposals' } }, async (req, { user, params: { id } }) => {
+  const userId = user.id
+  const instanceRole = user.role
 
-  const { id } = await params
   const body = await req.json().catch(() => ({})) as { action?: string; note?: string }
   const action = body.action
   if (action !== 'accept' && action !== 'reject') {
@@ -97,7 +93,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     targetId: id, targetType: 'mcp-proposal', ip, details: { decision: 'accept', ...auditDetails, appliedId: applied.appliedId },
   })
   return NextResponse.json({ ok: true, statut: 'ACCEPTEE', appliedId: applied.appliedId })
-}
+})
 
 type ProposalRow = NonNullable<Awaited<ReturnType<typeof prisma.mcpProposal.findUnique>>>
 

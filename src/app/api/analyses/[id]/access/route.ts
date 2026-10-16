@@ -1,59 +1,31 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
-import { NextRequest, NextResponse } from 'next/server'
-import { canManageAccess, resolveAnalyseRole } from '@/lib/permissions'
+import { NextResponse } from 'next/server'
+import { canManageAccess } from '@/lib/permissions'
 import type { AnalysePermission } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 
-type Params = { params: Promise<{ id: string }> }
+// Accès à l'analyse (404 hors périmètre) et rôle EFFECTIF dans son organisation (#130) : `withAccess`.
+// La gestion des accès (`canManageAccess`) reste évaluée ici, sur ce rôle effectif.
+const lecture = { org: { analyse: 'id' } } as const
+const ecriture = { org: { analyse: 'id' }, rateLimit: { bucket: 'analyse-access' } } as const
+
+const refuse = () => NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
 
 // GET /api/analyses/[id]/access — liste des accès de l'analyse
-export async function GET(_req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+export const GET = withAccess(lecture, async (_req, { user, role, analyse }) => {
+  if (!canManageAccess({ id: user.id, role }, analyse)) return refuse()
 
-  const { id } = await params
-  const userId = (session.user as any).id
-  const userRole = (session.user as any).role ?? 'ANALYSTE'
-
-  const analyse = await prisma.analyse.findFirst({
-    where: await analyseAccessWhere(userId, userRole, id),
-    include: { accesUtilisateurs: { include: { user: { select: { id: true, name: true, email: true, role: true } } } } },
+  const detail = await prisma.analyse.findFirst({
+    where: { id: analyse.id },
+    select: { accesUtilisateurs: { include: { user: { select: { id: true, name: true, email: true, role: true } } } } },
   })
-  if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
-
-  // RBAC sur le rôle EFFECTIF d'org (pas l'instance) — #130.
-  const membershipRole = analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null
-  const effRole = resolveAnalyseRole(userRole, analyse.organizationId, membershipRole)
-  if (!canManageAccess({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
-    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
-  }
-
-  return NextResponse.json(analyse.accesUtilisateurs)
-}
+  return NextResponse.json(detail?.accesUtilisateurs ?? [])
+})
 
 // POST /api/analyses/[id]/access — inviter un utilisateur
-export async function POST(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const { id } = await params
-  const userId = (session.user as any).id
-  const userRole = (session.user as any).role ?? 'ANALYSTE'
-
-  const analyse = await prisma.analyse.findFirst({
-    where: await analyseAccessWhere(userId, userRole, id),
-    include: { accesUtilisateurs: true },
-  })
-  if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
-
-  // RBAC sur le rôle EFFECTIF d'org (pas l'instance) — #130.
-  const membershipRole = analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null
-  const effRole = resolveAnalyseRole(userRole, analyse.organizationId, membershipRole)
-  if (!canManageAccess({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
-    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
-  }
+export const POST = withAccess(ecriture, async (req, { user, role, analyse }) => {
+  if (!canManageAccess({ id: user.id, role }, analyse)) return refuse()
+  const id = analyse.id
 
   const { email, permission } = await req.json() as { email: string; permission: AnalysePermission }
 
@@ -75,42 +47,24 @@ export async function POST(req: NextRequest, { params }: Params) {
   const acces = await prisma.analyseAcces.upsert({
     where: { analyseId_userId: { analyseId: id, userId: targetUser.id } },
     update: { permission },
-    create: { analyseId: id, userId: targetUser.id, permission, invitePar: userId },
+    create: { analyseId: id, userId: targetUser.id, permission, invitePar: user.id },
     include: { user: { select: { id: true, name: true, email: true, role: true } } },
   })
 
   return NextResponse.json(acces, { status: 201 })
-}
+})
 
 // DELETE /api/analyses/[id]/access?targetUserId=xxx — retirer un accès
-export async function DELETE(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const { id } = await params
-  const userId = (session.user as any).id
-  const userRole = (session.user as any).role ?? 'ANALYSTE'
-
-  const analyse = await prisma.analyse.findFirst({
-    where: await analyseAccessWhere(userId, userRole, id),
-    include: { accesUtilisateurs: true },
-  })
-  if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
-
-  // RBAC sur le rôle EFFECTIF d'org (pas l'instance) — #130.
-  const membershipRole = analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null
-  const effRole = resolveAnalyseRole(userRole, analyse.organizationId, membershipRole)
-  if (!canManageAccess({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
-    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
-  }
+export const DELETE = withAccess(ecriture, async (req, { user, role, analyse }) => {
+  if (!canManageAccess({ id: user.id, role }, analyse)) return refuse()
 
   const { searchParams } = new URL(req.url)
   const targetUserId = searchParams.get('targetUserId')
   if (!targetUserId) return NextResponse.json({ error: 'targetUserId manquant' }, { status: 400 })
 
   await prisma.analyseAcces.deleteMany({
-    where: { analyseId: id, userId: targetUserId },
+    where: { analyseId: analyse.id, userId: targetUserId },
   })
 
   return NextResponse.json({ ok: true })
-}
+})

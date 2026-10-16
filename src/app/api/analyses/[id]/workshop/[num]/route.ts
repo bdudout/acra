@@ -1,13 +1,8 @@
 import { missingExclusionJustifications } from '@/lib/conformite'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { dedupeQualificationRuleIds } from '@/lib/qualification-risks'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
-import { getOrgConfig } from '@/lib/org-config.server'
-import { analyseGelee } from '@/lib/gel-analyse'
-import { canEditAnalyse, resolveAnalyseRole } from '@/lib/permissions'
+import { withAccess, type AccessContext } from '@/lib/with-access.server'
 import {
   cleanSourceRisque,
   cleanPartiePrenante,
@@ -47,51 +42,24 @@ import { sanitizeTierLinks } from '@/lib/tier-registry.server'
  *  - EDITION or APPROBATION permission on the analyse (403 otherwise)
  *  - Analyse must not be in APPROUVE status unless caller is ADMIN (403)
  */
-/** Contrôles communs à la sauvegarde et à l'avancement : session, accès, édition, statut, gel. */
-async function chargerPourEdition(params: Promise<{ id: string; num: string }>) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { ok: false as const, error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
+/**
+ * Contrôles communs à la sauvegarde et à l'avancement. withAccess (write) : session (401), analyse dans le
+ * périmètre et hors corbeille (404), édition sur le rôle EFFECTIF dans l'organisation de l'analyse (F01, CWE-863 ;
+ * 403) et gel après acceptation des risques résiduels (403 ANALYSE_GELEE ; réouverture = nouvelle version).
+ */
+const access = { org: { analyse: 'id', write: true }, rateLimit: { bucket: 'analyse-workshop' } } as const
 
-  const { id: analyseId, num } = await params
-  const userId = (session.user as any).id
-  const userRole = (session.user as any).role ?? 'ANALYSTE'
-  const atelierNum = parseInt(num)
-
-  const analyse = await prisma.analyse.findFirst({
-    where: await analyseAccessWhere(userId, userRole, analyseId),
-    include: { accesUtilisateurs: true },
-  })
-  // Analyse en corbeille (soft delete) = introuvable : interdit de sauvegarder dessus.
-  if (!analyse || analyse.deletedAt) return { ok: false as const, error: NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 }) }
-
-  // F01 (CWE-863) : rôle EFFECTIF dans l'organisation de l'analyse, pas le rôle d'instance.
-  const effRole = resolveAnalyseRole(userRole, analyse.organizationId, analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null)
-  if (!canEditAnalyse({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
-    return { ok: false as const, error: NextResponse.json({ error: 'Accès refusé — édition non autorisée' }, { status: 403 }) }
-  }
-
+/** Contrôle complémentaire : analyse approuvée non modifiable, sauf ADMIN (rôle d'INSTANCE, inchangé). */
+function controleStatut({ user, analyse, params }: AccessContext<typeof access.org, undefined>) {
   // Bloquer les modifications si l'analyse est approuvée
-  if (analyse.statut === 'APPROUVE' && userRole !== 'ADMIN') {
+  if (analyse.statut === 'APPROUVE' && user.role !== 'ADMIN') {
     return { ok: false as const, error: NextResponse.json({ error: 'L\'analyse est approuvée et ne peut plus être modifiée' }, { status: 403 }) }
   }
-
-  // Gel après acceptation des risques résiduels : l'analyse est figée tant que la
-  // fonctionnalité est active pour l'org. Réouverture = nouvelle version (révision).
-  if (analyse.risquesResiduelsStatut === 'ACCEPTES') {
-    const orgConfig = await getOrgConfig(analyse.organizationId).catch(() => null)
-    if (analyseGelee(analyse.risquesResiduelsStatut, orgConfig?.gelApresAcceptationActive ?? false)) {
-      return { ok: false as const, error: NextResponse.json({ error: 'Analyse gelée : les risques résiduels ont été acceptés. Ouvrez une nouvelle version pour la modifier.' }, { status: 403 }) }
-    }
-  }
-
-  return { ok: true as const, analyseId, atelierNum, analyse }
+  return { ok: true as const, analyseId: analyse.id, atelierNum: parseInt(params.num), analyse }
 }
 
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string; num: string }> }
-): Promise<NextResponse> {
-  const c = await chargerPourEdition(params)
+export const PUT = withAccess(access, async (req, ctx) => {
+  const c = controleStatut(ctx)
   if (!c.ok) return c.error
   const { analyseId, atelierNum, analyse } = c
 
@@ -265,20 +233,20 @@ export async function PUT(
     console.error(err)
     return NextResponse.json({ error: 'Erreur lors de la sauvegarde' }, { status: 500 })
   }
-}
+})
 
 /**
  * POST /api/analyses/[id]/workshop/[num] — « Passer à l'atelier suivant » (recette n° 14) : seul point qui fait avancer
  * l'atelier courant (lib/analyse-avancement : jamais de recul, plafond 5). Mêmes contrôles que la sauvegarde.
  */
-export async function POST(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string; num: string }> }
-): Promise<NextResponse> {
-  const c = await chargerPourEdition(params)
+export const POST = withAccess(access, async (_req, ctx) => {
+  const c = controleStatut(ctx)
   if (!c.ok) return c.error
-  const atelierCourant = atelierApresAvancement(c.analyse.atelierCourant, c.atelierNum)
-  if (atelierCourant !== c.analyse.atelierCourant) await prisma.analyse.update({ where: { id: c.analyseId }, data: { atelierCourant } })
+  const row = await prisma.analyse.findFirst({ where: { id: c.analyseId }, select: { atelierCourant: true } })
+  if (!row) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
+  const courant = row.atelierCourant
+  const atelierCourant = atelierApresAvancement(courant, c.atelierNum)
+  if (atelierCourant !== courant) await prisma.analyse.update({ where: { id: c.analyseId }, data: { atelierCourant } })
   return NextResponse.json({ ok: true, atelierCourant })
-}
+})
 

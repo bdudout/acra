@@ -5,24 +5,15 @@
 // Mêmes gardes que la collection risques (accès, méthode à saisie directe, édition,
 // gel) + le risque doit appartenir à l'analyse ciblée (sinon 404, sans divulgation).
 
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import type { UserRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { guardDirectRisk } from '@/lib/analyse-direct-risk.server'
 import { validatePlanActionInput, cleanPlanActionInput } from '@/lib/plan-action'
 import { createAnalyseRiskPlanAction, findAnalyseRiskPlanActions } from '@/lib/plan-action.server'
 
 export const dynamic = 'force-dynamic'
-type Params = { params: Promise<{ id: string; riskId: string }> }
-
-function auth(session: unknown): { userId: string; role: UserRole } | null {
-  const u = (session as { user?: { id?: string; role?: string } } | null)?.user
-  if (!u?.id) return null
-  return { userId: u.id, role: (u.role ?? 'ANALYSTE') as UserRole }
-}
 
 /** Charge le risque (intitulé) en s'assurant qu'il appartient à l'analyse ciblée. */
 async function riskOfAnalyse(riskId: string, analyseId: string) {
@@ -35,11 +26,8 @@ function toPlanRow(p: { id: string; titre: string; statut: string; priorite: str
 }
 
 // GET /api/analyses/:id/risques/:riskId/plans
-export async function GET(_req: NextRequest, { params }: Params) {
-  const a = auth(await getServerSession(authOptions))
-  if (!a) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id, riskId } = await params
-  const g = await guardDirectRisk(id, a.userId, a.role)
+export const GET = withAccess({ org: 'none' }, async (_req, { user, params: { id, riskId } }) => {
+  const g = await guardDirectRisk(id, user.id, user.role)
   if (!g.ok) return NextResponse.json({ error: g.error }, { status: g.status })
   const organizationId = g.analyse.organizationId
   if (!organizationId) return NextResponse.json({ error: 'org_requise' }, { status: 400 })
@@ -47,14 +35,11 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   const plans = await findAnalyseRiskPlanActions(prisma, organizationId, riskId)
   return NextResponse.json({ plans: plans.map(toPlanRow) })
-}
+})
 
 // POST /api/analyses/:id/risques/:riskId/plans — rattache un plan d'action au risque.
-export async function POST(req: NextRequest, { params }: Params) {
-  const a = auth(await getServerSession(authOptions))
-  if (!a) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id, riskId } = await params
-  const g = await guardDirectRisk(id, a.userId, a.role)
+export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'analyse-risques' } }, async (req, { user, params: { id, riskId } }) => {
+  const g = await guardDirectRisk(id, user.id, user.role)
   if (!g.ok) return NextResponse.json({ error: g.error }, { status: g.status })
   const organizationId = g.analyse.organizationId
   if (!organizationId) return NextResponse.json({ error: 'org_requise' }, { status: 400 })
@@ -77,13 +62,13 @@ export async function POST(req: NextRequest, { params }: Params) {
     echeance: clean.echeance ? new Date(clean.echeance) : null,
     statut: clean.statut,
     priorite: clean.priorite,
-    createdById: a.userId,
+    createdById: user.id,
     riskLabel: risque.nom,
   })
   await auditLog('WORKSHOP_SAVED', {
-    userId: a.userId, userRole: a.role, organizationId: g.analyse.organizationId,
+    userId: user.id, userRole: user.role, organizationId: g.analyse.organizationId,
     targetId: g.analyse.id, targetType: 'analyse', ip: getClientIp(req),
     details: { scope: 'risque-plan-action', action: 'create', riskId, planId: plan.id },
   })
   return NextResponse.json({ plan: toPlanRow(plan) }, { status: 201 })
-}
+})
