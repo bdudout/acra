@@ -90,6 +90,8 @@ réponse < 500 Ko, vue consolidée p95 < 2 s.
    `REDIS_URL` est défini (abstraction déjà en place) ; stockage des documents en S3 compatible si
    `DOCUMENT_STORAGE=s3` (adaptateur à écrire) ; profil Compose « ha » sans `container_name`,
    plusieurs réplicas derrière Caddy avec contrôle de santé.
+   *Livré le 16/10/2026* (store partagé, adaptateur S3, `docker-compose.ha.yml` + `Caddyfile.ha`) — guide et
+   périmètre testé : [`../deploiement-haute-disponibilite.md`](../deploiement-haute-disponibilite.md).
 2. **Base hautement disponible** : base managée (réplique + bascule) ou PostgreSQL primaire/réplique
    (Patroni) — **décision d'hébergement**.
 3. **Perte de données ≤ 15 min** : archivage continu des journaux de transactions (WAL : pgBackRest ou
