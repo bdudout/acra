@@ -23,6 +23,7 @@ export const de: Translations = {
     invalid_body: 'Ungültige Daten: Bitte prüfen Sie die eingegebenen Felder.',
     not_found: 'Element nicht gefunden oder außerhalb Ihres Bereichs.',
     ANALYSE_GELEE: 'Analyse eingefroren: Die Restrisiken wurden akzeptiert. Öffnen Sie eine neue Version, um sie zu ändern.',
+    CONFLIT_EDITION: 'Dieser Workshop wurde seit dem Öffnen von einem anderen Benutzer geändert. Laden Sie die Seite neu, um dessen Version zu erhalten: Ihre letzte Änderung wurde nicht gespeichert.',
   },
   loading:    'Wird geladen…',
   saving:     'Speichern…',

@@ -13,6 +13,7 @@ vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { id:
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 
 const proposalFindUnique = vi.fn()
+const analyseUpdate = vi.fn(async (..._a: unknown[]) => ({}))
 const analyseFindFirst = vi.fn()
 const proposalUpdate = vi.fn(async (..._a: unknown[]) => ({}))
 const risqueCreate = vi.fn(async (..._a: unknown[]) => ({ id: 'risk-new' }))
@@ -34,7 +35,7 @@ vi.mock('@/lib/prisma', () => ({
     mesure: { create: (...a: unknown[]) => mesureCreate(...a) },
     planAction: { create: (...a: unknown[]) => planActionCreate(...a) },
     $transaction: vi.fn(async (cb: (tx: unknown) => unknown) =>
-      cb({ risque: { create: risqueCreate }, mesure: { create: mesureCreate, createMany: mesureCreateMany }, planAction: { create: planActionCreate }, mcpProposal: { update: proposalUpdate } })),
+      cb({ risque: { create: risqueCreate }, mesure: { create: mesureCreate, createMany: mesureCreateMany }, planAction: { create: planActionCreate }, mcpProposal: { update: proposalUpdate }, analyse: { update: analyseUpdate } })),
   },
 }))
 const effRole = { value: 'ADMIN' as string | null }
@@ -79,6 +80,11 @@ describe('PATCH /api/mcp-proposals/[id]', () => {
     expect(risqueCreate).toHaveBeenCalledTimes(1)
     expect(argOf(risqueCreate).data).toMatchObject({ analyseId: 'an1', nom: 'Rançongiciel', niveauRisque: 12 })
     expect(argOf(proposalUpdate).data).toMatchObject({ statut: 'ACCEPTEE', appliedId: 'risk-new', reviewedById: 'reviewer' })
+  })
+
+  it('accepter un risque fait avancer la révision de l\'atelier 5 (un éditeur ouvert ne l\'écrasera pas)', async () => {
+    await PATCH(req({ action: 'accept' }), params)
+    expect(argOf(analyseUpdate)).toMatchObject({ where: { id: 'an1' }, data: { revisionAtelier5: { increment: 1 } } })
   })
 
   it('accept d\'une proposition "measure" → crée la mesure et marque ACCEPTEE', async () => {

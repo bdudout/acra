@@ -31,12 +31,13 @@
  */
 
 import { AlertTriangle, BarChart3, BookOpen, ClipboardList, FileText, Files, Scale, ShieldCheck, Star } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { uid } from '@/lib/uid'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
+import { enregistrerAtelier } from '@/lib/atelier-save'
 import { useAutoSave } from '@/lib/useAutoSave'
 import { getNiveauRisqueLabel } from '@/lib/ebios-data'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
@@ -226,16 +227,11 @@ export default function Atelier5({ analyseId, initialData, analyse, initialTab, 
   // ── Auto-save ─────────────────────────────────────────────────────────────
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const autoSaveData = useMemo(() => ({ risques, mesures }), [risques, mesures])
+  const revisionRef = useRef<number>(Number(analyse?.revisionAtelier5 ?? 0))
   const { status: autoStatus, lastSaved, error: autoError, saveNow } = useAutoSave(
     autoSaveData,
-    async (data) => {
-      const res = await fetch(`/api/analyses/${analyseId}/workshop/5`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      if (!res.ok) throw new Error('Sauvegarde échouée')
-    },
+    // Verrou optimiste (T9) : un autre éditeur a enregistré cet atelier → 409, rien n'est écrasé.
+    (data) => enregistrerAtelier(analyseId, 5, data, revisionRef, { conflit: t.apiErrors.CONFLIT_EDITION, echec: 'Sauvegarde échouée' }),
     { delay: 1500, disabled: !editable }
   )
 

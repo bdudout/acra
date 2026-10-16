@@ -259,6 +259,8 @@ async function applyAnalyseChild(proposal: ProposalRow, analyseId: string, userI
           echeance: pl.echeance ? new Date(pl.echeance) : null, priorite: pl.priorite, createdById: userId, riskLabel: r.nom,
         })
       }
+      // L'atelier 5 change hors éditeur : sa révision avance, un éditeur ouvert ne l'écrasera pas (T9).
+      await tx.analyse.update({ where: { id: analyseId }, data: { revisionAtelier5: { increment: 1 } } })
       await markAccepted(tx, proposal.id, r.id, userId, note)
       return r.id
     })
@@ -268,6 +270,8 @@ async function applyAnalyseChild(proposal: ProposalRow, analyseId: string, userI
   if (!isMeasureProposalValid(payload)) return { ok: false, error: 'Proposition invalide' }
   const appliedId = await prisma.$transaction(async tx => {
     const m = await tx.mesure.create({ data: measureProposalToCreate(payload, analyseId), select: { id: true } })
+    // L'atelier 5 change hors éditeur : sa révision avance, un éditeur ouvert ne l'écrasera pas (T9).
+    await tx.analyse.update({ where: { id: analyseId }, data: { revisionAtelier5: { increment: 1 } } })
     await markAccepted(tx, proposal.id, m.id, userId, note)
     return m.id
   })

@@ -29,6 +29,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import { uid } from '@/lib/uid'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
+import { enregistrerAtelier } from '@/lib/atelier-save'
 import { useAutoSave } from '@/lib/useAutoSave'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
@@ -302,16 +303,11 @@ export default function Atelier1({ analyseId, initialData, analyse, flashMode, e
     () => ({ perimetre, objectifsEtude: objectifs, missions, valeursMetier: vms, biensSupports: biens, evenementsRedoutes: ers, referentiels, referentielMesures, customControles, socleSecurite, tailleAnalyse }),
     [perimetre, objectifs, missions, vms, biens, ers, referentiels, referentielMesures, customControles, socleSecurite, tailleAnalyse]
   )
+  const revisionRef = useRef<number>(Number(analyse?.revisionAtelier1 ?? 0))
   const { status: autoStatus, lastSaved, error: autoError, saveNow } = useAutoSave(
     autoSaveData,
-    async (data) => {
-      const res = await fetch(`/api/analyses/${analyseId}/workshop/1`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      if (!res.ok) throw new Error('Sauvegarde échouée')
-    },
+    // Verrou optimiste (T9) : un autre éditeur a enregistré cet atelier → 409, rien n'est écrasé.
+    (data) => enregistrerAtelier(analyseId, 1, data, revisionRef, { conflit: t.apiErrors.CONFLIT_EDITION, echec: 'Sauvegarde échouée' }),
     { delay: 1500, disabled: !editable }
   )
 

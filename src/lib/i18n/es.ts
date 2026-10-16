@@ -23,6 +23,7 @@ export const es: Translations = {
     invalid_body: 'Datos no válidos: revise los campos introducidos.',
     not_found: 'Elemento no encontrado o fuera de su ámbito.',
     ANALYSE_GELEE: 'Análisis congelado: se han aceptado los riesgos residuales. Abra una nueva versión para modificarlo.',
+    CONFLIT_EDITION: 'Otro usuario ha modificado este taller desde que lo abrió. Vuelva a cargar la página para obtener su versión: su último cambio no se ha guardado.',
   },
   loading:    'Cargando…',
   saving:     'Guardando…',

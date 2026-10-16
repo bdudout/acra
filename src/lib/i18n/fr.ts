@@ -22,6 +22,7 @@ export const fr = {
     invalid_body: 'Données invalides : vérifiez les champs saisis.',
     not_found: 'Élément introuvable ou hors de votre périmètre.',
     ANALYSE_GELEE: 'Analyse gelée : les risques résiduels ont été acceptés. Ouvrez une nouvelle version pour la modifier.',
+    CONFLIT_EDITION: 'Cet atelier a été modifié par un autre utilisateur depuis son ouverture. Rechargez la page pour récupérer sa version : votre dernière modification n\'a pas été enregistrée.',
   },
   loading:    'Chargement…',
   saving:     'Sauvegarde…',

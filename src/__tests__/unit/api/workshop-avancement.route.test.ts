@@ -7,7 +7,7 @@ import { NextRequest } from 'next/server'
 const m = vi.hoisted(() => ({ find: vi.fn(), update: vi.fn(), upsert: vi.fn(), role: vi.fn() }))
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { id: 'auteur', role: 'ANALYSTE' } })) }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
-vi.mock('@/lib/prisma', () => ({ prisma: { analyse: { findFirst: m.find, update: m.update }, cadrage: { upsert: m.upsert } } }))
+vi.mock('@/lib/prisma', () => ({ prisma: { analyse: { findFirst: m.find, update: m.update, updateMany: vi.fn(async () => ({ count: 1 })), findUnique: vi.fn(async () => ({ revisionAtelier1: 1 })) }, cadrage: { upsert: m.upsert } } }))
 vi.mock('@/lib/org-context.server', () => ({ analyseAccessWhere: vi.fn(async () => ({})), getEffectiveRoleForOrg: m.role }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => ({ gelApresAcceptationActive: false })) }))
 vi.mock('@/lib/demo-server', () => ({ touchOrgActivity: vi.fn(async () => {}) }))

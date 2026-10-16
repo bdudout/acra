@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { dedupeQualificationRuleIds } from '@/lib/qualification-risks'
 import { prisma } from '@/lib/prisma'
 import { withAccess, type AccessContext } from '@/lib/with-access.server'
+import { revisionField, parseIfMatch } from '@/lib/atelier-revision'
 import {
   cleanSourceRisque,
   cleanPartiePrenante,
@@ -82,6 +83,21 @@ export const PUT = withAccess(access, async (req, ctx) => {
     return type
   }
 
+  // Verrou optimiste (T9) : la révision attendue (`If-Match`) est comparée et incrémentée atomiquement ;
+  // un autre éditeur a enregistré entre-temps → 409 CONFLIT_EDITION (rien n'est écrasé).
+  const champ = revisionField(atelierNum)
+  if (!champ) return NextResponse.json({ error: 'Atelier invalide' }, { status: 400 })
+  const attendue = parseIfMatch(req.headers.get('if-match'))
+  const cas = await prisma.analyse.updateMany({
+    where: { id: analyseId, ...(attendue !== null ? { [champ]: attendue } : {}) },
+    data: { [champ]: { increment: 1 } },
+  })
+  if (cas.count === 0) {
+    const courante = await prisma.analyse.findUnique({ where: { id: analyseId }, select: { [champ]: true } })
+    return NextResponse.json({ error: 'CONFLIT_EDITION', revision: courante?.[champ] ?? null }, { status: 409 })
+  }
+
+  const enregistrer = async (): Promise<NextResponse> => {
   try {
     // Recette n° 14 : la sauvegarde (y compris automatique) ne fait PAS avancer l'atelier courant ; l'avancement passe
     // par POST (« Passer à l'atelier suivant »).
@@ -233,6 +249,16 @@ export const PUT = withAccess(access, async (req, ctx) => {
     console.error(err)
     return NextResponse.json({ error: 'Erreur lors de la sauvegarde' }, { status: 500 })
   }
+  }
+
+  const res = await enregistrer()
+  if (res.status !== 200) {
+    // Rien n'a été enregistré : la révision revient à sa valeur (best-effort).
+    await prisma.analyse.updateMany({ where: { id: analyseId, [champ]: { gt: 0 } }, data: { [champ]: { decrement: 1 } } }).catch(() => { /* best-effort */ })
+    return res
+  }
+  const apres = await prisma.analyse.findUnique({ where: { id: analyseId }, select: { [champ]: true } })
+  return NextResponse.json({ ok: true, revision: apres?.[champ] ?? null })
 })
 
 /**

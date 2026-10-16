@@ -23,6 +23,7 @@ export const en: Translations = {
     invalid_body: 'Invalid data: please check the fields entered.',
     not_found: 'Item not found or outside your scope.',
     ANALYSE_GELEE: 'Analysis frozen: residual risks have been accepted. Open a new version to modify it.',
+    CONFLIT_EDITION: 'This workshop was modified by another user since you opened it. Reload the page to get their version: your last change was not saved.',
   },
   loading:    'Loading…',
   saving:     'Saving…',

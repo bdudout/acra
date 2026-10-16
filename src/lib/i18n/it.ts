@@ -23,6 +23,7 @@ export const it: Translations = {
     invalid_body: 'Dati non validi: verifichi i campi inseriti.',
     not_found: 'Elemento non trovato o fuori dal suo perimetro.',
     ANALYSE_GELEE: 'Analisi congelata: i rischi residui sono stati accettati. Apra una nuova versione per modificarla.',
+    CONFLIT_EDITION: 'Questo workshop è stato modificato da un altro utente dopo la sua apertura. Ricarichi la pagina per ottenere la sua versione: l\'ultima modifica non è stata salvata.',
   },
   loading:    'Caricamento…',
   saving:     'Salvataggio…',

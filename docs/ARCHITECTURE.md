@@ -146,14 +146,27 @@ Deux familles, **ne pas les mélanger** :
 `export const POST = withAccess({ org, allow, rateLimit, body }, async (req, ctx) => …)`.
 Ordre imposé : session (401) → rôle **effectif** dans l'organisation ciblée
 (`org: 'active'` → 400 sans org active ; `org: { param: 'orgId' }` → 403 sans rôle effectif ;
+`org: { analyse: 'id', write? }` → analyse chargée dans le périmètre (`analyseAccessWhere`, 404
+`not_found` hors périmètre ou en corbeille), rôle effectif dans l'organisation DE L'ANALYSE
+(`resolveAnalyseRole`), et en écriture `canEditAnalyse` (403) puis gel (403 `ANALYSE_GELEE`) ;
 `org: 'none'` → rôle d'instance) → prédicat `allow` de `lib/permissions` (403) → rate limit
 `<bucket>:<userId>` (429, défaut `LIMIT_API_WRITE`) → schéma zod du corps (400 `invalid_body`,
-champs inconnus retirés). Le handler reçoit `{ user, role, orgId, scope, params, body, rl }`.
+champs inconnus retirés). Le handler reçoit `{ user, role, orgId, scope, analyse, params, body, rl }`.
 Erreurs : codes stables (`unauthorized`, `organization_required`, `forbidden`, `rate_limited`,
-`invalid_body`) ; l'UI affiche ses propres libellés i18n. L'existence et l'appartenance de la
-ressource (`findFirst({ id, organizationId })` → 404) restent dans le handler.
+`invalid_body`, `not_found`, `ANALYSE_GELEE`, `CONFLIT_EDITION`) traduits côté UI par
+`apiErrorMessage` (`lib/api-error`, `t.apiErrors` ×5) — ne jamais afficher `data.error` brut.
+L'existence et l'appartenance de la ressource (`findFirst({ id, organizationId })` → 404) restent
+dans le handler. **Ressource cherchée dans le périmètre visible** (sans org active) : le rôle à
+appliquer est celui de l'organisation DE LA RESSOURCE, `roleSurRessource(userId, user.role,
+ressource.organizationId)` (`org-context.server`), jamais `scope.role` (CWE-863, 2026-10-16).
 Le cliquet `route-guard-ratchet.test.ts` refuse toute nouvelle route d'écriture qui lit la session
-elle-même ; la liste figée des routes à migrer (`legacy-session-write-routes.ts`) ne peut que décroître.
+elle-même ; liste figée (`legacy-session-write-routes.ts`) : 1 route (`invitations/[token]`, publique).
+
+**Ateliers EBIOS — verrou optimiste (T9)** : `Analyse.revisionAtelier1..5`. Le client
+(`lib/atelier-save` › `enregistrerAtelier`) envoie `If-Match: <révision>` ; la route compare et
+incrémente atomiquement (`updateMany` filtré), 409 `CONFLIT_EDITION` sinon, et annule l'incrément si
+l'enregistrement échoue. Tout autre chemin qui modifie le contenu d'un atelier (ex. acceptation d'une
+proposition MCP de risque ou de mesure) doit incrémenter la révision de l'atelier concerné.
 
 **Gardes communes (audit 2026-09-30/10-01, ne pas recopier de garde locale)** :
 - réglage ou vue d'**instance** → `requireInstanceAdmin()` (`lib/route-guard.server`) ;
