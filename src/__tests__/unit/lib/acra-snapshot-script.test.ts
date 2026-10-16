@@ -89,8 +89,9 @@ describe('acra-snapshot create', () => {
 
   it('le manifeste est écrit en dernier : un échec après le dump ne laisse pas de manifeste', () => {
     inst = make()
-    const r = snap(['create', '--reason', 'pre-update', '--from-version', '1.0.4'], { ACRA_BACKUP_AGE_RECIPIENT: 'age1xxx', PATH: `${inst.bin}:/usr/bin:/bin` })
-    expect(r.status).toBe(10)
+    const r = snap(['create', '--reason', 'pre-update', '--from-version', '1.0.4'], { ACRA_BACKUP_AGE_RECIPIENT: 'age1xxx', PATH: inst.pathWithout('age') })
+    expect(r.status, r.stderr).toBe(10)
+    expect(r.stderr).toMatch(/« age » est introuvable/)
     expect(listDir(backups()).filter(x => !x.startsWith('.'))).toEqual([])
   })
 

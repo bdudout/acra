@@ -1,7 +1,7 @@
 // Banc d'essai des scripts de mise à jour (update.sh, acra-snapshot.sh, update-agent.sh) : un dépôt git temporaire réel
 // (origine nue + clone de travail), un `docker` simulé en tête du PATH et un journal d'appels (AUDIT_LOG).
 // Le `docker` simulé est piloté par des fichiers du dossier FAKE_DIR (voir FAKE_DOCKER) — aucun vrai conteneur.
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, copyFileSync, rmSync, chmodSync, readdirSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, copyFileSync, rmSync, chmodSync, readdirSync, symlinkSync, accessSync, statSync, constants as fsConstants } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { spawn, spawnSync, execFileSync } from 'node:child_process'
@@ -68,6 +68,9 @@ export interface Instance {
   /** Lancement asynchrone : `onSpawn` reçoit le pid du lanceur (conservé par son `exec`). */
   runAsync(script: string, args: string[], onSpawn: (pid: number) => void): Promise<{ status: number | null; signal: NodeJS.Signals | null; stderr: string }>
   calls(): string[]
+  /** PATH hermétique : les outils simulés de `bin` + des liens vers chaque exécutable de l'hôte, SAUF `absent`
+   *  (garantit qu'un outil est introuvable quel que soit l'hôte — ex. `age` installé dans /usr/bin). */
+  pathWithout(...absent: string[]): string
   fakeFile(name: string, content?: string): void
   read(rel: string): string
   exists(rel: string): boolean
@@ -109,6 +112,19 @@ export function makeInstance(opts: { scripts?: string[]; extraFiles?: Record<str
       c.on('close', (status, signal) => resolve({ status, signal, stderr }))
     }),
     calls: () => readFileSync(audit, 'utf8').split('\n').filter(Boolean),
+    pathWithout: (...absent) => {
+      const sys = mkdtempSync(path.join(root, 'sysbin-'))
+      const seen = new Set([...absent, ...listDir(bin)])
+      for (const dir of (process.env.PATH ?? '').split(':').filter(d => d && d !== bin)) {
+        for (const name of listDir(dir)) {
+          if (seen.has(name)) continue
+          const full = path.join(dir, name)
+          try { if (!statSync(full).isFile()) continue; accessSync(full, fsConstants.X_OK) } catch { continue }
+          seen.add(name); symlinkSync(full, path.join(sys, name))
+        }
+      }
+      return `${bin}:${sys}`
+    },
     fakeFile: (name, content = '1') => writeFileSync(path.join(fake, name), content),
     read: rel => readFileSync(path.join(work, rel), 'utf8'),
     exists: rel => existsSync(path.join(work, rel)),
