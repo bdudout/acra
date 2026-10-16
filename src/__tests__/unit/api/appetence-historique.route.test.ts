@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const m = vi.hoisted(() => ({ session: vi.fn(), scope: vi.fn(), find: vi.fn(), capture: vi.fn(), audit: vi.fn(), rl: vi.fn(), orgs: vi.fn(), cronAuth: vi.fn() }))
+// Bail d'exécution des tâches planifiées : passant (testé sur base réelle, cron-verrou.db.test.ts).
+vi.mock('@/lib/cron-verrou.server', () => ({ avecVerrouCron: async (_t: string, fn: () => Promise<unknown>) => ({ execute: true, resultat: await fn() }) }))
 vi.mock('next-auth', () => ({ getServerSession: m.session }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope }))

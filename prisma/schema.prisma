@@ -3018,3 +3018,12 @@ model ComiteSnapshot {
 
   @@unique([organizationId, periode])
 }
+
+/// Bail d'exécution d'une tâche planifiée (/api/cron/*) : empêche deux exécutions simultanées
+/// (deux planificateurs, plusieurs instances) — e-mails, livraisons ou instantanés en double.
+/// Expire seul (`jusqua`) si l'instance s'arrête en cours de tâche. Cf. lib/cron-verrou.server.
+model CronVerrou {
+  tache  String   @id
+  jusqua DateTime
+  jeton  String
+}

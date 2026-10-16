@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { assertCronAuth } from '@/lib/cron-auth'
+import { cronRoute } from '@/lib/cron-route.server'
 import { envoyerTableauBordMensuel } from '@/lib/tableau-bord-mensuel.server'
 
 export const dynamic = 'force-dynamic'
@@ -10,8 +10,7 @@ export const dynamic = 'force-dynamic'
  * le même envoi, qui n'a lieu qu'une fois par mois : l'appeler en plus ne double jamais l'e-mail.
  * `Authorization: Bearer <CRON_SECRET>` ; 503 sans secret, 401 si invalide.
  */
-export async function POST(req: NextRequest) {
-  const denied = assertCronAuth(req)
-  if (denied) return denied
+// Authentification + une seule exécution simultanée (bail « tableau-bord-mensuel »).
+export const POST = cronRoute('tableau-bord-mensuel', async (req: NextRequest) => {
   return NextResponse.json({ ok: true, fusionneDans: 'tableau-bord-mensuel', ...(await envoyerTableauBordMensuel()) })
-}
+})

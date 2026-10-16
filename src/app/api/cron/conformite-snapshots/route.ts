@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { assertCronAuth } from '@/lib/cron-auth'
+import { cronRoute } from '@/lib/cron-route.server'
 import { prisma } from '@/lib/prisma'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { sanitizeConformite } from '@/lib/conformite'
@@ -16,9 +16,8 @@ import { sanitizeSnapshotMode, snapshotPeriodeDays, dueForAutoSnapshot } from '@
  * Sécurité : désactivé (503) si CRON_SECRET n'est pas configuré ; 401 si le secret
  * ne correspond pas. Aucune donnée métier retournée.
  */
-export async function POST(req: NextRequest) {
-  const denied = assertCronAuth(req)
-  if (denied) return denied
+// Authentification + une seule exécution simultanée (bail « conformite-snapshots »).
+export const POST = cronRoute('conformite-snapshots', async (req: NextRequest) => {
 
   const now = new Date()
   const confs = await prisma.conformite.findMany({
@@ -50,4 +49,4 @@ export async function POST(req: NextRequest) {
     created++
   }
   return NextResponse.json({ ok: true, checked: confs.length, created })
-}
+})

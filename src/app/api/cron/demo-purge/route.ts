@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { assertCronAuth } from '@/lib/cron-auth'
+import { cronRoute } from '@/lib/cron-route.server'
 import { purgeExpiredDemoOrgs, warnExpiringDemoOrgs, isDemoInstance } from '@/lib/demo-server'
 import { auditLog } from '@/lib/logger'
 
@@ -18,9 +18,8 @@ import { auditLog } from '@/lib/logger'
  * d'instance figé à DEMO (cf. resolveInstanceMode). Une instance de prod flippée par
  * erreur en démo reste stampée PROD → purge refusée (garde-fou anti-destruction).
  */
-export async function POST(req: NextRequest) {
-  const denied = assertCronAuth(req)
-  if (denied) return denied
+// Authentification + une seule exécution simultanée (bail « demo-purge »).
+export const POST = cronRoute('demo-purge', async (req: NextRequest) => {
 
   // Garde-fou : ne JAMAIS purger hors d'une instance de démo prouvée (env + marqueur figé).
   if (!(await isDemoInstance())) {
@@ -34,4 +33,4 @@ export async function POST(req: NextRequest) {
     await auditLog('DEMO_ORG_PURGED', { targetType: 'organization', details: { purged, orgIds } })
   }
   return NextResponse.json({ ok: true, warned, purged })
-}
+})

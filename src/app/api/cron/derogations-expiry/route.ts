@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { assertCronAuth } from '@/lib/cron-auth'
+import { cronRoute } from '@/lib/cron-route.server'
 import { executerRelances } from '@/lib/relances.server'
 
 export const dynamic = 'force-dynamic'
@@ -10,8 +10,7 @@ export const dynamic = 'force-dynamic'
  * idempotent : appeler les deux le même jour n'envoie jamais de second e-mail.
  * `Authorization: Bearer <CRON_SECRET>` ; 503 sans secret, 401 si invalide.
  */
-export async function POST(req: NextRequest) {
-  const denied = assertCronAuth(req)
-  if (denied) return denied
+// Authentification + une seule exécution simultanée (bail « relances »).
+export const POST = cronRoute('relances', async (req: NextRequest) => {
   return NextResponse.json({ ok: true, fusionneDans: 'relances', ...(await executerRelances()) })
-}
+})

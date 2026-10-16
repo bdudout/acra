@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
-import { assertCronAuth } from '@/lib/cron-auth'
+import { cronRoute } from '@/lib/cron-route.server'
 import { prisma } from '@/lib/prisma'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { rapportsDisponibles } from '@/lib/rapport-model'
@@ -15,9 +15,8 @@ export const dynamic = 'force-dynamic'
  * cycle habituel (relecture, validation quatre-yeux). Idempotent : une édition existante bloque.
  * Créateur = un ADMIN actif de l'organisation. 503 sans CRON_SECRET ; 401 si secret invalide.
  */
-export async function POST(req: NextRequest) {
-  const denied = assertCronAuth(req)
-  if (denied) return denied
+// Authentification + une seule exécution simultanée (bail « rapports-planifies »).
+export const POST = cronRoute('rapports-planifies', async (req: NextRequest) => {
   const now = new Date()
 
   const rows = await prisma.organizationConfig.findMany({ select: { id: true, rapportsConfig: true }, take: 5000 })
@@ -47,4 +46,4 @@ export async function POST(req: NextRequest) {
     }
   }
   return NextResponse.json({ ok: true, orgs, created })
-}
+})

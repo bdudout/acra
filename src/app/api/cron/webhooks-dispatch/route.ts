@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { assertCronAuth } from '@/lib/cron-auth'
+import { cronRoute } from '@/lib/cron-route.server'
 import { dispatchDueWebhooks } from '@/lib/webhook.server'
 
 export const dynamic = 'force-dynamic'
@@ -11,9 +11,8 @@ export const dynamic = 'force-dynamic'
  * Traite un lot de livraisons dues (backoff exponentiel, abandon au plafond de
  * tentatives). 503 si CRON_SECRET absent ; 401 si le secret ne correspond pas.
  */
-export async function POST(req: NextRequest) {
-  const denied = assertCronAuth(req)
-  if (denied) return denied
+// Authentification + une seule exécution simultanée (bail « webhooks-dispatch »).
+export const POST = cronRoute('webhooks-dispatch', async (req: NextRequest) => {
   const resume = await dispatchDueWebhooks()
   return NextResponse.json({ ok: true, ...resume })
-}
+})

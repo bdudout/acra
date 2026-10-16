@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
 const m = vi.hoisted(() => ({ session: vi.fn(), scope: vi.fn(), config: vi.fn(), upsert: vi.fn(), audit: vi.fn() }))
+// Bail d'exécution des tâches planifiées : passant (testé sur base réelle, cron-verrou.db.test.ts).
+vi.mock('@/lib/cron-verrou.server', () => ({ avecVerrouCron: async (_t: string, fn: () => Promise<unknown>) => ({ execute: true, resultat: await fn() }) }))
 vi.mock('@/lib/prisma', () => ({ prisma: { organizationConfig: { upsert: m.upsert } } }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.config, upsertOrgConfig: (id: string, data: object) => m.upsert({ where: { id }, create: { id, ...data }, update: data }) }))
 vi.mock('@/lib/email', () => ({ sendEmail: vi.fn() }))
