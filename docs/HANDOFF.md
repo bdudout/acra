@@ -6,6 +6,17 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-16 (105) — Claude : test du snapshot rendu hermétique vis-à-vis de « age »
+
+- `36889a1` — `acra-snapshot-script.test.ts`, « le manifeste est écrit en dernier » : le test supposait `age` absent de
+  `/usr/bin:/bin` (échec `expected 1 to be 10` sur un hôte où `age` est installé, ex. conteneur cloud). Le banc
+  (`helpers/update-fixture.ts`) expose `pathWithout(...outils)` : outils simulés de `bin` + liens vers chaque exécutable
+  du PATH de l'hôte sauf ceux exclus. Le test vérifie en plus le message « « age » est introuvable ». Script inchangé.
+- **Vérifications** : rouge reproduit (hôte avec `/usr/bin/age`) puis vert ; `tsc` 0 erreur ; `npm test` 664 fichiers /
+  4 982 tests verts (5 ignorés).
+
+---
+
 ## 2026-10-13 (104) — Claude : pack postal, défauts probables + lots L8 et L7 (consigne : « valeurs les plus probables »)
 
 - `13d3e778` — base légale par défaut des données destinataires reçues des e-commerçants : intérêt légitime (le
