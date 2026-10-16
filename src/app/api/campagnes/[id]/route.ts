@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { withAccess } from '@/lib/with-access.server'
 import type { SessionUser } from '@/lib/route-guard.server'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAnalyseScope, roleSurRessource } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
 import {
@@ -25,14 +25,14 @@ function peutPiloter(role: UserRole, secondeLigneActive: boolean): boolean {
 async function loadInScope(user: SessionUser, id: string) {
   const userId = user.id
   const scope = await getAnalyseScope(userId, user.role)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
   const campagne = await prisma.campagne.findFirst({
     where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },
     select: { id: true, organizationId: true, statut: true },
   })
   if (!campagne) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
+  // Rôle EFFECTIF dans l'organisation DE LA RESSOURCE, jamais celui de l'org active (CWE-863).
+  const userRole = await roleSurRessource(userId, user.role, campagne.organizationId)
   const cfg = await getOrgConfig(campagne.organizationId)
   if (!campagnesRcsaActives(cfg)) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
   return { userId, userRole, campagne, secondeLigneActive: cfg.secondeLigneActive }

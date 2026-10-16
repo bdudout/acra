@@ -13,7 +13,8 @@ vi.mock('@/lib/prisma', () => ({ prisma: {
   auditMission: { findMany: m.mFind, findFirst: m.mFindFirst, update: m.mUpdate },
   processus: { findFirst: m.pFind },
 } }))
-vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope }))
+// Ressource de l'org active : rôle sur la ressource = rôle du périmètre simulé.
+vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope, roleSurRessource: async () => (await m.scope()).role }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.config }))
 vi.mock('@/lib/logger', () => ({ auditLog: m.audit, getClientIp: () => '127.0.0.1' }))
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAnalyseScope, roleSurRessource } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { withAccess } from '@/lib/with-access.server'
 import { validateExecutionInput, cleanExecutionInput, libelleActionAnomalie, cleanChecklistResultats, deduireResultatChecklist } from '@/lib/controle'
@@ -22,15 +22,15 @@ export const dynamic = 'force-dynamic'
 export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'controle-executions' } }, async (req, { user, params: { id } }) => {
   const userId = user.id
   const scope = await getAnalyseScope(userId, user.role)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
-  if (userRole === 'LECTEUR') return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
   const controle = await prisma.controle.findFirst({
     where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },
     select: { id: true, organizationId: true, intitule: true, actif: true, riskItemId: true, responsable: true },
   })
   if (!controle) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+  // Rôle EFFECTIF dans l'organisation DE LA RESSOURCE, jamais celui de l'org active (CWE-863).
+  const userRole = await roleSurRessource(userId, user.role, controle.organizationId)
+  if (userRole === 'LECTEUR') return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const cfg = await getOrgConfig(controle.organizationId)
   if (!cfg.controlePermanentActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })

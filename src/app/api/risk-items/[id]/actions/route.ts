@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAnalyseScope, roleSurRessource } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { withAccess } from '@/lib/with-access.server'
 import { type SessionUser } from '@/lib/route-guard.server'
@@ -16,15 +16,15 @@ export const dynamic = 'force-dynamic'
 async function loadRisk(user: SessionUser, id: string, write: boolean) {
   const userId = user.id
   const scope = await getAnalyseScope(userId, user.role)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
-  if (write && userRole === 'LECTEUR') return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
   const risk = await prisma.riskItem.findFirst({
     where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },
     select: { id: true, organizationId: true },
   })
   if (!risk) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
+  // Rôle EFFECTIF dans l'organisation DE LA RESSOURCE, jamais celui de l'org active (CWE-863).
+  const userRole = await roleSurRessource(userId, user.role, risk.organizationId)
+  if (write && userRole === 'LECTEUR') return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
   const orgConfig = await getOrgConfig(risk.organizationId)
   if (!orgConfig.registreRisquesActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
   return { error: null, userId, userRole, orgId: risk.organizationId, orgConfig }

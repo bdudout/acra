@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAnalyseScope, roleSurRessource } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { cleanDoraCriteres, classifierIncident, estEvalueDora } from '@/lib/dora'
 import { peutEvaluerDora } from '@/lib/permissions'
@@ -16,9 +16,6 @@ export const dynamic = 'force-dynamic'
 export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'reglementaire-dora' } }, async (req, { user, params: { id } }) => {
   const userId = user.id
   const scope = await getAnalyseScope(userId, user.role)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
-  if (!peutEvaluerDora(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   const orgIds = scope.scope.visibleOrgIds
   const spansAll = scope.scope.isSuperAdmin && orgIds.length === 0
   const incident = await prisma.incident.findFirst({
@@ -26,6 +23,9 @@ export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'reglementai
     select: { id: true, organizationId: true },
   })
   if (!incident) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+  // Rôle EFFECTIF dans l'organisation DE LA RESSOURCE, jamais celui de l'org active (CWE-863).
+  const userRole = await roleSurRessource(userId, user.role, incident.organizationId)
+  if (!peutEvaluerDora(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   const cfg = await getOrgConfig(incident.organizationId)
   if (!cfg.reglementaireActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
 

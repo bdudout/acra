@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withAccess } from '@/lib/with-access.server'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAnalyseScope, roleSurRessource } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { peutEcrireAudit } from '@/lib/permissions'
 import { validateConstatInput, cleanConstatInput } from '@/lib/audit'
@@ -16,15 +16,15 @@ export const dynamic = 'force-dynamic'
 export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'audit-constats' } }, async (req, { user, params: { id } }) => {
   const userId = user.id
   const scope = await getAnalyseScope(userId, user.role)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
-  if (!peutEcrireAudit(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
   const mission = await prisma.auditMission.findFirst({
     where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },
     select: { id: true, organizationId: true },
   })
   if (!mission) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+  // Rôle EFFECTIF dans l'organisation DE LA RESSOURCE, jamais celui de l'org active (CWE-863).
+  const userRole = await roleSurRessource(userId, user.role, mission.organizationId)
+  if (!peutEcrireAudit(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   const cfg = await getOrgConfig(mission.organizationId)
   if (!cfg.auditInterneActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
 

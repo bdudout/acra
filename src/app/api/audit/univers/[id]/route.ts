@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { withAccess } from '@/lib/with-access.server'
 import type { SessionUser } from '@/lib/route-guard.server'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAnalyseScope, roleSurRessource } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import type { UserRole } from '@/lib/permissions'
 import { peutEcrireAudit } from '@/lib/audit-acces'
@@ -22,7 +22,8 @@ async function charger(user: SessionUser, id: string) {
   const entree = await prisma.auditUnivers.findFirst({ where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) }, select: { id: true, organizationId: true } })
   if (!entree) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
   if (!(await getOrgConfig(entree.organizationId)).auditInterneActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
-  const role = scope.role as UserRole
+  // Rôle EFFECTIF dans l'organisation DE LA RESSOURCE, jamais celui de l'org active (CWE-863).
+  const role = await roleSurRessource(userId, user.role, entree.organizationId)
   if (!peutEcrireAudit(role)) return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
   return { userId, role, entree }
 }

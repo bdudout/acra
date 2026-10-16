@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { withAccess } from '@/lib/with-access.server'
 import type { SessionUser } from '@/lib/route-guard.server'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAnalyseScope, roleSurRessource } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { peutEcrireAudit } from '@/lib/permissions'
 import { validateConstatInput, cleanConstatInput } from '@/lib/audit'
@@ -19,14 +19,14 @@ const ACCESS = { org: 'none', rateLimit: { bucket: 'audit-constats' } } as const
 async function loadInScope(user: SessionUser, id: string) {
   const userId = user.id
   const scope = await getAnalyseScope(userId, user.role)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
   const constat = await prisma.auditConstat.findFirst({
     where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },
     select: { id: true, organizationId: true, champs: true },
   })
   if (!constat) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
+  // Rôle EFFECTIF dans l'organisation DE LA RESSOURCE, jamais celui de l'org active (CWE-863).
+  const userRole = await roleSurRessource(userId, user.role, constat.organizationId)
   const cfg = await getOrgConfig(constat.organizationId)
   if (!cfg.auditInterneActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
   return { userId, userRole, constat, champsPersonnalises: cfg.champsPersonnalises }

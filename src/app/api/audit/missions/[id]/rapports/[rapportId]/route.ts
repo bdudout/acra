@@ -8,7 +8,7 @@ import { withAccess } from '@/lib/with-access.server'
 import type { SessionUser } from '@/lib/route-guard.server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAnalyseScope, roleSurRessource } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { peutEcrireAudit, type UserRole } from '@/lib/permissions'
 import { getDocumentStorage } from '@/lib/document-storage'
@@ -28,9 +28,11 @@ async function load(user: SessionUser, id: string) {
     select: { id: true, organizationId: true, rapports: true, responsable: true },
   })
   if (!mission) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
+  // Rôle EFFECTIF dans l'organisation DE LA RESSOURCE, jamais celui de l'org active (CWE-863).
+  const userRole = await roleSurRessource(userId, user.role, mission.organizationId)
   const cfg = await getOrgConfig(mission.organizationId)
   if (!cfg.auditInterneActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
-  return { userId, userRole: scope.role, mission }
+  return { userId, userRole, mission }
 }
 
 // GET /api/audit/missions/[id]/rapports/[rapportId] — télécharge un rapport archivé d'une mission d'audit.

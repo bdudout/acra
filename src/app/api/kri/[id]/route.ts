@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAnalyseScope, roleSurRessource } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import type { SessionUser } from '@/lib/route-guard.server'
 import { withAccess } from '@/lib/with-access.server'
@@ -14,8 +14,6 @@ export const dynamic = 'force-dynamic'
 async function loadInScope(user: SessionUser, id: string) {
   const userId = user.id
   const scope = await getAnalyseScope(userId, user.role)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
   const orgIds = scope.scope.visibleOrgIds
   const spansAll = scope.scope.isSuperAdmin && orgIds.length === 0
   const kri = await prisma.kri.findFirst({
@@ -23,6 +21,8 @@ async function loadInScope(user: SessionUser, id: string) {
     select: { id: true, organizationId: true },
   })
   if (!kri) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
+  // Rôle EFFECTIF dans l'organisation DE LA RESSOURCE, jamais celui de l'org active (CWE-863).
+  const userRole = await roleSurRessource(userId, user.role, kri.organizationId)
   const cfg = await getOrgConfig(kri.organizationId)
   if (!cfg.kriActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
   return { error: null, userId, userRole, kri, secondeLigneActive: cfg.secondeLigneActive }
