@@ -13,6 +13,7 @@ import { canReadOrgResource, peutGererConformite } from '@/lib/permissions'
 import { requireSession } from '@/lib/route-guard.server'
 import { withAccess } from '@/lib/with-access.server'
 import { isTraitementType, sanitizeRefs } from '@/lib/conformite-traitement'
+import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ orgId: string }> }
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 
 // POST /api/organizations/[orgId]/conformite/traitements — crée un traitement d'écart (plan d'action / dérogation / acceptation) sur un contrôle.
 // Gestion de la conformité : gouvernance, dont CONFORMITE et DPO (lib/permissions).
-export const POST = withAccess({ org: { param: 'orgId' }, allow: peutGererConformite, rateLimit: { bucket: 'conf-traitements' } }, async (req, { user, orgId }) => {
+export const POST = withAccess({ org: { param: 'orgId' }, allow: peutGererConformite, rateLimit: { bucket: 'conf-traitements' } }, async (req, { user, role, orgId }) => {
   const body = await req.json().catch(() => ({}))
   const referentiel = typeof body?.referentiel === 'string' ? body.referentiel.trim() : ''
   const entite = cleanEntite(body?.entite)
@@ -70,5 +71,6 @@ export const POST = withAccess({ org: { param: 'orgId' }, allow: peutGererConfor
     },
     select: { id: true, type: true, intitule: true, refs: true, statut: true },
   })
+  await auditLog('CONFORMITE_UPDATED', { userId: user.id, userRole: role, organizationId: orgId, ip: getClientIp(req), targetType: 'conformite_traitement', targetId: created.id, details: { action: 'traitement-create', type, referentiel, entite, refs: refs.length } })
   return NextResponse.json({ traitement: created }, { status: 201 })
 })

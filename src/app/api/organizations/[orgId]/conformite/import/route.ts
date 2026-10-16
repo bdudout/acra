@@ -12,6 +12,7 @@ import { peutGererConformite } from '@/lib/permissions'
 import { withAccess } from '@/lib/with-access.server'
 import { usesConformiteEntity } from '@/lib/conformite-config'
 import { sanitizeConformite } from '@/lib/conformite'
+import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 /** Gestion de la conformité : gouvernance, dont CONFORMITE et DPO (lib/permissions). */
@@ -44,7 +45,7 @@ export const GET = withAccess(GESTION, async (req, { orgId }) => {
 })
 
 // POST /api/organizations/[orgId]/conformite/import — reprend la conformité (socle de sécurité) d'une analyse dans le suivi conformité de l'org (référentiel + entité).
-export const POST = withAccess({ ...GESTION, rateLimit: { bucket: 'org-conformite' } }, async (req, { orgId }) => {
+export const POST = withAccess({ ...GESTION, rateLimit: { bucket: 'org-conformite' } }, async (req, { user, role, orgId }) => {
   const indispo = await conformiteOrgIndisponible(orgId)
   if (indispo) return indispo
 
@@ -68,5 +69,6 @@ export const POST = withAccess({ ...GESTION, rateLimit: { bucket: 'org-conformit
     create: { organizationId: orgId, referentiel, entite, nom: entite || null, entries: entries as unknown as Prisma.InputJsonValue },
     update: { entries: entries as unknown as Prisma.InputJsonValue },
   })
+  await auditLog('CONFORMITE_UPDATED', { userId: user.id, userRole: role, organizationId: orgId, ip: getClientIp(req), targetType: 'conformite', details: { action: 'import', referentiel, entite, analyseId, imported: entries.length } })
   return NextResponse.json({ ok: true, imported: entries.length })
 })

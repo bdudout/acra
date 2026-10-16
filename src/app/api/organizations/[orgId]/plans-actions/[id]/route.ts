@@ -10,6 +10,7 @@ import { withAccess } from '@/lib/with-access.server'
 import { cleanPriorite, RISK_ACTION_STATUTS } from '@/lib/risk-action'
 import { sanitizeLien } from '@/lib/plan-action'
 import { entiteIdPourTexte } from '@/lib/entites.server'
+import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 const access = { org: { param: 'orgId' }, allow: peutGererPlansAction, rateLimit: { bucket: 'plans-actions' } } as const
@@ -19,7 +20,7 @@ const planExiste = (orgId: string, id: string) => prisma.planAction.findFirst({ 
 const introuvable = () => NextResponse.json({ error: 'Plan d\'action introuvable' }, { status: 404 })
 
 // PATCH /api/organizations/[orgId]/plans-actions/[id] — met à jour un plan d'action unifié (champs et/ou liens de rattachement).
-export const PATCH = withAccess(access, async (req, { orgId, params: { id } }) => {
+export const PATCH = withAccess(access, async (req, { user, role, orgId, params: { id } }) => {
   if (!(await planExiste(orgId, id))) return introuvable()
   const body = await req.json().catch(() => ({}))
 
@@ -48,12 +49,14 @@ export const PATCH = withAccess(access, async (req, { orgId, params: { id } }) =
   }
 
   const updated = await prisma.planAction.update({ where: { id }, data, include: { liens: true } })
+  await auditLog('PLAN_ACTION_UPDATED', { userId: user.id, userRole: role, organizationId: orgId, ip: getClientIp(req), targetType: 'plan_action', targetId: id, details: { action: 'update', champs: Object.keys(data) } })
   return NextResponse.json({ plan: updated })
 })
 
 // DELETE /api/organizations/[orgId]/plans-actions/[id] — supprime un plan d'action unifié.
-export const DELETE = withAccess(access, async (_req, { orgId, params: { id } }) => {
+export const DELETE = withAccess(access, async (req, { user, role, orgId, params: { id } }) => {
   if (!(await planExiste(orgId, id))) return introuvable()
   await prisma.planAction.delete({ where: { id } })
+  await auditLog('PLAN_ACTION_UPDATED', { userId: user.id, userRole: role, organizationId: orgId, ip: getClientIp(req), targetType: 'plan_action', targetId: id, details: { action: 'delete' } })
   return NextResponse.json({ ok: true })
 })

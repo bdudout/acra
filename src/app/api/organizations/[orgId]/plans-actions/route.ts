@@ -13,6 +13,7 @@ import { requireSession } from '@/lib/route-guard.server'
 import { withAccess } from '@/lib/with-access.server'
 import { validatePlanActionInput, cleanPlanActionInput, sanitizeLiens, isLienType } from '@/lib/plan-action'
 import { entiteIdPourTexte } from '@/lib/entites.server'
+import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ orgId: string }> }
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 // POST /api/organizations/[orgId]/plans-actions — crée un plan d'action unifié, éventuellement rattaché à une origine (lien polymorphe).
 export const POST = withAccess(
   { org: { param: 'orgId' }, allow: peutGererPlansAction, rateLimit: { bucket: 'plans-actions' } },
-  async (req, { user, orgId }) => {
+  async (req, { user, role, orgId }) => {
     const body = await req.json().catch(() => ({}))
     const err = validatePlanActionInput(body)
     if (err) return NextResponse.json({ error: err }, { status: 400 })
@@ -61,6 +62,7 @@ export const POST = withAccess(
       },
       include: { liens: true },
     })
+    await auditLog('PLAN_ACTION_UPDATED', { userId: user.id, userRole: role, organizationId: orgId, ip: getClientIp(req), targetType: 'plan_action', targetId: created.id, details: { action: 'create', liens: liens.length } })
     return NextResponse.json({ plan: created }, { status: 201 })
   },
 )

@@ -14,6 +14,7 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { shouldSnapshotOnChange, usesConformiteEntity } from '@/lib/conformite-config'
 import { getExigencesFor } from '@/lib/referentiel.server'
 import { getServerLocale } from '@/lib/i18n'
+import { auditLog, getClientIp } from '@/lib/logger'
 
 /** Écritures : rôle EFFECTIF de gouvernance (dont CONFORMITE et DPO) dans l'org CIBLE (A01/CWE-863). */
 const GESTION = { org: { param: 'orgId' }, allow: peutGererConformite, rateLimit: { bucket: 'org-conformite' } } as const
@@ -112,14 +113,15 @@ export const POST = withAccess(GESTION, async (req, { user: { id: userId }, orgI
  * suivi de conformité (supprime le suivi + ses snapshots par cascade). Réservé aux
  * rôles de gouvernance ; sans effet si le suivi n'existe pas.
  */
-export const DELETE = withAccess(GESTION, async (req, { orgId }) => {
+export const DELETE = withAccess(GESTION, async (req, { user, role, orgId }) => {
 
   const sp = new URL(req.url).searchParams
   const referentiel = (sp.get('referentiel') ?? '').trim()
   const entite = cleanEntite(sp.get('entite'))
   if (!referentiel || referentiel === 'CUSTOM') return NextResponse.json({ error: 'Référentiel invalide' }, { status: 400 })
 
-  await prisma.conformite.deleteMany({ where: { organizationId: orgId, referentiel, entite } })
+  const { count } = await prisma.conformite.deleteMany({ where: { organizationId: orgId, referentiel, entite } })
+  if (count) await auditLog('CONFORMITE_UPDATED', { userId: user.id, userRole: role, organizationId: orgId, ip: getClientIp(req), targetType: 'conformite', details: { action: 'suivi-delete', referentiel, entite } })
   return NextResponse.json({ ok: true })
 })
 

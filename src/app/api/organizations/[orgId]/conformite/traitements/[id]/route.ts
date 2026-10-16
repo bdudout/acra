@@ -8,6 +8,7 @@ import { Prisma } from '@prisma/client'
 import { peutGererConformite } from '@/lib/permissions'
 import { withAccess } from '@/lib/with-access.server'
 import { sanitizeRefs, TRAITEMENT_STATUTS } from '@/lib/conformite-traitement'
+import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 /** Gestion de la conformité : gouvernance, dont CONFORMITE et DPO (lib/permissions). */
@@ -18,7 +19,7 @@ const charger = (orgId: string, id: string) => prisma.conformiteTraitement.findF
 const introuvable = () => NextResponse.json({ error: 'Traitement introuvable' }, { status: 404 })
 
 // PATCH /api/organizations/[orgId]/conformite/traitements/[id] — met à jour un traitement d'écart de conformité (plan d'action / dérogation / acceptation).
-export const PATCH = withAccess(access, async (req, { orgId, params: { id } }) => {
+export const PATCH = withAccess(access, async (req, { user, role, orgId, params: { id } }) => {
   const row = await charger(orgId, id)
   if (!row) return introuvable()
   const body = await req.json().catch(() => ({}))
@@ -46,12 +47,14 @@ export const PATCH = withAccess(access, async (req, { orgId, params: { id } }) =
     where: { id }, data,
     select: { id: true, type: true, intitule: true, refs: true, statut: true },
   })
+  await auditLog('CONFORMITE_UPDATED', { userId: user.id, userRole: role, organizationId: orgId, ip: getClientIp(req), targetType: 'conformite_traitement', targetId: id, details: { action: 'traitement-update', champs: Object.keys(data) } })
   return NextResponse.json({ traitement: updated })
 })
 
 // DELETE /api/organizations/[orgId]/conformite/traitements/[id] — supprime un traitement d'écart de conformité.
-export const DELETE = withAccess(access, async (_req, { orgId, params: { id } }) => {
+export const DELETE = withAccess(access, async (req, { user, role, orgId, params: { id } }) => {
   if (!(await charger(orgId, id))) return introuvable()
   await prisma.conformiteTraitement.delete({ where: { id } })
+  await auditLog('CONFORMITE_UPDATED', { userId: user.id, userRole: role, organizationId: orgId, ip: getClientIp(req), targetType: 'conformite_traitement', targetId: id, details: { action: 'traitement-delete' } })
   return NextResponse.json({ ok: true })
 })
