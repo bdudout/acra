@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
+import { withAccess } from '@/lib/with-access.server'
+import type { SessionUser } from '@/lib/route-guard.server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { peutEcrireAudit } from '@/lib/permissions'
 import { validateConstatInput, cleanConstatInput } from '@/lib/audit'
 import { sanitizeChampsConfig, fusionnerChamps, avecChampsVisibles } from '@/lib/champs-perso'
 import type { Prisma } from '@prisma/client'
@@ -12,16 +12,13 @@ import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
-type Params = { params: Promise<{ id: string }> }
+// Constat cherché dans le périmètre visible (multi-organisation), sans exiger d'organisation
+// active : `org: 'none'` + getAnalyseScope ici ; 404 avant le contrôle de rôle (ordre conservé).
+const ACCESS = { org: 'none', rateLimit: { bucket: 'audit-constats' } } as const
 
-function peutEcrireAudit(role: UserRole): boolean {
-  return role === 'AUDITEUR' || isAdminRole(role)
-}
-
-async function loadInScope(session: { user: { id: string; role?: string } }, id: string) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
+async function loadInScope(user: SessionUser, id: string) {
+  const userId = user.id
+  const scope = await getAnalyseScope(userId, user.role)
   // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
   const userRole = scope.role
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
@@ -36,12 +33,9 @@ async function loadInScope(session: { user: { id: string; role?: string } }, id:
 }
 
 // PATCH /api/audit/constats/[id] — modifier un constat / faire évoluer son suivi.
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in c) return c.error
+export const PATCH = withAccess(ACCESS, async (req, { user, params: { id } }) => {
+  const c = await loadInScope(user, id)
+  if (c.error) return c.error
   if (!peutEcrireAudit(c.userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
@@ -67,15 +61,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     details: { scope: 'audit-constat', action: 'update', id },
   })
   return NextResponse.json(avecChampsVisibles(updated, defsChamps, c.userRole))
-}
+})
 
 // DELETE /api/audit/constats/[id] — supprimer un constat (auditeur / admin).
-export async function DELETE(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in c) return c.error
+export const DELETE = withAccess(ACCESS, async (req, { user, params: { id } }) => {
+  const c = await loadInScope(user, id)
+  if (c.error) return c.error
   if (!peutEcrireAudit(c.userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   await prisma.auditConstat.delete({ where: { id } })
@@ -84,4 +75,4 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     details: { scope: 'audit-constat', action: 'delete', id },
   })
   return NextResponse.json({ ok: true })
-}
+})

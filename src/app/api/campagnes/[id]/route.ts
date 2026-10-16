@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
+import { withAccess } from '@/lib/with-access.server'
+import type { SessionUser } from '@/lib/route-guard.server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
@@ -14,16 +14,17 @@ import { campagnesRcsaActives } from '@/lib/org-config'
 
 export const dynamic = 'force-dynamic'
 
-type Params = { params: Promise<{ id: string }> }
+// Campagne cherchée dans le périmètre visible, sans organisation active exigée : `org: 'none'` ;
+// le contrôle de rôle dépend de `secondeLigneActive` (config d'org) : il reste dans le handler.
+const ACCESS_ECRITURE = { org: 'none', rateLimit: { bucket: 'campagnes' } } as const
 
 function peutPiloter(role: UserRole, secondeLigneActive: boolean): boolean {
   return peutDefinir2eLigne(role, { secondeLigneActive })
 }
 
-async function loadInScope(session: { user: { id: string; role?: string } }, id: string) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
+async function loadInScope(user: SessionUser, id: string) {
+  const userId = user.id
+  const scope = await getAnalyseScope(userId, user.role)
   // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
   const userRole = scope.role
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
@@ -38,12 +39,9 @@ async function loadInScope(session: { user: { id: string; role?: string } }, id:
 }
 
 // GET /api/campagnes/[id] — détail + évaluations (avec le risque rattaché).
-export async function GET(_req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in c) return c.error
+export const GET = withAccess({ org: 'none' }, async (_req, { user, params: { id } }) => {
+  const c = await loadInScope(user, id)
+  if (c.error) return c.error
 
   const campagne = await prisma.campagne.findUnique({
     where: { id },
@@ -66,7 +64,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     })),
     avancement: avancementCampagne(evaluations),
   })
-}
+})
 
 /**
  * PATCH /api/campagnes/[id] — édition, OUVERTURE ou CLÔTURE (2ᵉ ligne).
@@ -77,12 +75,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
  * • CLÔTURE : exige que TOUTES les évaluations soient validées, puis applique
  *   les cotations validées au registre (c'est l'objet même de la campagne).
  */
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in c) return c.error
+export const PATCH = withAccess(ACCESS_ECRITURE, async (req, { user, params: { id } }) => {
+  const c = await loadInScope(user, id)
+  if (c.error) return c.error
   if (!peutPiloter(c.userRole, c.secondeLigneActive)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
@@ -174,15 +169,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   ) as Partial<typeof data>
   const updated = await prisma.campagne.update({ where: { id }, data: partiel })
   return NextResponse.json(updated)
-}
+})
 
 // DELETE /api/campagnes/[id] — supprimer une campagne NON clôturée (2ᵉ ligne).
-export async function DELETE(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in c) return c.error
+export const DELETE = withAccess(ACCESS_ECRITURE, async (req, { user, params: { id } }) => {
+  const c = await loadInScope(user, id)
+  if (c.error) return c.error
   if (!peutPiloter(c.userRole, c.secondeLigneActive)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   // Une campagne clôturée est une pièce d'archive : elle ne se supprime pas.
   if (c.campagne.statut === 'CLOTUREE') return NextResponse.json({ error: 'campagne_cloturee' }, { status: 400 })
@@ -193,4 +185,4 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     details: { scope: 'campagne', action: 'delete', id },
   })
   return NextResponse.json({ ok: true })
-}
+})

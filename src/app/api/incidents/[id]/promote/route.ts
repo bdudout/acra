@@ -1,29 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { isAdminRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { estPromouvable, promoteToRisk } from '@/lib/incident'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
-
-type Params = { params: Promise<{ id: string }> }
 
 /**
  * POST /api/incidents/[id]/promote — crée un risque au REGISTRE depuis un
  * incident orphelin (aucun risque rattaché) et lie l'incident au risque créé.
  * Réservé à la 2ᵉ ligne. Exige les DEUX modules actifs (incidents + registre).
  */
-export async function POST(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const { id } = await params
-  const scope = await getAnalyseScope(userId, instanceRole)
+// org: 'none' — la route fonctionne sans organisation active (périmètre visible, SUPER_ADMIN non focalisé).
+export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'incidents-promote' } }, async (req, { user, params: { id } }) => {
+  const userId = user.id
+  const scope = await getAnalyseScope(userId, user.role)
   // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
   const userRole = scope.role
   if (!(isAdminRole(userRole) || userRole === 'RISK_MANAGER' || userRole === 'RSSI')) {
@@ -70,4 +64,4 @@ export async function POST(req: NextRequest, { params }: Params) {
     details: { scope: 'incident', action: 'promote', incidentId: id, riskItemId: risk.id },
   })
   return NextResponse.json({ ok: true, riskItem: risk }, { status: 201 })
-}
+})

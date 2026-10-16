@@ -1,11 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { NextResponse } from 'next/server'
 import { randomUUID, createHash } from 'node:crypto'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { type UserRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { storageKeyFor } from '@/lib/document'
 import { getDocumentStorage } from '@/lib/document-storage'
 import { getDocumentTemplate, templateFilename, DOCX_MIME } from '@/lib/document-templates'
@@ -19,17 +16,10 @@ export const dynamic = 'force-dynamic'
 // PCA/PRA…) comme un vrai document Markdown éditable de la bibliothèque. Le contenu
 // vient du catalogue serveur (jamais du client). Idempotent : refuse (409) si un
 // document du même titre existe déjà. Réservé à la gouvernance documentaire.
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  const orgId = scope.activeOrgId
-  if (!orgId) return NextResponse.json({ error: 'org_absente' }, { status: 400 })
+export const POST = withAccess({ org: 'active', allow: peutGererDocuments, rateLimit: { bucket: 'documents' } }, async (req, { user, role, orgId }) => {
+  const userId = user.id
   const cfg = await getOrgConfig(orgId)
   if (!cfg.conformiteActive) return NextResponse.json({ error: 'module_inactif' }, { status: 403 })
-  if (!peutGererDocuments(scope.role)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
   const template = getDocumentTemplate(String(body?.templateId ?? ''))
@@ -62,7 +52,7 @@ export async function POST(req: NextRequest) {
       },
     })
     await auditLog('ORGANIZATION_CONFIG_UPDATED', {
-      userId, userRole: scope.role, organizationId: orgId, ip: getClientIp(req),
+      userId, userRole: role, organizationId: orgId, ip: getClientIp(req),
       details: { scope: 'document', action: 'insert-template', template: template.id, id },
     })
     return NextResponse.json(created, { status: 201 })
@@ -70,4 +60,4 @@ export async function POST(req: NextRequest) {
     await storage.delete(storageKey).catch(() => {})
     throw e
   }
-}
+})

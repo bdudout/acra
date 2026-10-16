@@ -1,6 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
+import { withAccess } from '@/lib/with-access.server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
@@ -14,8 +13,6 @@ import { campagnesRcsaActives } from '@/lib/org-config'
 
 export const dynamic = 'force-dynamic'
 
-type Params = { params: Promise<{ id: string; evalId: string }> }
-
 function peutPiloter(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RISK_MANAGER' || role === 'RSSI'
 }
@@ -28,15 +25,11 @@ function peutPiloter(role: UserRole): boolean {
  * • VALIDER / REJETER : réservé à la 2ᵉ ligne, avec QUATRE-YEUX — le valideur ne
  *   peut pas être celui qui a coté (même règle que l'approbation d'analyse).
  * Seule une campagne OUVERTE accepte des modifications.
+ * Évaluation cherchée dans le périmètre visible, sans organisation active exigée : `org: 'none'`.
  */
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-
-  const { id, evalId } = await params
-  const scope = await getAnalyseScope(userId, instanceRole)
+export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'campagne-evaluations' } }, async (req, { user, params: { id, evalId } }) => {
+  const userId = user.id
+  const scope = await getAnalyseScope(userId, user.role)
   // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
   const userRole = scope.role
   if (userRole === 'LECTEUR') return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
@@ -117,4 +110,4 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     details: { scope: 'campagne-evaluation', action: mono ? 'coter+valider' : 'coter', campagneId: id, id: evalId },
   })
   return NextResponse.json(updated)
-}
+})

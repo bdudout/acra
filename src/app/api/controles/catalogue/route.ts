@@ -5,14 +5,12 @@
 // POST { keys, locale } : crée les contrôles choisis. Lien au processus / au risque SEULEMENT si
 //      l'organisation les a déjà (même clé de catalogue) ; jamais d'exécution ni de responsable.
 // Droits : définition 2ᵉ ligne (peutDefinir2eLigne) et module « contrôle permanent » actif.
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { cleanControleInput } from '@/lib/controle'
 import { listControlTemplates } from '@/lib/controle-templates'
 import { orgSectors } from '@/lib/sector-context.server'
@@ -25,16 +23,12 @@ const LOCALES: CatalogueLocale[] = ['fr', 'en', 'de', 'es', 'it']
 const parseLocale = (v: unknown): CatalogueLocale => (LOCALES.includes(v as CatalogueLocale) ? v as CatalogueLocale : 'fr')
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase()
 
-async function context() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { ok: false as const, response: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
-  const userId = (session.user as { id: string }).id
-  const scope = await getAnalyseScope(userId, ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole)
-  if (!scope.activeOrgId) return { ok: false as const, response: NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 }) }
-  const cfg = await getOrgConfig(scope.activeOrgId)
+/** Module « contrôle permanent » actif et droit de définition 2ᵉ ligne (selon l'organisation). */
+async function context(userId: string, role: UserRole, orgId: string) {
+  const cfg = await getOrgConfig(orgId)
   if (!cfg.controlePermanentActive) return { ok: false as const, response: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
-  if (!peutDefinir2eLigne(scope.role, { secondeLigneActive: cfg.secondeLigneActive })) return { ok: false as const, response: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
-  return { ok: true as const, userId, role: scope.role, orgId: scope.activeOrgId }
+  if (!peutDefinir2eLigne(role, { secondeLigneActive: cfg.secondeLigneActive })) return { ok: false as const, response: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
+  return { ok: true as const, userId, role, orgId }
 }
 
 async function linkable(orgId: string) {
@@ -48,8 +42,8 @@ async function linkable(orgId: string) {
   }
 }
 
-export async function GET(req: NextRequest): Promise<NextResponse> {
-  const ctx = await context()
+export const GET = withAccess({ org: 'active' }, async (req, { user, role, orgId }) => {
+  const ctx = await context(user.id, role, orgId)
   if (!ctx.ok) return ctx.response
   const locale = parseLocale(new URL(req.url).searchParams.get('locale'))
   const { effective } = await orgSectors(ctx.orgId)
@@ -66,10 +60,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     ownedProcessKeys: [...links.processIds.keys()],
     ownedRiskKeys: [...links.riskIds.keys()],
   })
-}
+})
 
-export async function POST(req: NextRequest): Promise<NextResponse> {
-  const ctx = await context()
+export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'controle-catalogue' } }, async (req, { user, role, orgId }) => {
+  const ctx = await context(user.id, role, orgId)
   if (!ctx.ok) return ctx.response
   const body = await req.json().catch(() => ({}))
   const locale = parseLocale(body.locale)
@@ -99,8 +93,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return { created, alreadyImported: [...already] }
   })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
-    userId: ctx.userId, userRole: ctx.role ?? undefined, organizationId: ctx.orgId, ip: getClientIp(req),
+    userId: ctx.userId, userRole: ctx.role, organizationId: ctx.orgId, ip: getClientIp(req),
     details: { scope: 'controle', action: 'catalogue-import', created: result.created, alreadyImported: result.alreadyImported },
   })
   return NextResponse.json(result, { status: result.created.length ? 201 : 200 })
-}
+})

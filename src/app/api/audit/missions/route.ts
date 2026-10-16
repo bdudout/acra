@@ -1,12 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { accesResultats } from '@/lib/acces-resultats.server'
 import { visibiliteMission } from '@/lib/acces-resultats'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { withAccess } from '@/lib/with-access.server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import type { UserRole } from '@/lib/permissions'
 import { validateMissionInput, cleanMissionInput, synthetiserConstats, constatTermine, type ConstatStatut } from '@/lib/audit'
 import { estArchivable, cleanArchivageDuree } from '@/lib/archivage'
 import { sanitizeChampsConfig, valeursVisibles, fusionnerChamps, champsRequisManquants } from '@/lib/champs-perso'
@@ -20,20 +19,14 @@ export const dynamic = 'force-dynamic'
  */
 import { peutEcrireAudit } from '@/lib/permissions'
 
-async function ctx(session: { user: { id: string; role?: string } }) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
-  return { userId, userRole, orgId: scope.activeOrgId }
-}
-
 // GET /api/audit/missions — plan d'audit de l'organisation active + synthèse des constats.
-export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, orgId, userRole: roleLecture } = await ctx(session as unknown as { user: { id: string; role?: string } })
+// Sans organisation active : { missions: [], active: false } (pas de 400) — d'où `org: 'none'`.
+export const GET = withAccess({ org: 'none' }, async (_req, { user }) => {
+  const userId = user.id
+  const scope = await getAnalyseScope(userId, user.role)
+  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
+  const roleLecture = scope.role
+  const orgId = scope.activeOrgId
   if (!orgId) return NextResponse.json({ missions: [], active: false })
   const cfg = await getOrgConfig(orgId)
   if (!cfg.auditInterneActive) return NextResponse.json({ missions: [], active: false })
@@ -65,15 +58,12 @@ export async function GET() {
     }
   })
   return NextResponse.json({ missions, active: true, archivageDureeAnnees: dureeAnnees })
-}
+})
 
 // POST /api/audit/missions — planifier une mission (auditeur / admin).
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
-  if (!peutEcrireAudit(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
-  if (!orgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
+// Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
+export const POST = withAccess({ org: 'active', allow: peutEcrireAudit, rateLimit: { bucket: 'audit-missions' } }, async (req, { user, role: userRole, orgId }) => {
+  const userId = user.id
   const cfg = await getOrgConfig(orgId)
   if (!cfg.auditInterneActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
 
@@ -92,4 +82,4 @@ export async function POST(req: NextRequest) {
     details: { scope: 'audit-mission', action: 'create', id: mission.id },
   })
   return NextResponse.json(mission, { status: 201 })
-}
+})

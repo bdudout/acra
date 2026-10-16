@@ -4,26 +4,25 @@
  * Les octets vivent hors base (document-storage) ; seules les métadonnées sont
  * stockées dans le champ JSON `rapports` de la mission.
  */
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { NextResponse } from 'next/server'
 import { randomUUID, createHash } from 'node:crypto'
-import { authOptions } from '@/lib/auth'
+import { withAccess } from '@/lib/with-access.server'
+import type { SessionUser } from '@/lib/route-guard.server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { peutEcrireAudit } from '@/lib/permissions'
 import { mimeAutorise, contentMatchesMime, sanitizeFilename, storageKeyFor, MAX_DOCUMENT_SIZE } from '@/lib/document'
 import { getDocumentStorage } from '@/lib/document-storage'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
-type Params = { params: Promise<{ id: string }> }
 
-async function loadInScope(session: { user: { id: string; role?: string } }, id: string) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
+// Mission cherchée dans le périmètre visible, sans organisation active exigée : `org: 'none'`.
+async function loadInScope(user: SessionUser, id: string) {
+  const userId = user.id
+  const scope = await getAnalyseScope(userId, user.role)
   const userRole = scope.role
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
   const mission = await prisma.auditMission.findFirst({
@@ -33,17 +32,14 @@ async function loadInScope(session: { user: { id: string; role?: string } }, id:
   if (!mission) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
   const cfg = await getOrgConfig(mission.organizationId)
   if (!cfg.auditInterneActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
-  if (!(userRole === 'AUDITEUR' || isAdminRole(userRole))) return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
+  if (!peutEcrireAudit(userRole)) return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
   return { userId, userRole, mission }
 }
 
 // POST /api/audit/missions/[id]/rapports — archive (téléverse) un rapport pour une mission d'audit.
-export async function POST(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in c) return c.error
+export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'audit-rapports' } }, async (req, { user, params: { id } }) => {
+  const c = await loadInScope(user, id)
+  if (c.error) return c.error
 
   const form = await req.formData().catch(() => null)
   const file = form?.get('file')
@@ -70,4 +66,4 @@ export async function POST(req: NextRequest, { params }: Params) {
     details: { scope: 'audit-mission', action: 'rapport-upload', id, rapportId, taille: file.size },
   })
   return NextResponse.json(entry, { status: 201 })
-}
+})

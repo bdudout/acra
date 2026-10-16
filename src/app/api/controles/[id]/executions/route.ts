@@ -1,18 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { type UserRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { validateExecutionInput, cleanExecutionInput, libelleActionAnomalie, cleanChecklistResultats, deduireResultatChecklist } from '@/lib/controle'
 import { sanitizePreuves } from '@/lib/preuves'
 import { createRiskLinkedPlanAction } from '@/lib/plan-action.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
-
-type Params = { params: Promise<{ id: string }> }
 
 /**
  * POST /api/controles/[id]/executions — ENREGISTRER une exécution de contrôle.
@@ -21,15 +17,11 @@ type Params = { params: Promise<{ id: string }> }
  * (celui-ci consulte, il n'exécute pas de contrôle). En cas d'ANOMALIE et si le
  * contrôle est rattaché à un risque du registre, une action de traitement est
  * créée automatiquement — la boucle « anomalie → plan d'action » de la spec.
+ * org: 'none' : le contrôle est cherché dans tout le périmètre visible (sans org active requise).
  */
-export async function POST(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-
-  const { id } = await params
-  const scope = await getAnalyseScope(userId, instanceRole)
+export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'controle-executions' } }, async (req, { user, params: { id } }) => {
+  const userId = user.id
+  const scope = await getAnalyseScope(userId, user.role)
   // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
   const userRole = scope.role
   if (userRole === 'LECTEUR') return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
@@ -100,4 +92,4 @@ export async function POST(req: NextRequest, { params }: Params) {
     details: { scope: 'controle', action: 'execute', controleId: id, resultat: data.resultat, actionCreee, preuves: preuves.length },
   })
   return NextResponse.json({ execution, actionCreee }, { status: 201 })
-}
+})

@@ -1,29 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { type UserRole } from '@/lib/permissions'
 import { cleanDoraCriteres, classifierIncident, estEvalueDora } from '@/lib/dora'
 import { peutEvaluerDora } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
-type Params = { params: Promise<{ id: string }> }
-
 // PATCH /api/reglementaire/dora/[id] — évaluer/mettre à jour les critères DORA
 // d'un incident (gouvernance). Retourne la classification recalculée.
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-
-  const { id } = await params
-  const scope = await getAnalyseScope(userId, instanceRole)
+// `org: 'none'` : l'incident est cherché dans tout le périmètre visible (SUPER_ADMIN non focalisé inclus).
+export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'reglementaire-dora' } }, async (req, { user, params: { id } }) => {
+  const userId = user.id
+  const scope = await getAnalyseScope(userId, user.role)
   // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
   const userRole = scope.role
   if (!peutEvaluerDora(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
@@ -50,4 +42,4 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   })
   const evalue = estEvalueDora(doraCriteres)
   return NextResponse.json({ criteres: doraCriteres, evalue, classe: evalue ? classifierIncident(doraCriteres).classe : null })
-}
+})

@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { requireSession } from '@/lib/route-guard.server'
+import { withAccess } from '@/lib/with-access.server'
 import {
   cleanArrangementInput, validateArrangementInput, validerArrangement,
   evaluerCompletude, synthetiserRegistre, arrangementToCsvRow, REGISTRE_CSV_HEADER, type ArrangementTic,
@@ -22,20 +21,14 @@ export const dynamic = 'force-dynamic'
 // La tenue du registre d'information relève de la 2ᵉ ligne (conformité / risques).
 import { peutGererRegistreTic } from '@/lib/permissions'
 
-async function ctx(session: { user: { id: string; role?: string } }) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  return { userId, userRole: scope.role, orgId: scope.activeOrgId }
-}
-
 // GET /api/reglementaire/registre-tic — registre + complétude + synthèse de pilotage.
 // ?format=csv exporte le registre (durci CWE-1236 via toCsvCell).
+// Sans organisation active : registre vide (pas d'erreur) → session seule, scope résolu ici.
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+  const g = await requireSession()
+  if (g.error) return g.error
+  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
+  const { role: userRole, activeOrgId: orgId } = await getAnalyseScope(g.user.id, g.user.role)
   if (!orgId) return NextResponse.json({ active: false, arrangements: [] })
   const cfg = await getOrgConfig(orgId)
   if (!cfg.reglementaireActive) return NextResponse.json({ active: false, arrangements: [] })
@@ -79,14 +72,10 @@ export async function GET(req: NextRequest) {
 }
 
 // POST /api/reglementaire/registre-tic — enregistre un accord contractuel.
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
-  if (!orgId) return NextResponse.json({ error: 'org_absente' }, { status: 400 })
+export const POST = withAccess({ org: 'active', allow: peutGererRegistreTic, rateLimit: { bucket: 'registre-tic' } }, async (req, { user, role: userRole, orgId }) => {
+  const userId = user.id
   const cfg = await getOrgConfig(orgId)
   if (!cfg.reglementaireActive) return NextResponse.json({ error: 'module_inactif' }, { status: 403 })
-  if (!peutGererRegistreTic(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
   const erreur = validateArrangementInput(body)
@@ -103,4 +92,4 @@ export async function POST(req: NextRequest) {
     details: { scope: 'registre-tic', action: 'create', id: created.id },
   })
   return NextResponse.json(created, { status: 201 })
-}
+})

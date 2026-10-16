@@ -1,12 +1,11 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { optionsStructure } from '@/lib/org-config.server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { isDemoInstance, touchOrgActivity, getDemoConfig } from '@/lib/demo-server'
 import { createExampleAnalyse } from '@/lib/demo-example'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { canCreateAnalyse, type UserRole } from '@/lib/permissions'
+import { canCreateAnalyse } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 
 /**
  * POST /api/demo/load-example — charge un exemple d'analyse complet (5 ateliers)
@@ -15,17 +14,11 @@ import { canCreateAnalyse, type UserRole } from '@/lib/permissions'
  *
  * Réservé aux instances de démo prouvées (`isDemoInstance()`), utilisateur authentifié
  * disposant d'une organisation active.
+ * org: 'none' : sans organisation active, la route répond 403 (et non 400) — périmètre résolu dans le handler.
  */
-export async function POST(req: Request) {
-  if (!(await isDemoInstance())) {
-    return NextResponse.json({ error: 'Instance non démo' }, { status: 403 })
-  }
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: UserRole }).role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
+const chargerExemple = withAccess({ org: 'none', rateLimit: { bucket: 'demo-load-example' } }, async (req, { user }) => {
+  const userId = user.id
+  const scope = await getAnalyseScope(userId, user.role)
   // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
   const userRole = scope.role
   if (!scope.activeOrgId) {
@@ -54,4 +47,13 @@ export async function POST(req: Request) {
     })
   }
   return NextResponse.json({ ok: true, analyseId: result.id, alreadyExisted: result.alreadyExisted })
+})
+
+// Le contrôle d'instance démo précède l'authentification (403 même sans session, comme avant).
+// Route sans paramètre dynamique : le contexte de route n'est pas transmis.
+export async function POST(req: Request) {
+  if (!(await isDemoInstance())) {
+    return NextResponse.json({ error: 'Instance non démo' }, { status: 403 })
+  }
+  return chargerExemple(req instanceof NextRequest ? req : new NextRequest(req))
 }

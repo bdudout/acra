@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { type UserRole } from '@/lib/permissions'
+import { requireSession } from '@/lib/route-guard.server'
+import { withAccess } from '@/lib/with-access.server'
 import { validateIncidentInput, cleanIncidentInput, perteNette, delaiDetection } from '@/lib/incident'
 import { findDuplicatesForAll, type IncidentDedupItem } from '@/lib/incident-dedup'
 import { evaluerReportingIncident } from '@/lib/dora-reporting'
@@ -20,24 +19,18 @@ import { entiteIdPourTexte } from '@/lib/entites.server'
 
 export const dynamic = 'force-dynamic'
 
-async function ctx(session: { user: { id: string; role?: string } }) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
-  return { userId, userRole, orgId: scope.activeOrgId }
-}
-
 // Decimal Prisma → number (les montants restent des nombres côté API).
 const num = (v: unknown): number | null =>
   v == null ? null : Number(v as unknown as string)
 
 // GET /api/incidents — incidents de l'organisation active (perte nette calculée).
+// Sans organisation active : liste vide (pas de 400) → requireSession.
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { orgId, userRole: roleLecture } = await ctx(session as unknown as { user: { id: string; role?: string } })
+  const g = await requireSession()
+  if (g.error) return g.error
+  const scope = await getAnalyseScope(g.user.id, g.user.role)
+  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
+  const { activeOrgId: orgId, role: roleLecture } = scope
   if (!orgId) return NextResponse.json({ incidents: [], active: false })
   const orgConfig = await getOrgConfig(orgId)
   if (!orgConfig.incidentsActive) return NextResponse.json({ incidents: [], active: false })
@@ -99,11 +92,8 @@ export async function GET() {
 // Ouvert à TOUS les rôles, LECTEUR inclus : c'est la 1ʳᵉ ligne qui déclare
 // (décision produit, cf. docs/ara-grc-spec.md §4 M2). La qualification, elle,
 // reste réservée à la 2ᵉ ligne (cf. [id]/route.ts).
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
-  if (!orgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
+export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'incidents' } }, async (req, { user, role: userRole, orgId }) => {
+  const userId = user.id
   const orgConfig = await getOrgConfig(orgId)
   if (!orgConfig.incidentsActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
 
@@ -147,4 +137,4 @@ export async function POST(req: NextRequest) {
   })
   await emitWebhookEvent(orgId, 'incident.declared', { id: incident.id, intitule: incident.intitule, statut: incident.statut })
   return NextResponse.json(incident, { status: 201 })
-}
+})

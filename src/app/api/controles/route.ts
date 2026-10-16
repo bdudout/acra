@@ -1,7 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { accesResultats } from '@/lib/acces-resultats.server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
@@ -16,26 +14,16 @@ import { sanitizeChampsConfig, valeursVisibles, fusionnerChamps, champsRequisMan
 import { Prisma } from '@prisma/client'
 import { verifierRattachements } from '@/lib/controle-rattachements.server'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { withAccess } from '@/lib/with-access.server'
 
 export const dynamic = 'force-dynamic'
 
-/** Définir le plan de contrôle relève de la 2ᵉ ligne (ou de la 1ʳᵉ en mode ligne unique). */
-import { peutDefinir } from '@/lib/permissions'
-
-async function ctx(session: { user: { id: string; role?: string } }) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
-  return { userId, userRole, orgId: scope.activeOrgId }
-}
-
 // GET /api/controles — bibliothèque de contrôles + échéance et efficacité.
-export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, orgId, userRole: roleLecture } = await ctx(session as unknown as { user: { id: string; role?: string } })
+// org: 'none' : sans organisation active, réponse « inactive » (et non 400).
+export const GET = withAccess({ org: 'none' }, async (_req, { user }) => {
+  const userId = user.id
+  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
+  const { role: roleLecture, activeOrgId: orgId } = await getAnalyseScope(userId, user.role)
   if (!orgId) return NextResponse.json({ controles: [], active: false })
   const cfg = await getOrgConfig(orgId)
   if (!cfg.controlePermanentActive) return NextResponse.json({ controles: [], active: false })
@@ -88,14 +76,11 @@ export async function GET() {
     }
   })
   return NextResponse.json({ controles, active: true, tiers, projets })
-}
+})
 
 // POST /api/controles — créer un contrôle dans la bibliothèque (2ᵉ ligne).
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
-  if (!orgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
+export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'controles' } }, async (req, { user, role: userRole, orgId }) => {
+  const userId = user.id
   const cfg = await getOrgConfig(orgId)
   if (!peutDefinir2eLigne(userRole, { secondeLigneActive: cfg.secondeLigneActive })) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   if (!cfg.controlePermanentActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
@@ -128,4 +113,4 @@ export async function POST(req: NextRequest) {
     details: { scope: 'controle', action: 'create', id: controle.id },
   })
   return NextResponse.json(controle, { status: 201 })
-}
+})

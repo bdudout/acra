@@ -1,12 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { z } from 'zod'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { isAdminRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { rateLimit, rateLimitHeaders, LIMIT_EXCEL_PARSE } from '@/lib/rate-limit'
 import { checkTabularUpload } from '@/lib/import-file-format'
@@ -32,15 +30,10 @@ const toExisting = (rows: { id: string; nom: string; parentId: string | null; ca
  * Import guidé de processus (CSV / XLSX) : `dryRun` = aperçu ligne à ligne sans écriture ; sinon création des lignes valides
  * (ADMIN, module registre actif), parents avant enfants, provenance stable (référence du fichier), transaction verrouillée.
  */
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = (session.user as { role?: UserRole }).role ?? 'ANALYSTE'
-  const scope = await getAnalyseScope(userId, instanceRole)
-  if (!scope.activeOrgId) return NextResponse.json({ error: 'organization_required' }, { status: 400 })
-  if (!scope.role || !isAdminRole(scope.role)) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
-  const orgId = scope.activeOrgId
+// Le rate limit `excel-parse` (LIMIT_EXCEL_PARSE) reste dans le handler : il s'applique après le contrôle
+// de format et renvoie le code `excel_rate_limited` que l'interface (ProcessusImportPanel) traduit.
+export const POST = withAccess({ org: 'active', allow: isAdminRole }, async (req, { user, role, orgId }) => {
+  const userId = user.id
   if (!(await getOrgConfig(orgId)).registreRisquesActive) return NextResponse.json({ error: 'module_inactive' }, { status: 403 })
 
   let body: z.infer<typeof schema>
@@ -97,7 +90,7 @@ export async function POST(req: NextRequest) {
       }
       return { plan, created: plan.toCreate.length }
     })
-    await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId, userRole: scope.role, organizationId: orgId, ip: getClientIp(req), details: { scope: 'processus', action: 'import', file: body.filename.slice(0, 120), created: result.created, counts: result.plan.counts } })
+    await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId, userRole: role, organizationId: orgId, ip: getClientIp(req), details: { scope: 'processus', action: 'import', file: body.filename.slice(0, 120), created: result.created, counts: result.plan.counts } })
     return NextResponse.json({ sheet: sheetName, columns, lines: result.plan.lines, counts: result.plan.counts, created: result.created }, { status: result.created ? 201 : 200 })
   } catch (error) {
     // Course sur la clé d'origine (deux imports simultanés) : l'unicité en base protège, l'utilisateur relance.
@@ -105,4 +98,4 @@ export async function POST(req: NextRequest) {
     console.error('[processus import]', error instanceof Error ? error.message : error)
     return NextResponse.json({ error: 'import_failed' }, { status: 500 })
   }
-}
+})

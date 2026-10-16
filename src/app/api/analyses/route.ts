@@ -2,13 +2,12 @@ import { cadrageInitial } from '@/lib/cadrage-initial'
 import { populateProjet360 } from '@/lib/projet360.server'
 import { resolveProjetSource } from '@/lib/projet360'
 import { getServerLocale, getServerT } from '@/lib/i18n'
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
+import { withAccess } from '@/lib/with-access.server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { cleanTags } from '@/lib/analyse-tags'
-import { canCreateAnalyse, analyseWhereClause } from '@/lib/permissions'
+import { analyseWhereClause } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { MAX_SOUS_SECTEURS, resolveSousSecteursUpdate } from '@/lib/sous-secteurs'
@@ -42,12 +41,10 @@ const createSchema = z.object({
 })
 
 // GET /api/analyses — liste des analyses de l'utilisateur
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const userId = (session.user as any).id
-  const userRole = (session.user as any).role ?? 'ANALYSTE'
+// Fonctionne sans organisation active (périmètre multi-organisation) : `org: 'none'`.
+export const GET = withAccess({ org: 'none' }, async (_req, { user }) => {
+  const userId = user.id
+  const userRole = user.role
   const __org = await getAnalyseScope(userId, userRole)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -66,15 +63,13 @@ export async function GET(req: NextRequest) {
 
   // Indicateurs de risque calculés en base (T13) au lieu de renvoyer tous les risques et mesures.
   return NextResponse.json({ analyses: await withRiskSummary(analyses) })
-}
+})
 
 // POST /api/analyses — créer une analyse
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const userId = (session.user as any).id
-  const userRole = (session.user as any).role ?? 'ANALYSTE'
+// Rôle effectif et organisation active contrôlés par checkAnalyseCreation (messages 403 propres) : `org: 'none'`.
+export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'analyses' } }, async (req, { user }) => {
+  const userId = user.id
+  const userRole = user.role
   // Rôle EFFECTIF dans l'organisation active, organisation active, plafond démo :
   // contrôle partagé avec l'import (lib/analyse-create-guard.server.ts).
   const check = await checkAnalyseCreation(userId, userRole)
@@ -206,4 +201,4 @@ export async function POST(req: NextRequest) {
     console.error(err)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
-}
+})

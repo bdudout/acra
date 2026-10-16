@@ -1,11 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { NextResponse } from 'next/server'
 import { randomUUID, createHash } from 'node:crypto'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { validateDocumentMeta, cleanDocumentMeta, mimeAutorise, contentMatchesMime, storageKeyFor, MAX_DOCUMENT_SIZE } from '@/lib/document'
 import { getDocumentStorage } from '@/lib/document-storage'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -15,18 +13,10 @@ export const dynamic = 'force-dynamic'
 // La bibliothèque documentaire relève de la gouvernance (RSSI / conformité / risques).
 import { peutGererDocuments } from '@/lib/permissions'
 
-async function ctx(session: { user: { id: string; role?: string } }) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  return { userId, userRole: scope.role, orgId: scope.activeOrgId }
-}
-
 // GET /api/documents[?referentiel=CODE] — liste des documents de l'organisation.
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+// org: 'none' : sans organisation active, réponse « inactive » (et non 400).
+export const GET = withAccess({ org: 'none' }, async (req, { user }) => {
+  const { role: userRole, activeOrgId: orgId } = await getAnalyseScope(user.id, user.role)
   if (!orgId) return NextResponse.json({ active: false, documents: [] })
   const cfg = await getOrgConfig(orgId)
   if (!cfg.conformiteActive) return NextResponse.json({ active: false, documents: [] })
@@ -42,17 +32,13 @@ export async function GET(req: NextRequest) {
     },
   })
   return NextResponse.json({ active: true, documents: docs, canManage: peutGererDocuments(userRole) })
-}
+})
 
 // POST /api/documents — dépôt d'un document (multipart/form-data : champ `file` + métadonnées).
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
-  if (!orgId) return NextResponse.json({ error: 'org_absente' }, { status: 400 })
+export const POST = withAccess({ org: 'active', allow: peutGererDocuments, rateLimit: { bucket: 'documents' } }, async (req, { user, role: userRole, orgId }) => {
+  const userId = user.id
   const cfg = await getOrgConfig(orgId)
   if (!cfg.conformiteActive) return NextResponse.json({ error: 'module_inactif' }, { status: 403 })
-  if (!peutGererDocuments(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const form = await req.formData().catch(() => null)
   if (!form) return NextResponse.json({ error: 'form_invalide' }, { status: 400 })
@@ -112,4 +98,4 @@ export async function POST(req: NextRequest) {
     await storage.delete(storageKey).catch(() => {})
     throw e
   }
-}
+})

@@ -1,11 +1,10 @@
 import { incidentsParRisque } from '@/lib/incident-risques'
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { type UserRole } from '@/lib/permissions'
+import { requireSession } from '@/lib/route-guard.server'
+import { withAccess } from '@/lib/with-access.server'
 import { validateRiskItemInput, cleanRiskItem, niveauRisque } from '@/lib/risk-item'
 import { summarizeActions } from '@/lib/risk-action'
 import { riskActionsByRiskItem } from '@/lib/plan-action.server'
@@ -17,20 +16,12 @@ import { entiteIdPourTexte } from '@/lib/entites.server'
 
 export const dynamic = 'force-dynamic'
 
-async function ctx(session: { user: { id: string; role?: string } }) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
-  return { userId, userRole, orgId: scope.activeOrgId }
-}
-
 // GET /api/risk-items — registre de l'organisation active (avec niveau calculé).
+// Sans organisation active : liste vide (pas d'erreur) → session seule, org active résolue ici.
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+  const g = await requireSession()
+  if (g.error) return g.error
+  const { activeOrgId: orgId } = await getAnalyseScope(g.user.id, g.user.role)
   if (!orgId) return NextResponse.json({ risks: [], active: false })
   const orgConfig = await getOrgConfig(orgId)
   if (!orgConfig.registreRisquesActive) return NextResponse.json({ risks: [], active: false })
@@ -90,12 +81,10 @@ export async function GET() {
 }
 
 // POST /api/risk-items — déclarer un risque (tout rôle sauf LECTEUR, module actif).
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'risk-items' } }, async (req, { user, role: userRole, orgId }) => {
+  const userId = user.id
+  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
   if (userRole === 'LECTEUR') return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
-  if (!orgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
   const orgConfig = await getOrgConfig(orgId)
   if (!orgConfig.registreRisquesActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
 
@@ -113,4 +102,4 @@ export async function POST(req: NextRequest) {
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId, userRole, ip: getClientIp(req), details: { scope: 'risk-item', action: 'create', id: risk.id, intitule: data.intitule } })
   await emitWebhookEvent(orgId, 'risk.created', { id: risk.id, intitule: risk.intitule })
   return NextResponse.json(risk, { status: 201 })
-}
+})
