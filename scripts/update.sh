@@ -73,8 +73,19 @@ else
 fi
 export ACRA_STATUS_FILE="$STATUS"
 
+
 # ── Verrou d'exécution (mkdir atomique + pid ; un verrou orphelin est repris) ───────────────────────
 mkdir -p .acra-update/run; chmod 755 .acra-update 2>/dev/null || true
+# ── Profil « ha » (multi-instance, docker-compose.ha.yml) : non pris en charge ici ───────────────────
+# Ce script ARRÊTE l'application et s'appuie sur la base locale (pg_dump, service db) : en multi-instance, il couperait le
+# service et ne protégerait pas la base externe. La mise à jour progressive est scripts/update-ha.sh (lot H1.4).
+case " ${ACRA_COMPOSE_FILES:-} " in *docker-compose.ha.yml*) ACRA_DEPLOY_PROFILE=ha ;; esac
+if [ "${ACRA_DEPLOY_PROFILE:-}" = "ha" ]; then
+  echo "✗ Profil « ha » (multi-instance) : utiliser scripts/update-ha.sh (mise à jour progressive sans interruption, docs/deploiement-haute-disponibilite.md)." >&2
+  status FAILED "Profil multi-instance : mise à jour progressive à lancer sur le serveur avec scripts/update-ha.sh." ha_profile
+  exit 1
+fi
+
 RUN_LOCK=".acra-update/run/lock"
 take_run_lock() {
   if mkdir "$RUN_LOCK" 2>/dev/null; then echo "$$" > "$RUN_LOCK/pid"; return 0; fi

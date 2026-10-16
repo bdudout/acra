@@ -25,6 +25,12 @@ ENV DATABASE_URL=postgresql://placeholder:placeholder@placeholder:5432/placehold
 # Borne le heap V8 pour éviter que le worker de build Next soit tué (OOM) sur les
 # machines à mémoire Docker limitée (build worker exited with code 1 / signal null).
 ENV NODE_OPTIONS=--max-old-space-size=2048
+# Profil « ha » (docker-compose.ha.yml, lot H1.4) : lus par `next build` et EMBARQUÉS dans la sortie — clé des Server
+# Functions commune à tous les réplicas et à toutes les versions, identifiant de déploiement (protection contre le décalage
+# de versions pendant une mise à jour progressive). Vides par défaut : comportement Next.js inchangé (mono-instance).
+# La clé se retrouve dans l'image (c'est ainsi que Next.js l'utilise) : l'image reste privée, jamais publiée.
+ARG NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=
+ARG NEXT_DEPLOYMENT_ID=
 
 RUN npx prisma generate
 RUN npm run build

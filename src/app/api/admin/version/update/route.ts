@@ -8,7 +8,7 @@ import { randomUUID } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { canAdminInstance } from '@/lib/permissions'
 import { isUpdateChannel } from '@/lib/version-check'
-import { buildUpdateRequest } from '@/lib/update-request'
+import { buildUpdateRequest, isHaProfile } from '@/lib/update-request'
 import { readUpdateAgent, writeUpdateRequest } from '@/lib/update-request.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { requireInstanceAdmin } from '@/lib/route-guard.server'
@@ -24,6 +24,8 @@ export async function GET() {
 
 export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'instance-update' } }, async (req, { user }) => {
   if (!canAdminInstance({ id: user.id, role: user.role })) return NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 })
+  // Profil « ha » : mise à jour progressive lancée sur l'hôte (scripts/update-ha.sh), pas par l'agent (lot H1.4).
+  if (isHaProfile(process.env)) return NextResponse.json({ error: 'ha_profile' }, { status: 409 })
   const body = await req.json().catch(() => ({})) as { channel?: unknown }
   if (!isUpdateChannel(body.channel)) return NextResponse.json({ error: 'invalid_channel' }, { status: 400 })
   const agent = await readUpdateAgent()
