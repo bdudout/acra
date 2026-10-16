@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { secteursVisibles } from '@/lib/secteurs-masques'
 import { SECTEURS_ACTIVITE as SECTEURS_FR } from '@/lib/ebios-data'
@@ -167,7 +168,7 @@ export default function NewAnalysePage() {
     })
 
     const data = await res.json()
-    if (!res.ok) { setError(data.error || t.error); setLoading(false); return }
+    if (!res.ok) { setError(apiErrorMessage(data.error, t, t.error)); setLoading(false); return }
 
     // Risques proposés/imposés par la qualification : traduits et filtrés côté
     // serveur. Méthodes à saisie directe → proposition immédiate ; EBIOS RM → atelier 5.

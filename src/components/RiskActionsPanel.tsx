@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { RISK_ACTION_STATUTS, ACTION_PRIORITES, DEFAULT_ACTION_DELAIS_MOIS, defaultEcheanceForPriorite, ACTION_PRIORITE_BADGE as PRIORITE_BADGE, type ActionDelaisMois } from '@/lib/risk-action'
 import { suggestionsFromValues } from '@/lib/form-defaults'
 
@@ -57,7 +58,7 @@ export default function RiskActionsPanel({ riskId, canEdit, onChange }: { riskId
   }
   function changeEcheance(v: string) { setForm(f => ({ ...f, echeance: v })); setEcheanceAuto(false) }
 
-  function err(code: string) { return (a.errors as Record<string, string>)[code] ?? code }
+  function err(code: string) { return (a.errors as Record<string, string>)[code] ?? apiErrorMessage(code, t, code) }
 
   async function submit() {
     if (!form.intitule.trim()) { setError(err('intitule_requis')); return }

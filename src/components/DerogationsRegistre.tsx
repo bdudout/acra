@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { formatDate } from '@/lib/format'
 import AutocompleteInput from '@/components/AutocompleteInput'
 import ExampleChips from '@/components/ExampleChips'
@@ -118,7 +119,7 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
       body: JSON.stringify({ action, ...extra }),
     })
     setActionBusy(false)
-    if (!res.ok) { const j = await res.json().catch(() => ({})); setActionError(j.error ?? 'Erreur'); return }
+    if (!res.ok) { const j = await res.json().catch(() => ({})); setActionError(apiErrorMessage(j.error, t, 'Erreur')); return }
     const updated = await res.json().catch(() => null) as { statut?: string; intitule?: string; dateFin?: string | null } | null
     const id = openId
     if (updated) setLocalRows(prev => prev.map(r => r.id === id ? { ...r, statut: updated.statut ?? r.statut, intitule: updated.intitule ?? r.intitule, dateFin: updated.dateFin ?? null } : r))
@@ -165,7 +166,7 @@ export default function DerogationsRegistre({ rows, locale, canCreate = false, d
     })
     const data = await res.json().catch(() => ({}))
     setBusy(false)
-    if (!res.ok) { setError((d.errors as Record<string, string>)[data.error] ?? data.error ?? 'Erreur'); return }
+    if (!res.ok) { setError((d.errors as Record<string, string>)[data.error] ?? apiErrorMessage(data.error, t, 'Erreur')); return }
     setCreating(false); setForm({ referentiel: '', ref: '', intitule: '', motif: '', mesures: '', dureeJours: '' })
     router.refresh()
   }

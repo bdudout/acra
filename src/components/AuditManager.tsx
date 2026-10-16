@@ -18,6 +18,7 @@ import MissionSuiviPanel from '@/components/MissionSuiviPanel'
 import PapiersTravailPanel from '@/components/PapiersTravailPanel'
 import { useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { MISSION_STATUTS, CONSTAT_STATUTS, CONSTAT_SOURCES, MISSION_TYPES, MISSION_RECURRENCES, transitionMissionAutorisee, filtrerMissions, filtrerConstats, CRITICITE_MAX, type MissionFiltre, type ConstatFiltre } from '@/lib/audit'
 import { deduireResultatChecklist } from '@/lib/controle'
 import AuditModelePicker from '@/components/AuditModelePicker'
@@ -117,7 +118,7 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
 
   const jour = (d: string | null) => (d ? new Date(d).toLocaleDateString(locale) : '—')
   const lbl = (dict: unknown, k: string) => (dict as Record<string, string>)[k] ?? k
-  function err(code: string) { return (a.errors as Record<string, string>)[code] ?? (t.personnalisation.errors as Record<string, string>)[code] ?? code }
+  function err(code: string) { return (a.errors as Record<string, string>)[code] ?? (t.personnalisation.errors as Record<string, string>)[code] ?? apiErrorMessage(code, t, code) }
 
   async function reload() {
     const [mm, rr, pp, cc] = await Promise.all([

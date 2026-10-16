@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react'
 import { Wand2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { VOCAB_TERMS, VOCAB_LOCALES, type Vocabulaire, type VocabTerm } from '@/lib/vocabulaire'
 import { CHAMPS_MODULES, CHAMP_TYPES, ROLES_CHAMP, MAX_CHAMPS_PAR_MODULE, type ChampDef, type ChampsConfig, type ChampsModule } from '@/lib/champs-perso'
 import { GABARITS } from '@/lib/gabarits'
@@ -60,7 +61,7 @@ export default function PersonnalisationManager() {
     const res = await fetch('/api/personnalisation', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vocabulaire: vocab, champsPersonnalises }) }).catch(() => null)
     const d = await res?.json().catch(() => ({}))
     setBusy(false)
-    if (!res || !res.ok) { setMsg(p.error.replace('{error}', String(d?.error ?? res?.status ?? '—'))); return }
+    if (!res || !res.ok) { setMsg(p.error.replace('{error}', apiErrorMessage(d?.error, t, String(res?.status ?? '—')))); return }
     setMsg(p.saved); reloadVocabulaire(); charger()
   }
   async function gabaritAction(dryRun: boolean) {
@@ -69,7 +70,7 @@ export default function PersonnalisationManager() {
     const res = await fetch('/api/personnalisation/gabarit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: gabarit, dryRun }) }).catch(() => null)
     const d = await res?.json().catch(() => ({}))
     setBusy(false)
-    if (!res || !res.ok) { setMsg((p.errors as Record<string, string>)[d?.error] ?? p.error.replace('{error}', String(d?.error ?? res?.status ?? '—'))); return }
+    if (!res || !res.ok) { setMsg((p.errors as Record<string, string>)[d?.error] ?? p.error.replace('{error}', apiErrorMessage(d?.error, t, String(res?.status ?? '—')))); return }
     if (dryRun) setApercu(d.changements ?? [])
     else { setApercu(null); setMsg(p.saved); reloadVocabulaire(); charger() }
   }

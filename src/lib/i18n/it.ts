@@ -14,6 +14,16 @@ export const it: Translations = {
     sameAsOld:    'La nuova password deve essere diversa dalla precedente.',
     genericError: 'Impossibile cambiare la password.',
   },
+  // Codes d'erreur stables des gardes d'API (lib/with-access.server) — cf. lib/api-error.ts
+  apiErrors: {
+    unauthorized: 'Sessione scaduta: effettui di nuovo l\'accesso.',
+    organization_required: 'Selezioni un\'organizzazione attiva per continuare.',
+    forbidden: 'Non dispone dei diritti necessari per questa azione.',
+    rate_limited: 'Troppe richieste: riprovi tra un momento.',
+    invalid_body: 'Dati non validi: verifichi i campi inseriti.',
+    not_found: 'Elemento non trovato o fuori dal suo perimetro.',
+    ANALYSE_GELEE: 'Analisi congelata: i rischi residui sono stati accettati. Apra una nuova versione per modificarla.',
+  },
   loading:    'Caricamento…',
   saving:     'Salvataggio…',
   save:       'Salva',

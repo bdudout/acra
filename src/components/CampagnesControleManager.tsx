@@ -10,6 +10,7 @@
 import { Plus, Trash2, AlertTriangle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import ConfirmDialog from '@/components/ConfirmDialog'
 
 const STATUTS = ['PLANIFIEE', 'EN_COURS', 'CLOTUREE'] as const
@@ -68,7 +69,7 @@ export default function CampagnesControleManager({ canDefine }: { canDefine: boo
     })
     if (!res.ok) {
       const d = await res.json().catch(() => ({}))
-      setErr(d.error === 'intitule_requis' ? c.errorRequired : (d.error || 'Erreur'))
+      setErr(d.error === 'intitule_requis' ? c.errorRequired : apiErrorMessage(d.error, t, 'Erreur'))
       return
     }
     setShowForm(false); reload()

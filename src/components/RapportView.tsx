@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Printer } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { STATUT_BADGE } from '@/components/RapportsManager'
 import { resoudreCellule, titreSection, libelleKpi, libelleColonne, formaterKpi } from '@/lib/rapport-render'
 import type { RapportContenu } from '@/lib/rapport-model'
@@ -42,7 +43,7 @@ export default function RapportView({ id }: { id: string }) {
     const res = await fetch(`/api/rapports/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, ...extra }) }).catch(() => null)
     const d = await res?.json().catch(() => ({}))
     setBusy(false)
-    if (!res || !res.ok) { setError((r.errors as Record<string, string>)[d?.error] ?? String(d?.error ?? res?.status ?? '—')); return }
+    if (!res || !res.ok) { setError((r.errors as Record<string, string>)[d?.error] ?? apiErrorMessage(d?.error, t, String(res?.status ?? '—'))); return }
     load()
   }
   async function supprimer() {

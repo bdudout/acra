@@ -13,6 +13,16 @@ export const fr = {
     genericError: 'Impossible de changer le mot de passe.',
   },
   // ─── Commun ──────────────────────────────────────────────────────────────
+  // Codes d'erreur stables des gardes d'API (lib/with-access.server) — cf. lib/api-error.ts
+  apiErrors: {
+    unauthorized: 'Session expirée : reconnectez-vous.',
+    organization_required: 'Sélectionnez une organisation active pour continuer.',
+    forbidden: 'Vous n\'avez pas les droits nécessaires pour cette action.',
+    rate_limited: 'Trop de requêtes : réessayez dans un instant.',
+    invalid_body: 'Données invalides : vérifiez les champs saisis.',
+    not_found: 'Élément introuvable ou hors de votre périmètre.',
+    ANALYSE_GELEE: 'Analyse gelée : les risques résiduels ont été acceptés. Ouvrez une nouvelle version pour la modifier.',
+  },
   loading:    'Chargement…',
   saving:     'Sauvegarde…',
   save:       'Sauvegarder',

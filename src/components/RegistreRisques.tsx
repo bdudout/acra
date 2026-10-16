@@ -11,6 +11,7 @@ import RisquesViewTabs from '@/components/RisquesViewTabs'
 import { AlertTriangle, NotebookText, X } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { useSearchParams } from 'next/navigation'
 import { niveauBucket } from '@/lib/cartographie'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
@@ -97,7 +98,7 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
   }
   useEffect(() => { reload() }, [])
 
-  function err(code: string) { return (r.errors as Record<string, string>)[code] ?? code }
+  function err(code: string) { return (r.errors as Record<string, string>)[code] ?? apiErrorMessage(code, t, code) }
   const num = (s: string) => (s ? Number(s) : null)
 
   async function submit() {

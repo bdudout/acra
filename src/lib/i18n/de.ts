@@ -14,6 +14,16 @@ export const de: Translations = {
     sameAsOld:    'Das neue Passwort muss sich vom alten unterscheiden.',
     genericError: 'Passwort kann nicht geändert werden.',
   },
+  // Codes d'erreur stables des gardes d'API (lib/with-access.server) — cf. lib/api-error.ts
+  apiErrors: {
+    unauthorized: 'Sitzung abgelaufen: Bitte melden Sie sich erneut an.',
+    organization_required: 'Wählen Sie eine aktive Organisation aus, um fortzufahren.',
+    forbidden: 'Sie verfügen nicht über die für diese Aktion erforderlichen Rechte.',
+    rate_limited: 'Zu viele Anfragen: Bitte versuchen Sie es gleich erneut.',
+    invalid_body: 'Ungültige Daten: Bitte prüfen Sie die eingegebenen Felder.',
+    not_found: 'Element nicht gefunden oder außerhalb Ihres Bereichs.',
+    ANALYSE_GELEE: 'Analyse eingefroren: Die Restrisiken wurden akzeptiert. Öffnen Sie eine neue Version, um sie zu ändern.',
+  },
   loading:    'Wird geladen…',
   saving:     'Speichern…',
   save:       'Speichern',

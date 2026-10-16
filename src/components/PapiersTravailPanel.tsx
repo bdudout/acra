@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { TYPES_PAPIER, type Papier } from '@/lib/papiers-travail'
 
 const inp = 'px-2 py-1 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-xs w-full'
@@ -27,7 +28,7 @@ export default function PapiersTravailPanel({ missionId, readOnly = false }: { m
   const [error, setError] = useState<string | null>(null)
   // Rattachements (trame libre) : constats de la mission, pièces de la bibliothèque documentaire.
   const [options, setOptions] = useState<{ constats: { id: string; intitule: string }[]; documents: { id: string; titre: string; type: string }[] }>({ constats: [], documents: [] })
-  const err = (c: string) => (l.papierErrors as Record<string, string>)[c] ?? c
+  const err = (c: string) => (l.papierErrors as Record<string, string>)[c] ?? apiErrorMessage(c, t, c)
 
   const load = useCallback(() => {
     fetch(`/api/audit/missions/${missionId}/papiers`).then(r => (r.ok ? r.json() : null)).then(d => { if (d) { setPapiers(d.papiers); setNoms(d.utilisateurs ?? {}); setMoi(d.moi ?? ''); setOptions(d.options ?? { constats: [], documents: [] }) } }).catch(() => setPapiers(null))

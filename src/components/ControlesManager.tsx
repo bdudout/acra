@@ -10,6 +10,7 @@
 import { FlaskConical, Paperclip, X } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { useSearchParams } from 'next/navigation'
 import { CONTROLE_NIVEAUX, PERIODICITES, RESULTATS, deduireResultatChecklist, filtrerControles, resumeEfficaciteProvisoire, type ControleFiltre } from '@/lib/controle'
 import ControleCataloguePanel from '@/components/ControleCataloguePanel'
@@ -160,7 +161,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
     return () => { annule = true }
   }, [form.referentielCode])
 
-  function err(code: string) { return (c.errors as Record<string, string>)[code] ?? (t.personnalisation.errors as Record<string, string>)[code] ?? code }
+  function err(code: string) { return (c.errors as Record<string, string>)[code] ?? (t.personnalisation.errors as Record<string, string>)[code] ?? apiErrorMessage(code, t, code) }
 
   async function submit() {
     if (!form.intitule.trim()) { setError(err('intitule_requis')); return }

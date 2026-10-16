@@ -10,6 +10,7 @@
 import { Plus, Trash2, Download, FileText, AlertTriangle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { DOCUMENT_TYPES, DOCUMENT_PORTEES } from '@/lib/document'
 import { DOCUMENT_TEMPLATES } from '@/lib/document-templates'
@@ -89,7 +90,7 @@ export default function DocumentsManager({ canManage }: { canManage: boolean }) 
         titre_requis: d.errorRequired, fichier_requis: d.errorFile, fichier_trop_gros: d.errorTooBig,
         mime_interdit: d.errorMime, referentiel_requis: d.errorRefRequired, risque_requis: d.errorRisqueRequired,
       }
-      setErr(map[j.error] ?? j.error ?? 'Erreur')
+      setErr(map[j.error] ?? apiErrorMessage(j.error, t, 'Erreur'))
       return
     }
     setShowForm(false); reload()
@@ -106,7 +107,7 @@ export default function DocumentsManager({ canManage }: { canManage: boolean }) 
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ templateId: id }),
     })
     setInsertingTpl(null)
-    if (!res.ok && res.status !== 409) { const j = await res.json().catch(() => ({})); setErr(j.error ?? 'Erreur') }
+    if (!res.ok && res.status !== 409) { const j = await res.json().catch(() => ({})); setErr(apiErrorMessage(j.error, t, 'Erreur')) }
     reload()
   }
 

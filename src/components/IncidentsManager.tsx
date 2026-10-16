@@ -11,6 +11,7 @@ import { Siren, Info, X, Copy } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
 import { INCIDENT_STATUTS, transitionAutorisee, type IncidentStatut } from '@/lib/incident'
 import ColumnMenu from '@/components/ColumnMenu'
@@ -202,7 +203,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
   }
   useEffect(() => { reload() }, [])
 
-  function err(code: string) { return (n.errors as Record<string, string>)[code] ?? (n.l1b.errors as Record<string, string>)[code] ?? (t.personnalisation.errors as Record<string, string>)[code] ?? code }
+  function err(code: string) { return (n.errors as Record<string, string>)[code] ?? (n.l1b.errors as Record<string, string>)[code] ?? (t.personnalisation.errors as Record<string, string>)[code] ?? apiErrorMessage(code, t, code) }
 
   async function declarer() {
     if (!decl.intitule.trim()) { setError(err('intitule_requis')); return }
@@ -348,7 +349,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
     const res = await fetch('/api/incidents/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(raw) })
     const data = await res.json().catch(() => ({}))
     setBusy(false)
-    if (!res.ok) { setConfigMsg(n.configError.replace('{error}', String(data.error ?? res.status))); return }
+    if (!res.ok) { setConfigMsg(n.configError.replace('{error}', apiErrorMessage(data.error, t, String(res.status)))); return }
     setConfigMsg(n.configSaved); reload()
   }
 

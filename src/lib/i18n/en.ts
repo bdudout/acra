@@ -14,6 +14,16 @@ export const en: Translations = {
     sameAsOld:    'The new password must be different from the old one.',
     genericError: 'Unable to change the password.',
   },
+  // Codes d'erreur stables des gardes d'API (lib/with-access.server) — cf. lib/api-error.ts
+  apiErrors: {
+    unauthorized: 'Session expired: please sign in again.',
+    organization_required: 'Select an active organisation to continue.',
+    forbidden: 'You do not have the rights required for this action.',
+    rate_limited: 'Too many requests: please try again in a moment.',
+    invalid_body: 'Invalid data: please check the fields entered.',
+    not_found: 'Item not found or outside your scope.',
+    ANALYSE_GELEE: 'Analysis frozen: residual risks have been accepted. Open a new version to modify it.',
+  },
   loading:    'Loading…',
   saving:     'Saving…',
   save:       'Save',
