@@ -95,7 +95,7 @@ export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string;
   RECYF:      { nom: 'ReCyF',                version: 'ANSSI 2026', icon: '🇫🇷', cible: 'Entités NIS2 (EEI/EE) — transposition opérationnelle française' },
   TISAX:      { nom: 'TISAX / VDA-ISA',      version: 'VDA-ISA v6', icon: '🚗', cible: 'Filière automobile — fournisseurs/équipementiers (exigence OEM)' },
   NCSC_CAF:   { nom: 'NCSC Cyber Assessment Framework', version: 'v4.0', icon: '🇬🇧', cible: 'Services essentiels et opérateurs critiques (Royaume-Uni)' },
-  EIDAS:      { nom: 'eIDAS — prestataires de services de confiance', version: 'UE 910/2014 mod. 2024/1183', icon: '🔏', cible: 'Prestataires de services de confiance (signature, cachet, horodatage, envoi recommandé électronique), qualifiés ou non' },
+  EIDAS:      { nom: 'eIDAS — prestataires de services de confiance', version: 'UE 910/2014 + 2022/2555, 2024/1183 (CELEX 02014R0910, 18.10.2024)', icon: '🔏', cible: 'Prestataires de services de confiance (signature, cachet, horodatage, envoi recommandé électronique), qualifiés ou non' },
   CUSTOM:     { nom: 'Référentiel custom',   version: '',         icon: '⚙️', cible: 'Contrôles définis par l\'analyste' },
 }
 
@@ -391,9 +391,11 @@ export function refineFrameworksBySousSecteur(base: FrameworkId[], sousSecteur?:
   if (!s) return base
   let priority: FrameworkId[] = []
   // Services postaux : machines de tri et convoyeurs (courrier, colis) ; encaissements par carte au guichet (réseau).
-  // Prestataires de services de confiance (lot L9) : exigences du règlement eIDAS
-  // (UE 910/2014 modifié par 2024/1183, art. 19 bis, 20, 21 et 24).
-  if (s === 'numerique-confiance') priority = ['EIDAS']
+  // Prestataires de services de confiance (lot L9) et identité numérique / vérification
+  // d'identité à distance (décision utilisateur) : exigences du règlement eIDAS
+  // (UE 910/2014 consolidé au 18.10.2024, art. 19 bis, 20, 21 et 24 — dont § 1 bis
+  // et 1 ter de l'art. 24 sur les méthodes de vérification d'identité).
+  if (s === 'numerique-confiance' || s === 'numerique-identite') priority = ['EIDAS']
   else if (s === 'postal-courrier' || s === 'postal-colis') priority = ['IEC_62443']
   else if (s === 'postal-reseau') priority = ['PCI_DSS']
   else if (/(editeur|logiciel|sih|saas|software)/.test(s)) priority = ['NIST_SSDF', 'SOC2']
