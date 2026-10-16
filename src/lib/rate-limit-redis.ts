@@ -5,12 +5,9 @@
  * atomique `INCR` + expiration `PEXPIRE` posée au premier hit (fenêtre fixe).
  * Toutes les instances de l'application partagent alors le même compteur.
  *
- * Aucune dépendance ajoutée : le client Redis est passé par l'appelant via
- * l'interface minimale `RedisLike` (compatible `redis` / `ioredis`). Câblage au
- * démarrage :
- *   import { createClient } from 'redis'
- *   const client = createClient({ url: process.env.REDIS_URL }); await client.connect()
- *   configureRateLimitStore(new RedisRateLimitStore(client))
+ * Aucune dépendance ajoutée : le client est passé via l'interface minimale `RedisLike`.
+ * Câblage automatique au démarrage quand REDIS_URL est défini : lib/shared-store.server.ts
+ * (client intégré lib/redis-resp.ts ; le verrouillage de compte partage le même client).
  */
 import type { RateLimitStore, RateLimitResult } from '@/lib/rate-limit'
 

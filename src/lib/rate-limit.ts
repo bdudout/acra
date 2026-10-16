@@ -92,24 +92,29 @@ export class InMemoryRateLimitStore implements RateLimitStore {
 const globalForStore = globalThis as unknown as { __rlStore?: InMemoryRateLimitStore }
 function defaultMemoryStore(): InMemoryRateLimitStore {
   const store = globalForStore.__rlStore ?? new InMemoryRateLimitStore()
-  if (process.env.NODE_ENV !== 'production') globalForStore.__rlStore = store
+  // Toujours mémorisé (résolu à chaque appel par le getter) ; survit aussi au HMR en développement.
+  globalForStore.__rlStore = store
   return store
 }
 
-let currentStore: RateLimitStore = defaultMemoryStore()
+// Store injecté rangé sur `globalThis` : `instrumentation.ts` (qui l'injecte au démarrage) et les
+// routes peuvent être des bundles distincts ; une variable de module ne serait pas forcément partagée.
+const SLOT = Symbol.for('acra.rateLimitStore')
+const slot = globalThis as unknown as { [SLOT]?: RateLimitStore }
 
 /**
  * Remplace le store de rate limiting (à appeler UNE fois au démarrage en
- * multi-instance, ex. `configureRateLimitStore(new RedisRateLimitStore(client))`).
+ * multi-instance — fait par lib/shared-store.server.ts quand REDIS_URL est défini).
  * `null` rétablit le store mémoire par défaut (utile en test).
  */
 export function configureRateLimitStore(store: RateLimitStore | null): void {
-  currentStore = store ?? defaultMemoryStore()
+  if (store) slot[SLOT] = store
+  else delete slot[SLOT]
 }
 
 /** Store de rate limiting actuellement utilisé. */
 export function getRateLimitStore(): RateLimitStore {
-  return currentStore
+  return slot[SLOT] ?? defaultMemoryStore()
 }
 
 // ── API publique ──────────────────────────────────────────────────────────────
@@ -127,7 +132,7 @@ export function rateLimit(
   key: string,
   limit: number,
   windowMs: number,
-  store: RateLimitStore = currentStore
+  store: RateLimitStore = getRateLimitStore()
 ): Promise<RateLimitResult> {
   return store.hit(key, limit, windowMs)
 }
@@ -136,7 +141,7 @@ export function rateLimit(
  * État de `key` SANS le consommer : `allowed` est faux quand la limite est déjà atteinte.
  * Store tiers sans `peek` → autorisé (la limite reste appliquée par `rateLimit` lors des échecs).
  */
-export function rateLimitPeek(key: string, limit: number, store: RateLimitStore = currentStore): Promise<RateLimitResult> {
+export function rateLimitPeek(key: string, limit: number, store: RateLimitStore = getRateLimitStore()): Promise<RateLimitResult> {
   return store.peek ? store.peek(key, limit) : Promise.resolve({ allowed: true, remaining: limit, resetAt: Date.now() })
 }
 

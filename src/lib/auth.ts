@@ -115,7 +115,7 @@ export const authOptions: NextAuthOptions = {
         const loginPolicy = await loadLoginPolicy()
         const lockoutPolicy = loginPolicy
         const lockoutEnabled = lockoutPolicy.maxFailedAttempts > 0
-        const existingLockout = lockoutEnabled ? checkLockout(credentials.email) : null
+        const existingLockout = lockoutEnabled ? await checkLockout(credentials.email) : null
         if (existingLockout?.locked) {
           await auditLog('LOGIN_LOCKED', { userEmail: credentials.email })
           throw new Error(`ACCOUNT_LOCKED::${existingLockout.retryAfterMs}`)
@@ -147,7 +147,7 @@ export const authOptions: NextAuthOptions = {
         if (!valid) {
           // Incrémente le compteur d'échecs et verrouille si le seuil est atteint
           if (lockoutEnabled) {
-            const state = recordFailure(credentials.email, lockoutPolicy)
+            const state = await recordFailure(credentials.email, lockoutPolicy)
             if (state.lockedUntil != null) {
               await auditLog('LOGIN_LOCKED', { userId: user.id, userEmail: user.email, details: { reason: 'max_failed_attempts' } })
               throw new Error(`ACCOUNT_LOCKED::${Math.max(0, state.lockedUntil - Date.now())}`)
@@ -159,7 +159,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Connexion réussie : on réinitialise le compteur d'échecs
-        if (lockoutEnabled) recordSuccess(credentials.email)
+        if (lockoutEnabled) await recordSuccess(credentials.email)
 
         // ── Vérification d'e-mail obligatoire en mode démo ────────────────────────
         // Le mot de passe est correct, mais tant que l'adresse n'est pas validée
