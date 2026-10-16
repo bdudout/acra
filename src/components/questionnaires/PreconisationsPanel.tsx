@@ -2,8 +2,12 @@
 
 // ─── Préconisations : suivi par le métier (plan d'action, acceptation du risque, réalisation,
 // report) et par la 2ᵉ ligne (création, vérification, réouverture, décision sur les reports).
-import { useEffect, useState } from 'react'
+// Liste paginée côté serveur (lot V1) : état dans l'URL ; le deep-link ?preconisation=<id> ouvre la page qui la contient.
+import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import { useListePaginee } from '@/lib/use-liste-paginee'
+import Pagination from '@/components/Pagination'
+import type { MetaPagination } from '@/lib/pagination'
 
 type Preco = {
   id: string; intitule: string; recommandation: string | null; criticite: number | null; statut: 'OUVERT' | 'EN_COURS' | 'RESOLU' | 'VERIFIE' | 'ACCEPTE'
@@ -16,7 +20,9 @@ type Action = { id: string; type: 'plan' | 'accepter' | 'report' | 'verifier' | 
 export default function PreconisationsPanel({ conformiteActive, focusId }: { conformiteActive: boolean; focusId: string | null }) {
   const { t, locale } = useTranslation()
   const q = t.questionnaires
-  const [data, setData] = useState<{ preconisations: Preco[]; canDefine: boolean; responsables?: { id: string; name: string | null; email: string }[] } | null>(null)
+  const liste = useListePaginee<{ preconisations: Preco[]; canDefine: boolean; responsables?: { id: string; name: string | null; email: string }[]; pagination?: MetaPagination }>('/api/preconisations')
+  // Erreur de lecture : liste vide sans droits de 2ᵉ ligne (comme avant).
+  const data = liste.data ?? (liste.erreur ? { preconisations: [], canDefine: false } : null)
   const [action, setAction] = useState<Action>(null)
   const [champs, setChamps] = useState({ titre: '', echeance: '', texte: '', lierConformite: false, lierRisque: false })
   const [creation, setCreation] = useState(false)
@@ -24,20 +30,13 @@ export default function PreconisationsPanel({ conformiteActive, focusId }: { con
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  // Lecture sans effet de bord : l'effet initial applique le résultat dans un rappel (pas de setState synchrone).
-  async function lire() {
-    const res = await fetch('/api/preconisations')
-    return res.ok ? await res.json() : { preconisations: [], canDefine: false }
-  }
-  async function charger() { setData(await lire()) }
-  useEffect(() => { void lire().then(setData) }, [])
 
   async function appel(url: string, body: unknown) {
     setBusy(true); setError(null)
     try {
       const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       if (!res.ok) { setError(q.error); return false }
-      setAction(null); setChamps({ titre: '', echeance: '', texte: '', lierConformite: false, lierRisque: false }); await charger(); return true
+      setAction(null); setChamps({ titre: '', echeance: '', texte: '', lierConformite: false, lierRisque: false }); liste.recharger(); return true
     } finally { setBusy(false) }
   }
 
@@ -124,5 +123,7 @@ export default function PreconisationsPanel({ conformiteActive, focusId }: { con
           </div>}
         </div>
       })}
+    {/* Changer de page quitte le deep-link (sinon le serveur reviendrait à la page de la préconisation ciblée). */}
+    <Pagination pagination={liste.pagination} onPage={page => liste.definir({ page, preconisation: null })} onTaille={taille => liste.definir({ taille, preconisation: null })} />
   </section>
 }
