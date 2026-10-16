@@ -31,7 +31,11 @@ Branche `claude/dazzling-edison-qzmwlg` (à jour avec `origin/main` au départ).
   (`DELETE organizations/[orgId]/conformite`) ni pour les plans d'action unifiés (pas d'`AuditAction` dédiée).
 - **Pièges** : avec `withAccess` + `body`, le corps est déjà lu (ne pas rappeler `req.json()`). Dans un handler,
   `if ('error' in g)` ne rétrécit pas une union d'objets littéraux normalisée → `if (g.error)`.
-- **Vérifications** : voir la fin de tour (tsc, tests, lint, build).
+- **Vérifications** : `tsc` 0 erreur ; `npm test` 4 998 verts, 1 échec **préexistant et environnemental**
+  (`acra-snapshot-script.test.ts` suppose `age` absent ; il est dans `/usr/bin` du conteneur cloud — même échec
+  sur l'état de départ) ; ESLint 0 erreur sur les fichiers touchés ; `npm run build` OK (avertissements
+  préexistants : `document-storage.ts`, runtime Edge). **Non vérifié** : navigateur, tests `*.db.test.ts`
+  (pas de PostgreSQL dans la session ; `org-invitation.db.test.ts` appelle la route des membres migrée).
 
 ---
 
