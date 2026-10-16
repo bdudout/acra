@@ -7,6 +7,15 @@ unique et inventaire ciblé des écarts](specs/socles-sectoriels-tiers-canonique
 Ce complément distingue l'existant, le manque fonctionnel et la recette encore
 nécessaire ; les états ci-dessous restent ceux relevés à leur date.
 
+## Scalabilité, résilience et haute disponibilité (ouvert le 16/10/2026)
+
+Cadrage, mesures « grand groupe » et feuille de route : [`docs/specs/scalabilite-haute-disponibilite.md`](specs/scalabilite-haute-disponibilite.md).
+Réponse courte : entités de taille courante OK (listes en 15-30 ms) ; **très grosses entités non** (listes non paginées :
+22,8 Mo et 30 s sous 20 requêtes simultanées pour 10 000 contrôles) ; **pas de haute disponibilité** en l'état (un hôte,
+une instance, base sans réplique, RPO 24 h). Déjà corrigé et vérifié : connexions derrière un NAT, pool PostgreSQL
+réglable, documents de 10-25 Mo, double exécution des tâches planifiées. **Décisions attendues** : cible de
+disponibilité et RPO/RTO, hébergement de la base, stockage objet des documents, présentation des grandes listes.
+
 ## Sécurité et gouvernance — implémenté, recette runtime en attente
 
 Les trois chantiers ci-dessous sont implémentés et **validés par les tests automatisés** (logique pure, composants, suite complète verte, `tsc` propre). Il reste la **recette runtime** (parcours à deux comptes démo sur base réelle) — non exécutée ici car Docker n’était pas démarré.

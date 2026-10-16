@@ -6,36 +6,49 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
-## 2026-10-16 (105) — Claude (session cloud) : T3 phase 2, garde unique `withAccess`
+## 2026-10-16 (105) — Claude (session cloud) : T3 phase 2, T9, T21, sécurité, chantier scalabilité / HA
 
-Branche `claude/dazzling-edison-qzmwlg` (à jour avec `origin/main` au départ).
+Branche `claude/dazzling-edison-qzmwlg` (poussée, pas de PR). Base PostgreSQL 16 locale montée dans la session
+(`/var/lib/postgresql/acra-test`, port 5433) : tests `*.db.test.ts` et recette sur serveur de production réels.
 
-- **Fait** :
-  - `src/lib/with-access.server.ts` : `withAccess({ org, allow, rateLimit, body }, handler)`. Ordre imposé :
-    session → rôle EFFECTIF (`'active'` / `{ param }` / `'none'`) → prédicat `lib/permissions` → rate limit
-    `<bucket>:<userId>` → zod (champs inconnus retirés). Codes d'erreur stables. Ctx : `{ user, role, orgId,
-    scope, params, body, rl }`. 15 tests (`unit/lib/with-access.test.ts`).
-  - Migration de la famille `organizations/[orgId]/**` (10 fichiers d'écriture). Les GET de lecture de ces fichiers
-    passent par `requireSession()` (sémantique « périmètre visible » conservée). Effets visibles : rate limit
-    désormais aussi sur PATCH/DELETE de plans d'action et de traitements, DELETE conformité, POST reprise,
-    DELETE membres ; messages de garde → codes (l'UI affiche déjà ses libellés i18n, vérifié).
-  - `peutGererPlansAction` (lib/permissions) remplace 3 copies ad hoc (`role === 'RSSI' || …`).
-  - Cliquet (`route-guard-ratchet.test.ts`) : aucune nouvelle route d'écriture ne lit la session ; liste figée
-    `unit/lib/legacy-session-write-routes.ts` (**131** routes) qui ne peut que décroître. Vérifié par mutation
-    (les deux sens échouent).
-  - Docs : `ARCHITECTURE.md` §5, `CHANTIERS-EN-COURS.md` T3.
-- **Prochain pas** : migrer les 131 routes par famille (78 sur l'org active : commencer par les `contexte()`
-  locaux recopiés, ex. `relances/config`, `config/*` ; puis 13 org + analyse avec un mode `{ analyse: param }`
-  à concevoir autour de `analyseAccessWhere` + gel). Retirer chaque route de la liste figée.
-- **Constaté, non traité** : aucune entrée de journal d'audit pour la suppression d'un suivi de conformité
-  (`DELETE organizations/[orgId]/conformite`) ni pour les plans d'action unifiés (pas d'`AuditAction` dédiée).
-- **Pièges** : avec `withAccess` + `body`, le corps est déjà lu (ne pas rappeler `req.json()`). Dans un handler,
-  `if ('error' in g)` ne rétrécit pas une union d'objets littéraux normalisée → `if (g.error)`.
-- **Vérifications** : `tsc` 0 erreur ; `npm test` 4 998 verts, 1 échec **préexistant et environnemental**
-  (`acra-snapshot-script.test.ts` suppose `age` absent ; il est dans `/usr/bin` du conteneur cloud — même échec
-  sur l'état de départ) ; ESLint 0 erreur sur les fichiers touchés ; `npm run build` OK (avertissements
-  préexistants : `document-storage.ts`, runtime Edge). **Non vérifié** : navigateur, tests `*.db.test.ts`
-  (pas de PostgreSQL dans la session ; `org-invitation.db.test.ts` appelle la route des membres migrée).
+- **T3 phase 2 — fait.** `withAccess` (`lib/with-access.server`) : modes org active / org en paramètre /
+  analyse (`{ analyse: 'id', write }` : `analyseAccessWhere` + rôle effectif + `canEditAnalyse` + gel) / sans org ;
+  surcharges `RouteHandler` (Next contrôle la signature complète, `GET()` reste appelable en test). **Toutes les
+  routes d'écriture migrées** (≈ 230, dont 200 par 6 agents en parallèle, relus) ; cliquet : liste figée 131 → 1
+  (`invitations/[token]`, publique). Codes d'erreur stables traduits côté UI (`lib/api-error`, `t.apiErrors` ×5,
+  ≈ 30 écrans). Reste : 51 routes GET qui lisent encore la session.
+- **Sécurité (CWE-863)** : 21 routes `[id]` appliquaient le rôle de l'org ACTIVE à une ressource d'une autre org du
+  périmètre (ADMIN « sous-arbre » d'un groupe, LECTEUR d'une filiale → modifiait la filiale) → `roleSurRessource`
+  (test sur base réelle). Dérogations (PATCH) sur le rôle effectif ; accès aux analyses validés + journalisés
+  (ACCESS_GRANTED/REVOKED) ; statut d'une proposition MCP hors périmètre non divulgué ; journal pour plans
+  d'action et suivis de conformité (`PLAN_ACTION_UPDATED`, `CONFORMITE_UPDATED`).
+- **T9 — ateliers faits** : `Analyse.revisionAtelier1..5` (migration), `If-Match`, 409 `CONFLIT_EDITION`,
+  `lib/atelier-save` dans les 5 ateliers ; l'acceptation MCP fait avancer la révision de l'atelier 5.
+- **T21 — fait** : `src/proxy.ts` (runtime Node) ; CSP à nonce vérifiée sur le serveur de production.
+- **MCP 4c-5** : déjà livré (backlog obsolète, corrigé).
+- **Chantier scalabilité / HA ouvert** : `docs/specs/scalabilite-haute-disponibilite.md` (inventaire, mesures
+  « grand groupe », feuille de route V1/V2/H1/O1, décisions attendues). Déjà corrigé et vérifié en réel :
+  limite de connexion par IP sur les seuls échecs (NAT : 60/60), pool PostgreSQL réglable (`DB_POOL_*`),
+  documents 10-25 Mo tronqués par le proxy (`proxyClientMaxBodySize` 26 Mo + Caddy), bail des tâches
+  planifiées (`CronVerrou`, 3 appels simultanés → 1 exécution). Runbook § « Capacité et contraintes ».
+- **Prochain pas** : lot V1 (pagination par curseur + listes allégées : `controles` renvoie 22,8 Mo et met 30 s
+  sous 20 requêtes simultanées pour 10 000 contrôles) — décision UX à prendre (pages ou chargement progressif) ;
+  décisions d'hébergement pour le lot H1 (cible de disponibilité, RPO/RTO, base managée, S3).
+- **Constaté, non traité** : 26 `req.json()` sans `catch` (500 au lieu de 400 sur JSON mal formé) ; gel non
+  contrôlé sur `derogations` POST et `accept-residual-risks` (décision produit) ; `workshop/[num]` lève le blocage
+  APPROUVE sur le rôle d'INSTANCE `ADMIN` (conservé) ; `tiers` PUT sans gel ni audit ; `cleanSourceRisque`
+  (workshop) sans catégorie → 500.
+- **Pièges** : `pkill -f`/`pgrep -f` avec un motif présent dans la commande tue le shell lui-même (arrêter le
+  serveur par `/proc/*/environ`, cf. script de la session) ; l'utilisateur `postgres` n'accède pas au scratchpad ;
+  colonne `User.passwordHash` ; un RSSI ne voit des autres que les analyses soumises/approuvées/rejetées ; les
+  agents en parallèle ne doivent pas toucher les fichiers partagés (liste figée, lib) — l'orchestrateur les met à jour.
+- **Vérifications (état final)** : `tsc` 0 erreur ; `npm test` 673 fichiers / 5 046 tests verts ; `npm run test:db`
+  (PostgreSQL 16 local) 19 fichiers / 90 tests verts ; ESLint 0 erreur sur les fichiers modifiés depuis `origin/main` ;
+  `npm run build` OK sans avertissement de dépréciation ; `prisma migrate diff` : aucune dérive. **Recette sur serveur de
+  production local** : `/api/health` 200, page protégée → 307, CSP à nonce unique ; envoi de documents 5/12/24 Mo
+  (SHA-256 identiques) ; 60 connexions depuis une même IP ; tâches planifiées simultanées ; mesures de charge
+  (cf. spec). **Non vérifié** : parcours navigateur des écrans (message de conflit d'atelier, libellés d'erreur
+  traduits) ; CI GitHub de la branche.
 
 ---
 
