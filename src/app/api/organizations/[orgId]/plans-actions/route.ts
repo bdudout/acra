@@ -1,4 +1,3 @@
-import { canReadOrgResource } from '@/lib/permissions'
 /**
  * Plans d'action UNIFIÉS d'une organisation.
  *  GET  ?type=&targetId=&statut= — liste (filtrable par lien source / statut).
@@ -7,30 +6,23 @@ import { canReadOrgResource } from '@/lib/permissions'
  * Direction métier). Lecture : périmètre visible.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { getAnalyseScope } from '@/lib/org-context.server'
+import { canReadOrgResource, peutGererPlansAction } from '@/lib/permissions'
+import { requireSession } from '@/lib/route-guard.server'
+import { withAccess } from '@/lib/with-access.server'
 import { validatePlanActionInput, cleanPlanActionInput, sanitizeLiens, isLienType } from '@/lib/plan-action'
-import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 import { entiteIdPourTexte } from '@/lib/entites.server'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ orgId: string }> }
 
-function canManage(role: UserRole): boolean {
-  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'DIRECTION_METIER'
-}
-
 // GET /api/organizations/[orgId]/plans-actions — liste les plans d'action unifiés de l'org (avec leurs liens d'origine).
 export async function GET(req: NextRequest, { params }: Params) {
   const { orgId } = await params
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, userRole)
+  const g = await requireSession()
+  if (g.error) return g.error
+  const scope = await getAnalyseScope(g.user.id, g.user.role)
   if (!canReadOrgResource(orgId, scope.scope)) {
     return NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 })
   }
@@ -49,35 +41,26 @@ export async function GET(req: NextRequest, { params }: Params) {
 }
 
 // POST /api/organizations/[orgId]/plans-actions — crée un plan d'action unifié, éventuellement rattaché à une origine (lien polymorphe).
-export async function POST(req: NextRequest, { params }: Params) {
-  const { orgId } = await params
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const role = await getEffectiveRoleForOrg(userId, instanceRole, orgId)
-  if (!role) return NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 })
-  if (!canManage(role)) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+export const POST = withAccess(
+  { org: { param: 'orgId' }, allow: peutGererPlansAction, rateLimit: { bucket: 'plans-actions' } },
+  async (req, { user, orgId }) => {
+    const body = await req.json().catch(() => ({}))
+    const err = validatePlanActionInput(body)
+    if (err) return NextResponse.json({ error: err }, { status: 400 })
+    const clean = cleanPlanActionInput(body)
+    const liens = sanitizeLiens(body?.liens)
 
-  const rl = await rateLimit(`plans-actions:${userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
-  if (!rl.allowed) return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
-
-  const body = await req.json().catch(() => ({}))
-  const err = validatePlanActionInput(body)
-  if (err) return NextResponse.json({ error: err }, { status: 400 })
-  const clean = cleanPlanActionInput(body)
-  const liens = sanitizeLiens(body?.liens)
-
-  const created = await prisma.planAction.create({
-    data: {
-      organizationId: orgId,
-      titre: clean.titre, description: clean.description, porteur: clean.porteur, entite: clean.entite,
-      entiteId: await entiteIdPourTexte(orgId, clean.entite), // lien au référentiel si texte identique (lot E5)
-      echeance: clean.echeance ? new Date(clean.echeance) : null,
-      priorite: clean.priorite, statut: clean.statut, createdById: userId,
-      liens: { create: liens.map(l => ({ type: l.type, targetId: l.targetId, ref: l.ref ?? null, label: l.label ?? null })) },
-    },
-    include: { liens: true },
-  })
-  return NextResponse.json({ plan: created }, { status: 201 })
-}
+    const created = await prisma.planAction.create({
+      data: {
+        organizationId: orgId,
+        titre: clean.titre, description: clean.description, porteur: clean.porteur, entite: clean.entite,
+        entiteId: await entiteIdPourTexte(orgId, clean.entite), // lien au référentiel si texte identique (lot E5)
+        echeance: clean.echeance ? new Date(clean.echeance) : null,
+        priorite: clean.priorite, statut: clean.statut, createdById: user.id,
+        liens: { create: liens.map(l => ({ type: l.type, targetId: l.targetId, ref: l.ref ?? null, label: l.label ?? null })) },
+      },
+      include: { liens: true },
+    })
+    return NextResponse.json({ plan: created }, { status: 201 })
+  },
+)

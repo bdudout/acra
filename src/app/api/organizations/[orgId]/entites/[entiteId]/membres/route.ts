@@ -9,50 +9,39 @@
  * sous-arbre de [orgId] (anti-escalade hors périmètre). Rôles limités aux rôles
  * d'organisation (jamais SUPER_ADMIN). scope NODE = ce nœud, SUBTREE = + descendants.
  */
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
-import { isAdminRole, type UserRole, ROLES_ATTRIBUABLES } from '@/lib/permissions'
+import { isAdminRole, ROLES_ATTRIBUABLES } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { isInSubtree } from '@/lib/org-context'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
+import { rateLimit } from '@/lib/rate-limit'
 import { getMembershipMode, inviteToOrganization, notifyMemberAdded } from '@/lib/org-invitation.server'
 
 export const dynamic = 'force-dynamic'
-type Params = { params: Promise<{ orgId: string; entiteId: string }> }
-
-/** ADMIN effectif de orgId + entité dans le sous-arbre de orgId. */
-async function guard(orgId: string, entiteId: string) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const role = await getEffectiveRoleForOrg(userId, instanceRole, orgId)
-  if (!role || !isAdminRole(role)) return { error: NextResponse.json({ error: 'Réservé à l\'administrateur de l\'organisation' }, { status: 403 }) }
-
-  const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { path: true } })
-  const entite = await prisma.organization.findUnique({ where: { id: entiteId }, select: { id: true, path: true } })
-  if (!org || !entite || !isInSubtree(entite.path, org.path)) {
-    return { error: NextResponse.json({ error: 'Entité hors de votre périmètre' }, { status: 403 }) }
-  }
-  return { userId, entiteId }
+/** ADMIN effectif de orgId (withAccess) ; l'entité doit appartenir au sous-arbre de orgId (anti-escalade). */
+const ADMIN_ORG = { org: { param: 'orgId' }, allow: isAdminRole } as const
+async function entiteDansPerimetre(orgId: string, entiteId: string | undefined): Promise<boolean> {
+  if (!entiteId) return false
+  const [org, entite] = await Promise.all([
+    prisma.organization.findUnique({ where: { id: orgId }, select: { path: true } }),
+    prisma.organization.findUnique({ where: { id: entiteId }, select: { path: true } }),
+  ])
+  return !!org && !!entite && isInSubtree(entite.path, org.path)
 }
+const horsPerimetre = () => NextResponse.json({ error: 'Entité hors de votre périmètre' }, { status: 403 })
 
 // GET /api/organizations/[orgId]/entites/[entiteId]/membres — liste les membres rattachés à une entité de l'organisation.
-export async function GET(_req: NextRequest, { params }: Params) {
-  const { orgId, entiteId } = await params
-  const g = await guard(orgId, entiteId)
-  if ('error' in g) return g.error
+export const GET = withAccess(ADMIN_ORG, async (_req, { orgId, params: { entiteId } }) => {
+  if (!(await entiteDansPerimetre(orgId, entiteId))) return horsPerimetre()
   const members = await prisma.orgMembership.findMany({
     where: { organizationId: entiteId },
     orderBy: { createdAt: 'asc' },
     select: { id: true, role: true, scope: true, user: { select: { id: true, name: true, email: true } } },
   })
   return NextResponse.json({ members })
-}
+})
 
 // Rôles assignables : rôles d'ORGANISATION uniquement (jamais SUPER_ADMIN).
 const addSchema = z.object({
@@ -62,17 +51,8 @@ const addSchema = z.object({
 })
 
 // POST /api/organizations/[orgId]/entites/[entiteId]/membres — rattache un membre à une entité de l'organisation.
-export async function POST(req: NextRequest, { params }: Params) {
-  const { orgId, entiteId } = await params
-  const g = await guard(orgId, entiteId)
-  if ('error' in g) return g.error
-
-  const rl = await rateLimit(`entite-membres:${g.userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
-  if (!rl.allowed) return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
-
-  let data: z.infer<typeof addSchema>
-  try { data = addSchema.parse(await req.json()) }
-  catch { return NextResponse.json({ error: 'Requête invalide' }, { status: 400 }) }
+export const POST = withAccess({ ...ADMIN_ORG, rateLimit: { bucket: 'entite-membres' }, body: addSchema }, async (req, { user: acteur, orgId, params: { entiteId }, body: data }) => {
+  if (!(await entiteDansPerimetre(orgId, entiteId))) return horsPerimetre()
 
   // Mode de rattachement (T23) : instance ouverte → INVITATION (consentement, réponse
   // identique que l'e-mail ait un compte ou non) ; sur site → DIRECT (+ e-mail d'information).
@@ -81,13 +61,13 @@ export async function POST(req: NextRequest, { params }: Params) {
     // Chaque invitation envoie un e-mail : débit borné par auteur ET par destinataire (anti mail-bombing).
     const email = data.email.toLowerCase().trim()
     const [byActor, byDest] = await Promise.all([
-      rateLimit(`org-invite:${g.userId}`, 30, 60 * 60 * 1000),
+      rateLimit(`org-invite:${acteur.id}`, 30, 60 * 60 * 1000),
       rateLimit(`org-invite-dest:${email}`, 3, 60 * 60 * 1000),
     ])
     if (!byActor.allowed || !byDest.allowed) return NextResponse.json({ error: 'Trop d\'invitations, réessayez plus tard.' }, { status: 429 })
-    await inviteToOrganization({ organizationId: entiteId, email: data.email, role: data.role, scope: data.scope, invitedById: g.userId, locale: req.cookies.get('acra-locale')?.value })
+    await inviteToOrganization({ organizationId: entiteId, email: data.email, role: data.role, scope: data.scope, invitedById: acteur.id, locale: req.cookies.get('acra-locale')?.value })
     await auditLog('ORG_MEMBER_INVITED', {
-      userId: g.userId, targetId: entiteId, targetType: 'organization', organizationId: entiteId,
+      userId: acteur.id, targetId: entiteId, targetType: 'organization', organizationId: entiteId,
       ip: getClientIp(req), details: { memberEmail: data.email, role: data.role, scope: data.scope, viaOrgAdmin: orgId },
     })
     return NextResponse.json({ invited: true }, { status: 202 })
@@ -104,18 +84,16 @@ export async function POST(req: NextRequest, { params }: Params) {
     select: { id: true, role: true, scope: true, user: { select: { id: true, name: true, email: true } } },
   })
   await auditLog('ORG_MEMBER_ADDED', {
-    userId: g.userId, targetId: entiteId, targetType: 'organization',
+    userId: acteur.id, targetId: entiteId, targetType: 'organization',
     ip: getClientIp(req), details: { memberEmail: data.email, role: data.role, scope: data.scope, viaOrgAdmin: orgId },
   })
   if (!existing && notify) await notifyMemberAdded(user.id, entiteId)
   return NextResponse.json({ membership }, { status: 201 })
-}
+})
 
 // DELETE /api/organizations/[orgId]/entites/[entiteId]/membres — détache un membre d'une entité de l'organisation.
-export async function DELETE(req: NextRequest, { params }: Params) {
-  const { orgId, entiteId } = await params
-  const g = await guard(orgId, entiteId)
-  if ('error' in g) return g.error
+export const DELETE = withAccess({ ...ADMIN_ORG, rateLimit: { bucket: 'entite-membres' } }, async (req, { user: acteur, orgId, params: { entiteId } }) => {
+  if (!(await entiteDansPerimetre(orgId, entiteId))) return horsPerimetre()
   const membershipId = new URL(req.url).searchParams.get('membershipId')
   if (!membershipId) return NextResponse.json({ error: 'membershipId requis' }, { status: 400 })
 
@@ -123,8 +101,8 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   if (!m) return NextResponse.json({ error: 'Appartenance introuvable' }, { status: 404 })
   await prisma.orgMembership.delete({ where: { id: membershipId } })
   await auditLog('ORG_MEMBER_REMOVED', {
-    userId: g.userId, targetId: entiteId, targetType: 'organization',
+    userId: acteur.id, targetId: entiteId, targetType: 'organization',
     ip: getClientIp(req), details: { membershipId, viaOrgAdmin: orgId },
   })
   return NextResponse.json({ ok: true })
-}
+})

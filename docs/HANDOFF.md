@@ -6,6 +6,35 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-16 (105) — Claude (session cloud) : T3 phase 2, garde unique `withAccess`
+
+Branche `claude/dazzling-edison-qzmwlg` (à jour avec `origin/main` au départ).
+
+- **Fait** :
+  - `src/lib/with-access.server.ts` : `withAccess({ org, allow, rateLimit, body }, handler)`. Ordre imposé :
+    session → rôle EFFECTIF (`'active'` / `{ param }` / `'none'`) → prédicat `lib/permissions` → rate limit
+    `<bucket>:<userId>` → zod (champs inconnus retirés). Codes d'erreur stables. Ctx : `{ user, role, orgId,
+    scope, params, body, rl }`. 15 tests (`unit/lib/with-access.test.ts`).
+  - Migration de la famille `organizations/[orgId]/**` (10 fichiers d'écriture). Les GET de lecture de ces fichiers
+    passent par `requireSession()` (sémantique « périmètre visible » conservée). Effets visibles : rate limit
+    désormais aussi sur PATCH/DELETE de plans d'action et de traitements, DELETE conformité, POST reprise,
+    DELETE membres ; messages de garde → codes (l'UI affiche déjà ses libellés i18n, vérifié).
+  - `peutGererPlansAction` (lib/permissions) remplace 3 copies ad hoc (`role === 'RSSI' || …`).
+  - Cliquet (`route-guard-ratchet.test.ts`) : aucune nouvelle route d'écriture ne lit la session ; liste figée
+    `unit/lib/legacy-session-write-routes.ts` (**131** routes) qui ne peut que décroître. Vérifié par mutation
+    (les deux sens échouent).
+  - Docs : `ARCHITECTURE.md` §5, `CHANTIERS-EN-COURS.md` T3.
+- **Prochain pas** : migrer les 131 routes par famille (78 sur l'org active : commencer par les `contexte()`
+  locaux recopiés, ex. `relances/config`, `config/*` ; puis 13 org + analyse avec un mode `{ analyse: param }`
+  à concevoir autour de `analyseAccessWhere` + gel). Retirer chaque route de la liste figée.
+- **Constaté, non traité** : aucune entrée de journal d'audit pour la suppression d'un suivi de conformité
+  (`DELETE organizations/[orgId]/conformite`) ni pour les plans d'action unifiés (pas d'`AuditAction` dédiée).
+- **Pièges** : avec `withAccess` + `body`, le corps est déjà lu (ne pas rappeler `req.json()`). Dans un handler,
+  `if ('error' in g)` ne rétrécit pas une union d'objets littéraux normalisée → `if (g.error)`.
+- **Vérifications** : voir la fin de tour (tsc, tests, lint, build).
+
+---
+
 ## 2026-10-13 (104) — Claude : pack postal, défauts probables + lots L8 et L7 (consigne : « valeurs les plus probables »)
 
 - `13d3e778` — base légale par défaut des données destinataires reçues des e-commerçants : intérêt légitime (le

@@ -2,41 +2,25 @@
  * Un plan d'action : mise à jour (champs + ajout/retrait de liens) et suppression.
  * Réservé aux rôles de gouvernance.
  */
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
-import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { peutGererPlansAction } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { cleanPriorite, RISK_ACTION_STATUTS } from '@/lib/risk-action'
 import { sanitizeLien } from '@/lib/plan-action'
 import { entiteIdPourTexte } from '@/lib/entites.server'
 
 export const dynamic = 'force-dynamic'
-type Params = { params: Promise<{ orgId: string; id: string }> }
+const access = { org: { param: 'orgId' }, allow: peutGererPlansAction, rateLimit: { bucket: 'plans-actions' } } as const
 
-function canManage(role: UserRole): boolean {
-  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'DIRECTION_METIER'
-}
-
-async function guard(orgId: string, id: string) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const role = await getEffectiveRoleForOrg(userId, instanceRole, orgId)
-  if (!role || !canManage(role)) return { error: NextResponse.json({ error: 'Accès refusé' }, { status: 403 }) }
-  const row = await prisma.planAction.findFirst({ where: { id, organizationId: orgId }, select: { id: true } })
-  if (!row) return { error: NextResponse.json({ error: 'Plan d\'action introuvable' }, { status: 404 }) }
-  return { userId }
-}
+/** Plan d'action de l'organisation (404 sinon, aucune divulgation). */
+const planExiste = (orgId: string, id: string) => prisma.planAction.findFirst({ where: { id, organizationId: orgId }, select: { id: true } })
+const introuvable = () => NextResponse.json({ error: 'Plan d\'action introuvable' }, { status: 404 })
 
 // PATCH /api/organizations/[orgId]/plans-actions/[id] — met à jour un plan d'action unifié (champs et/ou liens de rattachement).
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const { orgId, id } = await params
-  const g = await guard(orgId, id)
-  if ('error' in g) return g.error
+export const PATCH = withAccess(access, async (req, { orgId, params: { id } }) => {
+  if (!(await planExiste(orgId, id))) return introuvable()
   const body = await req.json().catch(() => ({}))
 
   const data: Prisma.PlanActionUpdateInput = {}
@@ -65,13 +49,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const updated = await prisma.planAction.update({ where: { id }, data, include: { liens: true } })
   return NextResponse.json({ plan: updated })
-}
+})
 
 // DELETE /api/organizations/[orgId]/plans-actions/[id] — supprime un plan d'action unifié.
-export async function DELETE(_req: NextRequest, { params }: Params) {
-  const { orgId, id } = await params
-  const g = await guard(orgId, id)
-  if ('error' in g) return g.error
+export const DELETE = withAccess(access, async (_req, { orgId, params: { id } }) => {
+  if (!(await planExiste(orgId, id))) return introuvable()
   await prisma.planAction.delete({ where: { id } })
   return NextResponse.json({ ok: true })
-}
+})

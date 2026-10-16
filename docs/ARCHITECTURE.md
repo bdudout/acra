@@ -142,6 +142,19 @@ Deux familles, **ne pas les mélanger** :
    lisent que l'organisation de la clé et n'écrivent jamais : ils déposent des `McpProposal`
    acceptées par un humain (`/api/mcp-proposals/[id]`, mêmes gardes que l'UI, dont le plafond démo).
 
+**Route d'écriture (T3 phase 2, 2026-10-16) → `withAccess`** (`lib/with-access.server`) :
+`export const POST = withAccess({ org, allow, rateLimit, body }, async (req, ctx) => …)`.
+Ordre imposé : session (401) → rôle **effectif** dans l'organisation ciblée
+(`org: 'active'` → 400 sans org active ; `org: { param: 'orgId' }` → 403 sans rôle effectif ;
+`org: 'none'` → rôle d'instance) → prédicat `allow` de `lib/permissions` (403) → rate limit
+`<bucket>:<userId>` (429, défaut `LIMIT_API_WRITE`) → schéma zod du corps (400 `invalid_body`,
+champs inconnus retirés). Le handler reçoit `{ user, role, orgId, scope, params, body, rl }`.
+Erreurs : codes stables (`unauthorized`, `organization_required`, `forbidden`, `rate_limited`,
+`invalid_body`) ; l'UI affiche ses propres libellés i18n. L'existence et l'appartenance de la
+ressource (`findFirst({ id, organizationId })` → 404) restent dans le handler.
+Le cliquet `route-guard-ratchet.test.ts` refuse toute nouvelle route d'écriture qui lit la session
+elle-même ; la liste figée des routes à migrer (`legacy-session-write-routes.ts`) ne peut que décroître.
+
 **Gardes communes (audit 2026-09-30/10-01, ne pas recopier de garde locale)** :
 - réglage ou vue d'**instance** → `requireInstanceAdmin()` (`lib/route-guard.server`) ;
 - ressource d'une **organisation donnée** → rôle **effectif** dans CETTE org :

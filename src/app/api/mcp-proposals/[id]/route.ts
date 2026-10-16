@@ -11,7 +11,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { lockConformite } from '@/lib/row-lock.server'
-import { canCreateAnalyse, canEditAnalyse, peutGererConformite, peutGererReferentiels, resolveAnalyseRole, isAdminRole, type UserRole } from '@/lib/permissions'
+import { canCreateAnalyse, canEditAnalyse, peutGererConformite, peutGererPlansAction, peutGererReferentiels, resolveAnalyseRole, type UserRole } from '@/lib/permissions'
 import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { getOrgConfig, optionsStructure } from '@/lib/org-config.server'
@@ -39,9 +39,7 @@ export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ id: string }> }
 
 /** Rôles de gouvernance autorisés à gérer les plans d'action (cf. /plans-actions). */
-function canManagePlanAction(role: UserRole): boolean {
-  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'DIRECTION_METIER'
-}
+const canManagePlanAction = peutGererPlansAction
 
 /** Rôles autorisés à gérer la conformité d'une organisation (cf. /organizations/[orgId]/conformite). */
 /** Gestion de la conformité : même règle que l'écran (gouvernance, dont CONFORMITE et DPO). */

@@ -4,42 +4,31 @@
  *  POST { referentiel, analyseId } — copie les entrées de l'analyse dans le suivi org.
  * Réservé ADMIN / RSSI / Risk Manager, quand la conformité est portée au niveau org.
  */
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
-import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole, peutGererConformite } from '@/lib/permissions'
+import { peutGererConformite } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { usesConformiteEntity } from '@/lib/conformite-config'
 import { sanitizeConformite } from '@/lib/conformite'
 
 export const dynamic = 'force-dynamic'
-type Params = { params: Promise<{ orgId: string }> }
-
 /** Gestion de la conformité : gouvernance, dont CONFORMITE et DPO (lib/permissions). */
-const canManage = (role: UserRole): boolean => peutGererConformite(role)
+const GESTION = { org: { param: 'orgId' }, allow: peutGererConformite } as const
 
-async function guard(orgId: string) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const role = await getEffectiveRoleForOrg(userId, instanceRole, orgId)
-  if (!role) return { error: NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 }) }
-  if (!canManage(role)) return { error: NextResponse.json({ error: 'Accès refusé' }, { status: 403 }) }
+/** Conformité active et portée au niveau organisation ; sinon la réponse d'erreur. */
+async function conformiteOrgIndisponible(orgId: string): Promise<NextResponse | null> {
   const cfg = await getOrgConfig(orgId)
-  if (!cfg.conformiteActive) return { error: NextResponse.json({ error: 'Conformité désactivée' }, { status: 403 }) }
-  if (!usesConformiteEntity(cfg.conformiteNiveau)) return { error: NextResponse.json({ error: 'Conformité non portée au niveau organisation' }, { status: 409 }) }
-  return { userId, role }
+  if (!cfg.conformiteActive) return NextResponse.json({ error: 'Conformité désactivée' }, { status: 403 })
+  if (!usesConformiteEntity(cfg.conformiteNiveau)) return NextResponse.json({ error: 'Conformité non portée au niveau organisation' }, { status: 409 })
+  return null
 }
 
 // GET /api/organizations/[orgId]/conformite/import?referentiel= — liste les analyses de l'org portant ce référentiel et dont la conformité (socle) est reprenable.
-export async function GET(req: NextRequest, { params }: Params) {
-  const { orgId } = await params
-  const g = await guard(orgId)
-  if ('error' in g) return g.error
+export const GET = withAccess(GESTION, async (req, { orgId }) => {
+  const indispo = await conformiteOrgIndisponible(orgId)
+  if (indispo) return indispo
   const referentiel = new URL(req.url).searchParams.get('referentiel') ?? ''
   if (!referentiel) return NextResponse.json({ analyses: [] })
 
@@ -52,13 +41,12 @@ export async function GET(req: NextRequest, { params }: Params) {
     .map(a => ({ id: a.id, nom: a.nom, count: sanitizeConformite(a.cadrage?.socleSecurite).length }))
     .filter(a => a.count > 0)
   return NextResponse.json({ analyses })
-}
+})
 
 // POST /api/organizations/[orgId]/conformite/import — reprend la conformité (socle de sécurité) d'une analyse dans le suivi conformité de l'org (référentiel + entité).
-export async function POST(req: NextRequest, { params }: Params) {
-  const { orgId } = await params
-  const g = await guard(orgId)
-  if ('error' in g) return g.error
+export const POST = withAccess({ ...GESTION, rateLimit: { bucket: 'org-conformite' } }, async (req, { orgId }) => {
+  const indispo = await conformiteOrgIndisponible(orgId)
+  if (indispo) return indispo
 
   const body = await req.json().catch(() => ({}))
   const referentiel = typeof body?.referentiel === 'string' ? body.referentiel.trim() : ''
@@ -81,4 +69,4 @@ export async function POST(req: NextRequest, { params }: Params) {
     update: { entries: entries as unknown as Prisma.InputJsonValue },
   })
   return NextResponse.json({ ok: true, imported: entries.length })
-}
+})

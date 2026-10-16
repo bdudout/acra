@@ -2,38 +2,25 @@
  * Un traitement de conformité : mise à jour (dont rattachement/retrait d'une
  * exigence via addRef/removeRef) et suppression. Réservé à la gouvernance.
  */
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
-import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
-import { isAdminRole, type UserRole, peutGererConformite } from '@/lib/permissions'
+import { peutGererConformite } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { sanitizeRefs, TRAITEMENT_STATUTS } from '@/lib/conformite-traitement'
 
 export const dynamic = 'force-dynamic'
-type Params = { params: Promise<{ orgId: string; id: string }> }
-
 /** Gestion de la conformité : gouvernance, dont CONFORMITE et DPO (lib/permissions). */
-const canManage = (role: UserRole): boolean => peutGererConformite(role)
+const access = { org: { param: 'orgId' }, allow: peutGererConformite, rateLimit: { bucket: 'conf-traitements' } } as const
 
-async function guard(orgId: string, id: string) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const role = await getEffectiveRoleForOrg(userId, instanceRole, orgId)
-  if (!role || !canManage(role)) return { error: NextResponse.json({ error: 'Accès refusé' }, { status: 403 }) }
-  const row = await prisma.conformiteTraitement.findFirst({ where: { id, organizationId: orgId }, select: { id: true, refs: true } })
-  if (!row) return { error: NextResponse.json({ error: 'Traitement introuvable' }, { status: 404 }) }
-  return { userId, row }
-}
+/** Traitement de l'organisation (404 sinon, aucune divulgation). */
+const charger = (orgId: string, id: string) => prisma.conformiteTraitement.findFirst({ where: { id, organizationId: orgId }, select: { id: true, refs: true } })
+const introuvable = () => NextResponse.json({ error: 'Traitement introuvable' }, { status: 404 })
 
 // PATCH /api/organizations/[orgId]/conformite/traitements/[id] — met à jour un traitement d'écart de conformité (plan d'action / dérogation / acceptation).
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const { orgId, id } = await params
-  const g = await guard(orgId, id)
-  if ('error' in g) return g.error
+export const PATCH = withAccess(access, async (req, { orgId, params: { id } }) => {
+  const row = await charger(orgId, id)
+  if (!row) return introuvable()
   const body = await req.json().catch(() => ({}))
 
   const data: Prisma.ConformiteTraitementUpdateInput = {}
@@ -46,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (typeof body?.niveauRisque === 'string') data.niveauRisque = body.niveauRisque.trim().slice(0, 60) || null
 
   // Rattachement / retrait d'exigences (refs) — cœur du multi-contrôles.
-  const current = sanitizeRefs(g.row.refs)
+  const current = sanitizeRefs(row.refs)
   if (typeof body?.addRef === 'string' && body.addRef.trim()) {
     data.refs = sanitizeRefs([...current, body.addRef]) as unknown as Prisma.InputJsonValue
   } else if (typeof body?.removeRef === 'string' && body.removeRef.trim()) {
@@ -60,13 +47,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     select: { id: true, type: true, intitule: true, refs: true, statut: true },
   })
   return NextResponse.json({ traitement: updated })
-}
+})
 
 // DELETE /api/organizations/[orgId]/conformite/traitements/[id] — supprime un traitement d'écart de conformité.
-export async function DELETE(_req: NextRequest, { params }: Params) {
-  const { orgId, id } = await params
-  const g = await guard(orgId, id)
-  if ('error' in g) return g.error
+export const DELETE = withAccess(access, async (_req, { orgId, params: { id } }) => {
+  if (!(await charger(orgId, id))) return introuvable()
   await prisma.conformiteTraitement.delete({ where: { id } })
   return NextResponse.json({ ok: true })
-}
+})
