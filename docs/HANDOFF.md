@@ -6,6 +6,44 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-16 (106) — Claude (session cloud) : grandes listes paginées, intégrité des saisies et des tâches, H1, eIDAS
+
+Suite de (105), même branche. Décisions de l'utilisateur : spec scalabilité § 5 (intégrité avant disponibilité ;
+base managée **ou** Patroni ; S3 si multi-instance ; tableau paginé côté serveur) et L9 option B (eIDAS).
+
+- **V1 — pagination côté serveur, fait** (`lib/pagination`, `lib/use-liste-paginee`, `components/Pagination`) :
+  contrôles, registre des risques, incidents, analyses, dérogations, plans d'action unifiés (nouvelle route
+  `GET /api/actions`), préconisations, documents, missions d'audit. Contrat : **sans `page`, réponse historique
+  inchangée** ; avec `page` → `pagination` + `synthese` (compteurs sur tout le périmètre) ; requête légère pour
+  filtrer/trier/compter puis détail des seules lignes de la page. Menus : `?vue=options` (contrôles, risques,
+  incidents, analyses). État de la vue dans l'URL. `/analyses` n'est plus rendu côté serveur (chargement initial).
+  Tri catégorie/origine sur le code, pas sur le libellé traduit.
+- **Saisies non enregistrées** : brouillon local par atelier (`lib/atelier-save`), reprises espacées
+  (`useAutoSave`, `DELAIS_REPRISE_MS`), alerte avant de quitter, bandeau `BrouillonAtelier` (renvoyer, télécharger, ignorer).
+- **Traitements de fond** : journal `ExecutionTache` (migration), `executerTache` dans `cronRoute`, audit
+  `TACHE_PLANIFIEE_ECHEC`/`_RELANCEE`, `/api/admin/taches` + section « Tâches planifiées » (super-admin) : relance
+  manuelle, remise en file des webhooks en échec.
+- **H1 — activable, fait** : `REDIS_URL` → limites de débit **et verrouillage de compte** partagés (le verrouillage
+  était en mémoire seule : seuil × nombre d'instances) ; client RESP intégré (`lib/redis-resp`), Redis injoignable →
+  arrêt au démarrage (`REDIS_OPTIONNEL=1` pour un repli). `DOCUMENT_STORAGE=s3` (`lib/document-storage-s3`, SigV4
+  sans dépendance). `docker-compose.ha.yml` + `Caddyfile.ha`. Guide `docs/deploiement-haute-disponibilite.md`
+  (paramètres Patroni/pgBackRest marqués « [à vérifier] »).
+- **L9 — eIDAS** : 23 points (art. 19 bis, 20, 21, 24 ; art. 19 abrogé par NIS2 art. 42), proposé à
+  `numerique-confiance`. **Texte officiel inaccessible depuis la session** : tous les points portent
+  `TODO(source): à confirmer sur EUR-Lex CELEX 02014R0910`.
+- **Questions ouvertes** : relecture eIDAS sur EUR-Lex ; 19 bis dans le même référentiel ? eIDAS aussi pour
+  `numerique-identite` ? Redis HA (managé ou Sentinel) — en mode « fermé », Redis seul est un point de défaillance
+  de la connexion ; `S3_SSE` et style « chemin » par défaut ; mise à jour sans interruption (H1.4) non faite,
+  `update.sh` non pris en charge en profil « ha ».
+- **Vérifications** : `tsc` 0 ; `i18n:check` OK (1 681 clés) ; `npm run test:db` 21 fichiers / 98 tests verts ;
+  `prisma migrate diff` sans dérive ; `npm run build` OK sans avertissement ; `npm test` 695/698 fichiers, 5 189 tests
+  verts, 5 échecs dans les tests des scripts shell `acra-offsite`/`acra-schedule`/`acra-snapshot` (« service db non
+  démarré ») pendant un build simultané — ces 3 fichiers passent seuls (69/69), scripts non modifiés.
+  **Non vérifié** : profil « ha » démarré (pas de démon Docker), S3 et Redis réels, vecteurs SigV4 relus contre la doc
+  AWS, mesures de charge après pagination, parcours navigateur.
+
+---
+
 ## 2026-10-16 (105) — Claude (session cloud) : T3 phase 2, T9, T21, sécurité, chantier scalabilité / HA
 
 Branche `claude/dazzling-edison-qzmwlg` (poussée, pas de PR). Base PostgreSQL 16 locale montée dans la session
