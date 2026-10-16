@@ -12,6 +12,7 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
+import { loginIpBloquee, enregistrerEchecConnexionIp } from '@/lib/login-ip-guard'
 import { rateLimit } from '@/lib/rate-limit'
 import { auditLog } from '@/lib/logger'
 import { checkLockout, recordFailure, recordSuccess } from '@/lib/login-lockout'
@@ -86,7 +87,7 @@ export const authOptions: NextAuthOptions = {
 
         // Anti-brute-force à DEUX clés (audit R01 / CWE-307 / A07:2021) :
         //   (1) par EMAIL   : 10 tentatives / 15 min (bloque le ciblage d'un compte) ;
-        //   (2) par IP      : 50 tentatives / 15 min (bloque le credential-stuffing /
+        //   (2) par IP      : 50 ÉCHECS / 15 min (LOGIN_IP_MAX_FAILURES ; bloque le credential-stuffing /
         //       password-spraying sur de nombreux emails depuis une même IP).
         // Le store est abstrait (rate-limit.ts, Redis-ready) : en multi-instance,
         // brancher un RedisRateLimitStore. L'IP provient des en-têtes de proxy — à
@@ -103,12 +104,11 @@ export const authOptions: NextAuthOptions = {
         const ip = (typeof xff === 'string' ? xff.split(',').map(v => v.trim()).filter(Boolean).at(-1) : undefined)
           || req?.headers?.['x-real-ip']
           || 'unknown'
-        if (ip !== 'unknown') {
-          const rlIp = await rateLimit(`login:ip:${ip}`, 50, 15 * 60 * 1000)
-          if (!rlIp.allowed) {
-            await auditLog('LOGIN_RATE_LIMITED', { userEmail: credentials.email, ip })
-            throw new Error('TOO_MANY_ATTEMPTS')
-          }
+        // Seuls les ÉCHECS comptent (lib/login-ip-guard) : une entreprise derrière une même IP de sortie
+        // (NAT) n'est plus bloquée par ses propres connexions réussies.
+        if (await loginIpBloquee(ip)) {
+          await auditLog('LOGIN_RATE_LIMITED', { userEmail: credentials.email, ip })
+          throw new Error('TOO_MANY_ATTEMPTS')
         }
 
         // Politique configurable (verrouillage + expiration)
@@ -133,6 +133,7 @@ export const authOptions: NextAuthOptions = {
 
         if (!user?.passwordHash) {
           await auditLog('LOGIN_FAILED', { userEmail: credentials.email, details: { reason: 'user_not_found' } })
+          await enregistrerEchecConnexionIp(ip)
           return null
         }
 
@@ -153,6 +154,7 @@ export const authOptions: NextAuthOptions = {
             }
           }
           await auditLog('LOGIN_FAILED', { userId: user.id, userEmail: user.email, details: { reason: 'bad_password' } })
+          await enregistrerEchecConnexionIp(ip)
           return null
         }
 
@@ -204,6 +206,7 @@ export const authOptions: NextAuthOptions = {
           const verified = await verifyChallenge(user.id, code)
           if (!verified.ok) {
             await auditLog('LOGIN_FAILED', { userId: user.id, userEmail: user.email, details: { reason: 'mfa_invalid', mfa: verified.error } })
+            await enregistrerEchecConnexionIp(ip)
             throw new Error(`MFA_INVALID::${verified.error ?? 'invalid'}`)
           }
           await auditLog('MFA_VERIFIED', { userId: user.id, userEmail: user.email })

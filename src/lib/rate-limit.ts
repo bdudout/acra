@@ -37,6 +37,8 @@ export interface RateLimitResult {
 export interface RateLimitStore {
   hit(key: string, limit: number, windowMs: number): Promise<RateLimitResult>
   reset(key: string): Promise<void>
+  /** État courant SANS incrémenter (ex. ne compter que les échecs de connexion). Facultatif pour un store tiers. */
+  peek?(key: string, limit: number): Promise<RateLimitResult>
 }
 
 // ── Store en mémoire (défaut, mono-instance) ─────────────────────────────────
@@ -74,6 +76,13 @@ export class InMemoryRateLimitStore implements RateLimitStore {
 
   async reset(key: string): Promise<void> {
     this.map.delete(key)
+  }
+
+  async peek(key: string, limit: number): Promise<RateLimitResult> {
+    const entry = this.map.get(key)
+    const count = entry && entry.resetAt >= Date.now() ? entry.count : 0
+    const remaining = Number.isFinite(limit) ? Math.max(0, limit - count) : Infinity
+    return { allowed: count < limit, remaining, resetAt: entry?.resetAt ?? Date.now() }
   }
 }
 
@@ -121,6 +130,14 @@ export function rateLimit(
   store: RateLimitStore = currentStore
 ): Promise<RateLimitResult> {
   return store.hit(key, limit, windowMs)
+}
+
+/**
+ * État de `key` SANS le consommer : `allowed` est faux quand la limite est déjà atteinte.
+ * Store tiers sans `peek` → autorisé (la limite reste appliquée par `rateLimit` lors des échecs).
+ */
+export function rateLimitPeek(key: string, limit: number, store: RateLimitStore = currentStore): Promise<RateLimitResult> {
+  return store.peek ? store.peek(key, limit) : Promise.resolve({ allowed: true, remaining: limit, resetAt: Date.now() })
 }
 
 /** Headers HTTP standard de rate limiting (RFC 6585 + draft RateLimit-*). */

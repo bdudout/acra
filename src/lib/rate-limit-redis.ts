@@ -22,6 +22,7 @@ export interface RedisLike {
   /** TTL restant en ms ; < 0 si la clé n'a pas d'expiration (ou n'existe pas). */
   pttl(key: string): Promise<number>
   del(key: string): Promise<unknown>
+  get(key: string): Promise<string | null>
 }
 
 export class RedisRateLimitStore implements RateLimitStore {
@@ -51,5 +52,13 @@ export class RedisRateLimitStore implements RateLimitStore {
 
   async reset(key: string): Promise<void> {
     await this.redis.del(this.prefix + key)
+  }
+
+  async peek(key: string, limit: number): Promise<RateLimitResult> {
+    const k = this.prefix + key
+    const count = Number(await this.redis.get(k) ?? 0) || 0
+    const ttl = count ? await this.redis.pttl(k) : 0
+    const remaining = Number.isFinite(limit) ? Math.max(0, limit - count) : Infinity
+    return { allowed: count < limit, remaining, resetAt: Date.now() + Math.max(0, ttl) }
   }
 }
