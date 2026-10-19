@@ -31,7 +31,7 @@
     "@auth/prisma-adapter": "^2.11.3",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
-    "@react-pdf/renderer": "^4.5.1",
+    "@react-pdf/renderer": "^4.9.0",
     "@types/nodemailer": "^8.0.1",
     "bcryptjs": "^2.4.3",
     "docx": "^9.9.0",
