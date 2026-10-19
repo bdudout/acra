@@ -129,6 +129,11 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
   // Suggestions repliables ; repliées d'office dès que le registre contient des risques (projet existant).
   const [suggestionsOuvertes, setSuggestionsOuvertes] = useState<boolean | null>(null)
 
+  // n° 43 : compteurs de mesures / plans d'une ligne tenus à jour par les sous-listes (sans rechargement).
+  function compter(id: string, cle: 'mesuresCount' | 'plansCount', n: number) {
+    setRows(prev => prev.some(x => x.id === id && x[cle] !== n) ? prev.map(x => (x.id === id ? { ...x, [cle]: n } : x)) : prev)
+  }
+
   async function reload() {
     const d = await fetch(`/api/analyses/${analyseId}/risques`).then(r => r.ok ? r.json() : { risques: [] }).catch(() => ({ risques: [] }))
     setRows(d.risques ?? []); setLoading(false)
@@ -514,8 +519,8 @@ export default function RisquesDirects({ analyseId, editable, suggestions, mode 
                       <td className="block px-3 pb-3 md:table-cell" colSpan={colCount}>
                         <div className="space-y-2">
                           {showVulnSection && <RiskVulnerabilites analyseId={analyseId} riskId={r.id} editable={editable} initial={r.vulnerabilites ?? []} />}
-                          {showMesuresSection && <RiskMesures analyseId={analyseId} riskId={r.id} editable={editable} withEfficacite={!withDomaine} />}
-                          {showPlansSection && <RiskPlans analyseId={analyseId} riskId={r.id} editable={editable} />}
+                          {showMesuresSection && <RiskMesures analyseId={analyseId} riskId={r.id} editable={editable} withEfficacite={!withDomaine} onCount={n => compter(r.id, 'mesuresCount', n)} />}
+                          {showPlansSection && <RiskPlans analyseId={analyseId} riskId={r.id} editable={editable} onCount={n => compter(r.id, 'plansCount', n)} />}
                         </div>
                       </td>
                     </tr>

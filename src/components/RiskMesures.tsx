@@ -14,7 +14,7 @@ interface MesureRow { id: string; nom: string; type: string; statut: string; eff
 const MESURE_STATUTS = ['REALISE', 'EN_COURS', 'A_FAIRE', 'REPORTE'] as const
 
 /** `withEfficacite` : cotation d'efficacité de la mesure (inutile pour un projet 360, où la mesure suffit). */
-export default function RiskMesures({ analyseId, riskId, editable, withEfficacite = true }: { analyseId: string; riskId: string; editable: boolean; withEfficacite?: boolean }) {
+export default function RiskMesures({ analyseId, riskId, editable, withEfficacite = true, onCount }: { analyseId: string; riskId: string; editable: boolean; withEfficacite?: boolean; onCount?: (n: number) => void }) {
   const { t } = useTranslation()
   const m = t.risquesDirects
   const statutLabel = (s: string) => (m.mesuresStatuts as Record<string, string>)[s] ?? s
@@ -32,6 +32,8 @@ export default function RiskMesures({ analyseId, riskId, editable, withEfficacit
     setRows(d.mesures ?? []); setLoading(false)
   }
   useEffect(() => { reload() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  // n° 43 : le nombre d'éléments remonte à la ligne du risque (compteur, avertissement) dès qu'il change.
+  useEffect(() => { if (!loading) onCount?.(rows.length) }, [loading, rows.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function ajouter() {
     if (!nom.trim() || busy) return

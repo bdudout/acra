@@ -17,6 +17,8 @@ export const it: Translations = {
   // Codes d'erreur stables des gardes d'API (lib/with-access.server) — cf. lib/api-error.ts
   // Barre de pagination des grandes listes (components/Pagination)
   pagination: {
+    chargement: 'Caricamento…',
+    miseAJour: 'Aggiornamento…',
     navigation: 'Paginazione',
     resultats: '{debut}–{fin} di {total}',
     parPage: 'Per pagina',
