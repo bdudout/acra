@@ -6,6 +6,43 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-19 (107) — Claude (session annexe) : 4 défauts de la recette métier du 2026-10-19 (n° 62, 56, 46, 37)
+
+Branche `feat/historical-excel-import` (fusion d7055e28 main + dazzling-edison, **non poussée**). Un commit par défaut :
+
+- **n° 62 — tableau de bord** (dd2d17f5 + suite e56acc05) : `lib/dashboard-statut` (pur, testé) —
+  `statutAnalyseAffiche` (badge du statut réel EN_COURS / SOUMIS / APPROUVE / REJETE / TERMINE via
+  `t.statusLabels`), `estFinalisee` (APPROUVE ou TERMINE → barre 100 %, 5/5), `compterStatutsAnalyses`. KPI renommé
+  « Approuvées / terminées » (×5) et compte les deux ; lien vers `?filter=approuve|termine` selon le cas, sinon
+  `/analyses`. La suite corrige le même défaut dans `AnalysesChart` (vue d'ensemble : 80 % pour une approuvée).
+- **n° 56 — acceptation des risques résiduels** (b17a8415) : `lib/acceptation-residuels` (pur, testé) —
+  `resumeRisquesResiduels` (par palier `getRiskTier(niveauResiduel)`, non cotés = `niveauResiduel` null) et
+  `motifBlocageAcceptation` (statut ∉ {SOUMIS, APPROUVE} → `ANALYSE_NON_SOUMISE`, sinon un non coté →
+  `RISQUES_NON_COTES`). La route refuse ACCEPTER / REFUSER en 400 avec ces codes (ajoutés à `API_ERROR_CODES`,
+  `t.apiErrors` ×5) ; RÉINITIALISER reste libre. `ResidualRisksPanel` : nouvelles props `statutAnalyse`, `resume`,
+  `risquesHref` (`riskTreatmentHref`, selon la méthode) — résumé par niveau + non cotés + lien, boutons désactivés avec
+  le motif. Page analyse et vue projet 360 (`projet-vue.server`, `niveauResiduel` ajouté au select) alignées.
+- **n° 46 — DORA** (e4485abb) : `DeclarationModal` prop `doraEvaluationHref` ; incident non MAJEUR → lien « Évaluer la
+  classification DORA » (×5) vers `/reglementaire?incident=<id>`, seulement si `reglementaireActive` (passé par
+  `/incidents` → `IncidentsManager`). `ReglementaireManager` lit `?incident=` une fois et ouvre l'évaluation (si `canAssess`).
+- **n° 37 — rôle effectif** (302268e9) : `/incidents` → `canQualify = peutQualifierIncident(scope.role, secondeLigneActive)`
+  (même règle et même rôle que `loadIncidentInScope`) ; `canAcceptResidualRisks(userWorkflow, …)` sur la page analyse
+  **et** dans `projet-vue.server` (même écart, non listé dans la recette).
+- **Hors périmètre (laissé)** : n° 63 (vue unitaire plus large que la liste) — à arbitrer par l'utilisateur.
+  `/reglementaire` calcule encore `canAssess` sur le rôle d'instance (même famille que n° 37, l'API
+  `/api/reglementaire/dora` n'a pas été relue) ; clés `t.dashboard.doneStatus` / `inProgStatus` devenues inutilisées.
+- **Vérifications** : `npx tsc --noEmit` 0 erreur (après chaque commit) ; `npm run i18n:check` OK (1 683 clés) ; tests
+  ciblés verts (dashboard-statut, acceptation-residuels, route accept-residual-risks, ResidualRisksPanel,
+  DeclarationModal, ReglementaireManager, IncidentsManager*, RoleEffectifPages, AnalysesChart, ProjetPresentation,
+  projet-export) ; `npm test` complet sur l'état final : **708 fichiers / 5 300 tests verts**. **Navigateur** (dev :3005 déjà lancé, compte « Recette »
+  RISK_MANAGER) : tableau de bord « testo » → badge « Approuvée », KPI « Approuvées / terminées » = 1, vue d'ensemble
+  100 % ; panneau résiduels → résumé (Faible 1, Non cotés 0) + lien ; fenêtre Déclaration d'un incident non majeur →
+  lien `/reglementaire?incident=…` ; ce lien ouvre l'évaluation de l'incident. **Non vérifié** : `npm run build` (dev
+  en cours sur :3005, non interrompu — la route ne change pas ses exports), refus 400 réel avec un compte
+  DIRECTION_METIER (couvert par le test de route).
+
+---
+
 ## 2026-10-16 (106) — Claude (session cloud) : grandes listes paginées, intégrité des saisies et des tâches, H1, eIDAS
 
 Suite de (105), même branche. Décisions de l'utilisateur : spec scalabilité § 5 (intégrité avant disponibilité ;
