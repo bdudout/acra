@@ -29,7 +29,7 @@ import ExportButtons from '@/components/ExportButtons'
 import { isRiskMethod, methodSteps } from '@/lib/methodes'
 import { suggestRisqueExemples } from '@/lib/risque-exemples'
 import { patternsOf } from '@/lib/patterns-archi'
-import { canViewAnalyse, canEditAnalyse, resolveAnalyseRole, type UserRole } from '@/lib/permissions'
+import { canViewAnalyse, canEditAnalyse, peutGouvernerAppetit, resolveAnalyseRole, type UserRole } from '@/lib/permissions'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { ownerSuggestions } from '@/lib/risque-proprietaire'
@@ -220,6 +220,7 @@ export default async function AtelierPage({
             risqueSuggestions={risqueSuggestions}
             withVulnerabilites={methode === 'ISO_27005'}
             scale={directScale} appetit={directAppetit} ownerSuggestions={directOwnerSuggestions}
+            peutGouvernerCritere={peutGouvernerAppetit(roleVue)}
             contexteSave={t.contexteEditor.save} contexteSaved={t.contexteEditor.saved}
             perimetrePlaceholder={t.contexteEditor.perimetrePlaceholder} objectifsPlaceholder={methode === 'PROJET_360' ? t.projet360.objectifsPlaceholder : t.contexteEditor.objectifsPlaceholder}
             initialPhaseKey={typeof resolvedSearchParams.phase === 'string' ? resolvedSearchParams.phase : undefined}

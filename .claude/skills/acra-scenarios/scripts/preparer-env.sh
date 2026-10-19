@@ -61,6 +61,8 @@ if [ -z "$EN_ECOUTE" ]; then
   echo "ETAT serveur=demarrage"
 else
   echo "ETAT serveur=deja_present pid=$EN_ECOUTE"
+  # Serveur lancé par quelqu'un d'autre : il garde l'ancien client Prisma si le schéma a changé.
+  [ "$SCHEMA_CHANGE" = 1 ] && echo "ETAT serveur=client_prisma_perime (redémarrer ce serveur, sinon erreurs « Unknown field »)"
 fi
 for _ in $(seq 1 90); do
   [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 http://localhost:$PORT/api/health)" = "200" ] && break; sleep 2

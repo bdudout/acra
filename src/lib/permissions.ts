@@ -509,6 +509,11 @@ export function peutDefinir(role: UserRole, opts?: OptionsDefinition): boolean {
   return peutDefinir2eLigne(role, opts)
 }
 
+/** Gouverne l'appétit au risque (décision de gouvernance) : administrateur d'org, gestionnaire des risques ou RSSI. */
+export function peutGouvernerAppetit(role: UserRole): boolean {
+  return isAdminRole(role) || role === 'RISK_MANAGER' || role === 'RSSI'
+}
+
 /** Peut évaluer la maturité (profils cibles CMMI) et en promouvoir les écarts en actions : admin, RSSI, RISK_MANAGER ou CONFORMITE. */
 export function peutEvaluerMaturite(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE'

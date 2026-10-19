@@ -12,6 +12,7 @@
 //   projet 360 : documents du projet sous le contexte.
 // L'appréciation réutilise RisquesDirects (saisie directe gravité × vraisemblance).
 
+import CritereAcceptationApplique from '@/components/CritereAcceptationApplique'
 import { useState } from 'react'
 import RisquesDirects from '@/components/RisquesDirects'
 import PhaseGuidance from '@/components/PhaseGuidance'
@@ -42,7 +43,7 @@ export interface WorkshopPhase {
 }
 
 export default function PhasedRiskWorkshop({
-  analyseId, editable, phases, perimetre, objectifs, perimetreLabel, objectifsLabel, noContext, phasesLabel,
+  analyseId, editable, phases, perimetre, objectifs, perimetreLabel, objectifsLabel, noContext, phasesLabel, peutGouvernerCritere,
   guidanceTitle, guidanceHide, guidanceShow, risqueSuggestions,
   contexteSave, contexteSaved, perimetrePlaceholder, objectifsPlaceholder, initialPhaseKey,
   withVulnerabilites, scale, appetit, ownerSuggestions, projet360,
@@ -62,6 +63,8 @@ export default function PhasedRiskWorkshop({
   objectifs?: string | null
   perimetreLabel?: string
   objectifsLabel?: string
+  /** Rôle de gouvernance de l'appétit (admin, gestionnaire des risques, RSSI) : lien vers le réglage du critère (n° 51). */
+  peutGouvernerCritere?: boolean
   noContext?: string
   phasesLabel?: string
   guidanceTitle?: string
@@ -143,6 +146,8 @@ export default function PhasedRiskWorkshop({
               </div>
             </dl>
           )}
+          {/* Méthodes à saisie directe : critère d'acceptation réellement appliqué en évaluation (n° 51). */}
+          {scale !== undefined && !projet360 && <CritereAcceptationApplique scale={scale} appetit={appetit} peutModifier={peutGouvernerCritere === true} />}
         </section>
         {/* Projet 360 : documents du projet (schémas, architecture, dossiers projet). */}
         {projet360 && <FichiersProjet analyseId={analyseId} editable={editable} />}
