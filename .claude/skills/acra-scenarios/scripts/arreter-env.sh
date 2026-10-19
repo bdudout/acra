@@ -2,8 +2,7 @@
 # Arrête le serveur de dev :3005 SEULEMENT s'il a été lancé par preparer-env.sh
 # (un serveur lancé par l'utilisateur ou un autre agent est laissé tel quel).
 # La base Postgres reste démarrée.
-REPO="$(cd "$(dirname "$0")/../../../.." && pwd)"
-PIDF="$REPO/.acra-test-memory/runner/dev-3005.pid"
+PIDF="${TMPDIR:-/tmp}/acra-recette/dev-3005.pid"
 [ -f "$PIDF" ] || { echo "ETAT serveur=non_lance_par_la_recette"; exit 0; }
 PID="$(cat "$PIDF")"
 if kill -0 "$PID" 2>/dev/null; then

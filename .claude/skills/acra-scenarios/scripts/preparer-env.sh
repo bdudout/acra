@@ -3,13 +3,15 @@
 # Idempotent, sans intervention : Docker Desktop → conteneur Postgres `ebios_db` →
 # migrations + client Prisma → serveur de dev :3005 → comptes de recette.
 # Sortie : une ligne « ETAT … » par étape, puis « PRET url=… » ou « ECHEC étape=… ».
-# Le serveur lancé ici est noté dans .acra-test-memory/runner/dev-3005.pid
+# Le serveur lancé ici est noté dans $TMPDIR/acra-recette/dev-3005.pid (journaux au même endroit)
 # (à arrêter en fin de run avec arreter-env.sh ; un serveur déjà présent n'est pas touché).
 set -uo pipefail
 
 REPO="$(cd "$(dirname "$0")/../../../.." && pwd)"
 MEM="$REPO/.acra-test-memory"
-RUN="$MEM/runner"
+# Fichiers volatils HORS du dépôt : Next surveille l'arborescence du projet, un journal écrit
+# dedans déclenche une recompilation et un rechargement de page à chaque ligne (boucle).
+RUN="${TMPDIR:-/tmp}/acra-recette"
 LOG="$RUN/dev-3005.log"
 PORT=3005
 export PATH="/opt/homebrew/bin:/usr/local/bin:/Applications/Docker.app/Contents/Resources/bin:$PATH"
@@ -41,7 +43,7 @@ export DATABASE_URL="${DATABASE_URL/@db:5432/@localhost:5432}"
 export NEXTAUTH_URL="http://localhost:$PORT" AUTH_URL="http://localhost:$PORT"
 
 # 4. Migrations + client Prisma (le client est régénéré si le schéma a changé)
-npx prisma migrate deploy >"$RUN/migrate.log" 2>&1 || echec migrations "voir runner/migrate.log"
+npx prisma migrate deploy >"$RUN/migrate.log" 2>&1 || echec migrations "voir $RUN/migrate.log"
 SUM="$(shasum prisma/schema.prisma | cut -d' ' -f1)"
 SCHEMA_CHANGE=0
 if [ "$(cat "$RUN/schema.sha" 2>/dev/null)" != "$SUM" ]; then
@@ -67,7 +69,7 @@ fi
 for _ in $(seq 1 90); do
   [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 http://localhost:$PORT/api/health)" = "200" ] && break; sleep 2
 done
-[ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 http://localhost:$PORT/api/health)" = "200" ] || echec serveur "health KO, voir runner/dev-3005.log"
+[ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 http://localhost:$PORT/api/health)" = "200" ] || echec serveur "health KO, voir $LOG"
 # Premier rendu de la page de connexion (compilation à froid) avant d'ouvrir le navigateur
 curl -s -o /dev/null --max-time 120 http://localhost:$PORT/auth/signin
 echo "ETAT serveur=ok"
@@ -75,7 +77,7 @@ echo "ETAT serveur=ok"
 # 6. Comptes de recette (mot de passe commun du fichier + SUPER_ADMIN de recette)
 [ -f "$MEM/recette-roles.json" ] || echec comptes "recette-roles.json absent"
 node "$REPO/.claude/skills/acra-scenarios/scripts/comptes-recette.mjs" "$MEM/recette-roles.json" >"$RUN/comptes.log" 2>&1 \
-  || echec comptes "voir runner/comptes.log"
+  || echec comptes "voir $RUN/comptes.log"
 echo "ETAT comptes=ok ($(grep -c '^✓' "$RUN/comptes.log"))"
 
 echo "PRET url=http://localhost:$PORT"

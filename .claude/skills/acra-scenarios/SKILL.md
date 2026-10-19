@@ -98,7 +98,7 @@ avant le contrôle CNIL ») et un **critère de réussite observable**.
    (SUPER_ADMIN, même mot de passe). Il imprime des lignes `ETAT …` puis
    `PRET url=…` ou `ECHEC etape=…`. Ne jamais afficher le mot de passe.
    - `ECHEC etape=docker|db` → variante B (API/code) et le signaler en tête du rapport.
-   - `ECHEC etape=serveur` → lire `.acra-test-memory/runner/dev-3005.log`, une seule
+   - `ECHEC etape=serveur` → lire `$TMPDIR/acra-recette/dev-3005.log` (journaux hors du dépôt : un fichier écrit dans le projet relance la compilation en boucle), une seule
      nouvelle tentative, sinon variante B.
 2. Ouvrir le navigateur intégré avec `preview_start {url: "http://localhost:3005/auth/signin"}`.
    (`preview_start {name: …}` échoue sur ce poste : macOS refuse au volet l'accès
