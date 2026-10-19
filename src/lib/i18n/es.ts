@@ -4656,6 +4656,8 @@ export const es: Translations = {
     notEvaluated: 'No evaluado',
   },
   conformiteSocle: {
+    recommandesSecteur: 'Recomendados para su sector',
+    autresReferentiels: 'Otros marcos',
     stopBtn: 'Detener el seguimiento',
     stopConfirm: '¿Detener el seguimiento de conformidad de «{ref}»{suffix}? El seguimiento y su historial se eliminarán.',
     suiviLabel: 'Ámbito seguido',

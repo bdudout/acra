@@ -4655,6 +4655,8 @@ export const de: Translations = {
     notEvaluated: 'Nicht bewertet',
   },
   conformiteSocle: {
+    recommandesSecteur: 'Empfohlen für Ihre Branche',
+    autresReferentiels: 'Weitere Frameworks',
     stopBtn: 'Verfolgung beenden',
     stopConfirm: 'Konformitätsverfolgung für „{ref}“{suffix} beenden? Die Verfolgung und ihr Verlauf werden gelöscht.',
     suiviLabel: 'Verfolgter Bereich',

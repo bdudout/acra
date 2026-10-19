@@ -4705,6 +4705,8 @@ export const fr = {
     notEvaluated: 'Non évalué',
   },
   conformiteSocle: {
+    recommandesSecteur: 'Recommandés pour votre secteur',
+    autresReferentiels: 'Autres référentiels',
     stopBtn: 'Arrêter le suivi',
     stopConfirm: 'Arrêter le suivi de conformité de « {ref} »{suffix} ? Le suivi et son historique seront supprimés.',
     suiviLabel: 'Périmètre suivi',

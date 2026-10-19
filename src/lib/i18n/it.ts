@@ -4656,6 +4656,8 @@ export const it: Translations = {
     notEvaluated: 'Non valutato',
   },
   conformiteSocle: {
+    recommandesSecteur: 'Consigliati per il vostro settore',
+    autresReferentiels: 'Altri framework',
     stopBtn: 'Interrompi il monitoraggio',
     stopConfirm: 'Interrompere il monitoraggio di conformità per «{ref}»{suffix}? Il monitoraggio e la sua cronologia saranno eliminati.',
     suiviLabel: 'Ambito monitorato',

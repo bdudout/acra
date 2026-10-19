@@ -6,6 +6,7 @@
 // /conformite (auparavant en impasse quand aucun suivi n'existait). Réutilise la
 // grille ConformiteGrid + l'API /api/organizations/[orgId]/conformite.
 
+import { grouperReferentielsSocle } from '@/lib/socle-referentiels'
 import { useEffect, useMemo, useState } from 'react'
 import { ShieldCheck, Save, CheckCircle2, Trash2 } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
@@ -18,7 +19,7 @@ import { confronterDeclaration, type CouvertureExigenceLite } from '@/lib/confor
 
 interface RefOpt { code: string; nom: string }
 
-export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initialRef, multiSuivi = false, lockRef = false }: {
+export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initialRef, multiSuivi = false, lockRef = false, recommandes = [] }: {
   orgId: string
   orgNom: string
   referentiels: RefOpt[]
@@ -27,6 +28,8 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
   multiSuivi?: boolean
   /** Page détaillée d'un référentiel ciblé (?ref=) → référentiel verrouillé (pas de sélecteur). */
   lockRef?: boolean
+  /** n° 53 : codes recommandés pour le secteur de l'organisation, présentés en tête du sélecteur. */
+  recommandes?: string[]
 }) {
   const { t, locale } = useTranslation()
   const c = t.conformiteSocle
@@ -172,7 +175,13 @@ export default function OrgConformiteEditor({ orgId, orgNom, referentiels, initi
             <label className="text-xs text-gray-500">
               <span className="block font-medium mb-1">{c.referentiel}</span>
               <select value={ref} onChange={e => setRef(e.target.value)} className="border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white text-gray-800 min-w-48">
-                {referentiels.map(r => <option key={r.code} value={r.code}>{r.nom}</option>)}
+                {(() => {
+                  const g = grouperReferentielsSocle(referentiels, recommandes)
+                  const opt = (r: RefOpt) => <option key={r.code} value={r.code}>{r.nom}</option>
+                  return g.recommandes.length
+                    ? <><optgroup label={c.recommandesSecteur}>{g.recommandes.map(opt)}</optgroup><optgroup label={c.autresReferentiels}>{g.autres.map(opt)}</optgroup></>
+                    : g.autres.map(opt)
+                })()}
               </select>
             </label>
           )}

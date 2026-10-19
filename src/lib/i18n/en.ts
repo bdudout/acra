@@ -4656,6 +4656,8 @@ export const en: Translations = {
     notEvaluated: 'Not evaluated',
   },
   conformiteSocle: {
+    recommandesSecteur: 'Recommended for your sector',
+    autresReferentiels: 'Other frameworks',
     stopBtn: 'Stop tracking',
     stopConfirm: 'Stop tracking compliance for “{ref}”{suffix}? The track and its history will be deleted.',
     suiviLabel: 'Scope tracked',
