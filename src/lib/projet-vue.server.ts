@@ -104,7 +104,7 @@ export async function chargerVueProjet(id: string, userId: string, instanceRole:
       le: analyse.risquesResiduelsLe ? analyse.risquesResiduelsLe.toISOString() : null,
       commentaire: analyse.risquesResiduelsCommentaire ?? null,
       statutAnalyse: analyse.statut, resume: resumeRisquesResiduels(analyse.risques), risquesHref: riskTreatmentHref(analyse.id, analyse.methode),
-      canAct: canAcceptResidualRisks(sessionUser, orgConfig.acceptationRisquesActive),
+      canAct: canAcceptResidualRisks(userWorkflow, orgConfig.acceptationRisquesActive),
       gelActive: orgConfig.gelApresAcceptationActive, canReopen: canEdit, locale,
     } : undefined,
   }

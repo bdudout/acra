@@ -539,7 +539,7 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
                 statutAnalyse={analyse.statut}
                 resume={resumeRisquesResiduels(analyse.risques)}
                 risquesHref={riskTreatmentHref(analyse.id, analyse.methode)}
-                canAct={canAcceptResidualRisks(sessionUser, orgConfig.acceptationRisquesActive)}
+                canAct={canAcceptResidualRisks(userWorkflow, orgConfig.acceptationRisquesActive)}
                 gelActive={orgConfig.gelApresAcceptationActive}
                 canReopen={editable}
                 locale={locale}
