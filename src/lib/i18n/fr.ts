@@ -3604,6 +3604,14 @@ export const fr = {
 
   // ─── Panel d'accès / approbation ─────────────────────────────────────────
   access: {
+    accesRefuseTitre:    'Accès non autorisé',
+    accesRefuseTexte:    'L’analyse « {nom} » existe dans votre organisation, mais votre rôle n’y donne pas accès (brouillon non partagé). Vous pouvez demander l’accès à son propriétaire.',
+    accesRefuseDemander: 'Demander l’accès',
+    accesRefuseEnvoi:    'Envoi…',
+    accesRefuseEnvoye:   'Demande envoyée au propriétaire de l’analyse.',
+    accesRefuseEnregistre: 'Demande enregistrée — le propriétaire n’a pas pu être prévenu par e-mail (messagerie non configurée).',
+    accesRefuseErreur:   'La demande n’a pas pu être envoyée. Réessayez plus tard.',
+    accesRefuseRetour:   'Retour aux analyses',
     statusTitle:         "Statut de l'analyse",
     permLabels: { LECTURE: 'Lecture seule', EDITION: 'Édition', APPROBATION: 'Approbation' } as Record<string, string>,
     permDescs: {
@@ -4645,6 +4653,8 @@ export const fr = {
     reglementaireDesc: 'Registre d\'incidents TIC (classification DORA majeur/significatif/mineur) et synthèse des pertes (LDC ACPR). Aide à la décision, export CSV.',
     secondeLigneTitle: '2ᵉ ligne de défense (séparation des fonctions)',
     secondeLigneDesc: 'Activée (défaut) : dispositif réglementé — définition/validation par la 2ᵉ ligne, quatre-yeux, contrôle du contrôle N2. Désactivée : mode « ligne unique » pour les organisations non régulées (la 1ʳᵉ ligne réalise les tâches, sans double validation).',
+    auditeurHorsDefinitionTitle: 'Ligne unique : exclure l’auditeur de la définition des dispositifs',
+    auditeurHorsDefinitionDesc: 'Désactivée par défaut. Activée : en mode « ligne unique », l’auditeur ne peut plus créer ni modifier les contrôles, campagnes, KRI et questionnaires — il garde l’indépendance de la 3ᵉ ligne. Sans effet quand la 2ᵉ ligne est active.',
     moduleForcedOn: 'Imposé au niveau de l\'instance',
     moduleForcedOff: 'Désactivé au niveau de l\'instance',
     learnMore:          'En savoir plus ↗',

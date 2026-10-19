@@ -41,8 +41,8 @@ export const GET = withAccess({ org: { analyse: 'id' } }, async (_req, { user, r
   // GLOBAL (RSSI/AUDITEUR…) ne doit pas ouvrir la lecture d'une analyse d'une org
   // où le rôle effectif de l'utilisateur est inférieur. Cohérent avec PATCH/DELETE.
   // `role` = rôle effectif dans l'organisation de l'analyse (resolveAnalyseRole, via withAccess).
-  if (!canViewAnalyse({ id: user.id, role }, { userId: acces.userId, accesUtilisateurs: acces.accesUtilisateurs })) {
-    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+  if (!canViewAnalyse({ id: user.id, role }, { userId: acces.userId, accesUtilisateurs: acces.accesUtilisateurs, statut: acces.statut })) {
+    return NextResponse.json({ error: 'ACCES_ANALYSE_REFUSE' }, { status: 403 })
   }
 
   const editable = canEditAnalyse({ id: user.id, role }, { userId: acces.userId, accesUtilisateurs: acces.accesUtilisateurs })

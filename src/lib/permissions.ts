@@ -39,7 +39,17 @@ export interface AnalyseOwnership {
     userId: string
     permission: AnalysePermission
   }[]
+  /** Statut de l'analyse : quand il est fourni, la lecture globale suit la règle de la liste (n° 63). */
+  statut?: string
 }
+
+/**
+ * Statuts « publiés » : visibles par les rôles de lecture globale du dispositif sans être
+ * propriétaire ni destinataire d'un partage. Même ensemble pour la liste (`analyseWhereClause`)
+ * et la vue unitaire (`canViewAnalyse`) — n° 63. Un brouillon (EN_COURS) ou une analyse
+ * archivée restent réservés au propriétaire, aux partages et à l'administrateur.
+ */
+export const STATUTS_ANALYSE_PUBLIES = ['SOUMIS', 'APPROUVE', 'REJETE', 'TERMINE'] as const
 
 // ─── Droits globaux ──────────────────────────────────────────────────────────
 
@@ -61,10 +71,19 @@ export function canManageRopa(role: UserRole): boolean {
  * Helper CENTRAL : les 3 modules (controles, kri, campagnes) délèguent ici pour
  * rester cohérents (cf. correctif #125).
  */
-export function peutDefinir2eLigne(role: UserRole, opts?: { secondeLigneActive?: boolean }): boolean {
+/** Options d'organisation qui gouvernent la définition des dispositifs de 2ᵉ ligne. */
+export interface OptionsDefinition { secondeLigneActive?: boolean; auditeurHorsDefinition?: boolean }
+
+/** Extrait de la configuration résolue de l'organisation (`getOrgConfig`) les options de définition. */
+export function optionsDefinition(cfg: OptionsDefinition): OptionsDefinition {
+  return { secondeLigneActive: cfg.secondeLigneActive, auditeurHorsDefinition: cfg.auditeurHorsDefinition }
+}
+
+export function peutDefinir2eLigne(role: UserRole, opts?: OptionsDefinition): boolean {
   // Mode « ligne unique » (org non régulée, 2ᵉ ligne désactivée) : la 1ʳᵉ ligne
-  // réalise elle-même la définition ; ouvert à tout rôle sauf le lecteur.
-  if (opts?.secondeLigneActive === false) return role !== 'LECTEUR'
+  // réalise elle-même la définition ; ouvert à tout rôle sauf le lecteur — et sauf
+  // l'auditeur si l'organisation préserve l'indépendance de la 3ᵉ ligne (n° 64, option).
+  if (opts?.secondeLigneActive === false) return role !== 'LECTEUR' && !(opts.auditeurHorsDefinition && role === 'AUDITEUR')
   return isAdminRole(role) || role === 'RISK_MANAGER' || role === 'RSSI'
     || role === 'CONTROLEUR' || role === 'CONFORMITE'
 }
@@ -186,9 +205,11 @@ function getEffectivePermission(
 
 /** L'utilisateur peut visualiser l'analyse */
 export function canViewAnalyse(user: SessionUser, analyse: AnalyseOwnership): boolean {
-  // Lecture globale du dispositif (2ᵉ/3ᵉ ligne + gouvernance) — inclut AUDITEUR (#126).
-  if (hasGlobalReadDispositif(user.role)) return true
-  return getEffectivePermission(user, analyse) !== null
+  if (getEffectivePermission(user, analyse) !== null) return true
+  // Lecture globale du dispositif (2ᵉ/3ᵉ ligne + gouvernance) — inclut AUDITEUR (#126) :
+  // analyses publiées seulement, comme la liste (n° 63). Sans statut fourni : comportement historique.
+  if (!hasGlobalReadDispositif(user.role)) return false
+  return analyse.statut === undefined || (STATUTS_ANALYSE_PUBLIES as readonly string[]).includes(analyse.statut)
 }
 
 /**
@@ -333,9 +354,7 @@ export function analyseWhereClause(userId: string, role: UserRole, orgCtx?: OrgS
       OR: [
         { userId },
         { accesUtilisateurs: { some: { userId } } },
-        { statut: 'SOUMIS'   as const },
-        { statut: 'APPROUVE' as const },
-        { statut: 'REJETE'   as const },
+        ...STATUTS_ANALYSE_PUBLIES.map(statut => ({ statut })),
       ],
     }
   }
@@ -426,7 +445,7 @@ export function canReadOrgResource(orgId: string, scope?: OrgScopeContext): bool
 }
 
 // Droits métier partagés : aucune dépendance aux handlers Next.
-export function peutPiloter(role: UserRole, opts?: { secondeLigneActive?: boolean }): boolean {
+export function peutPiloter(role: UserRole, opts?: OptionsDefinition): boolean {
   return peutDefinir2eLigne(role, opts)
 }
 
@@ -441,7 +460,7 @@ export function peutGererRegistreTic(role: UserRole): boolean {
 }
 
 /** Peut définir les KRI (délègue à peutDefinir2eLigne : rôles de 2ᵉ ligne). */
-export function peutDefinirKri(role: UserRole, opts?: { secondeLigneActive?: boolean }): boolean {
+export function peutDefinirKri(role: UserRole, opts?: OptionsDefinition): boolean {
   return peutDefinir2eLigne(role, opts)
 }
 
@@ -486,7 +505,7 @@ export function peutGererDocuments(role: UserRole): boolean {
 }
 
 /** Peut définir les dispositifs de 2ᵉ ligne (alias générique de peutDefinir2eLigne). */
-export function peutDefinir(role: UserRole, opts?: { secondeLigneActive?: boolean }): boolean {
+export function peutDefinir(role: UserRole, opts?: OptionsDefinition): boolean {
   return peutDefinir2eLigne(role, opts)
 }
 

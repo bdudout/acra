@@ -3562,6 +3562,14 @@ export const de: Translations = {
   },
 
   access: {
+    accesRefuseTitre:    'Zugriff nicht erlaubt',
+    accesRefuseTexte:    'Die Analyse „{nom}“ ist in Ihrer Organisation vorhanden, aber Ihre Rolle gewährt keinen Zugriff darauf (nicht geteilter Entwurf). Sie können den Eigentümer um Zugriff bitten.',
+    accesRefuseDemander: 'Zugriff anfragen',
+    accesRefuseEnvoi:    'Wird gesendet…',
+    accesRefuseEnvoye:   'Anfrage an den Eigentümer der Analyse gesendet.',
+    accesRefuseEnregistre: 'Anfrage gespeichert — der Eigentümer konnte nicht per E-Mail benachrichtigt werden (E-Mail nicht konfiguriert).',
+    accesRefuseErreur:   'Die Anfrage konnte nicht gesendet werden. Bitte später erneut versuchen.',
+    accesRefuseRetour:   'Zurück zu den Analysen',
     statusTitle:         'Analysestatus',
     permLabels: { LECTURE: 'Nur Lesen', EDITION: 'Bearbeiten', APPROBATION: 'Genehmigung' } as Record<string, string>,
     permDescs: {
@@ -4595,6 +4603,8 @@ export const de: Translations = {
     reglementaireDesc: 'IKT-Vorfallregister (DORA-Klassifizierung schwer/erheblich/gering) und Verlustübersicht (ACPR LDC). Entscheidungshilfe, CSV-Export.',
     secondeLigneTitle: '2. Verteidigungslinie (Funktionstrennung)',
     secondeLigneDesc: 'Aktiviert (Standard): reguliertes Modell — Definition/Validierung durch die 2. Linie, Vier-Augen-Prinzip, Kontrolle der Kontrolle N2. Deaktiviert: „Einlinien"-Modus für nicht regulierte Organisationen (die 1. Linie führt die Aufgaben ohne Doppelvalidierung aus).',
+    auditeurHorsDefinitionTitle: 'Eine Linie: Prüfer von der Festlegung der Kontrollen ausschließen',
+    auditeurHorsDefinitionDesc: 'Standardmäßig deaktiviert. Aktiviert: Im Modus „eine Linie“ kann der Prüfer Kontrollen, Kampagnen, KRIs und Fragebögen nicht mehr anlegen oder ändern – die Unabhängigkeit der dritten Linie bleibt gewahrt. Ohne Wirkung, wenn die zweite Linie aktiv ist.',
     moduleForcedOn: 'Auf Instanzebene erzwungen',
     moduleForcedOff: 'Auf Instanzebene deaktiviert',
     learnMore:          'Mehr erfahren ↗',

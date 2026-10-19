@@ -3,7 +3,7 @@ import { accesResultats } from '@/lib/acces-resultats.server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
+import { peutDefinir2eLigne, type UserRole, optionsDefinition } from '@/lib/permissions'
 import {
   validateControleInput, cleanControleInput, prochaineEcheance,
   etatEcheance, evaluerEfficacite, efficaciteEtablie, echantillonTeste, type Periodicite,
@@ -133,7 +133,7 @@ export const GET = withAccess({ org: 'none' }, async (req, { user }) => {
 export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'controles' } }, async (req, { user, role: userRole, orgId }) => {
   const userId = user.id
   const cfg = await getOrgConfig(orgId)
-  if (!peutDefinir2eLigne(userRole, { secondeLigneActive: cfg.secondeLigneActive })) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+  if (!peutDefinir2eLigne(userRole, optionsDefinition(cfg))) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   if (!cfg.controlePermanentActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))

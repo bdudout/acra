@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { type UserRole } from '@/lib/permissions'
+import { type UserRole, optionsDefinition } from '@/lib/permissions'
 import { peutDefinir } from '@/lib/permissions'
 import { withAccess } from '@/lib/with-access.server'
 import { validateCampagneControleInput, cleanCampagneControleInput, prochaineFenetreCampagne, type CampagneRecurrence } from '@/lib/campagne-controle'
@@ -14,7 +14,7 @@ const access = { org: 'active', rateLimit: { bucket: 'campagnes-controle' } } as
 async function guard(userId: string, role: UserRole, orgId: string, id: string) {
   const cfg = await getOrgConfig(orgId)
   if (!cfg.controlePermanentActive) return { error: NextResponse.json({ error: 'module_inactif' }, { status: 403 }) }
-  if (!peutDefinir(role, { secondeLigneActive: cfg.secondeLigneActive })) return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
+  if (!peutDefinir(role, optionsDefinition(cfg))) return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
   const row = await prisma.campagneControle.findFirst({ where: { id, organizationId: orgId }, select: { id: true } })
   if (!row) return { error: NextResponse.json({ error: 'introuvable' }, { status: 404 }) }
   return { error: null, userId, userRole: role, orgId }

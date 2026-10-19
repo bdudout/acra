@@ -168,12 +168,13 @@ describe('withAccess — analyse ciblée (paramètre de route)', () => {
   })
 
   it('charge l\'analyse DANS le périmètre (analyseAccessWhere) et transmet le rôle effectif de son org', async () => {
+    vi.mocked(prisma.analyse.findFirst).mockResolvedValue(analyse({ userId: 'u1' }) as never)
     const handler = okHandler()
     await withAccess({ org: { analyse: 'id' } }, handler)(json({}), route)
     expect(analyseAccessWhere).toHaveBeenCalledWith('u1', 'ANALYSTE', 'an1')
     expect(vi.mocked(prisma.analyse.findFirst).mock.lastCall![0]).toMatchObject({ where: { id: 'an1', OR: ['périmètre'] } })
     expect(getEffectiveRoleForOrg).toHaveBeenCalledWith('u1', 'ANALYSTE', 'orgA')
-    expect(handler.mock.lastCall![1]).toMatchObject({ orgId: 'orgA', role: 'ANALYSTE', analyse: { id: 'an1', userId: 'owner' } })
+    expect(handler.mock.lastCall![1]).toMatchObject({ orgId: 'orgA', role: 'ANALYSTE', analyse: { id: 'an1', userId: 'u1' } })
   })
   it('404 hors périmètre ou en corbeille, sans divulgation', async () => {
     vi.mocked(prisma.analyse.findFirst).mockResolvedValueOnce(null as never)
@@ -188,9 +189,26 @@ describe('withAccess — analyse ciblée (paramètre de route)', () => {
   it('accès par partage sans appartenance → rôle LECTEUR (pas le rôle global)', async () => {
     vi.mocked(getServerSession).mockResolvedValue({ user: { id: 'u1', role: 'ADMIN' } } as never)
     vi.mocked(getEffectiveRoleForOrg).mockResolvedValue(null as never)
+    vi.mocked(prisma.analyse.findFirst).mockResolvedValue(analyse({ accesUtilisateurs: [{ userId: 'u1', permission: 'LECTURE' }] }) as never)
     const handler = okHandler()
     await withAccess({ org: { analyse: 'id' } }, handler)(json({}), route)
     expect(handler.mock.lastCall![1].role).toBe('LECTEUR')
+  })
+  it('n° 63 : analyse de l\'organisation non visible pour le rôle → 403 ACCES_ANALYSE_REFUSE (comme la liste)', async () => {
+    vi.mocked(getEffectiveRoleForOrg).mockResolvedValue('DIRECTION_METIER' as never)
+    vi.mocked(prisma.analyse.findFirst).mockResolvedValue(analyse({ statut: 'EN_COURS' }) as never)
+    const handler = vi.fn()
+    const res = await withAccess({ org: { analyse: 'id' } }, handler)(json({}), route)
+    expect(res.status).toBe(403)
+    expect(await res.json()).toEqual({ error: 'ACCES_ANALYSE_REFUSE' })
+    expect(handler).not.toHaveBeenCalled()
+  })
+  it('n° 63 : analyse soumise visible pour la lecture globale', async () => {
+    vi.mocked(getEffectiveRoleForOrg).mockResolvedValue('DIRECTION_METIER' as never)
+    vi.mocked(prisma.analyse.findFirst).mockResolvedValue(analyse({ statut: 'SOUMIS' }) as never)
+    const handler = okHandler()
+    await withAccess({ org: { analyse: 'id' } }, handler)(json({}), route)
+    expect(handler).toHaveBeenCalled()
   })
   it('write : 403 si l\'utilisateur ne peut pas éditer l\'analyse', async () => {
     vi.mocked(getEffectiveRoleForOrg).mockResolvedValue('LECTEUR' as never)
@@ -221,7 +239,7 @@ describe('withAccess — analyse ciblée (paramètre de route)', () => {
     expect(handler).toHaveBeenCalled()
   })
   it('lecture (sans write) d\'une analyse gelée → autorisée', async () => {
-    vi.mocked(prisma.analyse.findFirst).mockResolvedValue(analyse({ risquesResiduelsStatut: 'ACCEPTES' }) as never)
+    vi.mocked(prisma.analyse.findFirst).mockResolvedValue(analyse({ userId: 'u1', risquesResiduelsStatut: 'ACCEPTES' }) as never)
     vi.mocked(getOrgConfig).mockResolvedValueOnce({ gelApresAcceptationActive: true } as never)
     const handler = okHandler()
     await withAccess({ org: { analyse: 'id' } }, handler)(json({}), route)

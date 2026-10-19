@@ -3563,6 +3563,14 @@ export const en: Translations = {
   },
 
   access: {
+    accesRefuseTitre:    'Access not allowed',
+    accesRefuseTexte:    'The analysis "{nom}" exists in your organisation, but your role does not give you access to it (unshared draft). You can ask its owner for access.',
+    accesRefuseDemander: 'Request access',
+    accesRefuseEnvoi:    'Sending…',
+    accesRefuseEnvoye:   'Request sent to the analysis owner.',
+    accesRefuseEnregistre: 'Request recorded — the owner could not be notified by e-mail (e-mail not configured).',
+    accesRefuseErreur:   'The request could not be sent. Please try again later.',
+    accesRefuseRetour:   'Back to analyses',
     statusTitle:         'Analysis status',
     permLabels: { LECTURE: 'Read-only', EDITION: 'Edit', APPROBATION: 'Approval' } as Record<string, string>,
     permDescs: {
@@ -4596,6 +4604,8 @@ export const en: Translations = {
     reglementaireDesc: 'ICT incident register (DORA major/significant/minor classification) and loss summary (ACPR LDC). Decision support, CSV export.',
     secondeLigneTitle: '2nd line of defence (segregation of duties)',
     secondeLigneDesc: 'Enabled (default): regulated setup — definition/validation by the 2nd line, four-eyes, N2 control-of-control. Disabled: "single-line" mode for non-regulated organisations (the 1st line performs the tasks, without dual validation).',
+    auditeurHorsDefinitionTitle: 'Single line: exclude the auditor from defining controls',
+    auditeurHorsDefinitionDesc: 'Off by default. When on, in "single line" mode the auditor can no longer create or edit controls, campaigns, KRIs and questionnaires, preserving the independence of the third line. No effect when the second line is active.',
     moduleForcedOn: 'Enforced at instance level',
     moduleForcedOff: 'Disabled at instance level',
     learnMore:          'Learn more ↗',

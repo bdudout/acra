@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic'
 
 // La DÉFINITION d'un KRI relève de la 2ᵉ ligne (gouvernance) ; la SAISIE des
 // mesures est ouverte à la 1ʳᵉ ligne (cf. mesures/route.ts). L'admin gère aussi.
-import { peutDefinirKri } from '@/lib/permissions'
+import { peutDefinirKri, optionsDefinition } from '@/lib/permissions'
 
 // GET /api/kri — KRI de l'organisation active, avec statut courant + tendance + synthèse.
 // Sans organisation active : liste vide (pas de 400) → requireSession.
@@ -66,7 +66,7 @@ export async function GET() {
     kris,
     // La synthèse ne compte que les KRI actifs (les inactifs ne pilotent plus).
     synthese: synthetiserKri(kris.filter(k => k.actif).map(k => ({ statut: k.statut }))),
-    canDefine: peutDefinirKri(userRole, { secondeLigneActive: cfg.secondeLigneActive }),
+    canDefine: peutDefinirKri(userRole, optionsDefinition(cfg)),
     active: true,
   })
 }
@@ -75,7 +75,7 @@ export async function GET() {
 export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'kri' } }, async (req, { user, role: userRole, orgId }) => {
   const userId = user.id
   const cfg = await getOrgConfig(orgId)
-  if (!peutDefinirKri(userRole, { secondeLigneActive: cfg.secondeLigneActive })) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+  if (!peutDefinirKri(userRole, optionsDefinition(cfg))) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   if (!cfg.kriActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))

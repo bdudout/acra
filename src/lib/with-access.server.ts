@@ -20,7 +20,7 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { analyseGelee, STATUT_GEL } from '@/lib/gel-analyse'
 import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE, type RateLimitResult } from '@/lib/rate-limit'
 import { sessionUser, type SessionUser } from '@/lib/route-guard.server'
-import { canEditAnalyse, resolveAnalyseRole, type AnalysePermission, type OrgScopeContext, type UserRole } from '@/lib/permissions'
+import { canEditAnalyse, canViewAnalyse, resolveAnalyseRole, type AnalysePermission, type OrgScopeContext, type UserRole } from '@/lib/permissions'
 
 /**
  * Organisation dont le rôle effectif est résolu :
@@ -124,6 +124,11 @@ export function withAccess<O extends OrgTarget, B = undefined>(
       analyse = a
       orgId = a.organizationId
       role = resolveAnalyseRole(user.role, a.organizationId, await getEffectiveRoleForOrg(user.id, user.role, a.organizationId))
+      // Même règle de visibilité que la liste (n° 63) : l'analyse existe dans l'organisation mais
+      // n'est pas ouverte à ce rôle → 403 explicite (l'écran propose de demander l'accès).
+      if (!canViewAnalyse({ id: user.id, role }, { userId: a.userId, accesUtilisateurs: a.accesUtilisateurs, statut: a.statut })) {
+        return fail(403, 'ACCES_ANALYSE_REFUSE')
+      }
       if (target.write) {
         if (!canEditAnalyse({ id: user.id, role }, { userId: a.userId, accesUtilisateurs: a.accesUtilisateurs })) return fail(403, 'forbidden')
         // Gel après acceptation des risques résiduels : même règle que la saisie directe (guardDirectRisk).

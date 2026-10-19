@@ -3563,6 +3563,14 @@ export const it: Translations = {
   },
 
   access: {
+    accesRefuseTitre:    'Accesso non autorizzato',
+    accesRefuseTexte:    'L’analisi «{nom}» esiste nella vostra organizzazione, ma il vostro ruolo non vi dà accesso (bozza non condivisa). Potete chiedere l’accesso al suo proprietario.',
+    accesRefuseDemander: 'Richiedi l’accesso',
+    accesRefuseEnvoi:    'Invio…',
+    accesRefuseEnvoye:   'Richiesta inviata al proprietario dell’analisi.',
+    accesRefuseEnregistre: 'Richiesta registrata: non è stato possibile avvisare il proprietario via e-mail (posta non configurata).',
+    accesRefuseErreur:   'Impossibile inviare la richiesta. Riprovate più tardi.',
+    accesRefuseRetour:   'Torna alle analisi',
     statusTitle:         'Stato dell\'analisi',
     permLabels: { LECTURE: 'Sola lettura', EDITION: 'Modifica', APPROBATION: 'Approvazione' } as Record<string, string>,
     permDescs: {
@@ -4596,6 +4604,8 @@ export const it: Translations = {
     reglementaireDesc: 'Registro incidenti ICT (classificazione DORA grave/significativo/minore) e sintesi perdite (LDC ACPR). Supporto alle decisioni, export CSV.',
     secondeLigneTitle: '2ª linea di difesa (separazione delle funzioni)',
     secondeLigneDesc: 'Attivata (predefinito): dispositivo regolamentato — definizione/validazione da parte della 2ª linea, quattro occhi, controllo del controllo N2. Disattivata: modalità «linea unica» per organizzazioni non regolamentate (la 1ª linea esegue i compiti, senza doppia validazione).',
+    auditeurHorsDefinitionTitle: 'Linea unica: escludere l’auditor dalla definizione dei controlli',
+    auditeurHorsDefinitionDesc: 'Disattivata per impostazione predefinita. Attivata: in modalità «linea unica» l’auditor non può più creare né modificare controlli, campagne, KRI e questionari, preservando l’indipendenza della terza linea. Nessun effetto quando la seconda linea è attiva.',
     moduleForcedOn: 'Imposto a livello di istanza',
     moduleForcedOff: 'Disattivato a livello di istanza',
     learnMore:          'Scopri di più ↗',

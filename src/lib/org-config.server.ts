@@ -51,6 +51,7 @@ export const CONFIG_SELECT = {
   kriActive: true,
   reglementaireActive: true,
   secondeLigneActive: true,
+  auditeurHorsDefinition: true,
   profilsOperationnelsActive: true,
   projets360Active: true,
   homologationsActive: true,

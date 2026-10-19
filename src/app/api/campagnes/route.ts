@@ -9,7 +9,7 @@ import { auditLog, getClientIp } from '@/lib/logger'
 export const dynamic = 'force-dynamic'
 
 /** Piloter une campagne relève de la 2ᵉ ligne (risk manager / RSSI / admin). */
-import { peutPiloter } from '@/lib/permissions'
+import { peutPiloter, optionsDefinition } from '@/lib/permissions'
 import { campagnesRcsaActives } from '@/lib/org-config'
 
 // GET /api/campagnes — campagnes de l'organisation active + avancement.
@@ -39,7 +39,7 @@ export const GET = withAccess({ org: 'none' }, async (_req, { user }) => {
 export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'campagnes' } }, async (req, { user, role: userRole, orgId }) => {
   const userId = user.id
   const cfg = await getOrgConfig(orgId)
-  if (!peutPiloter(userRole, { secondeLigneActive: cfg.secondeLigneActive })) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+  if (!peutPiloter(userRole, optionsDefinition(cfg))) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   if (!campagnesRcsaActives(cfg)) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))

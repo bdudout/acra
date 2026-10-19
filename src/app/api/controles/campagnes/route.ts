@@ -3,7 +3,7 @@ import { accesResultats } from '@/lib/acces-resultats.server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { type UserRole } from '@/lib/permissions'
+import { type UserRole, optionsDefinition } from '@/lib/permissions'
 import { peutDefinir } from '@/lib/permissions'
 import { withAccess } from '@/lib/with-access.server'
 import { validateCampagneControleInput, cleanCampagneControleInput, avancementCampagne, campagneEnRetard, type ExecutionControleLite } from '@/lib/campagne-controle'
@@ -47,7 +47,7 @@ export const GET = withAccess({ org: 'none' }, async (_req, { user }) => {
     }
   })
 
-  return NextResponse.json({ active: true, campagnes, controles, canDefine: peutDefinir(userRole, { secondeLigneActive: cfg.secondeLigneActive }), archivageDureeAnnees: dureeAnnees })
+  return NextResponse.json({ active: true, campagnes, controles, canDefine: peutDefinir(userRole, optionsDefinition(cfg)), archivageDureeAnnees: dureeAnnees })
 })
 
 // POST /api/controles/campagnes — crée une campagne (2ᵉ ligne).
@@ -55,7 +55,7 @@ export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'campagnes-
   const userId = user.id
   const cfg = await getOrgConfig(orgId)
   if (!cfg.controlePermanentActive) return NextResponse.json({ error: 'module_inactif' }, { status: 403 })
-  if (!peutDefinir(userRole, { secondeLigneActive: cfg.secondeLigneActive })) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+  if (!peutDefinir(userRole, optionsDefinition(cfg))) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
   const erreur = validateCampagneControleInput(body)

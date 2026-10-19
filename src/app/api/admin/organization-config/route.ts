@@ -86,6 +86,7 @@ export const GET = withAccess({ org: 'none', rateLimit: { bucket: 'org-config', 
     kriActive: cfg.kriActive,
     reglementaireActive: cfg.reglementaireActive,
     secondeLigneActive: cfg.secondeLigneActive,
+    auditeurHorsDefinition: cfg.auditeurHorsDefinition,
     profilsOperationnelsActive: cfg.profilsOperationnelsActive,
     projets360Active: cfg.projets360Active,
     homologationsActive: cfg.homologationsActive,
@@ -241,6 +242,7 @@ export const PUT = withAccess({ org: 'none', rateLimit: { bucket: 'org-config-wr
   if (typeof body.kriActive === 'boolean') data.kriActive = body.kriActive
   if (typeof body.reglementaireActive === 'boolean') data.reglementaireActive = body.reglementaireActive
   if (typeof body.secondeLigneActive === 'boolean') data.secondeLigneActive = body.secondeLigneActive
+  if (typeof body.auditeurHorsDefinition === 'boolean') data.auditeurHorsDefinition = body.auditeurHorsDefinition
   if (typeof body.profilsOperationnelsActive === 'boolean') data.profilsOperationnelsActive = body.profilsOperationnelsActive
   if (typeof body.projets360Active === 'boolean') data.projets360Active = body.projets360Active
   if (typeof body.homologationsActive === 'boolean') data.homologationsActive = body.homologationsActive

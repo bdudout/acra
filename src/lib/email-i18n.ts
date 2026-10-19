@@ -413,3 +413,27 @@ export function alertesDoraEmail(locale: string | null | undefined, p: AlertesDo
   const html = emailLayout({ heading, tone: 'danger', paragraphs: [intro], items: lignes, ...(p.url ? { action: { label: L.action, url: p.url } } : {}), footer: 'ACRA' })
   return { subject: mixte ? L.generic.subject(p.items.length) : L.subject(p.items.length), text, html }
 }
+
+// ─── Demande d'accès à une analyse (n° 63) ──────────────────────────────────
+
+/** Paramètres de l'e-mail de demande d'accès envoyé au propriétaire de l'analyse. */
+export interface DemandeAccesParams { analyseNom: string; demandeur: string; lien: string }
+
+const demandeAccesLabels: Record<EmailLocale, { subject: (a: string) => string; heading: string; body: (d: string, a: string) => string; action: string }> = {
+  fr: { subject: a => `[ACRA] Demande d'accès à l'analyse « ${a} »`, heading: 'Demande d\'accès à une analyse', body: (d, a) => `${d} demande l'accès à votre analyse « ${a} ».`, action: 'Pour l\'accorder, ouvrez l\'analyse, bloc « Collaborateurs » :' },
+  en: { subject: a => `[ACRA] Access request for the analysis "${a}"`, heading: 'Analysis access request', body: (d, a) => `${d} is requesting access to your analysis "${a}".`, action: 'To grant it, open the analysis, "Collaborators" section:' },
+  de: { subject: a => `[ACRA] Zugriffsanfrage für die Analyse „${a}"`, heading: 'Zugriffsanfrage für eine Analyse', body: (d, a) => `${d} bittet um Zugriff auf Ihre Analyse „${a}".`, action: 'Um ihn zu gewähren, öffnen Sie die Analyse, Bereich „Mitarbeiter":' },
+  es: { subject: a => `[ACRA] Solicitud de acceso al análisis «${a}»`, heading: 'Solicitud de acceso a un análisis', body: (d, a) => `${d} solicita acceso a su análisis «${a}».`, action: 'Para concederlo, abra el análisis, sección «Colaboradores»:' },
+  it: { subject: a => `[ACRA] Richiesta di accesso all'analisi «${a}»`, heading: 'Richiesta di accesso a un\'analisi', body: (d, a) => `${d} chiede l'accesso alla vostra analisi «${a}».`, action: 'Per concederlo, aprite l\'analisi, sezione «Collaboratori»:' },
+}
+
+/** E-mail au propriétaire : qui demande l'accès, à quelle analyse, et où l'accorder (aucun contenu d'analyse). */
+export function demandeAccesAnalyseEmail(locale: string | null | undefined, p: DemandeAccesParams): BuiltEmail {
+  const L = demandeAccesLabels[emailLocale(locale)]
+  const quoi = L.body(p.demandeur, p.analyseNom)
+  return {
+    subject: L.subject(p.analyseNom),
+    text: `${quoi}\n${L.action} ${p.lien}\n`,
+    html: emailLayout({ heading: L.heading, tone: 'neutral', paragraphs: [quoi, `${L.action} ${p.lien}`], footer: 'ACRA' }),
+  }
+}

@@ -3563,6 +3563,14 @@ export const es: Translations = {
   },
 
   access: {
+    accesRefuseTitre:    'Acceso no autorizado',
+    accesRefuseTexte:    'El análisis «{nom}» existe en su organización, pero su rol no le da acceso (borrador no compartido). Puede solicitar el acceso a su propietario.',
+    accesRefuseDemander: 'Solicitar acceso',
+    accesRefuseEnvoi:    'Enviando…',
+    accesRefuseEnvoye:   'Solicitud enviada al propietario del análisis.',
+    accesRefuseEnregistre: 'Solicitud registrada: no se pudo avisar al propietario por correo (correo no configurado).',
+    accesRefuseErreur:   'No se pudo enviar la solicitud. Inténtelo más tarde.',
+    accesRefuseRetour:   'Volver a los análisis',
     statusTitle:         'Estado del análisis',
     permLabels: { LECTURE: 'Solo lectura', EDITION: 'Edición', APPROBATION: 'Aprobación' } as Record<string, string>,
     permDescs: {
@@ -4596,6 +4604,8 @@ export const es: Translations = {
     reglementaireDesc: 'Registro de incidentes TIC (clasificación DORA mayor/significativo/menor) y resumen de pérdidas (LDC ACPR). Apoyo a la decisión, exportación CSV.',
     secondeLigneTitle: '2ª línea de defensa (segregación de funciones)',
     secondeLigneDesc: 'Activada (predeterminado): dispositivo regulado — definición/validación por la 2ª línea, cuatro ojos, control del control N2. Desactivada: modo «línea única» para organizaciones no reguladas (la 1ª línea realiza las tareas, sin doble validación).',
+    auditeurHorsDefinitionTitle: 'Línea única: excluir al auditor de la definición de los controles',
+    auditeurHorsDefinitionDesc: 'Desactivada por defecto. Activada: en modo «línea única», el auditor ya no puede crear ni modificar controles, campañas, KRI y cuestionarios, lo que preserva la independencia de la tercera línea. Sin efecto cuando la segunda línea está activa.',
     moduleForcedOn: 'Impuesto a nivel de instancia',
     moduleForcedOff: 'Desactivado a nivel de instancia',
     learnMore:          'Más información ↗',

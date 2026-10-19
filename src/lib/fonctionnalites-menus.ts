@@ -23,7 +23,7 @@ const MENU_DU_CHAMP: Record<string, MenuFonctionnalite> = {
   // Réglementaire : DORA et rapports.
   reglementaireActive: 'reglementaire', rapportsGrcActive: 'reglementaire',
   // Général : organisation des rôles et accès des assistants.
-  petiteStructure: 'general', secondeLigneActive: 'general', mcpActive: 'general',
+  petiteStructure: 'general', secondeLigneActive: 'general', auditeurHorsDefinition: 'general', mcpActive: 'general',
 }
 
 /** Menu d'un champ de configuration (`<module>Active`…) ; inconnu ⇒ « Général ». */

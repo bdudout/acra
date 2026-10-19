@@ -4,7 +4,7 @@ import { voitTousLesResultats } from '@/lib/acces-resultats'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { peutDefinir, type UserRole } from '@/lib/permissions'
+import { peutDefinir, type UserRole, optionsDefinition } from '@/lib/permissions'
 import { consolider } from '@/lib/controle-reseau'
 
 export async function chargerReseau(userId: string, instanceRole: UserRole) {
@@ -35,7 +35,7 @@ export async function chargerReseau(userId: string, instanceRole: UserRole) {
   const now = new Date()
   return {
     organisation: mere?.nom ?? '',
-    peutDecliner: peutDefinir(scope.role, { secondeLigneActive: cfg.secondeLigneActive }),
+    peutDecliner: peutDefinir(scope.role, optionsDefinition(cfg)),
     entites,
     candidats,
     references: references.map(r => ({

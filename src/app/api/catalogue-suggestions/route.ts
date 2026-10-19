@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, peutDefinir2eLigne, peutDefinirKri, peutEcrireAudit, peutEvaluerDora } from '@/lib/permissions'
+import { isAdminRole, peutDefinir2eLigne, peutDefinirKri, peutEcrireAudit, peutEvaluerDora, optionsDefinition } from '@/lib/permissions'
 import { withAccess } from '@/lib/with-access.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { CATALOGUE_PACK_VERSION, SECTOR_CODES, adaptPeriodicite, searchSectorSuggestions, type CatalogueLocale, type SectorCode } from '@/lib/sector-suggestions'
@@ -74,12 +74,12 @@ export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'catalogue-
 
   if (selectedPlan.toCreate.some(item => item.kind === 'CONTROL')) {
     if (!cfg.controlePermanentActive) return NextResponse.json({ error: 'module_inactive' }, { status: 403 })
-    if (!peutDefinir2eLigne(ctx.role, { secondeLigneActive: cfg.secondeLigneActive })) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+    if (!peutDefinir2eLigne(ctx.role, optionsDefinition(cfg))) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   }
 
   if (selectedPlan.toCreate.some(item => item.kind === 'KRI')) {
     if (!cfg.kriActive) return NextResponse.json({ error: 'module_inactive' }, { status: 403 })
-    if (!peutDefinirKri(ctx.role, { secondeLigneActive: cfg.secondeLigneActive })) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+    if (!peutDefinirKri(ctx.role, optionsDefinition(cfg))) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   }
 
   if (selectedPlan.toCreate.some(item => item.kind === 'AUDIT')) {

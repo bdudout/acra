@@ -192,6 +192,7 @@ export default function ConfigurationPage() {
   const [kriActive, setKriActive] = useState(false)
   const [reglementaireActive, setReglementaireActive] = useState(false)
   const [secondeLigneActive, setSecondeLigneActive] = useState(true) // défaut true = mode réglementé
+  const [auditeurHorsDefinition, setAuditeurHorsDefinition] = useState(false) // n° 64, défaut false
   const [profilsOperationnelsActive, setProfilsOperationnelsActive] = useState(false)
   const [projets360Active, setProjets360Active] = useState(true)
   const [homologationsActive, setHomologationsActive] = useState(false)
@@ -268,6 +269,7 @@ export default function ConfigurationPage() {
         setKriActive(Boolean(data.kriActive))
         setReglementaireActive(Boolean(data.reglementaireActive))
         setSecondeLigneActive(data.secondeLigneActive !== false) // défaut true
+        setAuditeurHorsDefinition(data.auditeurHorsDefinition === true)
         setProfilsOperationnelsActive(Boolean(data.profilsOperationnelsActive))
         setProjets360Active(data.projets360Active !== false)
         setHomologationsActive(data.homologationsActive === true)
@@ -328,6 +330,7 @@ export default function ConfigurationPage() {
     kriActive: setKriActive,
     reglementaireActive: setReglementaireActive,
     secondeLigneActive: setSecondeLigneActive,
+    auditeurHorsDefinition: setAuditeurHorsDefinition,
     profilsOperationnelsActive: setProfilsOperationnelsActive,
     projets360Active: setProjets360Active,
     homologationsActive: setHomologationsActive,
@@ -344,7 +347,7 @@ export default function ConfigurationPage() {
     pilotage: t.nav.grpPilotage, analyses: t.nav.grpAnalyses, registre: t.nav.grpRegistre, controleAudit: t.nav.grpControleAudit,
     conformite: t.nav.grpConformite, reglementaire: t.nav.grpReglementaire, general: t.features.groupeGeneral,
   })[menu]
-  async function saveFeature(field: 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive' | 'campagnesRcsaActive' | 'appetenceActive' | 'rapportsGrcActive' | 'ropaSousTraitantActive', value: boolean) {
+  async function saveFeature(field: 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'auditeurHorsDefinition' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive' | 'campagnesRcsaActive' | 'appetenceActive' | 'rapportsGrcActive' | 'ropaSousTraitantActive', value: boolean) {
     FEATURE_SETTERS[field]?.(value) // mise à jour optimiste
     setSavingFeatures(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -1392,6 +1395,7 @@ export default function ConfigurationPage() {
                 { field: 'kriActive' as const, value: kriActive, title: t.features.kriTitle, desc: t.features.kriDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.kri === 'FORCE_ON' || modulesPolicy.kri === 'FORCE_OFF', indent: false, forced: modulesPolicy.kri },
                 { field: 'reglementaireActive' as const, value: reglementaireActive, title: t.features.reglementaireTitle, desc: t.features.reglementaireDesc, href: 'https://www.eiopa.europa.eu/digital-operational-resilience-act-dora_en', disabled: modulesPolicy.reglementaire === 'FORCE_ON' || modulesPolicy.reglementaire === 'FORCE_OFF', indent: false, forced: modulesPolicy.reglementaire },
                 { field: 'secondeLigneActive' as const, value: secondeLigneActive, title: t.features.secondeLigneTitle, desc: t.features.secondeLigneDesc, href: 'https://www.acpr.banque-france.fr/', disabled: modulesPolicy.secondeLigne === 'FORCE_ON' || modulesPolicy.secondeLigne === 'FORCE_OFF', indent: false, forced: modulesPolicy.secondeLigne },
+                { field: 'auditeurHorsDefinition' as const, value: auditeurHorsDefinition, title: t.features.auditeurHorsDefinitionTitle, desc: t.features.auditeurHorsDefinitionDesc, href: 'https://www.theiia.org/en/standards/', disabled: secondeLigneActive, indent: true },
                 { field: 'profilsOperationnelsActive' as const, value: profilsOperationnelsActive, title: t.features.profilsOperationnelsTitle, desc: t.features.profilsOperationnelsDesc, href: '/maturite', disabled: modulesPolicy.profilsOperationnels === 'FORCE_ON' || modulesPolicy.profilsOperationnels === 'FORCE_OFF', indent: false, forced: modulesPolicy.profilsOperationnels },
                 { field: 'appetenceActive' as const, value: appetenceActive, title: t.features.appetenceTitle, desc: t.features.appetenceDesc, href: '/appetence', disabled: modulesPolicy.appetence === 'FORCE_ON' || modulesPolicy.appetence === 'FORCE_OFF' || !(registreRisquesActive || kriActive || profilsOperationnelsActive), indent: false, forced: modulesPolicy.appetence },
                 { field: 'rapportsGrcActive' as const, value: rapportsGrcActive, title: t.features.rapportsGrcTitle, desc: t.features.rapportsGrcDesc, href: '/rapports', disabled: modulesPolicy.rapportsGrc === 'FORCE_ON' || modulesPolicy.rapportsGrc === 'FORCE_OFF', indent: false, forced: modulesPolicy.rapportsGrc },

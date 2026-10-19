@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Navbar from '@/components/Navbar'
-import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
+import { peutDefinir2eLigne, type UserRole, optionsDefinition } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import CampagnesManager from '@/components/CampagnesManager'
@@ -24,7 +24,7 @@ export default async function CampagnesPage() {
 
   // Piloter (ouvrir/valider/clôturer) = 2ᵉ ligne ; coter = 1ʳᵉ ligne.
   // Aligné sur le garde de l'API /api/campagnes (peutDefinir2eLigne).
-  const canPilot = peutDefinir2eLigne(userRole, { secondeLigneActive: orgConfig.secondeLigneActive })
+  const canPilot = peutDefinir2eLigne(userRole, optionsDefinition(orgConfig))
   const canCote = userRole !== 'LECTEUR'
 
   return (

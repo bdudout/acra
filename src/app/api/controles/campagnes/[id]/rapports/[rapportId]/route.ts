@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
+import { peutDefinir2eLigne, type UserRole, optionsDefinition } from '@/lib/permissions'
 import { withAccess } from '@/lib/with-access.server'
 import { getDocumentStorage } from '@/lib/document-storage'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -20,7 +20,7 @@ async function load(userId: string, role: UserRole, orgId: string, id: string) {
   if (!cfg.controlePermanentActive) return { error: NextResponse.json({ error: 'module_inactif' }, { status: 403 }) }
   const campagne = await prisma.campagneControle.findFirst({ where: { id, organizationId: orgId }, select: { id: true, rapports: true } })
   if (!campagne) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
-  return { error: null, userId, userRole: role, orgId, secondeLigneActive: cfg.secondeLigneActive, campagne }
+  return { error: null, userId, userRole: role, orgId, secondeLigneActive: cfg.secondeLigneActive, definition: optionsDefinition(cfg), campagne }
 }
 
 // GET /api/controles/campagnes/[id]/rapports/[rapportId] — télécharge un rapport archivé d'une campagne de contrôle.
@@ -43,7 +43,7 @@ export const GET = withAccess({ org: 'active' }, async (_req, { user, role, orgI
 export const DELETE = withAccess({ org: 'active', rateLimit: { bucket: 'campagne-rapports' } }, async (req, { user, role, orgId, params: { id, rapportId } }) => {
   const c = await load(user.id, role, orgId, id)
   if (c.error) return c.error
-  if (!peutDefinir2eLigne(c.userRole, { secondeLigneActive: c.secondeLigneActive })) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+  if (!peutDefinir2eLigne(c.userRole, c.definition)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   const rapports = (Array.isArray(c.campagne.rapports) ? c.campagne.rapports : []) as unknown as RapportMeta[]
   const r = rapports.find(x => x.id === rapportId)
   if (!r) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
