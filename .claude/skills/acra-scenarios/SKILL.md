@@ -86,20 +86,34 @@ Utilise `references/catalogue-scenarios.md`. Pour chaque scénario, combine
 (« En tant que DPO d'une clinique de 80 personnes, je veux préparer le registre RGPD
 avant le contrôle CNIL ») et un **critère de réussite observable**.
 
-## Étape 3 — Préparer l'environnement (une fois)
+## Étape 3 — Préparer l'environnement (automatique, une fois)
 
-1. Vérifier la base : `docker ps` doit montrer le conteneur Postgres (`ebios_db`).
-   S'il est arrêté : `docker start ebios_db`. Si Docker Desktop n'est pas lancé,
-   ne pas insister : jouer les scénarios en **mode API/code** (étape 4, variante B) et
-   le noter.
-2. Démarrer l'app avec `preview_start` `{name: "acra-dev-3005"}` (config
-   `.claude/launch.json`). Ne jamais lancer le serveur via Bash.
-3. **Organisations bac à sable** : réutiliser les organisations de test existantes
+1. Lancer **`.claude/skills/acra-scenarios/scripts/preparer-env.sh`** (Bash, délai
+   max 10 min). Il fait tout, sans intervention et de façon idempotente : démarre
+   Docker Desktop si besoin, le seul conteneur `ebios_db` (jamais `docker compose up`
+   complet, qui reconstruit toutes les images), `prisma migrate deploy` (+ `generate`
+   si le schéma a changé), le serveur de dev **:3005** s'il n'écoute pas déjà, et
+   remet en état les **comptes de recette** (mot de passe commun de
+   `recette-roles.json`, comptes actifs) **plus `recette-superadmin@acra.test`**
+   (SUPER_ADMIN, même mot de passe). Il imprime des lignes `ETAT …` puis
+   `PRET url=…` ou `ECHEC etape=…`. Ne jamais afficher le mot de passe.
+   - `ECHEC etape=docker|db` → variante B (API/code) et le signaler en tête du rapport.
+   - `ECHEC etape=serveur` → lire `.acra-test-memory/runner/dev-3005.log`, une seule
+     nouvelle tentative, sinon variante B.
+2. Ouvrir le navigateur intégré avec `preview_start {url: "http://localhost:3005/auth/signin"}`.
+   (`preview_start {name: …}` échoue sur ce poste : macOS refuse au volet l'accès
+   au dossier Documents — c'est le script qui lance le serveur.)
+3. Connexion : formulaire à l'écran pour la variante A ; pour des vérifications
+   d'API en série, un assistant JS dans la page (csrf `/api/auth/csrf` → POST
+   `/api/auth/callback/credentials` avec `redirect: 'manual'`, puis POST
+   `/api/org/active {orgId}`) évite de retaper le formulaire.
+4. **Organisations bac à sable** : réutiliser les organisations de test existantes
    dont le nom commence par `Bac à sable —` (ex. `Bac à sable — Clinique 80 p.`).
    N'en créer une (via SUPER_ADMIN, en local) que si le profil d'organisation du
    scénario n'existe pas encore ; la réutiliser ensuite. Ne jamais toucher aux
    organisations de démonstration ni aux données hors bac à sable.
-4. Se connecter avec le compte de test du rôle voulu (fichiers de comptes ci-dessus).
+5. Se connecter avec le compte de test du rôle voulu (fichiers de comptes ci-dessus ;
+   SUPER_ADMIN : `recette-superadmin@acra.test`).
    Si le rôle manque dans l'org bac à sable, l'y rattacher en local via l'ADMIN.
 
 ## Étape 4 — Jouer chaque scénario
@@ -197,7 +211,17 @@ organisations), le mettre en tête du rapport avec les étapes de reproduction.
 
 - Laisser les organisations bac à sable (réutilisées), mais supprimer (corbeille de
   l'app) les objets créés dans la journée qui ne servent pas aux scénarios suivants.
-- Arrêter le serveur de preview (`preview_stop`) en fin de run.
+- Fermer le navigateur (`preview_stop` du serverId) puis lancer
+  `.claude/skills/acra-scenarios/scripts/arreter-env.sh` : il n'arrête le serveur :3005
+  **que s'il a été lancé par `preparer-env.sh`** (un serveur de l'utilisateur reste en place).
+
+## Ne jamais bloquer la tâche planifiée
+
+Une session restée « en cours » empêche les déclenchements suivants (constaté du
+16 au 19/10/2026). Donc : aucune commande au premier plan sans délai (`timeout`
+de l'outil Bash), aucune attente d'une réponse de l'utilisateur, pas de commande
+en arrière-plan laissée en suspens en fin de run, et **toujours** terminer par le
+rapport de l'étape 7 — même partiel (« run interrompu à l'étape N : raison »).
 - Aucun fichier hors `.acra-test-memory/` ne doit être modifié — vérifier avec
   `git status --short` (seuls les fichiers non suivis préexistants sont tolérés).
 
