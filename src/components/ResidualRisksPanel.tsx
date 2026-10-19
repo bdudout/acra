@@ -1,8 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Lock } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
+import { motifBlocageAcceptation, type ResumeRisquesResiduels } from '@/lib/acceptation-residuels'
+import type { RiskTier } from '@/lib/risk-scale'
 
 type Statut = 'EN_ATTENTE' | 'ACCEPTES' | 'REFUSES' | string
 
@@ -10,12 +14,20 @@ type Statut = 'EN_ATTENTE' | 'ACCEPTES' | 'REFUSES' | string
  * Panneau d'acceptation des RISQUES RÉSIDUELS (acceptation du risque, portée globale),
  * DISTINCTE de la validation de l'analyse. Affiché sur la page d'une analyse lorsque la
  * fonctionnalité est active (OrganizationConfig.acceptationRisquesActive). Seule la
- * Direction métier (ou un admin) peut agir (`canAct`).
+ * Direction métier (ou un admin) peut agir (`canAct`). Le panneau montre ce qui est décidé
+ * (risques résiduels par niveau, non cotés) et n'autorise la décision que sur une analyse soumise
+ * ou approuvée dont tous les risques sont cotés — même règle que la route (n° 56).
  */
 export default function ResidualRisksPanel({
   analyseId, statut: statut0, le: le0, commentaire: commentaire0, canAct, gelActive = false, canReopen = false, locale,
+  statutAnalyse, resume, risquesHref,
 }: {
   analyseId: string
+  /** Statut de l'analyse (EN_COURS, SOUMIS, APPROUVE…). */
+  statutAnalyse: string
+  resume: ResumeRisquesResiduels
+  /** Lien vers la liste des risques (phase de traitement selon la méthode). */
+  risquesHref: string
   statut: Statut
   le: string | null
   commentaire: string | null
@@ -35,6 +47,13 @@ export default function ResidualRisksPanel({
   // Analyse gelée : risques acceptés ET gel activé pour l'org → lecture seule,
   // réouverture uniquement via une nouvelle version.
   const frozen = statut === 'ACCEPTES' && gelActive
+  const motif = motifBlocageAcceptation(statutAnalyse, resume)
+  const NIVEAUX: { tier: RiskTier; label: string; cls: string }[] = [
+    { tier: 'critique', label: t.risquesDirects.tier_critique, cls: 'bg-red-500' },
+    { tier: 'eleve', label: t.risquesDirects.tier_eleve, cls: 'bg-orange-500' },
+    { tier: 'modere', label: t.risquesDirects.tier_modere, cls: 'bg-yellow-400' },
+    { tier: 'faible', label: t.risquesDirects.tier_faible, cls: 'bg-green-500' },
+  ]
 
   async function reopen() {
     setBusy(true); setError(null)
@@ -44,7 +63,7 @@ export default function ResidualRisksPanel({
         body: JSON.stringify({ cycle: 'STRATEGIQUE', note: r.reopenNote, ateliers: [] }),
       })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) { setError(data.error || 'Erreur'); return }
+      if (!res.ok) { setError(apiErrorMessage(data.error, t, 'Erreur')); return }
       // La nouvelle version a remis le statut à « en attente » et déverrouillé l'analyse.
       if (typeof window !== 'undefined') window.location.reload()
     } finally { setBusy(false) }
@@ -58,7 +77,7 @@ export default function ResidualRisksPanel({
         body: JSON.stringify({ action, commentaire }),
       })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) { setError(data.error || 'Erreur'); return }
+      if (!res.ok) { setError(apiErrorMessage(data.error, t, 'Erreur')); return }
       // Si le gel est actif, l'acceptation fige toute l'analyse (ateliers en lecture
       // seule) : on recharge pour refléter l'état gelé partout, pas seulement ici.
       if (action === 'ACCEPTER' && gelActive && data.risquesResiduelsStatut === 'ACCEPTES') {
@@ -92,6 +111,27 @@ export default function ResidualRisksPanel({
         </p>
       )}
 
+      <div className="mb-3 text-sm">
+        <div className="flex items-center justify-between gap-2 mb-1.5">
+          <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{r.summaryTitle} ({resume.total})</span>
+          <Link href={risquesHref} className="text-xs font-medium text-ebios-700 dark:text-ebios-300 hover:underline">{r.seeRisks}</Link>
+        </div>
+        {resume.total === 0 ? <p className="text-xs italic text-gray-500 dark:text-gray-400">{r.noRisks}</p> : (
+          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-700 dark:text-gray-200">
+            {NIVEAUX.map(n => (
+              <li key={n.tier} className="inline-flex items-center gap-1.5">
+                <span className={`inline-block w-2 h-2 rounded-full ${n.cls}`} aria-hidden="true" />
+                <span>{n.label}</span> <strong>{resume.parNiveau[n.tier]}</strong>
+              </li>
+            ))}
+            <li className={`inline-flex items-center gap-1.5 ${resume.nonCotes > 0 ? 'text-amber-700 dark:text-amber-300 font-medium' : ''}`}>
+              <span className="inline-block w-2 h-2 rounded-full bg-gray-300" aria-hidden="true" />
+              <span>{r.unrated}</span> <strong>{resume.nonCotes}</strong>
+            </li>
+          </ul>
+        )}
+      </div>
+
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm mb-3">{error}</div>}
 
       {frozen ? (
@@ -116,13 +156,16 @@ export default function ResidualRisksPanel({
             rows={2}
             className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           />
+          {motif && (
+            <p id={`residuels-motif-${analyseId}`} className="text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-lg px-3 py-2">{r.blocked[motif]}</p>
+          )}
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => decide('ACCEPTER')} disabled={busy}
-              className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white text-sm font-medium">
+            <button onClick={() => decide('ACCEPTER')} disabled={busy || !!motif} aria-describedby={motif ? `residuels-motif-${analyseId}` : undefined}
+              className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium">
               {r.accept}
             </button>
-            <button onClick={() => decide('REFUSER')} disabled={busy}
-              className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white text-sm font-medium">
+            <button onClick={() => decide('REFUSER')} disabled={busy || !!motif} aria-describedby={motif ? `residuels-motif-${analyseId}` : undefined}
+              className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium">
               {r.refuse}
             </button>
             {statut !== 'EN_ATTENTE' && (

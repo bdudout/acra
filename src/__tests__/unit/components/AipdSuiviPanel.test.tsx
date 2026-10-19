@@ -15,7 +15,7 @@ const T = { id: 't1', nom: 'Scoring clients', aipdStatut: null, aipdAnalyseId: n
 describe('AipdSuiviPanel', () => {
   it('statut, analyse rattachée et date envoyés ; lien de création absent pour le DPO', async () => {
     const fini = vi.fn()
-    fetchMock.mockImplementation(async (u: string, init?: { method?: string }) => (u === '/api/analyses' ? { ok: true, json: async () => ({ analyses: [{ id: 'a1', nom: 'AIPD scoring' }] }) } : { ok: true, json: async () => ({ ok: init?.method }) }))
+    fetchMock.mockImplementation(async (u: string, init?: { method?: string }) => (u === '/api/analyses?vue=options' ? { ok: true, json: async () => ({ analyses: [{ id: 'a1', nom: 'AIPD scoring' }] }) } : { ok: true, json: async () => ({ ok: init?.method }) }))
     render(<AipdSuiviPanel traitement={T} peutCreerAnalyse={false} onEnregistre={fini} onAnnuler={() => {}} />)
     fireEvent.change(screen.getByLabelText('Statut'), { target: { value: 'EN_COURS' } })
     await screen.findByRole('option', { name: 'AIPD scoring' })
@@ -29,7 +29,7 @@ describe('AipdSuiviPanel', () => {
     expect(JSON.parse(appel[1].body)).toEqual({ aipdStatut: 'EN_COURS', aipdAnalyseId: 'a1', aipdDate: '2026-10-01', aipdJustification: '', aipdConsultationPrealable: false })
   })
   it('« non retenue » : justification demandée ; refus serveur expliqué ; création d’analyse proposée si autorisé', async () => {
-    fetchMock.mockImplementation(async (u: string, init?: { method?: string }) => (u === '/api/analyses' ? { ok: true, json: async () => ({ analyses: [] }) } : init?.method === 'PATCH' ? { ok: false, json: async () => ({ error: 'justification_requise' }) } : { ok: true, json: async () => ({}) }))
+    fetchMock.mockImplementation(async (u: string, init?: { method?: string }) => (u === '/api/analyses?vue=options' ? { ok: true, json: async () => ({ analyses: [] }) } : init?.method === 'PATCH' ? { ok: false, json: async () => ({ error: 'justification_requise' }) } : { ok: true, json: async () => ({}) }))
     render(<AipdSuiviPanel traitement={T} peutCreerAnalyse onEnregistre={() => {}} onAnnuler={() => {}} />)
     expect(screen.getByRole('link', { name: 'Créer l’analyse' })).toHaveAttribute('href', '/analyses/new')
     fireEvent.change(screen.getByLabelText('Statut'), { target: { value: 'NON_RETENUE' } })
@@ -38,7 +38,7 @@ describe('AipdSuiviPanel', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/au moins un critère de risque élevé/)
   })
   it('« Réalisée » : date du jour pré-remplie ; le message d’erreur disparaît quand on change de statut (recette n° 10)', async () => {
-    fetchMock.mockImplementation(async (u: string, init?: { method?: string }) => (u === '/api/analyses' ? { ok: true, json: async () => ({ analyses: [] }) } : init?.method === 'PATCH' ? { ok: false, json: async () => ({ error: 'justification_requise' }) } : { ok: true, json: async () => ({}) }))
+    fetchMock.mockImplementation(async (u: string, init?: { method?: string }) => (u === '/api/analyses?vue=options' ? { ok: true, json: async () => ({ analyses: [] }) } : init?.method === 'PATCH' ? { ok: false, json: async () => ({ error: 'justification_requise' }) } : { ok: true, json: async () => ({}) }))
     render(<AipdSuiviPanel traitement={T} peutCreerAnalyse={false} onEnregistre={() => {}} onAnnuler={() => {}} />)
     fireEvent.change(screen.getByLabelText('Statut'), { target: { value: 'NON_RETENUE' } })
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))

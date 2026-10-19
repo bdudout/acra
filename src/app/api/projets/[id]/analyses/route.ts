@@ -3,25 +3,21 @@
 // l'analyse cyber (propriétaire ou accès en édition) ; l'analyse doit être accessible, cyber et de la même
 // organisation (filtre commun lib/projet360-sources). La création d'une nouvelle analyse liée passe par
 // /analyses/new?projet=<id>.
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { canEditAnalyse, resolveAnalyseRole, type UserRole } from '@/lib/permissions'
+import { canEditAnalyse, resolveAnalyseRole } from '@/lib/permissions'
 import { guardDirectRisk } from '@/lib/analyse-direct-risk.server'
 import { sourcesCyberWhere } from '@/lib/projet360-sources.server'
 import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { getOrgConfig } from '@/lib/org-config.server'
+import { withAccess } from '@/lib/with-access.server'
 
 export const dynamic = 'force-dynamic'
-type Params = { params: Promise<{ id: string }> }
-
-export async function POST(req: NextRequest, { params }: Params) {
-  const u = (await getServerSession(authOptions))?.user as { id?: string; role?: string } | undefined
-  if (!u?.id) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const role = (u.role ?? 'ANALYSTE') as UserRole
-  const g = await guardDirectRisk((await params).id, u.id, role)
+// Garde déléguée à guardDirectRisk (rôle effectif dans l'organisation du projet) → `org: 'none'`.
+export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'projet-analyses' } }, async (req, { user: u, params }) => {
+  const role = u.role
+  const g = await guardDirectRisk(params.id, u.id, role)
   if (!g.ok) return NextResponse.json({ error: g.error }, { status: g.status })
   const orgId = g.analyse.organizationId
   if (g.analyse.methode !== 'PROJET_360' || !orgId) return NextResponse.json({ error: 'methode_non_360' }, { status: 400 })
@@ -45,4 +41,4 @@ export async function POST(req: NextRequest, { params }: Params) {
     details: { scope: 'projet-analyse-cyber', action: 'lier', analyseId: cible.id },
   })
   return NextResponse.json({ ok: true, analyse: { id: cible.id, nom: cible.nom } })
-}
+})

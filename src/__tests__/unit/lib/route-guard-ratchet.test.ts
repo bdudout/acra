@@ -7,6 +7,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import { LEGACY_SESSION_WRITE_ROUTES } from './legacy-session-write-routes'
 
 const API = join(process.cwd(), 'src/app/api')
 function routes(dir: string): string[] {
@@ -31,5 +32,19 @@ describe('cliquet du contrôle d\'accès des routes API', () => {
       .filter(f => /role\s*[!=]==\s*'SUPER_ADMIN'/.test(f.src))
       .map(f => f.path)
     expect(offenders).toEqual([])
+  })
+
+  // T3 phase 2 : les routes d'écriture passent par `withAccess` (rôle effectif de l'org cible,
+  // permission, rate limit, schéma du corps), jamais par une lecture locale de la session.
+  const isWrite = (src: string) => /export\s+(async\s+function|const)\s+(POST|PUT|PATCH|DELETE)\b/.test(src)
+  const readsSession = (src: string) => /\bgetServerSession\b/.test(src)
+  it('aucune NOUVELLE route d\'écriture ne lit la session elle-même (utiliser withAccess)', () => {
+    const legacy = new Set(LEGACY_SESSION_WRITE_ROUTES)
+    const offenders = files.filter(f => isWrite(f.src) && readsSession(f.src) && !legacy.has(f.path)).map(f => f.path)
+    expect(offenders).toEqual([])
+  })
+  it('la liste des routes héritées ne contient que des routes encore à migrer (retirer les routes migrées)', () => {
+    const still = new Set(files.filter(f => isWrite(f.src) && readsSession(f.src)).map(f => f.path))
+    expect(LEGACY_SESSION_WRITE_ROUTES.filter(p => !still.has(p))).toEqual([])
   })
 })

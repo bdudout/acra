@@ -1,30 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { isAdminRole } from '@/lib/permissions'
+import { requireSession } from '@/lib/route-guard.server'
+import { withAccess } from '@/lib/with-access.server'
 import { validateProcessusInput, cleanProcessus } from '@/lib/processus'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
-// Contexte commun : session + organisation active + garde module.
-async function ctx(session: { user: { id: string; role?: string } }) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
-  return { userId, userRole, orgId: scope.activeOrgId }
-}
-
 // GET /api/processus — liste des processus de l'organisation active (arbre plat).
+// Sans organisation active : liste vide (pas de 400) → requireSession.
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+  const g = await requireSession()
+  if (g.error) return g.error
+  const { activeOrgId: orgId } = await getAnalyseScope(g.user.id, g.user.role)
   if (!orgId) return NextResponse.json({ processus: [], active: false })
   const orgConfig = await getOrgConfig(orgId)
   const processus = orgConfig.registreRisquesActive
@@ -38,12 +29,9 @@ export async function GET() {
 }
 
 // POST /api/processus — créer un processus (ADMIN, module registre actif).
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
-  if (!isAdminRole(userRole)) return NextResponse.json({ error: 'Réservé aux administrateurs' }, { status: 403 })
-  if (!orgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
+// Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
+export const POST = withAccess({ org: 'active', allow: isAdminRole, rateLimit: { bucket: 'processus' } }, async (req, { user, role: userRole, orgId }) => {
+  const userId = user.id
   const orgConfig = await getOrgConfig(orgId)
   if (!orgConfig.registreRisquesActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
 
@@ -59,4 +47,4 @@ export async function POST(req: NextRequest) {
   const processus = await prisma.processus.create({ data: { ...data, organizationId: orgId } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId, userRole, ip: getClientIp(req), details: { scope: 'processus', action: 'create', id: processus.id, nom: data.nom } })
   return NextResponse.json(processus, { status: 201 })
-}
+})

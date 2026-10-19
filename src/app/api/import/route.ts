@@ -1,9 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkAnalyseCreation } from '@/lib/analyse-create-guard.server'
-import type { UserRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { diagnoseJsonText } from '@/lib/import-json-diagnostic'
 import { ImportError, importErrorStatus, type ImportErrorCode } from '@/lib/import-errors'
 import {
@@ -208,14 +206,13 @@ async function importCSV(raw: string, userId: string, organizationId: string) {
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 // POST /api/import — importe une analyse complète (JSON) pour l'utilisateur connecté ; payload assaini via import-sanitize, limité à 10 imports/h.
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as any).id
+// Débit `import` (code dédié `import_rate_limited`) vérifié après le contrôle de création : gardé ici.
+export const POST = withAccess({ org: 'none' }, async (req, { user }) => {
+  const userId = user.id
 
   // Audit 2026-10-01 (T11) : même contrôle que la création d'analyse — rôle effectif,
   // organisation active (l'analyse importée lui est rattachée), plafond démo.
-  const check = await checkAnalyseCreation(userId, (session.user as { role?: UserRole }).role ?? 'ANALYSTE')
+  const check = await checkAnalyseCreation(userId, user.role)
   if (!check.ok) {
     const code: ImportErrorCode = check.reason === 'DEMO_CAP' ? 'import_demo_cap' : 'import_forbidden'
     return NextResponse.json({ error: code }, { status: 403 })
@@ -252,4 +249,4 @@ export async function POST(req: NextRequest) {
     if (err instanceof ImportError) return NextResponse.json({ error: err.code, details: err.details }, { status: importErrorStatus(err.code) })
     return NextResponse.json({ error: 'import_failed' satisfies ImportErrorCode }, { status: 422 })
   }
-}
+})

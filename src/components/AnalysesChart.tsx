@@ -10,6 +10,7 @@ import { CheckCircle2, Landmark, Settings } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { getRiskTier } from '@/lib/risk-scale'
+import { estFinalisee } from '@/lib/dashboard-statut'
 
 interface Analyse {
   id: string
@@ -72,7 +73,8 @@ export default function AnalysesChart({ analyses }: Props) {
           </thead>
           <tbody className="divide-y divide-gray-50">
             {shown.map(a => {
-              const pct = a.statut === 'TERMINE' ? 100 : Math.round(((a.atelierCourant - 1) / 5) * 100)
+              const fini = estFinalisee(a.statut)
+              const pct = fini ? 100 : Math.round(((a.atelierCourant - 1) / 5) * 100)
               const critiques = a.risques.filter(r => getRiskTier(r.niveauRisque) === 'critique').length
               const moyens = a.risques.filter(r => getRiskTier(r.niveauRisque) === 'eleve').length
               const moderes = a.risques.filter(r => getRiskTier(r.niveauRisque) === 'modere').length
@@ -94,8 +96,8 @@ export default function AnalysesChart({ analyses }: Props) {
                         <span className="text-xs shrink-0" title="Analyse socle"><Landmark size={18} aria-hidden="true" /></span>
                       )}
                     </div>
-                    <div className={`text-xs mt-0.5 ${a.statut === 'TERMINE' ? 'text-green-600' : 'text-orange-500'}`}>
-                      {a.statut === 'TERMINE' ? <><CheckCircle2 size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{c.statusDone}</> : <><Settings size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{`${c.statusAtelier} ${a.atelierCourant}/5`}</>}
+                    <div className={`text-xs mt-0.5 ${fini ? 'text-green-600' : 'text-orange-500'}`}>
+                      {fini ? <><CheckCircle2 size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.statusLabels[a.statut] ?? c.statusDone}</> : <><Settings size={12} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{`${c.statusAtelier} ${a.atelierCourant}/5`}</>}
                     </div>
                   </td>
                   <td className="py-3 px-2">

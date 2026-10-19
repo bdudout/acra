@@ -1,13 +1,13 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
 import Navbar from '@/components/Navbar'
-import { analyseWhereClause, type UserRole } from '@/lib/permissions'
+import { type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { getServerLocale } from '@/lib/i18n'
-import DerogationsRegistre, { type RegistreRow } from '@/components/DerogationsRegistre'
+import DerogationsRegistre from '@/components/DerogationsRegistre'
+import { chargerRegistreDerogations } from '@/lib/derogations-registre.server'
 import DerogationsDashboard from '@/components/DerogationsDashboard'
 import { getServerTOrg } from '@/lib/i18n-org'
 import { buildDerogationDashboard } from '@/lib/derogation-dashboard'
@@ -25,35 +25,9 @@ export default async function DerogationsPage() {
   const scope = await getAnalyseScope(userId, userRole)
   const t = await getServerTOrg(scope.activeOrgId) // vocabulaire de l'organisation (lot L5)
 
-  // Dérogations de toutes les analyses accessibles.
-  const analyses = await prisma.analyse.findMany({
-    where: analyseWhereClause(userId, scope.role, scope.scope),
-    select: { id: true, nom: true },
-  })
-  const byId = new Map(analyses.map(a => [a.id, a.nom]))
-  // Dérogations portées par une analyse accessible OU autonomes (org visible).
-  const orgLevel = scope.scope.isSuperAdmin
-    ? { analyseId: null }
-    : { analyseId: null, organizationId: { in: scope.scope.visibleOrgIds } }
-  const derogations = await prisma.derogation.findMany({
-    where: { OR: [{ analyseId: { in: analyses.map(a => a.id) } }, orgLevel] },
-    orderBy: [{ statut: 'asc' }, { dateFin: 'asc' }, { createdAt: 'desc' }],
-    select: {
-      id: true, analyseId: true, portee: true, referentiel: true, ref: true,
-      intitule: true, statut: true, dateFin: true, demandeurId: true,
-    },
-  })
-  const rows: RegistreRow[] = derogations.map(d => ({
-    id: d.id,
-    analyseId: d.analyseId,
-    analyseNom: d.analyseId ? (byId.get(d.analyseId) ?? '—') : null,
-    portee: d.portee,
-    referentiel: d.referentiel,
-    ref: d.ref,
-    intitule: d.intitule,
-    statut: d.statut,
-    dateFin: d.dateFin ? d.dateFin.toISOString() : null,
-  }))
+  // Tableau de bord : calculé ici sur tout le registre visible ; les lignes sont chargées page par page
+  // par le registre (GET /api/derogations?page=…, lot V1), mêmes règles de visibilité.
+  const rows = await chargerRegistreDerogations(userId, scope.role, scope.scope)
 
   // Peut créer une dérogation autonome : rôle porteur + fonctionnalité active sur l'org active.
   const activeConfig = scope.activeOrgId ? await getOrgConfig(scope.activeOrgId) : null
@@ -64,7 +38,7 @@ export default async function DerogationsPage() {
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 py-8">
         <DerogationsDashboard dashboard={buildDerogationDashboard(rows, activeConfig?.derogationAlerteJours ?? 30)} labels={{ title: t.derogations.title, active: t.derogations.filterCurrent, expiringSoon: t.derogations.filterDue, expired: t.derogations.filterExpired, pending: t.derogations.filterReview }} />
-        <DerogationsRegistre rows={rows} locale={locale} canCreate={canCreate}
+        <DerogationsRegistre locale={locale} canCreate={canCreate}
           dureeDefaut={activeConfig?.derogationDureeDefautJours ?? 180}
           dureeMax={activeConfig?.derogationDureeMaxJours ?? 365}
           userId={userId} userRole={scope.role} secondeLigneActive={activeConfig?.secondeLigneActive ?? true} petiteStructure={activeConfig?.petiteStructure ?? false} />

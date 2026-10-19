@@ -3,43 +3,32 @@
  * à une campagne de contrôle. Multipart (champ `file`). 2ᵉ ligne (peutDefinir2eLigne).
  * Octets hors base (document-storage) ; métadonnées dans le champ JSON `rapports`.
  */
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { NextResponse } from 'next/server'
 import { randomUUID, createHash } from 'node:crypto'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
-import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { mimeAutorise, contentMatchesMime, sanitizeFilename, storageKeyFor, MAX_DOCUMENT_SIZE } from '@/lib/document'
 import { getDocumentStorage } from '@/lib/document-storage'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
-type Params = { params: Promise<{ id: string }> }
 
-async function loadInScope(session: { user: { id: string; role?: string } }, id: string) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  const orgId = scope.activeOrgId
-  if (!orgId) return { error: NextResponse.json({ error: 'org_absente' }, { status: 400 }) }
+async function loadInScope(userId: string, role: UserRole, orgId: string, id: string) {
   const cfg = await getOrgConfig(orgId)
   if (!cfg.controlePermanentActive) return { error: NextResponse.json({ error: 'module_inactif' }, { status: 403 }) }
-  if (!peutDefinir2eLigne(scope.role, { secondeLigneActive: cfg.secondeLigneActive })) return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
+  if (!peutDefinir2eLigne(role, { secondeLigneActive: cfg.secondeLigneActive })) return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
   const campagne = await prisma.campagneControle.findFirst({ where: { id, organizationId: orgId }, select: { id: true, rapports: true } })
   if (!campagne) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
-  return { userId, userRole: scope.role, orgId, campagne }
+  return { error: null, userId, userRole: role, orgId, campagne }
 }
 
 // POST /api/controles/campagnes/[id]/rapports — archive (téléverse) un rapport pour une campagne de contrôle.
-export async function POST(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in c) return c.error
+export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'campagne-rapports' } }, async (req, { user, role, orgId, params: { id } }) => {
+  const c = await loadInScope(user.id, role, orgId, id)
+  if (c.error) return c.error
 
   const form = await req.formData().catch(() => null)
   const file = form?.get('file')
@@ -66,4 +55,4 @@ export async function POST(req: NextRequest, { params }: Params) {
     details: { scope: 'campagne-controle', action: 'rapport-upload', id, rapportId, taille: file.size },
   })
   return NextResponse.json(entry, { status: 201 })
-}
+})

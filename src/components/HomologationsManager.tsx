@@ -10,6 +10,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { BadgeCheck, Plus, X } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { formatDate } from '@/lib/format'
 import type { UserRole } from '@/lib/permissions'
 import {
@@ -53,7 +54,7 @@ export default function HomologationsManager({ initial, analyses, membres, userI
   const [busy, setBusy] = useState(false)
   const canPrepare = canPreparerHomologation(role)
 
-  const errorText = (code: unknown) => (typeof code === 'string' && code in th.errors ? th.errors[code as keyof typeof th.errors] : th.errors.failed)
+  const errorText = (code: unknown) => (typeof code === 'string' && code in th.errors ? th.errors[code as keyof typeof th.errors] : apiErrorMessage(code, t, th.errors.failed))
 
   async function reload() {
     const res = await fetch('/api/homologations')

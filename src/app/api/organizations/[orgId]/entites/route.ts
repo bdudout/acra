@@ -7,19 +7,16 @@
  * contrainte au sous-arbre de l'org (anti-escalade : impossible d'agir sur un
  * parent, un frère ou la racine hors périmètre). Cf. isInSubtree (path matérialisé).
  */
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { isAdminRole } from '@/lib/permissions'
+import { withAccess, type OrgTarget } from '@/lib/with-access.server'
 import { rootPath, childPath, isInSubtree } from '@/lib/org-context'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
-type Params = { params: Promise<{ orgId: string }> }
+const ORG = { param: 'orgId' } satisfies OrgTarget
 
 function slugify(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -35,35 +32,25 @@ async function uniqueSlug(base: string): Promise<string> {
   return `${base}-${Date.now().toString(36)}`.slice(0, 40)
 }
 
-/** Session + rôle EFFECTIF ADMIN dans l'org cible ; renvoie l'org (id, path, nom). */
-async function guardAdmin(orgId: string) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const role = await getEffectiveRoleForOrg(userId, instanceRole, orgId)
-  if (!role) return { error: NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 }) }
-  if (!isAdminRole(role)) return { error: NextResponse.json({ error: 'Réservé à l\'administrateur de l\'organisation' }, { status: 403 }) }
-  const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { id: true, nom: true, path: true } })
-  if (!org) return { error: NextResponse.json({ error: 'Organisation introuvable' }, { status: 404 }) }
-  return { userId, org }
-}
+/** Organisation cible (id, nom, path). */
+const chargerOrg = (orgId: string) => prisma.organization.findUnique({ where: { id: orgId }, select: { id: true, nom: true, path: true } })
+const introuvable = () => NextResponse.json({ error: 'Organisation introuvable' }, { status: 404 })
 
 // GET — sous-arbre de l'organisation (racine + descendants), avec compteurs.
-export async function GET(_req: NextRequest, { params }: Params) {
-  const { orgId } = await params
-  const g = await guardAdmin(orgId)
-  if ('error' in g) return g.error
+// Réservé au rôle EFFECTIF ADMIN dans l'org cible.
+export const GET = withAccess({ org: ORG, allow: isAdminRole }, async (_req, { orgId }) => {
+  const org = await chargerOrg(orgId)
+  if (!org) return introuvable()
 
   const rows = await prisma.organization.findMany({
-    where: { path: { startsWith: g.org.path } },
+    where: { path: { startsWith: org.path } },
     orderBy: { path: 'asc' },
     select: {
       id: true, nom: true, parentId: true, path: true, actif: true,
       _count: { select: { membres: true, analyses: true } },
     },
   })
-  const baseDepth = g.org.path.split('/').filter(Boolean).length
+  const baseDepth = org.path.split('/').filter(Boolean).length
   const entites = rows.map(o => ({
     id: o.id, nom: o.nom, parentId: o.parentId, actif: o.actif,
     depth: o.path.split('/').filter(Boolean).length - baseDepth,
@@ -71,7 +58,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     membres: o._count.membres, analyses: o._count.analyses,
   }))
   return NextResponse.json({ entites })
-}
+})
 
 const createSchema = z.object({
   nom: z.string().min(1).max(120),
@@ -79,22 +66,14 @@ const createSchema = z.object({
 })
 
 // POST — créer une entité enfant dans le sous-arbre de l'org.
-export async function POST(req: NextRequest, { params }: Params) {
-  const { orgId } = await params
-  const g = await guardAdmin(orgId)
-  if ('error' in g) return g.error
-
-  const rl = await rateLimit(`entites:${g.userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
-  if (!rl.allowed) return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
-
-  let data: z.infer<typeof createSchema>
-  try { data = createSchema.parse(await req.json()) }
-  catch { return NextResponse.json({ error: 'Requête invalide' }, { status: 400 }) }
+export const POST = withAccess({ org: ORG, allow: isAdminRole, rateLimit: { bucket: 'entites' }, body: createSchema }, async (req, { user, orgId, body: data }) => {
+  const org = await chargerOrg(orgId)
+  if (!org) return introuvable()
 
   // Parent = org elle-même par défaut ; sinon il DOIT être dans le sous-arbre de l'org.
   const parentId = data.parentId ?? orgId
   const parent = await prisma.organization.findUnique({ where: { id: parentId }, select: { path: true } })
-  if (!parent || !isInSubtree(parent.path, g.org.path)) {
+  if (!parent || !isInSubtree(parent.path, org.path)) {
     return NextResponse.json({ error: 'Entité parente hors de votre périmètre' }, { status: 403 })
   }
 
@@ -110,8 +89,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   })
 
   await auditLog('ORG_CREATED', {
-    userId: g.userId, targetId: entite.id, targetType: 'organization',
+    userId: user.id, targetId: entite.id, targetType: 'organization',
     ip: getClientIp(req), details: { nom: entite.nom, parentId, viaOrgAdmin: orgId },
   })
   return NextResponse.json({ entite }, { status: 201 })
-}
+})

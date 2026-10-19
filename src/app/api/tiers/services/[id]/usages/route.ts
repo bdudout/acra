@@ -1,23 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { peutGererRegistreTic, type UserRole } from '@/lib/permissions'
+import { peutGererRegistreTic } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { cleanUsageCriticality, cleanExpositionInternet } from '@/lib/tier-offers'
 import { validateServiceUsage } from '@/lib/tier-contract-coverage'
 
 export const dynamic = 'force-dynamic'
 
 /** Chaque ligne créée représente un cas métier, et non une copie du prestataire. */
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = (session.user as { role?: UserRole }).role ?? 'ANALYSTE'
-  const { id } = await params
+// Organisation cible fournie dans le corps (validé avant le rôle) : rôle effectif résolu ici → `org: 'none'`.
+export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'tier-service-usages' } }, async (req, { user, params }) => {
+  const userId = user.id
+  const instanceRole = user.role
+  const { id } = params
   const body = await req.json().catch(() => ({}))
   const organizationId = typeof body.organizationId === 'string' ? body.organizationId.trim() : ''
   const useCase = typeof body.useCase === 'string' ? body.useCase.trim() : ''
@@ -80,4 +78,4 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     details: { usageId: created.id, serviceId: id, coverage: decision.coverage },
   })
   return NextResponse.json({ ...created, coverage: decision.coverage }, { status: 201 })
-}
+})

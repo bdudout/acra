@@ -1,24 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAnalyseScope, roleSurRessource } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { type UserRole } from '@/lib/permissions'
+import type { SessionUser } from '@/lib/route-guard.server'
+import { withAccess } from '@/lib/with-access.server'
 import { validateKriInput, cleanKriInput, evaluerKri, tendanceKri, type KriSens } from '@/lib/kri'
 import { peutDefinirKri } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
-type Params = { params: Promise<{ id: string }> }
-
-async function loadInScope(session: { user: { id: string; role?: string } }, id: string) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
+// org: 'none' — le KRI est cherché dans tout le périmètre visible (pas d'organisation active exigée).
+async function loadInScope(user: SessionUser, id: string) {
+  const userId = user.id
+  const scope = await getAnalyseScope(userId, user.role)
   const orgIds = scope.scope.visibleOrgIds
   const spansAll = scope.scope.isSuperAdmin && orgIds.length === 0
   const kri = await prisma.kri.findFirst({
@@ -26,18 +21,17 @@ async function loadInScope(session: { user: { id: string; role?: string } }, id:
     select: { id: true, organizationId: true },
   })
   if (!kri) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
+  // Rôle EFFECTIF dans l'organisation DE LA RESSOURCE, jamais celui de l'org active (CWE-863).
+  const userRole = await roleSurRessource(userId, user.role, kri.organizationId)
   const cfg = await getOrgConfig(kri.organizationId)
   if (!cfg.kriActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
-  return { userId, userRole, kri, secondeLigneActive: cfg.secondeLigneActive }
+  return { error: null, userId, userRole, kri, secondeLigneActive: cfg.secondeLigneActive }
 }
 
 // GET /api/kri/[id] — détail + historique des mesures + statut/tendance.
-export async function GET(_req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in c) return c.error
+export const GET = withAccess({ org: 'none' }, async (_req, { user, params: { id } }) => {
+  const c = await loadInScope(user, id)
+  if (c.error) return c.error
 
   const kri = await prisma.kri.findUnique({
     where: { id },
@@ -56,15 +50,12 @@ export async function GET(_req: NextRequest, { params }: Params) {
     statut: evaluerKri(derniere, { sens: kri.sens as KriSens, seuilAlerte: kri.seuilAlerte, seuilCritique: kri.seuilCritique }),
     tendance: tendanceKri(derniere, precedente, kri.sens as KriSens),
   })
-}
+})
 
 // PATCH /api/kri/[id] — modifier la définition (gouvernance).
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in c) return c.error
+export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'kri' } }, async (req, { user, params: { id } }) => {
+  const c = await loadInScope(user, id)
+  if (c.error) return c.error
   if (!peutDefinirKri(c.userRole, { secondeLigneActive: c.secondeLigneActive })) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
@@ -88,15 +79,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     details: { scope: 'kri', action: 'update', id },
   })
   return NextResponse.json(updated)
-}
+})
 
 // DELETE /api/kri/[id] — supprimer un KRI et ses mesures (gouvernance).
-export async function DELETE(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in c) return c.error
+export const DELETE = withAccess({ org: 'none', rateLimit: { bucket: 'kri' } }, async (req, { user, params: { id } }) => {
+  const c = await loadInScope(user, id)
+  if (c.error) return c.error
   if (!peutDefinirKri(c.userRole, { secondeLigneActive: c.secondeLigneActive })) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   await prisma.kri.delete({ where: { id } })
@@ -105,4 +93,4 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     details: { scope: 'kri', action: 'delete', id },
   })
   return NextResponse.json({ ok: true })
-}
+})

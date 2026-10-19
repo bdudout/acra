@@ -10,8 +10,12 @@ vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.config, upsertOrgConfig: (id: string, data: object) => m.upsert({ where: { id }, create: { id, ...data }, update: data }) }))
 vi.mock('@/lib/logger', () => ({ auditLog: m.audit, getClientIp: () => '127.0.0.1' }))
 
-import { GET, PUT } from '@/app/api/personnalisation/route'
-import { POST as POST_GABARIT } from '@/app/api/personnalisation/gabarit/route'
+import { GET, PUT as PUT_ROUTE } from '@/app/api/personnalisation/route'
+import { POST as POST_GABARIT_ROUTE } from '@/app/api/personnalisation/gabarit/route'
+// Routes migrées vers withAccess : second argument (paramètres de route) obligatoire.
+const NO_PARAMS = { params: Promise.resolve({}) }
+const PUT = (r: NextRequest) => PUT_ROUTE(r, NO_PARAMS)
+const POST_GABARIT = (r: NextRequest) => POST_GABARIT_ROUTE(r, NO_PARAMS)
 
 const req = (url: string, method: string, body?: unknown) => new NextRequest(`http://x${url}`, { method, ...(body ? { body: JSON.stringify(body), headers: { 'content-type': 'application/json' } } : {}) })
 const cfg = (o = {}) => ({

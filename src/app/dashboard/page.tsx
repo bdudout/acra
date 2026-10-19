@@ -27,9 +27,13 @@ import ConformiteTrackingCard, { type ConformiteCardRow } from '@/components/Con
 import ATraiterClient from '@/components/ATraiterClient'
 import { accueilRole } from '@/lib/accueil-role'
 import { isGrcActive } from '@/lib/projet360'
-import { AlertCircle, AlertTriangle, BarChart3, Building2, CheckCircle2, ClipboardList, Globe, Hand, KeyRound, Landmark, Plus, Send, Settings, ShieldCheck, TrendingUp, Upload, VenetianMask, Zap } from 'lucide-react'
+import { compterStatutsAnalyses, statutAnalyseAffiche, estFinalisee, CLASSES_TON, type TonStatut } from '@/lib/dashboard-statut'
+import { AlertCircle, AlertTriangle, Ban, BarChart3, Building2, CheckCircle2, ClipboardList, Globe, Hand, KeyRound, Landmark, Plus, Send, Settings, ShieldCheck, TrendingUp, Upload, VenetianMask, Zap } from 'lucide-react'
 
 // Désactiver le cache Next.js pour toujours afficher les données fraîches
+/** Icône du badge de statut par teinte (n° 62). */
+const ICONES_TON: Record<TonStatut, typeof Settings> = { encours: Settings, soumis: Send, finalise: CheckCircle2, rejete: Ban }
+
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
@@ -96,11 +100,7 @@ export default async function DashboardPage() {
   )
 
   const stats = {
-    total: analyses.length,
-    terminees: analyses.filter(a => a.statut === 'TERMINE').length,
-    enCours: analyses.filter(a => a.statut === 'EN_COURS').length,
-    soumises: analyses.filter(a => a.statut === 'SOUMIS').length,
-    approuvees: analyses.filter(a => a.statut === 'APPROUVE').length,
+    ...compterStatutsAnalyses(analyses),
     risquesCritiques: analyses.reduce((acc, a) =>
       acc + a.risques.filter(r => getRiskTier(r.niveauRisque) === 'critique').length, 0),
     mesuresEnRetard: analyses.reduce((acc, a) =>
@@ -242,7 +242,7 @@ export default async function DashboardPage() {
               ? [{ label: t.dashboard.kpi.toApprove,  value: stats.soumises,      Icon: Send,     color: 'text-blue-600',   bg: 'bg-blue-50',   href: '/analyses?filter=soumis' }]
               : [{ label: t.dashboard.kpi.inProgress, value: stats.enCours,       Icon: Settings, color: 'text-orange-600', bg: 'bg-orange-50', href: '/analyses?filter=en_cours' }]
             ),
-            { label: t.dashboard.kpi.completed,  value: stats.terminees,         Icon: CheckCircle2,  color: 'text-green-600',  bg: 'bg-green-50',  href: '/analyses?filter=termine' },
+            { label: t.dashboard.kpi.completed,  value: stats.finalisees,        Icon: CheckCircle2,  color: 'text-green-600',  bg: 'bg-green-50',  href: stats.terminees === 0 && stats.approuvees > 0 ? '/analyses?filter=approuve' : stats.approuvees === 0 ? '/analyses?filter=termine' : '/analyses' },
             { label: t.dashboard.kpi.critical,   value: stats.risquesCritiques,  Icon: AlertCircle,   color: 'text-red-600',   bg: 'bg-red-50',    href: '/risques?niveau=critique' },
             { label: t.dashboard.kpi.pending,    value: stats.mesuresEnRetard,   Icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50',  href: '/actions?priorite=1' },
           ].map((s, i) => (
@@ -317,6 +317,7 @@ export default async function DashboardPage() {
                     const atelier = { ...ATELIERS_META[_ai], ...((t.ateliersMeta as any)[_ai] ?? {}) }
                     const critiques = a.risques.filter((r: any) => getRiskTier(r.niveauRisque) === 'critique').length
                     const mesuresP1 = a.mesures.filter((m: any) => m.priorite === 1 && m.statut !== 'REALISE').length
+                    const statutAff = statutAnalyseAffiche(a.statut)
                     return (
                       <Link key={a.id} href={`/analyses/${a.id}`}
                         className="card p-4 flex items-center gap-4 hover:shadow-md transition-shadow block">
@@ -331,10 +332,8 @@ export default async function DashboardPage() {
                             {(a as any).isSocle && (
                               <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium shrink-0" title="Analyse socle"><Landmark size={18} aria-hidden="true" /></span>
                             )}
-                            <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 font-medium ${
-                              a.statut === 'TERMINE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                            }`}>
-                              {a.statut === 'TERMINE' ? <><CheckCircle2 size={13} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" />{t.dashboard.doneStatus}</> : <><Settings size={13} className="inline align-[-0.15em] mr-1" aria-hidden="true" />{t.dashboard.inProgStatus}</>}
+                            <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 font-medium ${CLASSES_TON[statutAff.ton]}`}>
+                              {(() => { const Icon = ICONES_TON[statutAff.ton]; return <Icon size={13} className="inline align-[-0.15em] mr-1" aria-hidden="true" /> })()}{t.statusLabels[statutAff.cle] ?? statutAff.cle}
                             </span>
                             {critiques > 0 && (
                               <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium shrink-0">
@@ -355,10 +354,10 @@ export default async function DashboardPage() {
                           <div className="flex items-center gap-3">
                             <div className="flex-1 bg-gray-200 rounded-full h-1.5">
                               <div className="bg-ebios-500 h-1.5 rounded-full transition-all"
-                                style={{ width: a.statut === 'TERMINE' ? '100%' : `${Math.round(((a.atelierCourant - 1) / 5) * 100)}%` }} />
+                                style={{ width: estFinalisee(a.statut) ? '100%' : `${Math.round(((a.atelierCourant - 1) / 5) * 100)}%` }} />
                             </div>
                             <span className="text-xs text-gray-500 shrink-0">
-                              {a.statut === 'TERMINE' ? <><CheckCircle2 size={13} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" />5/5</> : <>{(() => { const AtIcon = ATELIER_ICONS[_ai]; return AtIcon ? <AtIcon size={13} className="inline align-[-0.15em] mr-1" aria-hidden="true" /> : null })()}A{a.atelierCourant}/5</>}
+                              {estFinalisee(a.statut) ? <><CheckCircle2 size={13} className="inline align-[-0.15em] mr-1 text-green-600" aria-hidden="true" />5/5</> : <>{(() => { const AtIcon = ATELIER_ICONS[_ai]; return AtIcon ? <AtIcon size={13} className="inline align-[-0.15em] mr-1" aria-hidden="true" /> : null })()}A{a.atelierCourant}/5</>}
                             </span>
                             <div className="flex gap-2 text-xs text-gray-500 hidden sm:flex">
                               <span title="Sources"><VenetianMask size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {a._count.sourcesRisque}</span>
@@ -415,7 +414,7 @@ export default async function DashboardPage() {
                 <h2 className="font-semibold text-gray-800 mb-3"><TrendingUp size={20} className="inline align-[-0.15em] mr-2" aria-hidden="true" /> {t.dashboard.progressTitle}</h2>
                 <div className="space-y-2">
                   {ATELIERS_META.map((a, i) => {
-                    const done = analyses.filter((x: any) => x.atelierCourant > i + 1 || x.statut === 'TERMINE').length
+                    const done = analyses.filter((x: any) => x.atelierCourant > i + 1 || estFinalisee(x.statut)).length
                     const pct = stats.total > 0 ? Math.round((done / stats.total) * 100) : 0
                     return (
                       <div key={a.num}>

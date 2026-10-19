@@ -54,4 +54,14 @@ describe('VersionCard (#185)', () => {
     render(<VersionCard />)
     await waitFor(() => expect(screen.getByText(/indisponible/i)).toBeTruthy())
   })
+
+  it('profil « ha » (lot H1.4) : pas de bouton, procédure de mise à jour progressive affichée', async () => {
+    fetchMock.mockReturnValueOnce(ok({ ...base, current: '1.0.4', channel: 'stable', base: null, latest: 'v1.0.5', updateAvailable: true, agentAvailable: true, haProfile: true }))
+    render(<VersionCard />)
+    expect(await screen.findByText(/Mise à jour disponible/)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Mettre à jour/ })).toBeNull()
+    expect(screen.getByText(/Déploiement multi-instance/)).toBeTruthy()
+    expect(screen.getByText('scripts/update-ha.sh stable --pitr-confirmed')).toBeTruthy()
+    expect(screen.queryByText('scripts/update.sh stable')).toBeNull()
+  })
 })

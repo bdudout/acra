@@ -1,14 +1,13 @@
 import { sanitizeSocleConfig } from '@/lib/projet360-socle'
 import { normalizeSecteursMasques } from '@/lib/secteurs-masques'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { sanitizeTaxonomie } from '@/lib/taxonomie'
 import { cleanActionDelais } from '@/lib/risk-action'
 import { sanitizeQualificationConfig } from '@/lib/qualification'
 import { sanitizeModulesPolicy } from '@/lib/module-policy'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { rateLimit, rateLimitHeaders, LIMIT_SEARCH } from '@/lib/rate-limit'
+import { LIMIT_SEARCH } from '@/lib/rate-limit'
+import { withAccess } from '@/lib/with-access.server'
 import { auditLog } from '@/lib/logger'
 import {
   DEFAULT_TYPES_IMPACTS, DEFAULT_REFERENTIELS, DEFAULT_STRATEGIES,
@@ -18,7 +17,7 @@ import { resolveReferentielCode } from '@/lib/referentiel-catalogue'
 import { sanitizeExemples, getCategoryDef, type ExempleCategoryKey } from '@/lib/exemples-ateliers'
 import { sanitizeConformiteNiveau, sanitizeSnapshotMode, sanitizeSnapshotPeriode } from '@/lib/conformite-config'
 import { sanitizeEchelles } from '@/lib/ecosystem-echelles'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { isAdminRole } from '@/lib/permissions'
 import { sanitizeMaturityScale } from '@/lib/maturity'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig, upsertOrgConfig } from '@/lib/org-config.server'
@@ -28,35 +27,18 @@ import { sanitizePlanificationConfig } from '@/lib/planification'
 const DEFAULT_ENTITES = ['DSI', 'Métier', 'Risques', 'RH', 'Juridique']
 
 // Organisation active (multi-organisation) : la config éditée/lue lui est rattachée.
-async function activeOrgId(session: any): Promise<string> {
-  const userId = (session.user as any).id
-  const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
-  const { activeOrgId } = await getAnalyseScope(userId, userRole)
-  return activeOrgId ?? 'global'
-}
+// Sans organisation active, repli sur la config 'global' (d'où `org: 'none'` + getAnalyseScope).
 
 function slugify(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'impact'
 }
 
 // GET /api/admin/organization-config — accessible à tous les utilisateurs authentifiés
-export async function GET(_req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const userId = (session.user as any).id
-
-  // Rate limiting : 60 req/min par utilisateur (partagé avec LIMIT_SEARCH)
-  const rl = await rateLimit(`org-config:${userId}`, LIMIT_SEARCH.limit, LIMIT_SEARCH.windowMs)
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Trop de requêtes. Réessayez dans une minute.' },
-      { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) }
-    )
-  }
-
+// Rate limiting : 60 req/min par utilisateur (partagé avec LIMIT_SEARCH)
+export const GET = withAccess({ org: 'none', rateLimit: { bucket: 'org-config', limit: LIMIT_SEARCH.limit, windowMs: LIMIT_SEARCH.windowMs } }, async (_req, { user }) => {
   // Config EFFECTIVE de l'organisation active (héritage des ancêtres + défauts).
-  const cfg = await getOrgConfig(await activeOrgId(session))
+  const { activeOrgId } = await getAnalyseScope(user.id, user.role)
+  const cfg = await getOrgConfig(activeOrgId ?? 'global')
   // Politique d'instance (lecture seule ici) : permet à l'UI de verrouiller les
   // toggles de module imposés/interdits au niveau instance. Best-effort.
   let modulesPolicy: Record<string, string> = {}
@@ -120,7 +102,7 @@ export async function GET(_req: NextRequest) {
     // Personnalisation (éventuellement héritée) de l'échelle de maturité CMMI.
     echelleMaturite: sanitizeMaturityScale(cfg.echelleMaturite),
   })
-}
+})
 
 /** Override d'échelles stocké, ou {} (le client résout avec les défauts lib). */
 function echellesOut(v: unknown): Record<string, unknown> {
@@ -128,16 +110,12 @@ function echellesOut(v: unknown): Record<string, unknown> {
 }
 
 // PUT /api/admin/organization-config — ADMIN uniquement
-export async function PUT(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const userId = (session.user as any).id
-  const instanceRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
+export const PUT = withAccess({ org: 'none', rateLimit: { bucket: 'org-config-write' } }, async (req, { user }) => {
+  const userId = user.id
   // En démo, un inscrit a le rôle d'instance ANALYSTE mais ADMIN dans sa propre
   // organisation. Le droit d'écrire cette configuration est donc celui du
   // périmètre actif, jamais le seul rôle d'instance.
-  const scope = await getAnalyseScope(userId, instanceRole)
+  const scope = await getAnalyseScope(userId, user.role)
   const userRole = scope.role
   if (!userRole || !isAdminRole(userRole)) {
     return NextResponse.json({ error: 'Réservé aux administrateurs' }, { status: 403 })
@@ -315,4 +293,4 @@ export async function PUT(req: NextRequest) {
     echellesEcosysteme: echellesOut((config as any).echellesEcosysteme),
     echelleMaturite: sanitizeMaturityScale((config as any).echelleMaturite),
   })
-}
+})

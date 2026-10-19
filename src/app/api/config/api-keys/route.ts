@@ -1,26 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { isAdminRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { generateApiKey, hashApiKey, cleanScopes, maskApiKey } from '@/lib/api-key'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
-async function ctx(session: { user: { id: string; role?: string } }) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  return { userId, userRole: scope.role, orgId: scope.activeOrgId }
-}
-
 // GET /api/config/api-keys — liste des clés (masquées) de l'organisation active (ADMIN).
-export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+// org: 'none' : sans organisation active, liste vide (et non 400).
+export const GET = withAccess({ org: 'none' }, async (_req, { user }) => {
+  const { role: userRole, activeOrgId: orgId } = await getAnalyseScope(user.id, user.role)
   if (!isAdminRole(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   if (!orgId) return NextResponse.json({ keys: [] })
 
@@ -35,16 +26,11 @@ export async function GET() {
     revoked: !!k.revokedAt, revokedAt: k.revokedAt,
   }))
   return NextResponse.json({ keys })
-}
+})
 
 // POST /api/config/api-keys — crée une clé ; renvoie le SECRET une seule fois (ADMIN).
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
-  if (!isAdminRole(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
-  if (!orgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
-
+export const POST = withAccess({ org: 'active', allow: isAdminRole, rateLimit: { bucket: 'api-keys' } }, async (req, { user, role: userRole, orgId }) => {
+  const userId = user.id
   const body = await req.json().catch(() => ({}))
   const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim().slice(0, 80) : 'Clé d\'API'
   const scopes = cleanScopes(body.scopes)
@@ -64,4 +50,4 @@ export async function POST(req: NextRequest) {
   })
   // secret renvoyé UNE fois — non re-consultable ensuite.
   return NextResponse.json({ ...created, secret: gen.plaintext }, { status: 201 })
-}
+})

@@ -48,6 +48,8 @@ import {
   type UserRole,
 } from '@/lib/permissions'
 import ResidualRisksPanel from '@/components/ResidualRisksPanel'
+import { resumeRisquesResiduels } from '@/lib/acceptation-residuels'
+import { riskTreatmentHref } from '@/lib/methodes'
 import DerogationsPanel from '@/components/DerogationsPanel'
 
 export default async function AnalyseDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -534,7 +536,10 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
                 statut={(analyse as any).risquesResiduelsStatut ?? 'EN_ATTENTE'}
                 le={(analyse as any).risquesResiduelsLe ? (analyse as any).risquesResiduelsLe.toISOString() : null}
                 commentaire={(analyse as any).risquesResiduelsCommentaire ?? null}
-                canAct={canAcceptResidualRisks(sessionUser, orgConfig.acceptationRisquesActive)}
+                statutAnalyse={analyse.statut}
+                resume={resumeRisquesResiduels(analyse.risques)}
+                risquesHref={riskTreatmentHref(analyse.id, analyse.methode)}
+                canAct={canAcceptResidualRisks(userWorkflow, orgConfig.acceptationRisquesActive)}
                 gelActive={orgConfig.gelApresAcceptationActive}
                 canReopen={editable}
                 locale={locale}

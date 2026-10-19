@@ -66,6 +66,8 @@ export const NOM_ALIAS_CODE: Record<string, FrameworkId> = {
   'tisax vda isa': 'TISAX',
   'ncsc caf': 'NCSC_CAF',
   'cyber assessment framework': 'NCSC_CAF',
+  'eidas': 'EIDAS',
+  'reglement eidas': 'EIDAS',
 }
 
 // Index normalisé des noms canoniques des cadres livrés (secours si absent des alias).

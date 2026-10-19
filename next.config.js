@@ -11,11 +11,14 @@ const nextConfig = {
   serverExternalPackages: ['@prisma/client', '@prisma/adapter-pg', 'pg', 'bcryptjs', '@react-pdf/renderer', 'nodemailer'],
 
   // ── Limite de taille des corps de requête ────────────────────────────────
-  // Protège contre les DoS par payload surdimensionné (import JSON, workshop)
-  // La limite Next.js par défaut est 4MB ; on la réduit à 2MB.
-  // Note : peut être surchargée par route via export const config = { api: { bodyParser: { sizeLimit: '...' } } }
-  // Next.js App Router ne supporte pas encore bodyParser global ici, mais ce
-  // commentaire documente la limite attendue côté reverse-proxy (Nginx/Traefik).
+  // Le proxy (src/proxy.ts) s'applique aussi à /api : Next tamponne le corps de chaque requête et
+  // le TRONQUE au-delà de `proxyClientMaxBodySize` (10 Mo par défaut). Un document de plus de 10 Mo
+  // (limite applicative : 25 Mo, MAX_DOCUMENT_SIZE de lib/document.ts) arrivait donc incomplet
+  // (« form_invalide »). 26 Mo = 25 Mo + l'enveloppe multipart. Les routes gardent leurs propres
+  // limites (taille par fichier, zip décompressé, nombre de lignes) ; Caddy borne aussi (Caddyfile).
+  experimental: {
+    proxyClientMaxBodySize: '26mb',
+  },
 
   headers: async () => [
     // ── Headers de sécurité globaux ───────────────────────────────────────
@@ -46,7 +49,7 @@ const nextConfig = {
         }] : []),
 
         // ── Content Security Policy ────────────────────────────────────────
-        // La CSP est désormais posée par le MIDDLEWARE (src/middleware.ts) pour
+        // La CSP est désormais posée par le PROXY (src/proxy.ts, ex-middleware) pour
         // permettre un `script-src` à nonce + strict-dynamic en production (issue
         // #108). Ne pas la redéfinir ici : deux en-têtes CSP ⇒ intersection stricte
         // qui casserait le rendu.

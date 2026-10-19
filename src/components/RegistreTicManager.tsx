@@ -10,6 +10,7 @@
 import { Plus, Download, Trash2, Pencil, AlertTriangle, ShieldAlert, ClipboardCheck, ChevronDown } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import TicContractImportPanel from '@/components/TicContractImportPanel'
 import { QUESTIONNAIRE_TIC, REPONSES_TIC, type ReponseQuestion, type ReponseTic } from '@/lib/tic-questionnaire'
@@ -92,7 +93,7 @@ export default function RegistreTicManager({ canManage }: { canManage: boolean }
     const res = await fetch(url, { method: editing ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, tierId: form.tierId || null }) })
     if (!res.ok) {
       const d = await res.json().catch(() => ({}))
-      setErr(d.error === 'reference_requise' || d.error === 'prestataire_requis' ? r.errorRequired : (d.error || 'Erreur'))
+      setErr(d.error === 'reference_requise' || d.error === 'prestataire_requis' ? r.errorRequired : apiErrorMessage(d.error, t, 'Erreur'))
       return
     }
     setShowForm(false); reload()
@@ -123,7 +124,7 @@ export default function RegistreTicManager({ canManage }: { canManage: boolean }
     }
     const res = await fetch(`/api/reglementaire/registre-tic/${a.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     setQBusy(false)
-    if (!res.ok) { const d = await res.json().catch(() => ({})); setErr(d.error || 'Erreur'); return }
+    if (!res.ok) { const d = await res.json().catch(() => ({})); setErr(apiErrorMessage(d.error, t, 'Erreur')); return }
     setOpenQ(null); reload()
   }
 

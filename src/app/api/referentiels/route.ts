@@ -1,12 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig, upsertOrgConfig } from '@/lib/org-config.server'
 import { getServerLocale } from '@/lib/i18n'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { requireSession } from '@/lib/route-guard.server'
+import { withAccess } from '@/lib/with-access.server'
 import { validateReferentielInput, cleanReferentielInput } from '@/lib/referentiel'
 import { listReferentiels } from '@/lib/referentiel.server'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -18,18 +17,15 @@ export const dynamic = 'force-dynamic'
 // le consultent en lecture.
 import { peutGererReferentiels } from '@/lib/permissions'
 
-async function ctx(session: { user: { id: string; role?: string } }) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  return { userId, userRole: scope.role, orgId: scope.activeOrgId }
-}
+// Écriture : organisation active, rôle effectif `peutGererReferentiels`, rate limit.
+const ECRITURE = { org: 'active', allow: peutGererReferentiels, rateLimit: { bucket: 'referentiels' } } as const
 
 // GET /api/referentiels — cadres livrés + référentiels custom de l'organisation.
+// Sans organisation active : { active: false } (pas de 400) → requireSession.
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+  const g = await requireSession()
+  if (g.error) return g.error
+  const { role: userRole, activeOrgId: orgId } = await getAnalyseScope(g.user.id, g.user.role)
   if (!orgId) return NextResponse.json({ active: false, referentiels: [] })
   const cfg = await getOrgConfig(orgId)
   if (!cfg.conformiteActive) return NextResponse.json({ active: false, referentiels: [] })
@@ -40,14 +36,10 @@ export async function GET() {
 }
 
 // POST /api/referentiels — crée un référentiel custom (PSSI, politique…).
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
-  if (!orgId) return NextResponse.json({ error: 'org_absente' }, { status: 400 })
+export const POST = withAccess(ECRITURE, async (req, { user, role: userRole, orgId }) => {
+  const userId = user.id
   const cfg = await getOrgConfig(orgId)
   if (!cfg.conformiteActive) return NextResponse.json({ error: 'module_inactif' }, { status: 403 })
-  if (!peutGererReferentiels(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
   const erreur = validateReferentielInput(body)
@@ -70,19 +62,15 @@ export async function POST(req: NextRequest) {
     details: { scope: 'referentiel', action: 'create', code: data.code },
   })
   return NextResponse.json(created, { status: 201 })
-}
+})
 
 // PATCH /api/referentiels — active/désactive un référentiel (BUILTIN ou CUSTOM)
 // pour l'organisation, par code. Stocké dans OrganizationConfig.referentielsDesactives.
 // { code: string, actif: boolean }
-export async function PATCH(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
-  if (!orgId) return NextResponse.json({ error: 'org_absente' }, { status: 400 })
+export const PATCH = withAccess(ECRITURE, async (req, { user, role: userRole, orgId }) => {
+  const userId = user.id
   const cfg = await getOrgConfig(orgId)
   if (!cfg.conformiteActive) return NextResponse.json({ error: 'module_inactif' }, { status: 403 })
-  if (!peutGererReferentiels(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
   const code = typeof body.code === 'string' ? body.code.trim() : ''
@@ -105,4 +93,4 @@ export async function PATCH(req: NextRequest) {
     details: { scope: 'referentiel', action: actif ? 'activer' : 'desactiver', code },
   })
   return NextResponse.json({ ok: true, code, actif })
-}
+})

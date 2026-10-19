@@ -6,20 +6,26 @@
 // (lib/incident), détection de doublons (lib/incident-dedup). Colonnes triables
 // et filtrables « façon tableur » via ColumnMenu (lib/table-sort + table-filter).
 // Un incident peut être promu en plan d'action (cf. TraitementPopover / conformité).
+// Liste paginée côté serveur (lot V1) : filtres, tri, recherche et page dans l'URL (lib/use-liste-paginee),
+// exécutés par GET /api/incidents?page= (lib/incidents-liste) ; tuiles calculées sur tous les incidents.
 
 import { Siren, Info, X, Copy } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
 import { INCIDENT_STATUTS, transitionAutorisee, type IncidentStatut } from '@/lib/incident'
 import ColumnMenu from '@/components/ColumnMenu'
-import { nextSort, sortRows, type SortState, type SortDir } from '@/lib/table-sort'
-import { distinctValues, applyColumnFilters, toggleColumnValue, onlyColumnValue, clearColumnFilter, type ColumnFilters } from '@/lib/table-filter'
-import { findIncidentDuplicates } from '@/lib/incident-dedup'
+import { nextSort, type SortState, type SortDir } from '@/lib/table-sort'
+import { toggleColumnValue, onlyColumnValue, clearColumnFilter, type ColumnFilters } from '@/lib/table-filter'
+import { findIncidentDuplicates, type IncidentDedupItem } from '@/lib/incident-dedup'
 import { todayInputDate } from '@/lib/form-defaults'
 import AutocompleteInput from '@/components/AutocompleteInput'
-import { mostFrequentString } from '@/lib/most-frequent'
+import { useListePaginee } from '@/lib/use-liste-paginee'
+import Pagination from '@/components/Pagination'
+import type { MetaPagination } from '@/lib/pagination'
+import { PREFIXE_COLONNE, lireFiltreColonne, ecrireFiltreColonne, libellesColonne, libellesDepuisCles, clesDepuisLibelles } from '@/lib/liste-colonnes'
+import { COLONNES_INCIDENTS, lireStatut, type SyntheseIncidents } from '@/lib/incidents-liste'
 import ChampsPersonnalisesFields from '@/components/ChampsPersonnalisesFields'
 import { usePersonnalisationChamps } from '@/components/usePersonnalisationChamps'
 import type { ChampsValeurs } from '@/lib/champs-perso'
@@ -35,7 +41,6 @@ import type { IncidentsConfig, IncidentsConfigRaw } from '@/lib/incidents-config
 import type { LignePerte, LigneRecuperation } from '@/lib/pertes'
 import FiltreEntite from '@/components/FiltreEntite'
 import { useReferentielEntites } from '@/lib/use-referentiel-entites'
-import { filtrerParEntite } from '@/lib/entites-filtre'
 
 interface Incident {
   id: string; intitule: string; description: string | null
@@ -96,25 +101,35 @@ const STATUT_BADGE: Record<string, string> = {
   REJETE: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300',
 }
 
-export default function IncidentsManager({ canQualify, canConfigure = false }: { canQualify: boolean; canConfigure?: boolean }) {
+export default function IncidentsManager({ canQualify, canConfigure = false, reglementaireActive = false }: {
+  canQualify: boolean; canConfigure?: boolean
+  /** Module Réglementaire actif : la fenêtre Déclaration renvoie vers l'évaluation DORA du registre (n° 46). */
+  reglementaireActive?: boolean
+}) {
   const { t, locale } = useTranslation()
   const n = t.incidents
-  // Filtre par statut piloté par l'URL (deep-link pilotage : ?statut=DECLARE).
-  const _sp = useSearchParams()
-  const _stInit = (_sp.get('statut') || '').toUpperCase()
-  const [filtreStatut, setFiltreStatut] = useState<string>(INCIDENT_STATUTS.includes(_stInit as IncidentStatut) ? _stInit : '')
-  const [sort, setSort] = useState<SortState | null>(null)
-  const onSort = (key: string) => setSort((s) => nextSort(s, key))
+  const liste = useListePaginee<{ incidents: Incident[]; config?: IncidentsConfig; pagination?: MetaPagination; synthese?: SyntheseIncidents }>('/api/incidents')
+  const incidents = useMemo(() => liste.data?.incidents ?? [], [liste.data])
+  const synthese = liste.data?.synthese ?? null
+  const loading = liste.loading && !liste.data
+  // Filtre par statut piloté par l'URL (deep-link pilotage : ?statut=DECLARE), appliqué par le serveur.
+  const filtreStatut = lireStatut(liste.param('statut'))
+  const setFiltreStatut = (v: string) => liste.definir({ statut: v || null })
+  // Tri des colonnes : dans l'URL (tri, ordre), exécuté par le serveur.
+  const triUrl = liste.param('tri')
+  const sort: SortState | null = triUrl && triUrl !== 'defaut' ? { key: triUrl, dir: liste.param('ordre') === 'desc' ? 'desc' : 'asc' } : null
+  const setSort = (s: SortState | null) => liste.definir({ tri: s?.key ?? null, ordre: s?.dir ?? null })
+  const onSort = (key: string) => setSort(nextSort(sort, key))
   const onSortDir = (key: string, dir: SortDir) => setSort({ key, dir })
-  const [colFilters, setColFilters] = useState<ColumnFilters>({})
-  // Filtre par entité du référentiel (lot E5) : lien ou texte libre identique, sous-entités incluses par défaut.
+  // Filtre par entité du référentiel (lot E5) : lien ou texte libre identique, sous-entités incluses par défaut (URL : entite, sousEntites=0).
   const entitesRef = useReferentielEntites()
-  const [filtreEntite, setFiltreEntite] = useState<{ id: string; sous: boolean }>({ id: '', sous: true })
-  const [incidents, setIncidents] = useState<Incident[]>([])
+  const filtreEntite = { id: liste.param('entite'), sous: liste.param('sousEntites') !== '0' }
+  const setFiltreEntite = (f: { id: string; sous: boolean }) => liste.definir({ entite: f.id || null, sousEntites: f.sous ? null : '0' })
   const [taxo, setTaxo] = useState<TaxonomieNode[]>([])
   const [procs, setProcs] = useState<Proc[]>([])
   const [risks, setRisks] = useState<Risk[]>([])
-  const [loading, setLoading] = useState(true)
+  // Incidents existants (liste légère) : doublons probables pendant la saisie d'une déclaration.
+  const [dedupBase, setDedupBase] = useState<IncidentDedupItem[]>([])
   const [decl, setDecl] = useState<DeclForm>(emptyDecl)
   const [showDecl, setShowDecl] = useState(false)
   const [qualId, setQualId] = useState<string | null>(null)
@@ -125,7 +140,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
   useEffect(() => { if (assocId) document.getElementById('incident-association')?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' }) }, [assocId])
   const [qual, setQual] = useState<QualForm>(EMPTY_QUAL)
   const [qualPertes, setQualPertes] = useState<{ pertes: LignePerte[]; recups: LigneRecuperation[] }>({ pertes: [], recups: [] })
-  const [cfg, setCfg] = useState<IncidentsConfig | null>(null)
+  const cfg: IncidentsConfig | null = liste.data?.config ?? null
   const [showConfig, setShowConfig] = useState(false)
   const [configMsg, setConfigMsg] = useState<string | null>(null)
   const [notifId, setNotifId] = useState<string | null>(null)
@@ -188,21 +203,28 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
     INITIALE: 'doraInitialeSoumiseLe', INTERMEDIAIRE: 'doraIntermediaireSoumiseLe', FINALE: 'doraFinaleSoumiseLe',
   }
 
-  async function reload() {
-    const [ii, tt, pp, rr] = await Promise.all([
-      fetch('/api/incidents').then(x => x.ok ? x.json() : { incidents: [] }),
+  // Référentiels (une fois) : taxonomie, processus, risques du registre (menu léger) ; la liste suit la pagination.
+  useEffect(() => {
+    void Promise.all([
       fetch('/api/taxonomie').then(x => x.ok ? x.json() : { taxonomie: [] }),
       fetch('/api/processus').then(x => x.ok ? x.json() : { processus: [] }),
-      fetch('/api/risk-items').then(x => x.ok ? x.json() : { risks: [] }),
-    ])
-    if (ii.config) setCfg(ii.config)
-    setIncidents(ii.incidents ?? []); setTaxo(tt.taxonomie ?? []); setProcs(pp.processus ?? [])
-    setRisks((rr.risks ?? []).map((r: Risk) => ({ id: r.id, intitule: r.intitule })))
-    setLoading(false)
-  }
-  useEffect(() => { reload() }, [])
+      fetch('/api/risk-items?vue=options').then(x => x.ok ? x.json() : { risks: [] }),
+    ]).then(([tt, pp, rr]) => {
+      setTaxo(tt.taxonomie ?? []); setProcs(pp.processus ?? [])
+      setRisks((rr.risks ?? []).map((r: Risk) => ({ id: r.id, intitule: r.intitule })))
+    })
+  }, [])
+  // Liste légère des incidents chargée à l'ouverture du formulaire de déclaration (détection de doublons).
+  useEffect(() => {
+    if (!showDecl) return
+    let actif = true
+    fetch('/api/incidents?vue=options').then(x => x.ok ? x.json() : { incidents: [] })
+      .then((d: { incidents?: IncidentDedupItem[] }) => { if (actif) setDedupBase(d.incidents ?? []) }).catch(() => {})
+    return () => { actif = false }
+  }, [showDecl])
+  const reload = liste.recharger
 
-  function err(code: string) { return (n.errors as Record<string, string>)[code] ?? (n.l1b.errors as Record<string, string>)[code] ?? (t.personnalisation.errors as Record<string, string>)[code] ?? code }
+  function err(code: string) { return (n.errors as Record<string, string>)[code] ?? (n.l1b.errors as Record<string, string>)[code] ?? (t.personnalisation.errors as Record<string, string>)[code] ?? apiErrorMessage(code, t, code) }
 
   async function declarer() {
     if (!decl.intitule.trim()) { setError(err('intitule_requis')); return }
@@ -348,7 +370,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
     const res = await fetch('/api/incidents/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(raw) })
     const data = await res.json().catch(() => ({}))
     setBusy(false)
-    if (!res.ok) { setConfigMsg(n.configError.replace('{error}', String(data.error ?? res.status))); return }
+    if (!res.ok) { setConfigMsg(n.configError.replace('{error}', apiErrorMessage(data.error, t, String(res.status)))); return }
     setConfigMsg(n.configSaved); reload()
   }
 
@@ -377,49 +399,49 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
     await fetch(`/api/incidents/${id}`, { method: 'DELETE' }); reload()
   }
 
-  const INC_STATUT_RANK: Record<string, number> = Object.fromEntries(INCIDENT_STATUTS.map((s, i) => [s, i]))
-  const incAccessor = (i: Incident, key: string): unknown => {
-    switch (key) {
-      case 'incident': return i.intitule
-      case 'category': return taxoLabel(i.taxonomieCode)
-      case 'process': return i.processusNom
-      case 'perte': return i.perteNette
-      case 'risque': return (i.risques ?? []).map(r => r.intitule).join(' · ')
-      case 'statut': return INC_STATUT_RANK[i.statut] ?? 99
-      default: return ''
+  // Filtres de colonnes « façon tableur » : le serveur fournit les clés distinctes (code, nom, intitulés, statut),
+  // l'écran en affiche les libellés et place les clés autorisées dans l'URL (col_<colonne>).
+  const libelleCol = (col: string) => (cle: string): string => {
+    switch (col) {
+      case 'category': return taxoLabel(cle || null)
+      case 'statut': return (n.statuts as Record<string, string>)[cle] ?? cle
+      default: return cle
     }
   }
-  const incDisplay = (i: Incident, key: string): unknown => {
-    switch (key) {
-      case 'category': return taxoLabel(i.taxonomieCode)
-      case 'process': return i.processusNom ?? ''
-      case 'risque': return (i.risques ?? []).map(r => r.intitule).join(' · ')
-      case 'statut': return (n.statuts as Record<string, string>)[i.statut] ?? i.statut
-      default: return ''
-    }
+  const clesCol = (col: string): string[] => synthese?.valeurs[col as (typeof COLONNES_INCIDENTS)[number]] ?? []
+  const distinctInc = (col: string) => libellesColonne(clesCol(col), libelleCol(col))
+  const colFilters: ColumnFilters = {}
+  for (const col of COLONNES_INCIDENTS) {
+    const autorises = libellesDepuisCles(lireFiltreColonne(liste.param(PREFIXE_COLONNE + col) || null), libelleCol(col))
+    if (autorises) colFilters[col] = autorises
   }
-  const baseIncidents = filtrerParEntite(filtreStatut ? incidents.filter(i => i.statut === filtreStatut) : incidents, entitesRef, filtreEntite.id, filtreEntite.sous)
-  const distinctInc = (key: string) => distinctValues(baseIncidents, (i) => incDisplay(i, key))
-  const incColFiltered = applyColumnFilters(baseIncidents, colFilters, incDisplay)
-  const visibleIncidents = sort ? sortRows(incColFiltered, sort, incAccessor) : incColFiltered
+  // Plusieurs bascules dans le même geste (« Aucun ») se cumulent avant que l'URL ne soit relue.
+  const filtresEnCours = useRef<ColumnFilters | null>(null)
+  const setColFilters = (maj: (f: ColumnFilters) => ColumnFilters) => {
+    const suivant = maj(filtresEnCours.current ?? colFilters)
+    filtresEnCours.current = suivant
+    queueMicrotask(() => { filtresEnCours.current = null })
+    liste.definir(Object.fromEntries(COLONNES_INCIDENTS.map(col => [PREFIXE_COLONNE + col, ecrireFiltreColonne(clesDepuisLibelles(clesCol(col), libelleCol(col), suivant[col]))])))
+  }
+  const visibleIncidents = incidents
   const onColToggle = (key: string, value: string) => setColFilters((f) => toggleColumnValue(f, key, value, distinctInc(key)))
   const onColOnly = (key: string, value: string) => setColFilters((f) => onlyColumnValue(f, key, value))
   const onColClear = (key: string) => setColFilters((f) => clearColumnFilter(f, key))
   const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
   // Suggestions d'entités à partir des incidents déjà saisis (org courante).
-  const defaultEntite = mostFrequentString(incidents.map(i => i.entite))
-  const totalPertes = incidents.reduce((s, i) => s + (i.perteNette ?? 0), 0)
-  const ouverts = incidents.filter(i => i.statut === 'DECLARE').length
+  const defaultEntite = synthese?.entiteFrequente ?? ''
+  const totalPertes = synthese?.perteNetteTotale ?? 0
+  const ouverts = synthese?.aQualifier ?? 0
 
   // Doublons probables du signalement en cours de saisie (avant création) — calculés
-  // côté client sur les incidents déjà chargés (1 événement = 1 enregistrement).
+  // côté client sur la liste légère des incidents (1 événement = 1 enregistrement).
   const declDoublons = useMemo(() => {
     if (decl.intitule.trim().length < 4) return []
     return findIncidentDuplicates(
       { id: 'nouveau', intitule: decl.intitule, statut: 'DECLARE', dateSurvenance: decl.dateSurvenance || null, dateDetection: decl.dateDetection || null, processusId: decl.processusId || null, entite: decl.entite || null },
-      incidents.map(i => ({ id: i.id, intitule: i.intitule, statut: i.statut, dateSurvenance: i.dateSurvenance, dateDetection: i.dateDetection, processusId: i.processusId, entite: i.entite })),
+      dedupBase,
     ).slice(0, 4)
-  }, [decl.intitule, decl.dateSurvenance, decl.dateDetection, decl.processusId, decl.entite, incidents])
+  }, [decl.intitule, decl.dateSurvenance, decl.dateDetection, decl.processusId, decl.entite, dedupBase])
 
   return (
     <div>
@@ -454,7 +476,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
 
       {!loading && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
-          <button type="button" onClick={() => setFiltreStatut('')} className="text-left"><Tile label={n.total} value={incidents.length} /></button>
+          <button type="button" onClick={() => setFiltreStatut('')} className="text-left"><Tile label={n.total} value={synthese?.total ?? incidents.length} /></button>
           <button type="button" onClick={() => setFiltreStatut(filtreStatut === 'DECLARE' ? '' : 'DECLARE')} className="text-left" title={n.dedup.queueHint}>
             <Tile label={n.aQualifier} value={ouverts} tone={ouverts > 0 ? 'amber' : undefined} />
           </button>
@@ -514,7 +536,10 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
         </div>
       )}
 
-      <div className="mb-3"><FiltreEntite entites={entitesRef} valeur={filtreEntite.id} sousEntites={filtreEntite.sous} onChange={(id, sous) => setFiltreEntite({ id, sous })} /></div>
+      <div className="mb-3 flex flex-wrap items-end gap-3">
+        <input type="search" value={liste.recherche} onChange={e => liste.setRecherche(e.target.value)} placeholder={t.search} aria-label={t.search} className={`${inp} w-full sm:w-72`} />
+        <FiltreEntite entites={entitesRef} valeur={filtreEntite.id} sousEntites={filtreEntite.sous} onChange={(id, sous) => setFiltreEntite({ id, sous })} />
+      </div>
       {filtreStatut && (
         <div className="mb-3 flex items-center gap-2 text-sm">
           <span className="px-2 py-0.5 rounded-full bg-ebios-100 text-ebios-800 dark:bg-ebios-500/15 dark:text-ebios-300 font-medium">{(n.statuts as Record<string,string>)[filtreStatut] ?? filtreStatut}</span>
@@ -616,6 +641,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
           </tbody>
         </table>
       </div>
+      <Pagination pagination={liste.pagination} onPage={page => liste.definir({ page })} onTaille={taille => liste.definir({ taille })} />
 
       {/* Association à des risques du registre (cas le plus courant ; « Créer le risque » si aucun ne correspond) */}
       {canQualify && assocId && (() => {
@@ -722,7 +748,8 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
         if (!i) return null
         return <DeclarationModal incident={{ id: i.id, intitule: i.intitule, dora: i.doraReporting ?? null, horloges: i.l1?.horloges ?? [], attributs: i.attributs, catalogueKey: i.catalogueKey ?? null }}
           available={(cfg?.regimes ?? []).filter(r => r.actif).map(r => ({ code: r.code, label: r.label, labelKey: r.labelKey, autorite: r.autorite }))}
-          canQualify={canQualify} onClose={() => setDeclId(null)} onChanged={() => { void reload() }} />
+          canQualify={canQualify} onClose={() => setDeclId(null)} onChanged={() => { void reload() }}
+          doraEvaluationHref={reglementaireActive ? `/reglementaire?incident=${encodeURIComponent(i.id)}` : null} />
       })()}
 
       {/* Détail de la déclaration DORA (3 phases) — art. 19 */}

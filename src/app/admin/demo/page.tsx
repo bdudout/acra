@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar'
 import AdminNav from '@/components/AdminNav'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 
 interface DemoCfg {
   inactivityDays: number
@@ -85,7 +86,7 @@ export default function DemoAdminPage() {
     })
     setSavingPC(false)
     if (res.ok) { const data = await res.json(); setPc({ publicNotice: data.publicNotice ?? '', publicContactUrl: data.publicContactUrl ?? '', publicContactLabel: data.publicContactLabel ?? '' }); setSavedPC(true) }
-    else { const data = await res.json().catch(() => ({})); setError(data.error ?? 'Erreur') }
+    else { const data = await res.json().catch(() => ({})); setError(apiErrorMessage(data.error, t, 'Erreur')) }
   }
 
   async function savePublicSignup(next: boolean) {
@@ -95,7 +96,7 @@ export default function DemoAdminPage() {
     })
     setSavingPS(false)
     if (res.ok) { const data = await res.json(); setPublicSignup(!!data.publicSignupActive) }
-    else { const data = await res.json().catch(() => ({})); setError(data.error ?? 'Erreur') }
+    else { const data = await res.json().catch(() => ({})); setError(apiErrorMessage(data.error, t, 'Erreur')) }
   }
 
   function set<K extends keyof DemoCfg>(key: K, value: number) {
@@ -111,7 +112,7 @@ export default function DemoAdminPage() {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg),
       })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) { setError(data.error ?? 'Erreur'); return }
+      if (!res.ok) { setError(apiErrorMessage(data.error, t, 'Erreur')); return }
       applyData(data); setSaved(true)
     } finally { setSaving(false) }
   }
@@ -124,7 +125,7 @@ export default function DemoAdminPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'purge' }),
       })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) { setError(data.error ?? 'Erreur'); return }
+      if (!res.ok) { setError(apiErrorMessage(data.error, t, 'Erreur')); return }
       applyData({ config: cfg!, activeOrgs: data.activeOrgs, upcoming: data.upcoming })
     } finally { setPurging(false) }
   }

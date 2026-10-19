@@ -4,21 +4,19 @@
 //        par risque source ; tiers de la source recopiés sans doublon (oui par défaut).
 // Gardes : cible = analyse PROJET_360 éditable et non gelée (guardDirectRisk) ; la
 // source doit être accessible à l'utilisateur ET de la même organisation.
+// Session (et rate limit du POST) : withAccess (org 'none') ; garde guardDirectRisk inchangée.
 
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import type { UserRole } from '@/lib/permissions'
+import type { SessionUser } from '@/lib/route-guard.server'
+import { withAccess } from '@/lib/with-access.server'
 import { guardDirectRisk } from '@/lib/analyse-direct-risk.server'
 import { sourcesCyberWhere } from '@/lib/projet360-sources.server'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { planCyberImport, planTiersImport } from '@/lib/projet360'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
-type Params = { params: Promise<{ id: string }> }
 
 const SOURCE_RISK_SELECT = {
   id: true, nom: true, description: true, gravite: true, vraisemblance: true,
@@ -29,12 +27,8 @@ const TIERS_SELECT = {
   nom: true, type: true, description: true, tierId: true, dependance: true, penetration: true, maturite: true, confiance: true, critique: true, rang: true,
 } as const
 
-async function context(params: Params['params']) {
-  const session = await getServerSession(authOptions)
-  const user = session?.user as { id?: string; role?: string } | undefined
-  if (!user?.id) return { ok: false as const, res: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
-  const role = (user.role ?? 'ANALYSTE') as UserRole
-  const { id } = await params
+async function context(id: string, user: SessionUser) {
+  const role = user.role
   const g = await guardDirectRisk(id, user.id, role)
   if (!g.ok) return { ok: false as const, res: NextResponse.json({ error: g.error }, { status: g.status }) }
   if (g.analyse.methode !== 'PROJET_360') return { ok: false as const, res: NextResponse.json({ error: 'methode_non_360' }, { status: 400 }) }
@@ -48,8 +42,8 @@ async function context(params: Params['params']) {
 // GET : sans paramètre ou avec ?q=…, liste LÉGÈRE des analyses sources (recherche par nom, 20 au plus, nombre de
 // risques et de tiers) ; avec ?source=<id>, les risques de cette seule analyse (marqués « déjà importé »). On ne charge
 // jamais tous les risques de toutes les analyses.
-export async function GET(req: NextRequest, { params }: Params) {
-  const ctx = await context(params)
+export const GET = withAccess({ org: 'none' }, async (req, { user, params }) => {
+  const ctx = await context(params.id, user)
   if (!ctx.ok) return ctx.res
   const sp = req.nextUrl?.searchParams ?? new URLSearchParams()
   const sourceId = sp.get('source')
@@ -74,13 +68,11 @@ export async function GET(req: NextRequest, { params }: Params) {
     take: 20,
   })
   return NextResponse.json({ sources: sources.map(({ _count, ...a }) => ({ ...a, nbRisques: _count.risques, nbTiers: _count.partiesPrenantes })) })
-}
+})
 
-export async function POST(req: NextRequest, { params }: Params) {
-  const ctx = await context(params)
+export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'import-cyber' } }, async (req, { user, params }) => {
+  const ctx = await context(params.id, user)
   if (!ctx.ok) return ctx.res
-  const rl = await rateLimit(`import-cyber:${ctx.userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
-  if (!rl.allowed) return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
   const body = await req.json().catch(() => ({})) as { sourceAnalyseId?: unknown; risqueIds?: unknown; importerTiers?: unknown }
   const sourceAnalyseId = typeof body.sourceAnalyseId === 'string' ? body.sourceAnalyseId : ''
   const risqueIds = Array.isArray(body.risqueIds) ? body.risqueIds.filter((x): x is string => typeof x === 'string').slice(0, 500) : []
@@ -113,4 +105,4 @@ export async function POST(req: NextRequest, { params }: Params) {
     ip: getClientIp(req), details: { scope: 'import-cyber', sourceAnalyseId: source.id, imported: result.count, tiers },
   })
   return NextResponse.json({ imported: result.count, tiers }, { status: 201 })
-}
+})

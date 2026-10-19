@@ -1,46 +1,36 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
-import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { type UserRole } from '@/lib/permissions'
 import { cleanArrangementInput, validateArrangementInput } from '@/lib/registre-tic'
 import { peutGererRegistreTic } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { resolveTierIdInput } from '@/lib/tier-registry.server'
 
 export const dynamic = 'force-dynamic'
-type Params = { params: Promise<{ id: string }> }
 
-async function scopeGuard(session: { user: { id: string; role?: string } }, id: string) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  const orgId = scope.activeOrgId
-  if (!orgId) return { error: NextResponse.json({ error: 'org_absente' }, { status: 400 }) }
+const access = { org: 'active', allow: peutGererRegistreTic, rateLimit: { bucket: 'registre-tic' } } as const
+
+/** Module réglementaire actif et arrangement de l'organisation active (404 sinon). */
+async function checkArrangement(orgId: string, id: string): Promise<NextResponse | null> {
   const cfg = await getOrgConfig(orgId)
-  if (!cfg.reglementaireActive) return { error: NextResponse.json({ error: 'module_inactif' }, { status: 403 }) }
-  if (!peutGererRegistreTic(scope.role)) return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
+  if (!cfg.reglementaireActive) return NextResponse.json({ error: 'module_inactif' }, { status: 403 })
   const row = await prisma.arrangementTic.findFirst({ where: { id, organizationId: orgId }, select: { id: true } })
-  if (!row) return { error: NextResponse.json({ error: 'introuvable' }, { status: 404 }) }
-  return { userId, userRole: scope.role, orgId }
+  if (!row) return NextResponse.json({ error: 'introuvable' }, { status: 404 })
+  return null
 }
 
 // PATCH /api/reglementaire/registre-tic/[id] — met à jour un arrangement (remplacement).
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const g = await scopeGuard(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in g) return g.error
+export const PATCH = withAccess(access, async (req, { user, role, orgId, params: { id } }) => {
+  const refus = await checkArrangement(orgId, id)
+  if (refus) return refus
 
   const body = await req.json().catch(() => ({}))
   const erreur = validateArrangementInput(body)
   if (erreur) return NextResponse.json({ error: erreur }, { status: 400 })
   const data = cleanArrangementInput(body)
-  const tierInput = await resolveTierIdInput(body, g.orgId)
+  const tierInput = await resolveTierIdInput(body, orgId)
   if (!tierInput.ok) return NextResponse.json({ error: 'tier_invalide' }, { status: 400 })
 
   const updated = await prisma.arrangementTic.update({
@@ -48,24 +38,21 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     data: { ...data, ...(tierInput.provided ? { tierId: tierInput.tierId } : {}), questionnaire: (data.questionnaire ?? []) as unknown as Prisma.InputJsonValue },
   })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
-    userId: g.userId, userRole: g.userRole, organizationId: g.orgId, ip: getClientIp(req),
+    userId: user.id, userRole: role, organizationId: orgId, ip: getClientIp(req),
     details: { scope: 'registre-tic', action: 'update', id },
   })
   return NextResponse.json(updated)
-}
+})
 
 // DELETE /api/reglementaire/registre-tic/[id] — supprime un arrangement.
-export async function DELETE(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const g = await scopeGuard(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in g) return g.error
+export const DELETE = withAccess(access, async (req, { user, role, orgId, params: { id } }) => {
+  const refus = await checkArrangement(orgId, id)
+  if (refus) return refus
 
   await prisma.arrangementTic.delete({ where: { id } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
-    userId: g.userId, userRole: g.userRole, organizationId: g.orgId, ip: getClientIp(req),
+    userId: user.id, userRole: role, organizationId: orgId, ip: getClientIp(req),
     details: { scope: 'registre-tic', action: 'delete', id },
   })
   return NextResponse.json({ ok: true })
-}
+})

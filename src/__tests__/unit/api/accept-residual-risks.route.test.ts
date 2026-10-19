@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('next-auth', () => ({ getServerSession: vi.fn() }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
-vi.mock('@/lib/prisma', () => ({ prisma: { analyse: { findFirst: vi.fn(), update: vi.fn() } } }))
+vi.mock('@/lib/prisma', () => ({ prisma: { analyse: { findFirst: vi.fn(), update: vi.fn() }, risque: { findMany: vi.fn() } } }))
 vi.mock('@/lib/org-context.server', () => ({
   analyseAccessWhere: vi.fn(async () => ({})),
   getEffectiveRoleForOrg: vi.fn(),
@@ -27,8 +27,9 @@ const params = { params: Promise.resolve({ id: 'a1' }) }
 beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(prisma.analyse.findFirst).mockResolvedValue({
-    id: 'a1', nom: 'A', organizationId: 'orgX', deletedAt: null, risquesResiduelsStatut: 'EN_ATTENTE',
+    id: 'a1', nom: 'A', organizationId: 'orgX', deletedAt: null, statut: 'SOUMIS', risquesResiduelsStatut: 'EN_ATTENTE',
   } as never)
+  vi.mocked(prisma.risque.findMany).mockResolvedValue([{ niveauResiduel: 4 }] as never)
   vi.mocked(prisma.analyse.update).mockResolvedValue({
     id: 'a1', risquesResiduelsStatut: 'ACCEPTES', risquesResiduelsPar: 'u1', risquesResiduelsLe: new Date(), risquesResiduelsCommentaire: null,
   } as never)
@@ -56,5 +57,49 @@ describe('POST /api/analyses/[id]/accept-residual-risks — RBAC rôle effectif 
     vi.mocked(getEffectiveRoleForOrg).mockResolvedValue('LECTEUR')
     const res = await POST(req({ action: 'ACCEPTER' }), params)
     expect(res.status).toBe(403)
+  })
+})
+
+// Recette n° 56 : acceptation (ou refus) seulement sur une analyse soumise / approuvée dont
+// tous les risques résiduels sont cotés ; code d'erreur stable, traduit côté interface.
+describe('POST /api/analyses/[id]/accept-residual-risks — préconditions (n° 56)', () => {
+  beforeEach(() => {
+    setSession('DIRECTION_METIER')
+    vi.mocked(getEffectiveRoleForOrg).mockResolvedValue('DIRECTION_METIER')
+  })
+  const analyseEn = (statut: string) => vi.mocked(prisma.analyse.findFirst).mockResolvedValue({
+    id: 'a1', nom: 'A', organizationId: 'orgX', deletedAt: null, statut, risquesResiduelsStatut: 'EN_ATTENTE',
+  } as never)
+
+  it('analyse EN_COURS → 400 ANALYSE_NON_SOUMISE (ACCEPTER et REFUSER)', async () => {
+    analyseEn('EN_COURS')
+    for (const action of ['ACCEPTER', 'REFUSER']) {
+      const res = await POST(req({ action, commentaire: 'motif' }), params)
+      expect(res.status).toBe(400)
+      expect((await res.json()).error).toBe('ANALYSE_NON_SOUMISE')
+    }
+    expect(prisma.analyse.update).not.toHaveBeenCalled()
+  })
+
+  it('risque non coté → 400 RISQUES_NON_COTES', async () => {
+    analyseEn('APPROUVE')
+    vi.mocked(prisma.risque.findMany).mockResolvedValue([{ niveauResiduel: 4 }, { niveauResiduel: null }] as never)
+    const res = await POST(req({ action: 'ACCEPTER' }), params)
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toBe('RISQUES_NON_COTES')
+    expect(prisma.analyse.update).not.toHaveBeenCalled()
+  })
+
+  it('analyse APPROUVE, risques cotés → 200', async () => {
+    analyseEn('APPROUVE')
+    const res = await POST(req({ action: 'ACCEPTER' }), params)
+    expect(res.status).toBe(200)
+  })
+
+  it('RÉINITIALISER reste possible quel que soit l\'état', async () => {
+    analyseEn('EN_COURS')
+    vi.mocked(prisma.analyse.update).mockResolvedValue({ id: 'a1', risquesResiduelsStatut: 'EN_ATTENTE' } as never)
+    const res = await POST(req({ action: 'REINITIALISER' }), params)
+    expect(res.status).toBe(200)
   })
 })

@@ -16,6 +16,7 @@
  *  • ReCyF (ANSSI 2026)            (20 objectifs — transposition NIS2 art. 21)
  *  • TISAX / VDA-ISA v6            (25 objectifs — filière automobile / OEM)
  *  • NCSC CAF v4.0                 (14 principes, objectifs A–D — Royaume-Uni)
+ *  • eIDAS (UE 910/2014 mod. 2024/1183) (23 exigences — prestataires de services de confiance)
  *  • CUSTOM                        (contrôles définis par l'analyste)
  */
 import type { Locale } from '@/lib/i18n'
@@ -29,6 +30,7 @@ import {
   RGS_CONTROLES, RGS_CATEGORIES,
   RECYF_CONTROLES, RECYF_CATEGORIES,
   TISAX_CONTROLES, TISAX_CATEGORIES,
+  EIDAS_CONTROLES, EIDAS_CATEGORIES,
   NIST_CSF_CONTROLES, NIST_CSF_CATEGORIES,
   CIS_V8_CONTROLES, CIS_V8_CATEGORIES,
   HDS_CONTROLES, HDS_CATEGORIES,
@@ -70,7 +72,7 @@ export interface Framework {
 
 // ─── Mapping id → label pour le sélecteur ────────────────────────────────────
 
-export const FRAMEWORK_IDS = ['ISO27001', 'NIST_CSF', 'NIST_800_53', 'CIS_V8', 'ANSSI_HYG', 'HDS', 'PCI_DSS', 'DORA', 'IEC_62443', 'SOC2', 'NIST_SSDF', 'RGS', 'RECYF', 'TISAX', 'NCSC_CAF', 'CUSTOM'] as const
+export const FRAMEWORK_IDS = ['ISO27001', 'NIST_CSF', 'NIST_800_53', 'CIS_V8', 'ANSSI_HYG', 'HDS', 'PCI_DSS', 'DORA', 'IEC_62443', 'SOC2', 'NIST_SSDF', 'RGS', 'RECYF', 'TISAX', 'NCSC_CAF', 'EIDAS', 'CUSTOM'] as const
 /** Identifiant d'un référentiel-cadre livré (ISO27001, NIST_CSF, DORA, PCI_DSS, CUSTOM…). */
 export type FrameworkId = typeof FRAMEWORK_IDS[number]
 
@@ -93,6 +95,7 @@ export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string;
   RECYF:      { nom: 'ReCyF',                version: 'ANSSI 2026', icon: '🇫🇷', cible: 'Entités NIS2 (EEI/EE) — transposition opérationnelle française' },
   TISAX:      { nom: 'TISAX / VDA-ISA',      version: 'VDA-ISA v6', icon: '🚗', cible: 'Filière automobile — fournisseurs/équipementiers (exigence OEM)' },
   NCSC_CAF:   { nom: 'NCSC Cyber Assessment Framework', version: 'v4.0', icon: '🇬🇧', cible: 'Services essentiels et opérateurs critiques (Royaume-Uni)' },
+  EIDAS:      { nom: 'eIDAS — prestataires de services de confiance', version: 'UE 910/2014 + 2022/2555, 2024/1183 (CELEX 02014R0910, 18.10.2024)', icon: '🔏', cible: 'Prestataires de services de confiance (signature, cachet, horodatage, envoi recommandé électronique), qualifiés ou non' },
   CUSTOM:     { nom: 'Référentiel custom',   version: '',         icon: '⚙️', cible: 'Contrôles définis par l\'analyste' },
 }
 
@@ -247,6 +250,7 @@ export function getFrameworkControles(frameworkId: string, customControles?: any
       case 'RGS':       return d.RGS_CONTROLES
       case 'RECYF':     return d.RECYF_CONTROLES
       case 'TISAX':     return d.TISAX_CONTROLES
+      case 'EIDAS':     return d.EIDAS_CONTROLES
       case 'NIST_CSF':    return d.NIST_CSF_CONTROLES
       case 'NIST_800_53': return d.NIST_800_53_CONTROLES
       case 'CIS_V8':      return d.CIS_V8_CONTROLES
@@ -275,6 +279,7 @@ export function getFrameworkControles(frameworkId: string, customControles?: any
     case 'RECYF':       return RECYF_CONTROLES
     case 'TISAX':       return TISAX_CONTROLES
     case 'NCSC_CAF':    return NCSC_CAF_CONTROLES
+    case 'EIDAS':       return EIDAS_CONTROLES
     case 'CUSTOM':      return Array.isArray(customControles) ? customControles : []
     default:            return []
   }
@@ -293,6 +298,7 @@ export function getFrameworkCategories(frameworkId: string, locale?: Locale): Re
       case 'RGS':       return d.RGS_CATEGORIES
       case 'RECYF':     return d.RECYF_CATEGORIES
       case 'TISAX':     return d.TISAX_CATEGORIES
+      case 'EIDAS':     return d.EIDAS_CATEGORIES
       case 'NIST_CSF':    return d.NIST_CSF_CATEGORIES
       case 'NIST_800_53': return d.NIST_800_53_CATEGORIES
       case 'CIS_V8':      return d.CIS_V8_CATEGORIES
@@ -320,6 +326,7 @@ export function getFrameworkCategories(frameworkId: string, locale?: Locale): Re
     case 'RECYF':       return RECYF_CATEGORIES
     case 'TISAX':       return TISAX_CATEGORIES
     case 'NCSC_CAF':    return NCSC_CAF_CATEGORIES
+    case 'EIDAS':       return EIDAS_CATEGORIES
     case 'CUSTOM':      return { CUSTOM: { label: 'Contrôles personnalisés', icon: '⚙️', color: 'text-gray-700', bg: 'bg-gray-50' } }
     default:            return {}
   }
@@ -384,7 +391,12 @@ export function refineFrameworksBySousSecteur(base: FrameworkId[], sousSecteur?:
   if (!s) return base
   let priority: FrameworkId[] = []
   // Services postaux : machines de tri et convoyeurs (courrier, colis) ; encaissements par carte au guichet (réseau).
-  if (s === 'postal-courrier' || s === 'postal-colis') priority = ['IEC_62443']
+  // Prestataires de services de confiance (lot L9) et identité numérique / vérification
+  // d'identité à distance (décision utilisateur) : exigences du règlement eIDAS
+  // (UE 910/2014 consolidé au 18.10.2024, art. 19 bis, 20, 21 et 24 — dont § 1 bis
+  // et 1 ter de l'art. 24 sur les méthodes de vérification d'identité).
+  if (s === 'numerique-confiance' || s === 'numerique-identite') priority = ['EIDAS']
+  else if (s === 'postal-courrier' || s === 'postal-colis') priority = ['IEC_62443']
   else if (s === 'postal-reseau') priority = ['PCI_DSS']
   else if (/(editeur|logiciel|sih|saas|software)/.test(s)) priority = ['NIST_SSDF', 'SOC2']
   else if (/(fintech|paiement|payment|monetique)/.test(s)) priority = ['PCI_DSS']

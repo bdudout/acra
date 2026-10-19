@@ -10,6 +10,7 @@ import { AlertTriangle, CheckCircle2, ClipboardList, Users } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { formatDate } from '@/lib/format'
 import {
   ROLE_LABELS, ROLE_COLORS, PERMISSION_LABELS, PERMISSION_DESCRIPTIONS,
@@ -114,7 +115,7 @@ export default function AccessPanel({
         body: JSON.stringify({ email: inviteEmail.trim(), permission: invitePerm }),
       })
       const data = await res.json()
-      if (!res.ok) { setInviteError(data.error); return }
+      if (!res.ok) { setInviteError(apiErrorMessage(data.error, t, t.error)); return }
       setAccès(prev => {
         const exists = prev.find(a => a.userId === data.userId)
         return exists ? prev.map(a => a.userId === data.userId ? data : a) : [...prev, data]
@@ -146,7 +147,7 @@ export default function AccessPanel({
         body: JSON.stringify({ action, commentaire: commentaire || undefined }),
       })
       const data = await res.json()
-      if (!res.ok) { setApprovalError((t.projet360.approvalErrors as Record<string, string>)[data.error] ?? data.error); return }
+      if (!res.ok) { setApprovalError((t.projet360.approvalErrors as Record<string, string>)[data.error] ?? apiErrorMessage(data.error, t, t.error)); return }
       if (dual && Array.isArray(data.approbations)) setApprobations(data.approbations)
       // Mise à jour locale immédiate pour un feedback rapide
       setStatut(data.statut)

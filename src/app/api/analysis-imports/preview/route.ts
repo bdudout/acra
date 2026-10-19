@@ -1,9 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { optionsStructure } from '@/lib/org-config.server'
-import { getServerSession } from 'next-auth'
 import { z } from 'zod'
-import { authOptions } from '@/lib/auth'
-import { canCreateAnalyse, type UserRole } from '@/lib/permissions'
+import { canCreateAnalyse } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { rateLimit, rateLimitHeaders, LIMIT_EXCEL_PARSE } from '@/lib/rate-limit'
 import { checkTabularUpload } from '@/lib/import-file-format'
@@ -14,11 +13,11 @@ import { apercuClasseur } from '@/lib/analysis-import-classeur.server'
 const schema = z.object({ filename: z.string().max(255), data: z.string().min(1).max(14_000_000), organizationId: z.string().trim().min(1).max(191).optional() })
 
 /** Prévisualisation Excel sans persistance : première étape obligatoire de l'import historique. */
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const globalRole = ((session.user as { role?: UserRole }).role ?? 'LECTEUR') as UserRole
+// Organisation cible du corps (sinon active) : rôle effectif résolu dans le handler (`org: 'none'`).
+// Débit `excel-parse` vérifié après le contrôle de format (code dédié `excel_rate_limited`) : gardé ici.
+export const POST = withAccess({ org: 'none' }, async (req, { user }) => {
+  const userId = user.id
+  const globalRole = user.role
   const scope = await getAnalyseScope(userId, globalRole)
   let body: z.infer<typeof schema>
   try { body = schema.parse(await req.json()) } catch { return NextResponse.json({ error: 'excel_file_invalid' }, { status: 400 }) }
@@ -39,4 +38,4 @@ export async function POST(req: NextRequest) {
     const { workbook } = loaded
     return NextResponse.json({ filename: body.filename, sheets: apercuClasseur(workbook) })
   } catch { return NextResponse.json({ error: 'excel_workbook_unreadable' }, { status: 422 }) }
-}
+})

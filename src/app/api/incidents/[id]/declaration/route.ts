@@ -1,7 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { type UserRole } from '@/lib/permissions'
 import { peutQualifier, loadIncidentInScope } from '@/lib/incident-access.server'
@@ -11,18 +9,16 @@ import { buildDoraReportJson, buildNotificationJson, cleanDeclaration, deriveDec
 import { buildDeclarationWorkbook, type DeclarationExport, type ExportLang } from '@/lib/incident-declaration-xlsx'
 import type { DoraCriteres } from '@/lib/dora'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { type SessionUser } from '@/lib/route-guard.server'
+import { withAccess } from '@/lib/with-access.server'
 
 export const dynamic = 'force-dynamic'
 
-type Params = { params: Promise<{ id: string }> }
-
 // Déclaration à une autorité : compléments de champs (ITS DORA) et fichiers JSON d'aide à la déclaration. 2ᵉ ligne seulement.
 // Rien n'est transmis : l'entité dépose elle-même auprès de l'autorité compétente.
-async function garde(params: Params['params']) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
-  const { id } = await params
-  const c = await loadIncidentInScope(session as unknown as { user: { id: string; role?: string } }, id)
+// Rôle effectif résolu par loadIncidentInScope (organisation active) → `org: 'none'`.
+async function garde(user: SessionUser, id: string) {
+  const c = await loadIncidentInScope({ user: { id: user.id, role: user.role } }, id)
   if ('error' in c) return { error: c.error as NextResponse }
   if (!peutQualifier(c.userRole as UserRole, c.secondeLigneActive)) return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
   return { c, id }
@@ -32,8 +28,8 @@ const num = (v: unknown) => (v == null ? null : Number(v))
 
 // GET /api/incidents/[id]/declaration — sans paramètre : compléments saisis ;
 // ?regime=DORA&stage=INITIAL|INTERMEDIATE|FINAL ou ?regime=<code>&phase=<code> : fichier JSON (&download=1 : pièce jointe).
-export async function GET(req: NextRequest, ctx: Params): Promise<NextResponse> {
-  const g = await garde(ctx.params)
+export const GET = withAccess({ org: 'none' }, async (req, { user, params }) => {
+  const g = await garde(user, params.id)
   if ('error' in g) return g.error as NextResponse
   const { c, id } = g
   const row = await prisma.incident.findUnique({
@@ -90,11 +86,11 @@ export async function GET(req: NextRequest, ctx: Params): Promise<NextResponse> 
   }
   const headers: Record<string, string> = download ? { 'Content-Disposition': `attachment; filename="${name}.json"` } : {}
   return NextResponse.json(json, { headers })
-}
+})
 
 // PUT /api/incidents/[id]/declaration — enregistre les compléments (champs ITS éditables, bornés).
-export async function PUT(req: NextRequest, ctx: Params): Promise<NextResponse> {
-  const g = await garde(ctx.params)
+export const PUT = withAccess({ org: 'none', rateLimit: { bucket: 'incident-declaration' } }, async (req, { user, params }) => {
+  const g = await garde(user, params.id)
   if ('error' in g) return g.error as NextResponse
   const { c, id } = g
   const body = await req.json().catch(() => ({}))
@@ -105,4 +101,4 @@ export async function PUT(req: NextRequest, ctx: Params): Promise<NextResponse> 
     details: { scope: 'incident', action: 'declaration-update', id, champs: Object.keys(declaration).length },
   })
   return NextResponse.json({ declaration })
-}
+})

@@ -1,8 +1,6 @@
 import { risquesDepuisCorps } from '@/lib/incident-risques'
 import { instantaneIncident } from '@/lib/corbeille'
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { peutQualifier, loadIncidentInScope } from '@/lib/incident-access.server'
 import {
@@ -15,18 +13,18 @@ import { resolveIncidentsConfig } from '@/lib/incidents-config'
 import { sanitizeChampsConfig, fusionnerChamps, avecChampsVisibles } from '@/lib/champs-perso'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { entiteIdPourTexte } from '@/lib/entites.server'
+import { withAccess } from '@/lib/with-access.server'
 
 export const dynamic = 'force-dynamic'
 
-type Params = { params: Promise<{ id: string }> }
+// Rôle effectif résolu par loadIncidentInScope (organisation active) → `org: 'none'`.
+const ACCES = { org: 'none', rateLimit: { bucket: 'incidents' } } as const
 
 // PATCH /api/incidents/[id] — qualifier, clôturer, rejeter ou corriger.
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const c = await loadIncidentInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in c) return c.error
+export const PATCH = withAccess(ACCES, async (req, { user, params }) => {
+  const { id } = params
+  const c = await loadIncidentInScope({ user: { id: user.id, role: user.role } }, id)
+  if ('error' in c) return c.error as NextResponse
   const { userId, userRole, incident } = c
 
   const body = await req.json().catch(() => ({}))
@@ -122,16 +120,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     details: { scope: 'incident', action: changeEtat ? `transition:${depuis}->${vers}` : 'update', id },
   })
   return NextResponse.json(avecChampsVisibles(updated, defsChamps, userRole))
-}
+})
 
 // DELETE /api/incidents/[id] — réservé à la 2ᵉ ligne (un incident se rejette
 // plutôt qu'il ne se supprime ; la suppression reste possible pour les doublons).
-export async function DELETE(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const c = await loadIncidentInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in c) return c.error
+export const DELETE = withAccess(ACCES, async (req, { user, params }) => {
+  const { id } = params
+  const c = await loadIncidentInScope({ user: { id: user.id, role: user.role } }, id)
+  if ('error' in c) return c.error as NextResponse
   const { userId, userRole, incident } = c
   if (!peutQualifier(userRole, c.secondeLigneActive)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
@@ -156,4 +152,4 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     details: { intitule: incident.intitule, corbeilleId: corbeille.id },
   })
   return NextResponse.json({ ok: true, corbeilleId: corbeille.id })
-}
+})

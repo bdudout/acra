@@ -34,9 +34,9 @@ beforeEach(() => {
 describe('GET', () => {
   it('404 hors organisation active (pas de divulgation) ; contenu renvoyé sinon', async () => {
     m.find.mockResolvedValue(null)
-    expect((await GET(new Request('http://x'), params)).status).toBe(404)
+    expect((await GET(new NextRequest('http://x'), params)).status).toBe(404)
     m.find.mockResolvedValue(edition())
-    const j = await (await GET(new Request('http://x'), params)).json()
+    const j = await (await GET(new NextRequest('http://x'), params)).json()
     expect(j.contenu).toEqual({ sections: [] })
     expect(m.find.mock.calls[0][0].where).toMatchObject({ id: 'e1', organizationId: 'o1' })
   })
@@ -100,15 +100,15 @@ describe('PATCH — cycle de validation', () => {
 
 describe('DELETE', () => {
   it('supprime un brouillon ; refuse une édition relue, validée ou diffusée', async () => {
-    expect((await DELETE(new Request('http://x', { method: 'DELETE' }), params)).status).toBe(200)
+    expect((await DELETE(new NextRequest('http://x', { method: 'DELETE' }), params)).status).toBe(200)
     expect(m.deleteMany.mock.calls[0][0].where).toMatchObject({ id: 'e1', organizationId: 'o1', statut: 'BROUILLON' })
     m.find.mockResolvedValue(edition({ statut: 'VALIDE' }))
-    const res = await DELETE(new Request('http://x', { method: 'DELETE' }), params)
+    const res = await DELETE(new NextRequest('http://x', { method: 'DELETE' }), params)
     expect(res.status).toBe(400)
   })
   it('refuse la suppression si le brouillon a été relu entre lecture et écriture', async () => {
     m.deleteMany.mockResolvedValue({ count: 0 })
-    expect((await DELETE(new Request('http://x', { method: 'DELETE' }), params)).status).toBe(409)
+    expect((await DELETE(new NextRequest('http://x', { method: 'DELETE' }), params)).status).toBe(409)
     expect(m.audit).not.toHaveBeenCalled()
   })
 })

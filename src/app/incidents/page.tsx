@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { peutQualifierIncident } from '@/lib/incident'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import IncidentsManager from '@/components/IncidentsManager'
@@ -22,15 +23,14 @@ export default async function IncidentsPage() {
 
   // La déclaration est ouverte à tous (1ʳᵉ ligne) ; la qualification à la 2ᵉ ligne.
   // Qualification = 2ᵉ ligne ; en mode ligne unique, ouverte à la 1ʳᵉ ligne (sauf lecteur).
-  const canQualify = orgConfig.secondeLigneActive === false
-    ? userRole !== 'LECTEUR'
-    : (isAdminRole(userRole) || userRole === 'RISK_MANAGER' || userRole === 'RSSI')
+  // Même règle et même rôle que l'API (`loadIncidentInScope`) : rôle EFFECTIF dans l'org active (n° 37).
+  const canQualify = peutQualifierIncident(scope.role, orgConfig.secondeLigneActive)
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <IncidentsManager canQualify={canQualify} canConfigure={isAdminRole(scope.role)} />
+        <IncidentsManager canQualify={canQualify} canConfigure={isAdminRole(scope.role)} reglementaireActive={orgConfig.reglementaireActive} />
       </main>
     </div>
   )

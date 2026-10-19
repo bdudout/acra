@@ -70,3 +70,16 @@ describe('findDuplicatesForAll', () => {
     expect(all.get('a')!.map(d => d.id)).toEqual(['b'])   // 'd' (REJETE) et self exclus
   })
 })
+
+describe('findDuplicatesForAll — restreint à une page (lot V1)', () => {
+  const items: IncidentDedupItem[] = [
+    item({ id: 'a', intitule: 'Panne du service de paiement', dateSurvenance: '2026-03-01' }),
+    item({ id: 'b', intitule: 'Panne service de paiement', dateSurvenance: '2026-03-01' }),
+    item({ id: 'c', intitule: 'Incident RH sans rapport' }),
+  ]
+  it('ne calcule que les incidents demandés, comparés à TOUS les autres (mêmes résultats)', () => {
+    const page = findDuplicatesForAll(items, {}, new Set(['a']))
+    expect([...page.keys()]).toEqual(['a'])
+    expect(page.get('a')).toEqual(findDuplicatesForAll(items).get('a'))
+  })
+})

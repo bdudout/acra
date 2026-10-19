@@ -1,6 +1,7 @@
 // Lot 1 de docs/specs/sauvegarde-rollback-spec.md : scripts/acra-snapshot.sh (docker/psql/df simulés).
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { statSync, readdirSync, writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs'
+import { statSync, readdirSync, writeFileSync, readFileSync, mkdirSync, existsSync, mkdtempSync, symlinkSync, rmSync } from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { makeInstance, listDir, type Instance } from '../../helpers/update-fixture'
 
@@ -11,6 +12,22 @@ const make = () => makeInstance({ scripts: ['update.sh', 'acra-snapshot.sh'] })
 const snap = (args: string[], env?: Record<string, string>) => inst.run('scripts/acra-snapshot.sh', args, env)
 const backups = () => path.join(inst.work, 'backups')
 const created = () => { const r = snap(['create', '--reason', 'pre-update', '--from-version', '1.0.4', '--to-version', '1.0.5']); expect(r.status, r.stderr).toBe(0); return r.stdout.trim() }
+
+/**
+ * Répertoire de commandes système SANS `age` (liens vers /usr/bin et /bin) : le test « age introuvable »
+ * ne doit pas dépendre de la machine (le binaire est installé sur certains postes et conteneurs CI).
+ */
+function systemPathWithout(excluded: string): { dir: string; cleanup: () => void } {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'acra-path-'))
+  for (const src of ['/usr/bin', '/bin']) {
+    if (!existsSync(src)) continue
+    for (const name of readdirSync(src)) {
+      if (name === excluded || existsSync(path.join(dir, name))) continue
+      try { symlinkSync(path.join(src, name), path.join(dir, name)) } catch { /* entrée illisible : ignorée */ }
+    }
+  }
+  return { dir, cleanup: () => rmSync(dir, { recursive: true, force: true }) }
+}
 
 describe('acra-snapshot create', () => {
   it('crée un point complet : dump, documents, SHA256SUMS, manifeste, index ; droits 0700/0600', () => {
@@ -89,8 +106,11 @@ describe('acra-snapshot create', () => {
 
   it('le manifeste est écrit en dernier : un échec après le dump ne laisse pas de manifeste', () => {
     inst = make()
-    const r = snap(['create', '--reason', 'pre-update', '--from-version', '1.0.4'], { ACRA_BACKUP_AGE_RECIPIENT: 'age1xxx', PATH: `${inst.bin}:/usr/bin:/bin` })
-    expect(r.status).toBe(10)
+    const sansAge = systemPathWithout('age')
+    try {
+      const r = snap(['create', '--reason', 'pre-update', '--from-version', '1.0.4'], { ACRA_BACKUP_AGE_RECIPIENT: 'age1xxx', PATH: `${inst.bin}:${sansAge.dir}` })
+      expect(r.status, r.stderr).toBe(10)
+    } finally { sansAge.cleanup() }
     expect(listDir(backups()).filter(x => !x.startsWith('.'))).toEqual([])
   })
 

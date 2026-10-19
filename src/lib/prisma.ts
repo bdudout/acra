@@ -14,6 +14,7 @@
  */
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
+import { poolConfigFromEnv } from '@/lib/db-pool'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
@@ -23,7 +24,8 @@ export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     // Prisma 7 : la connexion passe par un adaptateur pilote (pg) ; l'URL n'est plus dans le schéma.
-    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+    // Pool réglable par variables d'environnement (lib/db-pool, T22).
+    adapter: new PrismaPg(poolConfigFromEnv()),
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   })
 

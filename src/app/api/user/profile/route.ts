@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { isDemoInstance } from '@/lib/demo-server'
 import { canSelfDeleteAccount } from '@/lib/self-service-account'
+import { withAccess } from '@/lib/with-access.server'
 
 const Schema = z.object({
   name: z.string().min(1).max(100),
@@ -14,10 +13,8 @@ const Schema = z.object({
 })
 
 // GET /api/user/profile — lit le profil de l'utilisateur connecté.
-export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as any).id
+export const GET = withAccess({ org: 'none' }, async (_req, { user: sessionUser }) => {
+  const userId = sessionUser.id
   const [user, demo, policy] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { id: true, name: true, email: true, role: true, phone: true } }),
     isDemoInstance(),
@@ -27,14 +24,11 @@ export async function GET() {
     user,
     selfServiceAccountDeletion: canSelfDeleteAccount({ demo, enabled: policy?.selfServiceAccountDeletion === true, authenticated: true }),
   })
-}
+})
 
 // PATCH /api/user/profile — met à jour le profil de l'utilisateur connecté (nom, langue…).
-export async function PATCH(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const userId = (session.user as any).id
+export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'user-profile' } }, async (req, { user: sessionUser }) => {
+  const userId = sessionUser.id
   const body = await req.json()
   const parsed = Schema.safeParse(body)
   if (!parsed.success) {
@@ -55,4 +49,4 @@ export async function PATCH(req: NextRequest) {
   })
 
   return NextResponse.json({ ok: true, user })
-}
+})

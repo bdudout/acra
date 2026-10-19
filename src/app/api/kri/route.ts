@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
+import { requireSession } from '@/lib/route-guard.server'
+import { withAccess } from '@/lib/with-access.server'
 import {
   validateKriInput, cleanKriInput, evaluerKri, tendanceKri, synthetiserKri,
   type KriSens, type KriStatut,
@@ -18,20 +17,13 @@ export const dynamic = 'force-dynamic'
 // mesures est ouverte à la 1ʳᵉ ligne (cf. mesures/route.ts). L'admin gère aussi.
 import { peutDefinirKri } from '@/lib/permissions'
 
-async function ctx(session: { user: { id: string; role?: string } }) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
-  return { userId, userRole, orgId: scope.activeOrgId }
-}
-
 // GET /api/kri — KRI de l'organisation active, avec statut courant + tendance + synthèse.
+// Sans organisation active : liste vide (pas de 400) → requireSession.
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+  const g = await requireSession()
+  if (g.error) return g.error
+  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
+  const { role: userRole, activeOrgId: orgId } = await getAnalyseScope(g.user.id, g.user.role)
   if (!orgId) return NextResponse.json({ kris: [], active: false })
   const cfg = await getOrgConfig(orgId)
   if (!cfg.kriActive) return NextResponse.json({ kris: [], active: false })
@@ -80,11 +72,8 @@ export async function GET() {
 }
 
 // POST /api/kri — définir un KRI (gouvernance).
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
-  if (!orgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
+export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'kri' } }, async (req, { user, role: userRole, orgId }) => {
+  const userId = user.id
   const cfg = await getOrgConfig(orgId)
   if (!peutDefinirKri(userRole, { secondeLigneActive: cfg.secondeLigneActive })) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   if (!cfg.kriActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
@@ -105,4 +94,4 @@ export async function POST(req: NextRequest) {
     details: { scope: 'kri', action: 'create', id: kri.id },
   })
   return NextResponse.json(kri, { status: 201 })
-}
+})

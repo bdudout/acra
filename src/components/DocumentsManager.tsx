@@ -10,16 +10,21 @@
 import { Plus, Trash2, Download, FileText, AlertTriangle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { DOCUMENT_TYPES, DOCUMENT_PORTEES } from '@/lib/document'
 import { DOCUMENT_TEMPLATES } from '@/lib/document-templates'
 import { FilePlus2, ChevronDown } from 'lucide-react'
+import Pagination from '@/components/Pagination'
+import { useListePaginee } from '@/lib/use-liste-paginee'
+import type { MetaPagination } from '@/lib/pagination'
 
 interface Doc {
   id: string; titre: string; type: string; portee: string; referentielCode: string | null; risqueId: string | null
   version: string | null; description: string | null; dateDocument: string | null; dateRevue: string | null
   fichierNom: string; mime: string; taille: number; createdAt: string
 }
+interface ReponseDocuments { documents: Doc[]; pagination?: MetaPagination; synthese?: { total: number; titresModeles: string[] } }
 interface RefLite { code: string; nom: string; source: string }
 interface RiskLite { id: string; intitule: string }
 
@@ -43,10 +48,12 @@ function humanSize(n: number): string {
 export default function DocumentsManager({ canManage }: { canManage: boolean }) {
   const { t, locale } = useTranslation()
   const d = t.documents
-  const [docs, setDocs] = useState<Doc[]>([])
+  // Lot V1 : liste paginée côté serveur (recherche, filtre de type, tri et page dans l'URL).
+  const liste = useListePaginee<ReponseDocuments>('/api/documents')
+  const docs = liste.data?.documents ?? []
+  const synthese = liste.data?.synthese ?? null
   const [refs, setRefs] = useState<RefLite[]>([])
   const [risks, setRisks] = useState<RiskLite[]>([])
-  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ ...emptyForm })
   const [file, setFile] = useState<File | null>(null)
@@ -54,18 +61,18 @@ export default function DocumentsManager({ canManage }: { canManage: boolean }) 
   const [err, setErr] = useState<string | null>(null)
   const [confirmDel, setConfirmDel] = useState<string | null>(null)
 
-  async function reload() {
-    const [dd, rr, qq] = await Promise.all([
-      fetch('/api/documents').then(x => x.ok ? x.json() : null).catch(() => null),
+  // Libellés des rattachements (référentiels, risques) : chargés une fois.
+  useEffect(() => {
+    Promise.all([
       fetch('/api/referentiels').then(x => x.ok ? x.json() : null).catch(() => null),
-      fetch('/api/risk-items').then(x => x.ok ? x.json() : null).catch(() => null),
-    ])
-    setDocs(dd?.documents ?? [])
-    setRefs(rr?.referentiels ?? [])
-    setRisks((qq?.risks ?? []).map((r: RiskLite) => ({ id: r.id, intitule: r.intitule })))
-    setLoading(false)
-  }
-  useEffect(() => { reload() }, [])
+      fetch('/api/risk-items?vue=options').then(x => x.ok ? x.json() : null).catch(() => null),
+    ]).then(([rr, qq]) => {
+      setRefs(rr?.referentiels ?? [])
+      setRisks((qq?.risks ?? []).map((r: RiskLite) => ({ id: r.id, intitule: r.intitule })))
+    })
+  }, [])
+  const reload = () => liste.recharger()
+  const loading = liste.loading && !liste.data
 
   function openCreate() { setForm({ ...emptyForm }); setFile(null); setErr(null); setShowForm(true) }
 
@@ -89,7 +96,7 @@ export default function DocumentsManager({ canManage }: { canManage: boolean }) 
         titre_requis: d.errorRequired, fichier_requis: d.errorFile, fichier_trop_gros: d.errorTooBig,
         mime_interdit: d.errorMime, referentiel_requis: d.errorRefRequired, risque_requis: d.errorRisqueRequired,
       }
-      setErr(map[j.error] ?? j.error ?? 'Erreur')
+      setErr(map[j.error] ?? apiErrorMessage(j.error, t, 'Erreur'))
       return
     }
     setShowForm(false); reload()
@@ -99,14 +106,15 @@ export default function DocumentsManager({ canManage }: { canManage: boolean }) 
   // Modèles d'annexes (PAS, DPA, réversibilité…) : insertion en un clic comme document éditable.
   const [showTemplates, setShowTemplates] = useState(false)
   const [insertingTpl, setInsertingTpl] = useState<string | null>(null)
-  const docTitres = new Set(docs.map(x => x.titre))
+  // « Déjà ajouté » : calculé par le serveur sur toute la bibliothèque (pas sur la seule page).
+  const docTitres = new Set(synthese?.titresModeles ?? [])
   async function insertTemplate(id: string) {
     setInsertingTpl(id); setErr(null)
     const res = await fetch('/api/documents/template', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ templateId: id }),
     })
     setInsertingTpl(null)
-    if (!res.ok && res.status !== 409) { const j = await res.json().catch(() => ({})); setErr(j.error ?? 'Erreur') }
+    if (!res.ok && res.status !== 409) { const j = await res.json().catch(() => ({})); setErr(apiErrorMessage(j.error, t, 'Erreur')) }
     reload()
   }
 
@@ -223,7 +231,24 @@ export default function DocumentsManager({ canManage }: { canManage: boolean }) 
         </form>
       )}
 
-      {docs.length === 0 ? (
+      {(synthese?.total ?? 0) > 0 && (
+        <div className="flex flex-wrap gap-2 items-center">
+          <input value={liste.recherche} onChange={e => liste.setRecherche(e.target.value)} placeholder={t.search} aria-label={t.search} className="px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm min-w-[200px]" />
+          <select value={liste.param('type')} onChange={e => liste.definir({ type: e.target.value })} aria-label={d.champ.type} className="px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+            <option value="">{d.champ.type}</option>
+            {DOCUMENT_TYPES.map(ty => <option key={ty} value={ty}>{d.typeOpt[ty]}</option>)}
+          </select>
+          <select value={liste.param('portee')} onChange={e => liste.definir({ portee: e.target.value })} aria-label={d.champ.portee} className="px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
+            <option value="">{d.champ.portee}</option>
+            {DOCUMENT_PORTEES.map(p => <option key={p} value={p}>{d.porteeOpt[p]}</option>)}
+          </select>
+          {(liste.recherche || liste.param('type') || liste.param('portee')) && (
+            <button onClick={() => { liste.setRecherche(''); liste.definir({ q: null, type: null, portee: null }) }} className="text-xs text-ebios-600 hover:underline">✕ {t.filtres.reset}</button>
+          )}
+        </div>
+      )}
+
+      {(synthese?.total ?? 0) === 0 ? (
         <div className="card p-10 text-center text-gray-400 dark:text-gray-500 text-sm">{d.empty}</div>
       ) : (
         <div className="card overflow-x-auto">
@@ -259,6 +284,7 @@ export default function DocumentsManager({ canManage }: { canManage: boolean }) 
               ))}
             </tbody>
           </table>
+          <div className="px-3"><Pagination pagination={liste.pagination} onPage={page => liste.definir({ page })} onTaille={taille => liste.definir({ taille })} /></div>
         </div>
       )}
 

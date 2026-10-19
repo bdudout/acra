@@ -1,0 +1,151 @@
+# =============================================================================
+# ACRA — profil « ha » (multi-instance) — surcouche de docker-compose.production.yml
+#
+#   docker compose -f docker-compose.yml -f docker-compose.production.yml \
+#                  -f docker-compose.ha.yml up -d --build
+#
+# Guide complet (base, stockage, Redis, bascule, ce qui est testé) : docs/deploiement-haute-disponibilite.md
+#
+# Ce que fait cette surcouche :
+#   - plusieurs réplicas de l'application (ACRA_REPLICAS, défaut 3), sans container_name ni port publié ;
+#   - Caddy en frontal : TLS, répartition de charge, contrôle de santé actif sur /api/health (Caddyfile.ha) ;
+#   - Redis : limites de débit et verrouillage de compte partagés (REDIS_URL) ;
+#   - documents en stockage objet S3 compatible (DOCUMENT_STORAGE=s3, variables S3_* OBLIGATOIRES) ;
+#   - base EXTERNE (DATABASE_URL obligatoire) : base managée ou point d'entrée Patroni (HAProxy/pgbouncer).
+#     Le service « db » local et la sauvegarde pg_dump locale sont désactivés (profil « base-locale ») :
+#     la sauvegarde continue est assurée par l'hébergeur ou par pgBackRest (cf. guide).
+#   - tâches planifiées : un SEUL planificateur (service « scheduler ») ; chaque appel arrive sur un réplica
+#     quelconque et le bail en base « CronVerrou » (lib/cron-verrou.server.ts) garantit une seule exécution
+#     simultanée par tâche, toutes instances confondues.
+#   - deux versions peuvent coexister pendant une mise à jour progressive (scripts/update-ha.sh, lot H1.4) :
+#     clé des Server Functions FIXE (NEXT_SERVER_ACTIONS_ENCRYPTION_KEY) et identifiant de déploiement
+#     (NEXT_DEPLOYMENT_ID = révision git), tous deux lus par `next build` (arguments de construction) ;
+#     arrêt propre d'un réplica (stop_grace_period) ; profil signalé à l'application (ACRA_DEPLOY_PROFILE=ha).
+#     Ne JAMAIS mettre à jour par `up -d --build` (tous les réplicas seraient recréés en même temps) :
+#     scripts/update-ha.sh stable --pitr-confirmed (ou --backup-cmd "…").
+#
+# Variables obligatoires (l'interpolation échoue sinon) : DATABASE_URL, REDIS_PASSWORD, S3_ENDPOINT,
+# S3_REGION, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, DOMAIN, ACME_EMAIL,
+# NEXT_SERVER_ACTIONS_ENCRYPTION_KEY.
+# Requiert Docker Compose >= 2.24.4 (`!reset` / `!override`).
+# =============================================================================
+
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
+
+# Arguments de construction ajoutés à ceux de docker-compose.yml (fusionnés), IDENTIQUES pour app et migrator
+# (même image, même étiquette). Next.js les lit à la construction et les embarque dans la sortie
+# (node_modules/next/dist/docs/01-app/02-guides/self-hosting.md, « Multi-Server Deployments », « Version Skew ») :
+#   - NEXT_SERVER_ACTIONS_ENCRYPTION_KEY : clé AES (base64 de 16, 24 ou 32 octets ; openssl rand -base64 32), stable entre
+#     builds et versions → une Server Function chiffrée par un réplica reste déchiffrable par un autre, même d'une autre version ;
+#   - NEXT_DEPLOYMENT_ID : identifiant de déploiement (révision git, posée par scripts/update-ha.sh via ACRA_REVISION) →
+#     `?dpl=` sur les ressources statiques, en-tête x-deployment-id ; un client d'une autre version recharge la page
+#     entière au lieu d'une navigation client incohérente. Vide (construction manuelle) : comportement Next par défaut.
+x-ha-build-args: &ha-build-args
+  NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY:?NEXT_SERVER_ACTIONS_ENCRYPTION_KEY obligatoire en multi-instance (openssl rand -base64 32)}
+  NEXT_DEPLOYMENT_ID: ${ACRA_REVISION:-}
+
+services:
+  # Base locale désactivée : DATABASE_URL pointe vers la base hautement disponible.
+  # (Activable pour un essai : --profile base-locale, avec DATABASE_URL=…@db:5432/…)
+  db:
+    profiles: ["base-locale"]
+
+  backup:
+    profiles: ["base-locale"]
+
+  migrator:
+    # Une seule exécution des migrations, avant le démarrage des réplicas. Prisma Migrate prend un verrou
+    # consultatif de SESSION : passer par une connexion directe au primaire (port d'écriture HAProxy), pas
+    # par un pgbouncer en mode transaction → MIGRATION_DATABASE_URL (défaut : DATABASE_URL).
+    build:
+      args: *ha-build-args
+    environment:
+      DATABASE_URL: ${MIGRATION_DATABASE_URL:-${DATABASE_URL:?DATABASE_URL obligatoire (base managée ou point d'entrée Patroni)}}
+    depends_on: !reset {}
+
+  app:
+    container_name: !reset null
+    ports: !reset []
+    build:
+      args: *ha-build-args
+    deploy:
+      replicas: ${ACRA_REPLICAS:-3}
+    # Arrêt d'un réplica (mise à jour progressive) : SIGTERM, Next.js termine les requêtes en cours avant de sortir.
+    stop_grace_period: 30s
+    environment:
+      # L'interface remplace le bouton « Mettre à jour » par la procédure de mise à jour progressive.
+      ACRA_DEPLOY_PROFILE: ha
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL obligatoire (base managée ou point d'entrée Patroni)}
+      # Partagé : toutes les instances doivent avoir le même NEXTAUTH_SECRET (sessions JWT).
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?NEXTAUTH_SECRET obligatoire}
+      SECRETS_ENCRYPTION_KEY: ${SECRETS_ENCRYPTION_KEY:-}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD obligatoire}@redis:6379/0
+      REDIS_OPTIONNEL: "0"
+      DOCUMENT_STORAGE: s3
+      S3_ENDPOINT: ${S3_ENDPOINT:?S3_ENDPOINT obligatoire en multi-instance}
+      S3_REGION: ${S3_REGION:?S3_REGION obligatoire}
+      S3_BUCKET: ${S3_BUCKET:?S3_BUCKET obligatoire}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?S3_ACCESS_KEY_ID obligatoire}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?S3_SECRET_ACCESS_KEY obligatoire}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
+      S3_SSE: ${S3_SSE:-}
+      S3_PREFIX: ${S3_PREFIX:-}
+    depends_on: !override
+      migrator:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    # Plus de volume de documents local (S3) ; le dossier d'échange de l'agent de mise à jour reste monté
+    # mais le bouton « Mettre à jour » est remplacé par la procédure scripts/update-ha.sh (cf. guide).
+    volumes: !override
+      - ./.acra-update:/app/.acra-update
+
+  # Store partagé des limites de débit et du verrouillage de compte.
+  # noeviction : mémoire pleine → écritures refusées (connexion refusée) plutôt qu'évincer des compteurs.
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    logging: *logging
+    command:
+      - sh
+      - -c
+      - exec redis-server --requirepass "$$REDIS_PASSWORD" --appendonly yes --maxmemory 256mb --maxmemory-policy noeviction
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD obligatoire}
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?REDIS_PASSWORD obligatoire}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Frontal : TLS automatique, répartition de charge et contrôle de santé (Caddyfile.ha).
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    logging: *logging
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN obligatoire (nom public servi par Caddy)}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL obligatoire}
+    volumes:
+      - ./Caddyfile.ha:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  redis_data:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local

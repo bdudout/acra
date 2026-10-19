@@ -24,6 +24,7 @@ const DESTRUCTIVE: Array<[RegExp, string]> = [
   [/\bTRUNCATE\b/i, 'TRUNCATE'],
   [/\bALTER\s+COLUMN\b[^;]*\bTYPE\b/i, 'changement de type de colonne'],
   [/\bRENAME\s+(COLUMN|TO)\b/i, 'renommage (incompatible avec l’ancien code)'],
+  [/\bRENAME\s+VALUE\b/i, 'renommage d’une valeur d’enum (incompatible avec l’ancien code)'],
   [/\bALTER\s+COLUMN\b[^;]*\bSET\s+NOT\s+NULL\b/i, 'SET NOT NULL (échoue sur des lignes NULL)'],
 ]
 const DATA: Array<[RegExp, string]> = [
@@ -62,4 +63,33 @@ export function validateNewMigration(sql: string): { ok: boolean; class: Migrati
   if (c.class !== 'destructive') return { ok: true, class: c.class }
   if (!c.header) return { ok: false, class: c.class, reason: `migration destructive (${c.reasons.join(', ')}) sans en-tête « -- acra:destructive <raison> »` }
   return { ok: true, class: c.class }
+}
+
+// ─── Règle expand/contract — lot H1.4 de docs/specs/scalabilite-haute-disponibilite.md ───────────────────────────
+// Déploiement sans interruption (scripts/update-ha.sh) : les migrations de N+1 sont appliquées pendant que des réplicas de
+// N servent encore. Une migration ne doit donc rien supprimer, renommer, retyper ni durcir que N lit ou écrit encore :
+//   expand  (N+1) : ajouter (table, colonne nullable ou avec DEFAULT, index), copier les données ; N continue de fonctionner ;
+//   contract (N+2 ou plus tard) : supprimer ce que plus aucune version en service ne lit — marque `-- contract: <justification>`.
+// Toute migration horodatée à partir de EXPAND_CONTRACT_DEPUIS est soumise à la règle (CI + cliquet sur le dépôt).
+
+/** Horodatage Prisma (AAAAMMJJhhmmss) à partir duquel la règle s'applique (décision du 16/10/2026). */
+export const EXPAND_CONTRACT_DEPUIS = '20261016000000'
+const CONTRACT = /^--[ \t]*contract:[ \t]*(.*)$/m
+const CONTRACT_MIN = 10
+
+export function soumiseExpandContract(name: string): boolean {
+  return /^\d{14}_/.test(name) && name.slice(0, 14) >= EXPAND_CONTRACT_DEPUIS
+}
+
+/** Une migration « contract » (destructive au sens de classifyMigration) exige `-- contract: <justification>` (≥ 10 caractères). */
+export function validateExpandContract(sql: string): { ok: boolean; class: MigrationClass; reasons: string[]; reason?: string } {
+  const c = classifyMigration(sql)
+  if (c.class !== 'destructive') return { ok: true, class: c.class, reasons: c.reasons }
+  // La marque doit être un commentaire de ligne hors commentaire de bloc.
+  const m = CONTRACT.exec(sql.replace(/\/\*[\s\S]*?\*\//g, ' '))
+  if (m && m[1].trim().length >= CONTRACT_MIN) return { ok: true, class: c.class, reasons: c.reasons }
+  return {
+    ok: false, class: c.class, reasons: c.reasons,
+    reason: `phase « contract » (${c.reasons.join(', ')}) sans marque « -- contract: <justification> » : la version précédente, encore en service pendant le déploiement progressif, lit peut-être encore cet élément (docs/deploiement-haute-disponibilite.md, règle expand/contract)`,
+  }
 }

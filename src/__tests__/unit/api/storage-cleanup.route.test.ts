@@ -3,6 +3,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const role = { value: 'SUPER_ADMIN' }
+// Bail d'exécution des tâches planifiées : passant (testé sur base réelle, cron-verrou.db.test.ts).
+vi.mock('@/lib/taches.server', () => ({ executerTache: (_t: string, _d: string, fn: () => Promise<Response>) => fn() }))
+vi.mock('@/lib/cron-verrou.server', () => ({ avecVerrouCron: async (_t: string, fn: () => Promise<unknown>) => ({ execute: true, resultat: await fn() }) }))
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { id: 'u1', role: role.value } })) }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 const auditLog = vi.fn()

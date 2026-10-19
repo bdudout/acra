@@ -1,12 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { validatePassword, DEFAULT_POLICY } from '@/lib/password-policy'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { rateLimit, rateLimitHeaders, LIMIT_PASSWORD } from '@/lib/rate-limit'
+import { LIMIT_PASSWORD } from '@/lib/rate-limit'
+import { withAccess } from '@/lib/with-access.server'
 
 const Schema = z.object({
   currentPassword: z.string().min(1),
@@ -14,20 +13,10 @@ const Schema = z.object({
 })
 
 // POST /api/user/password — change le mot de passe de l'utilisateur connecté (vérifie l'ancien, applique la politique).
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+// Rate limiting : 5 changements de mot de passe / heure par utilisateur
+export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'password', limit: LIMIT_PASSWORD.limit, windowMs: LIMIT_PASSWORD.windowMs } }, async (req, { user: sessionUser }) => {
+  const userId = sessionUser.id
 
-  const userId = (session.user as any).id
-
-  // Rate limiting : 5 changements de mot de passe / heure par utilisateur
-  const rl = await rateLimit(`password:${userId}`, LIMIT_PASSWORD.limit, LIMIT_PASSWORD.windowMs)
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Trop de tentatives. Réessayez dans une heure.' },
-      { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) }
-    )
-  }
   const body = await req.json()
   const parsed = Schema.safeParse(body)
   if (!parsed.success) {
@@ -72,4 +61,4 @@ export async function POST(req: NextRequest) {
     ip: getClientIp(req),
   })
   return NextResponse.json({ ok: true })
-}
+})

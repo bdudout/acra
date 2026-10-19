@@ -1,23 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { decideBeneficiaryTransition } from '@/lib/tier-contract-coverage'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { isAdminRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 
 export const dynamic = 'force-dynamic'
 
 // Le propriétaire d'un contrat groupe est l'organisation racine du groupe.
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = (session.user as { role?: UserRole }).role ?? 'ANALYSTE'
-  const { id } = await params
+// Rôle effectif évalué dans l'organisation propriétaire du contrat (chargé ici) → `org: 'none'`.
+export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'tier-contract-beneficiaries' } }, async (req, { user, params }) => {
+  const userId = user.id
+  const instanceRole = user.role
+  const { id } = params
   const body = await req.json().catch(() => ({}))
   const organizationId = typeof body.organizationId === 'string' ? body.organizationId.trim() : ''
   if (!organizationId) return NextResponse.json({ error: 'organization_required' }, { status: 400 })
@@ -57,4 +55,4 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     details: { arrangementId: id, beneficiaryOrganizationId: organizationId },
   })
   return NextResponse.json(result.beneficiary, { status: 201 })
-}
+})

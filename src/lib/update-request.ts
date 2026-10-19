@@ -9,6 +9,15 @@ import { isSnapshotId, type SnapshotIndex } from '@/lib/snapshot'
 import { UPDATE_STATES, type UpdateRunState } from '@/lib/update-run'
 import { validateBackupPolicy, type BackupPolicy } from '@/lib/backup-policy'
 
+/**
+ * Profil de déploiement (lot H1.4) : `ha` quand l'instance tourne en multi-instance (docker-compose.ha.yml pose
+ * ACRA_DEPLOY_PROFILE=ha). La mise à jour y est progressive et se lance sur l'hôte (scripts/update-ha.sh), jamais
+ * depuis l'interface : elle exige un point de restauration de la base externe que l'agent ne peut pas vérifier.
+ */
+export function isHaProfile(env: Record<string, string | undefined>): boolean {
+  return env.ACRA_DEPLOY_PROFILE === 'ha'
+}
+
 /** Au-delà de ce délai sans pulsation, l'agent est considéré absent. */
 export const AGENT_MAX_AGE_MS = 5 * 60 * 1000
 

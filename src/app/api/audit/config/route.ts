@@ -1,44 +1,32 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { withAccess } from '@/lib/with-access.server'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig, upsertOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { isAdminRole } from '@/lib/permissions'
 import { resolveAuditConfig, sanitizeAuditConfig } from '@/lib/audit-config'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
-async function contexte() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
-  const userId = (session.user as { id: string }).id
-  const scope = await getAnalyseScope(userId, ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole)
-  return { userId, role: scope.role as UserRole, orgId: scope.activeOrgId }
-}
-
 // GET /api/audit/config — paramétrage effectif (rappels, cycles de couverture).
-export async function GET(): Promise<NextResponse> {
-  const c = await contexte()
-  if ('error' in c) return c.error as NextResponse
-  if (!c.orgId) return NextResponse.json({ active: false })
-  const cfg = await getOrgConfig(c.orgId)
+// Sans organisation active : { active: false } (pas de 400) — d'où `org: 'none'`.
+export const GET = withAccess({ org: 'none' }, async (_req, { user }) => {
+  const scope = await getAnalyseScope(user.id, user.role)
+  if (!scope.activeOrgId) return NextResponse.json({ active: false })
+  const cfg = await getOrgConfig(scope.activeOrgId)
   if (!cfg.auditInterneActive) return NextResponse.json({ active: false })
-  return NextResponse.json({ active: true, canEdit: isAdminRole(c.role), config: resolveAuditConfig(cfg.auditConfig) })
-}
+  return NextResponse.json({ active: true, canEdit: isAdminRole(scope.role), config: resolveAuditConfig(cfg.auditConfig) })
+})
 
 // PUT /api/audit/config — ADMIN de l'organisation uniquement.
-export async function PUT(req: NextRequest): Promise<NextResponse> {
-  const c = await contexte()
-  if ('error' in c) return c.error as NextResponse
-  if (!c.orgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
-  if (!(await getOrgConfig(c.orgId)).auditInterneActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
-  if (!isAdminRole(c.role)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+// Module vérifié AVANT le rôle (ordre conservé) : le contrôle de rôle reste dans le handler.
+export const PUT = withAccess({ org: 'active', rateLimit: { bucket: 'audit-config' } }, async (req, { user, role, orgId }) => {
+  if (!(await getOrgConfig(orgId)).auditInterneActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
+  if (!isAdminRole(role)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   const config = sanitizeAuditConfig(await req.json().catch(() => null))
   const json = config as unknown as Prisma.InputJsonValue
-  await upsertOrgConfig(c.orgId, { auditConfig: json })
-  await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: c.userId, userRole: c.role, organizationId: c.orgId, ip: getClientIp(req), details: { scope: 'audit', action: 'config' } })
+  await upsertOrgConfig(orgId, { auditConfig: json })
+  await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: user.id, userRole: role, organizationId: orgId, ip: getClientIp(req), details: { scope: 'audit', action: 'config' } })
   return NextResponse.json({ config })
-}
+})

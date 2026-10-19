@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Layers } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import AuditConfigEditor from '@/components/AuditConfigEditor'
 import { UNIVERS_TYPES, type PlanPluriannuel } from '@/lib/audit-l4'
 
@@ -43,7 +44,7 @@ export default function AuditPlanView() {
     setError(null)
     const res = await fetch('/api/audit/univers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ intitule: form.intitule, type: form.type, risque: Number(form.risque), ...(form.cycleAns ? { cycleAns: Number(form.cycleAns) } : {}) }) }).catch(() => null)
     const d = await res?.json().catch(() => ({}))
-    if (!res || !res.ok) { setError((l.errors as Record<string, string>)[d?.error] ?? String(d?.error ?? res?.status ?? '—')); return }
+    if (!res || !res.ok) { setError((l.errors as Record<string, string>)[d?.error] ?? apiErrorMessage(d?.error, t, String(res?.status ?? '—'))); return }
     setAdding(false); setForm({ intitule: '', type: 'PROCESSUS', risque: '2', cycleAns: '' }); load()
   }
   async function supprimer(id: string) {

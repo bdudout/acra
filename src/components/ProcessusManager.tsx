@@ -9,6 +9,7 @@
 import { FolderTree } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { buildProcessusTree, type ProcessusTree } from '@/lib/processus'
 import { CRITICITES_DORA, formatDuree, type CriticiteDora } from '@/lib/processus-dora'
 import SectorSuggestionsPanel from '@/components/SectorSuggestionsPanel'
@@ -68,7 +69,7 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
   // Options de parent (exclut le nœud en édition pour éviter l'auto-parentage évident).
   const parentOptions = useMemo(() => list.filter(x => x.id !== editId), [list, editId])
 
-  function err(code: string) { return (p.errors as Record<string, string>)[code] ?? code }
+  function err(code: string) { return (p.errors as Record<string, string>)[code] ?? apiErrorMessage(code, t, code) }
 
   async function submit() {
     if (!form.nom.trim()) { setError(err('nom_requis')); return }

@@ -22,7 +22,7 @@ beforeEach(() => {
   vi.clearAllMocks(); role.value = 'SUPER_ADMIN'
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'acra-upd-')); process.env.ACRA_UPDATE_DIR = dir
 })
-afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }); delete process.env.ACRA_UPDATE_DIR })
+afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }); delete process.env.ACRA_UPDATE_DIR; delete process.env.ACRA_DEPLOY_PROFILE })
 
 describe('/api/admin/version/update', () => {
   it('agent actif : dépose une demande ne contenant que le canal, journalisée', async () => {
@@ -45,6 +45,14 @@ describe('/api/admin/version/update', () => {
     expect((await POST(req({ channel: 'main; rm -rf /' }))).status).toBe(400)
     fs.writeFileSync(path.join(dir, 'status.json'), JSON.stringify({ state: 'RUNNING' }))
     expect((await POST(req({ channel: 'beta' }))).status).toBe(409)
+  })
+  it('profil « ha » (lot H1.4) : refus 409 ha_profile, rien d’écrit — la mise à jour progressive se lance sur l’hôte (scripts/update-ha.sh)', async () => {
+    fs.mkdirSync(path.join(dir, 'inbox')); beat()
+    process.env.ACRA_DEPLOY_PROFILE = 'ha'
+    const res = await POST(req({ channel: 'stable' }))
+    expect(res.status).toBe(409)
+    expect((await res.json()).error).toBe('ha_profile')
+    expect(fs.existsSync(path.join(dir, 'inbox', 'request.json'))).toBe(false)
   })
   it('réservé au super-administrateur', async () => {
     role.value = 'ADMIN'

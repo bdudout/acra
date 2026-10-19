@@ -10,9 +10,13 @@ vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.config }))
 vi.mock('@/lib/rapports.server', () => ({ genererContenuRapport: m.gen }))
 vi.mock('@/lib/logger', () => ({ auditLog: m.audit, getClientIp: () => '127.0.0.1' }))
-vi.mock('@/lib/rate-limit', () => ({ rateLimit: m.rl, LIMIT_API_WRITE: { limit: 30, windowMs: 60000 } }))
+vi.mock('@/lib/rate-limit', () => ({ rateLimit: m.rl, rateLimitHeaders: () => ({}), LIMIT_API_WRITE: { limit: 30, windowMs: 60000 } }))
 
-import { GET, POST } from '@/app/api/rapports/route'
+import { GET as GET_ROUTE, POST as POST_ROUTE } from '@/app/api/rapports/route'
+// Routes migrées vers withAccess : second argument (paramètres de route) obligatoire.
+const NO_PARAMS = { params: Promise.resolve({}) }
+const GET = () => GET_ROUTE(new NextRequest('http://x/api/rapports'), NO_PARAMS)
+const POST = (r: NextRequest) => POST_ROUTE(r, NO_PARAMS)
 
 const post = (body: unknown) => new NextRequest('http://x/api/rapports', { method: 'POST', body: JSON.stringify(body), headers: { 'content-type': 'application/json' } })
 

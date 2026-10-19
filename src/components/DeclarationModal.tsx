@@ -6,6 +6,7 @@
 // de l'annexe I de l'ITS 2025/302 à compléter. ACRA ne transmet rien : l'entité dépose auprès de l'autorité compétente.
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/context'
 import { fieldsOfStage, isMandatoryAt, NIS2_REPONSES, nis2Rubriques, RGPD_FIELDS, type DeclarationValue, type DoraItsField, type DoraStage } from '@/lib/incident-declaration'
 import type { HorlogeRegimeJson } from '@/components/NotificationsPanel'
@@ -32,8 +33,10 @@ const pad = (n: number) => String(n).padStart(2, '0')
 const toLocal = (iso: string | null | undefined) => { const d = iso ? new Date(iso) : new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}` }
 const toIso = (local: string) => new Date(local).toISOString()
 
-export default function DeclarationModal({ incident, available, canQualify, onClose, onChanged }: {
+export default function DeclarationModal({ incident, available, canQualify, onClose, onChanged, doraEvaluationHref = null }: {
   incident: DeclarationIncidentView; available: RegimeDisponible[]; canQualify: boolean; onClose: () => void; onChanged: () => void
+  /** Évaluation DORA de l'incident dans Réglementaire › Registre DORA (null si le module est inactif) — n° 46. */
+  doraEvaluationHref?: string | null
 }) {
   const { t, locale } = useTranslation()
   const n = t.incidents
@@ -110,7 +113,12 @@ export default function DeclarationModal({ incident, available, canQualify, onCl
           <section aria-label={d.dora} className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{d.dora}</h3>
             <RegimeInfoBlock code="DORA" />
-            {incident.dora!.classe !== 'MAJEUR' && <p className="text-[11px] italic text-gray-500">{d.notMajor}</p>}
+            {incident.dora!.classe !== 'MAJEUR' && (
+              <p className="text-[11px] italic text-gray-500">
+                {d.notMajor}
+                {doraEvaluationHref && <> <Link href={doraEvaluationHref} className="not-italic font-medium text-ebios-700 dark:text-ebios-300 hover:underline">{d.evaluateDora}</Link></>}
+              </p>
+            )}
             <ul className="mt-2 space-y-3">
               {incident.dora!.echeances.map(e => {
                 const key = `DORA/${e.phase}`; const done = !!e.soumiseLe; const st = DORA_STAGE[e.phase]

@@ -1,17 +1,14 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { analyseAccessWhere, getAccessibleOrgIds, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import {
   calcDateFin, canPreparerHomologation, etatValidite, isDecision, isHomologationStatut, sanitizeDuree,
   sanitizePieces, sanitizeReserves, validerTransition, type HomologationStatut, type PieceEtat,
 } from '@/lib/homologation'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { NextRequest, NextResponse } from 'next/server'
-
-type Params = { params: Promise<{ id: string }> }
+import { NextResponse } from 'next/server'
 
 const TRANSITION_STATUS: Record<string, number> = { transition_interdite: 409, role_interdit: 403, separation: 403, dossier_incomplet: 409, reserves_requises: 409 }
 
@@ -28,27 +25,21 @@ async function charger(userId: string, instanceRole: UserRole, id: string) {
 }
 
 // GET /api/homologations/[id] — fiche (dossier, décision, état de validité).
-export async function GET(_req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const r = await charger(userId, instanceRole, (await params).id)
-  if ('error' in r) return r.error
+// Organisation de l'homologation résolue par `charger` (périmètre, module, rôle effectif).
+export const GET = withAccess({ org: 'none' }, async (_req, { user, params: { id } }) => {
+  const r = await charger(user.id, user.role, id)
+  if (r.error) return r.error
   const { h, role } = r
   return NextResponse.json({ ...h, analyseNom: h.analyse?.nom ?? null, analyse: undefined, etat: etatValidite(h, new Date()), role })
-}
+})
 
 // PATCH /api/homologations/[id] — { action: 'update', ... } (dossier, pendant l'instruction) ou
 // { action: 'transition', to, commentaire?, reserves? } (cycle de vie, séparation préparateur / autorité).
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const { id } = await params
+export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'homologations' } }, async (req, { user, params: { id } }) => {
+  const userId = user.id
+  const instanceRole = user.role
   const r = await charger(userId, instanceRole, id)
-  if ('error' in r) return r.error
+  if (r.error) return r.error
   const { h, role } = r
   const body = await req.json().catch(() => ({})) as Record<string, unknown>
   const audit = (action: 'HOMOLOGATION_UPDATED' | 'HOMOLOGATION_TRANSITION', details: Record<string, unknown>) =>
@@ -119,4 +110,4 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   return NextResponse.json({ error: 'Action inconnue' }, { status: 400 })
-}
+})

@@ -1,38 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import { peutDefinir } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { validateCampagneControleInput, cleanCampagneControleInput, prochaineFenetreCampagne, type CampagneRecurrence } from '@/lib/campagne-controle'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
-type Params = { params: Promise<{ id: string }> }
+const access = { org: 'active', rateLimit: { bucket: 'campagnes-controle' } } as const
 
-async function guard(session: { user: { id: string; role?: string } }, id: string) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  const orgId = scope.activeOrgId
-  if (!orgId) return { error: NextResponse.json({ error: 'org_absente' }, { status: 400 }) }
+/** Module actif, droit de définition (2ᵉ ligne selon l'organisation) et campagne de l'organisation (404 sinon). */
+async function guard(userId: string, role: UserRole, orgId: string, id: string) {
   const cfg = await getOrgConfig(orgId)
   if (!cfg.controlePermanentActive) return { error: NextResponse.json({ error: 'module_inactif' }, { status: 403 }) }
-  if (!peutDefinir(scope.role, { secondeLigneActive: cfg.secondeLigneActive })) return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
+  if (!peutDefinir(role, { secondeLigneActive: cfg.secondeLigneActive })) return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
   const row = await prisma.campagneControle.findFirst({ where: { id, organizationId: orgId }, select: { id: true } })
   if (!row) return { error: NextResponse.json({ error: 'introuvable' }, { status: 404 }) }
-  return { userId, userRole: scope.role, orgId }
+  return { error: null, userId, userRole: role, orgId }
 }
 
 // PATCH /api/controles/campagnes/[id] — met à jour une campagne (remplacement).
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const g = await guard(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in g) return g.error
+export const PATCH = withAccess(access, async (req, { user, role, orgId, params: { id } }) => {
+  const g = await guard(user.id, role, orgId, id)
+  if (g.error) return g.error
 
   const body = await req.json().catch(() => ({}))
 
@@ -81,19 +72,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     details: { scope: 'campagne-controle', action: 'update', id, ...(suivanteId ? { suivanteId } : {}) },
   })
   return NextResponse.json({ ...updated, suivanteId })
-}
+})
 
 // DELETE /api/controles/campagnes/[id]
-export async function DELETE(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const g = await guard(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in g) return g.error
+export const DELETE = withAccess(access, async (req, { user, role, orgId, params: { id } }) => {
+  const g = await guard(user.id, role, orgId, id)
+  if (g.error) return g.error
   await prisma.campagneControle.delete({ where: { id } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: g.userId, userRole: g.userRole, organizationId: g.orgId, ip: getClientIp(req),
     details: { scope: 'campagne-controle', action: 'delete', id },
   })
   return NextResponse.json({ ok: true })
-}
+})

@@ -1,27 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { randomBytes } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { isAdminRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { cleanWebhookEvents, isSafeWebhookUrl } from '@/lib/webhook'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
-async function ctx(session: { user: { id: string; role?: string } }) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  return { userId, userRole: scope.role, orgId: scope.activeOrgId }
-}
-
 // GET /api/config/webhooks — liste des webhooks de l'org active (ADMIN, secret masqué).
-export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+// org: 'none' : sans organisation active, liste vide (et non 400).
+export const GET = withAccess({ org: 'none' }, async (_req, { user }) => {
+  const { role: userRole, activeOrgId: orgId } = await getAnalyseScope(user.id, user.role)
   if (!isAdminRole(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   if (!orgId) return NextResponse.json({ webhooks: [] })
 
@@ -31,16 +22,11 @@ export async function GET() {
     select: { id: true, name: true, url: true, events: true, actif: true, createdAt: true },
   })
   return NextResponse.json({ webhooks: rows })
-}
+})
 
 // POST /api/config/webhooks — crée un webhook ; renvoie le SECRET une seule fois (ADMIN).
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
-  if (!isAdminRole(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
-  if (!orgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
-
+export const POST = withAccess({ org: 'active', allow: isAdminRole, rateLimit: { bucket: 'webhooks' } }, async (req, { user, role: userRole, orgId }) => {
+  const userId = user.id
   const body = await req.json().catch(() => ({}))
   const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim().slice(0, 80) : 'Webhook'
   const url = typeof body.url === 'string' ? body.url.trim() : ''
@@ -59,4 +45,4 @@ export async function POST(req: NextRequest) {
   })
   // secret de signature renvoyé UNE fois — non re-consultable ensuite.
   return NextResponse.json({ ...created, secret }, { status: 201 })
-}
+})

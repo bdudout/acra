@@ -18,9 +18,13 @@ import MissionSuiviPanel from '@/components/MissionSuiviPanel'
 import PapiersTravailPanel from '@/components/PapiersTravailPanel'
 import { useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
-import { MISSION_STATUTS, CONSTAT_STATUTS, CONSTAT_SOURCES, MISSION_TYPES, MISSION_RECURRENCES, transitionMissionAutorisee, filtrerMissions, filtrerConstats, CRITICITE_MAX, type MissionFiltre, type ConstatFiltre } from '@/lib/audit'
+import { apiErrorMessage } from '@/lib/api-error'
+import { MISSION_STATUTS, CONSTAT_STATUTS, CONSTAT_SOURCES, MISSION_TYPES, MISSION_RECURRENCES, transitionMissionAutorisee, filtrerConstats, CRITICITE_MAX, type ConstatFiltre } from '@/lib/audit'
 import { deduireResultatChecklist } from '@/lib/controle'
 import AuditModelePicker from '@/components/AuditModelePicker'
+import Pagination from '@/components/Pagination'
+import { useListePaginee } from '@/lib/use-liste-paginee'
+import type { MetaPagination } from '@/lib/pagination'
 
 interface Synthese { total: number; ouverts: number; resolus: number; enRetard: number; critiques: number; tauxResolution: number }
 type ChecklistStatut = 'OK' | 'KO' | 'NA'
@@ -37,6 +41,9 @@ interface Mission {
   notation?: number | null; jalons?: Record<string, string>; independance?: Record<string, unknown>; champs?: ChampsValeurs
   rapports?: { id: string; nom: string; taille: number }[]
 }
+// Compteurs de tête d'écran calculés par le serveur sur TOUT le plan d'audit visible (lot V1).
+interface SyntheseMissions { total: number; enCours: number; critiques: number; enRetard: number; archivees: number }
+interface ReponseMissions { missions: Mission[]; pagination?: MetaPagination; synthese?: SyntheseMissions }
 type ProcLite = { id: string; nom: string }
 type CtrlLite = { id: string; intitule: string; niveau: string }
 interface Constat {
@@ -82,11 +89,13 @@ function critColor(n: number | null): string {
 export default function AuditManager({ canWrite, canFollow = false }: { canWrite: boolean; canFollow?: boolean }) {
   const { t, locale } = useTranslation()
   const a = t.auditInterne
-  const [missions, setMissions] = useState<Mission[]>([])
+  // Lot V1 : plan d'audit paginé côté serveur (recherche, statut, type, archives, page dans l'URL).
+  const liste = useListePaginee<ReponseMissions>('/api/audit/missions')
+  const missions = liste.data?.missions ?? []
+  const synthese = liste.data?.synthese ?? null
   const [risks, setRisks] = useState<Risk[]>([])
   const [openId, setOpenId] = useState<string | null>(null)
   const [constats, setConstats] = useState<Constat[]>([])
-  const [loading, setLoading] = useState(true)
   const [mForm, setMForm] = useState<MForm>(EMPTY_M)
   const [showMForm, setShowMForm] = useState(false)
   const [cForm, setCForm] = useState<CForm>(EMPTY_C)
@@ -105,8 +114,8 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
   // Cotation du programme en cours d'édition (mission dépliée) : missionId → résultats
   const [coteId, setCoteId] = useState<string | null>(null)
   const [cote, setCote] = useState<ProgrammeResultat[]>([])
-  const [mFiltre, setMFiltre] = useState<MissionFiltre>({ q: '', statut: '', type: '' })
-  const [showArchived, setShowArchived] = useState(false)
+  const mFiltre = { statut: liste.param('statut'), type: liste.param('type') }
+  const showArchived = liste.param('archives') === '1'
   const [suiviId, setSuiviId] = useState<string | null>(null)
   const defsChamps = usePersonnalisationChamps('mission')
   const defsConstat = usePersonnalisationChamps('constat')
@@ -117,27 +126,29 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
 
   const jour = (d: string | null) => (d ? new Date(d).toLocaleDateString(locale) : '—')
   const lbl = (dict: unknown, k: string) => (dict as Record<string, string>)[k] ?? k
-  function err(code: string) { return (a.errors as Record<string, string>)[code] ?? (t.personnalisation.errors as Record<string, string>)[code] ?? code }
+  function err(code: string) { return (a.errors as Record<string, string>)[code] ?? (t.personnalisation.errors as Record<string, string>)[code] ?? apiErrorMessage(code, t, code) }
 
-  async function reload() {
-    const [mm, rr, pp, cc] = await Promise.all([
-      fetch('/api/audit/missions').then(x => x.ok ? x.json() : { missions: [] }),
-      fetch('/api/risk-items').then(x => x.ok ? x.json() : { risks: [] }),
-      fetch('/api/processus').then(x => x.ok ? x.json() : { processus: [] }),
-      fetch('/api/controles').then(x => x.ok ? x.json() : { controles: [] }),
-    ])
-    setMissions(mm.missions ?? [])
-    setRisks((rr.risks ?? []).map((r: Risk) => ({ id: r.id, intitule: r.intitule })))
-    setProcs((pp.processus ?? []).map((p: ProcLite) => ({ id: p.id, nom: p.nom })))
-    setCtrls((cc.controles ?? []).map((c: CtrlLite) => ({ id: c.id, intitule: c.intitule, niveau: c.niveau })))
-    setLoading(false)
+  const loading = liste.loading && !liste.data
+  // Menus (risques, processus, contrôles) : chargés une fois ; les contrôles via la vue légère `?vue=options`.
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/risk-items?vue=options').then(x => x.ok ? x.json() : { risks: [] }).catch(() => ({ risks: [] })),
+      fetch('/api/processus').then(x => x.ok ? x.json() : { processus: [] }).catch(() => ({ processus: [] })),
+      fetch('/api/controles?vue=options').then(x => x.ok ? x.json() : { controles: [] }).catch(() => ({ controles: [] })),
+    ]).then(([rr, pp, cc]) => {
+      setRisks((rr.risks ?? []).map((r: Risk) => ({ id: r.id, intitule: r.intitule })))
+      setProcs((pp.processus ?? []).map((p: ProcLite) => ({ id: p.id, nom: p.nom })))
+      setCtrls((cc.controles ?? []).map((c: CtrlLite) => ({ id: c.id, intitule: c.intitule, niveau: c.niveau })))
+    })
+  }, [])
+  function reload() {
+    liste.recharger()
     if (openId) chargerConstats(openId)
   }
   async function chargerConstats(id: string) {
     const d = await fetch(`/api/audit/missions/${id}`).then(x => x.ok ? x.json() : { constats: [] })
     setConstats(d.constats ?? [])
   }
-  useEffect(() => { reload() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function creerMission() {
     if (!mForm.intitule.trim()) { setError(err('intitule_requis')); return }
@@ -268,12 +279,14 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
   }
 
   const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
-  const missionsAff = filtrerMissions(missions, mFiltre).filter(m => showArchived || !m.archiveLe)
-  const nbArchivees = missions.filter(m => m.archiveLe).length
-  const mFiltreActif = Boolean(mFiltre.q || mFiltre.statut || mFiltre.type)
-  const totalRetard = missions.reduce((s, m) => s + m.synthese.enRetard, 0)
-  const totalCritiques = missions.reduce((s, m) => s + m.synthese.critiques, 0)
-  const enCours = missions.filter(m => m.statut === 'EN_COURS').length
+  // Filtres, archives et compteurs : appliqués par le serveur (missions = page courante déjà filtrée).
+  const missionsAff = missions
+  const totalMissions = synthese?.total ?? 0
+  const nbArchivees = synthese?.archivees ?? 0
+  const mFiltreActif = Boolean(liste.recherche || mFiltre.statut || mFiltre.type)
+  const totalRetard = synthese?.enRetard ?? 0
+  const totalCritiques = synthese?.critiques ?? 0
+  const enCours = synthese?.enCours ?? 0
 
   return (
     <div>
@@ -372,26 +385,26 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
       )}
 
       {/* Barre de filtres des missions */}
-      {!loading && missions.length > 0 && (
+      {!loading && totalMissions > 0 && (
         <div className="mb-4 flex flex-wrap gap-2 items-center">
-          <input value={mFiltre.q ?? ''} onChange={e => setMFiltre(f => ({ ...f, q: e.target.value }))} placeholder={a.filtreRecherche} className={`${inp} min-w-[200px]`} />
-          <select value={mFiltre.statut ?? ''} onChange={e => setMFiltre(f => ({ ...f, statut: e.target.value }))} className={inp} aria-label={a.filtreStatut}>
+          <input value={liste.recherche} onChange={e => liste.setRecherche(e.target.value)} placeholder={a.filtreRecherche} className={`${inp} min-w-[200px]`} />
+          <select value={mFiltre.statut} onChange={e => liste.definir({ statut: e.target.value })} className={inp} aria-label={a.filtreStatut}>
             <option value="">{a.filtreStatutTous}</option>
             {MISSION_STATUTS.map(s => <option key={s} value={s}>{lbl(a.missionStatuts, s)}</option>)}
           </select>
-          <select value={mFiltre.type ?? ''} onChange={e => setMFiltre(f => ({ ...f, type: e.target.value }))} className={inp} aria-label={a.typeMission}>
+          <select value={mFiltre.type} onChange={e => liste.definir({ type: e.target.value })} className={inp} aria-label={a.typeMission}>
             <option value="">{a.filtreTypeTous}</option>
             {MISSION_TYPES.map(tt => <option key={tt} value={tt}>{lbl(a.typeOpt, tt)}</option>)}
           </select>
           {mFiltreActif && (
             <>
-              <span className="text-xs text-gray-400">{a.filtreResultat.replace('{n}', String(missionsAff.length)).replace('{total}', String(missions.length))}</span>
-              <button onClick={() => setMFiltre({ q: '', statut: '', type: '' })} className="text-xs text-ebios-600 hover:underline">✕ {a.filtreEffacer}</button>
+              <span className="text-xs text-gray-400">{a.filtreResultat.replace('{n}', String(liste.pagination?.total ?? missionsAff.length)).replace('{total}', String(totalMissions))}</span>
+              <button onClick={() => { liste.setRecherche(''); liste.definir({ q: null, statut: null, type: null }) }} className="text-xs text-ebios-600 hover:underline">✕ {a.filtreEffacer}</button>
             </>
           )}
           {nbArchivees > 0 && (
             <label className="ml-auto flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 cursor-pointer">
-              <input type="checkbox" checked={showArchived} onChange={e => setShowArchived(e.target.checked)} />
+              <input type="checkbox" checked={showArchived} onChange={e => liste.definir({ archives: e.target.checked ? '1' : null })} />
               {a.archivage.showArchived} ({nbArchivees})
             </label>
           )}
@@ -399,7 +412,7 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
       )}
 
       {loading ? <p className="text-gray-400">…</p>
-        : missions.length === 0 ? <p className="text-gray-400 italic">{a.empty}</p>
+        : totalMissions === 0 ? <p className="text-gray-400 italic">{a.empty}</p>
         : missionsAff.length === 0 ? <p className="text-gray-400 italic">{a.filtreAucun}</p>
         : (
           <div className="space-y-3">
@@ -632,6 +645,7 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
             ))}
           </div>
         )}
+      {!loading && totalMissions > 0 && <Pagination pagination={liste.pagination} onPage={page => liste.definir({ page })} onTaille={taille => liste.definir({ taille })} />}
     </div>
   )
 }

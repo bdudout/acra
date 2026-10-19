@@ -1,47 +1,31 @@
 import { missingExclusionJustifications } from '@/lib/conformite'
-import { canReadOrgResource, peutGererConformite } from '@/lib/permissions'
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { lockConformite, ensureConformiteRow } from '@/lib/row-lock.server'
-import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { getAnalyseScope } from '@/lib/org-context.server'
+import { canReadOrgResource, peutGererConformite } from '@/lib/permissions'
+import { requireSession } from '@/lib/route-guard.server'
+import { withAccess } from '@/lib/with-access.server'
 import {
-  sanitizeConformite, applyConformiteStatut, applyConformiteEntry, conformiteStats,
+  sanitizeConformite, applyConformiteEntry, conformiteStats,
   CONFORMITE_STATUTS, CONFORMITE_TRAITEMENTS, type ConformiteStatut, type ConformiteTraitement,
 } from '@/lib/conformite'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { shouldSnapshotOnChange, usesConformiteEntity } from '@/lib/conformite-config'
-import { getFrameworkControles, FRAMEWORK_META, type FrameworkId } from '@/lib/frameworks-data'
 import { getExigencesFor } from '@/lib/referentiel.server'
 import { getServerLocale } from '@/lib/i18n'
-import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
+import { auditLog, getClientIp } from '@/lib/logger'
 
-/** Gestion de la conformité : gouvernance, dont CONFORMITE et DPO (lib/permissions). */
-const canManageOrgConformite = (role: UserRole): boolean => peutGererConformite(role)
+/** Écritures : rôle EFFECTIF de gouvernance (dont CONFORMITE et DPO) dans l'org CIBLE (A01/CWE-863). */
+const GESTION = { org: { param: 'orgId' }, allow: peutGererConformite, rateLimit: { bucket: 'org-conformite' } } as const
 
 /** Discriminant de suivi : "" = suivi org-wide ; sinon libellé d'entité/socle. */
 function cleanEntite(v: unknown): string {
   return typeof v === 'string' ? v.trim().slice(0, 80) : ''
 }
 
-/** Contrôle commun : session, rôle, périmètre org, feature active, référentiel connu. */
-async function guard(req: NextRequest, orgId: string) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return { error: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
-  const userId = (session.user as any).id
-  const instanceRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
-
-  const rl = await rateLimit(`org-conformite:${userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
-  if (!rl.allowed) return { error: NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) }) }
-
-  // Rôle EFFECTIF dans l'org CIBLE (orgId param), pas le rôle d'instance → A01/CWE-863.
-  // null = aucune appartenance couvrant cet org → hors périmètre (subsume la visibilité).
-  const userRole = await getEffectiveRoleForOrg(userId, instanceRole, orgId)
-  if (!userRole) return { error: NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 }) }
-  if (!canManageOrgConformite(userRole)) return { error: NextResponse.json({ error: 'Accès refusé' }, { status: 403 }) }
-
+/** Contrôle commun des éditions : feature active, conformité portée au niveau organisation, référentiel connu. */
+async function preparer(req: Request, orgId: string) {
   const orgConfig = await getOrgConfig(orgId)
   if (!orgConfig.conformiteActive) return { error: NextResponse.json({ error: 'Conformité désactivée' }, { status: 403 }) }
   if (!usesConformiteEntity(orgConfig.conformiteNiveau)) return { error: NextResponse.json({ error: 'Conformité non portée au niveau organisation' }, { status: 409 }) }
@@ -53,7 +37,7 @@ async function guard(req: NextRequest, orgId: string) {
   }
   // Suivi ciblé : "" (org-wide) ou un libellé d'entité/socle (multi-suivis).
   const entite = cleanEntite(body?.entite)
-  return { userId, userRole, orgConfig, body, referentiel, entite }
+  return { orgConfig, body, referentiel, entite }
 }
 
 /** Récupère (et crée si besoin) le SUIVI Conformite (organisation × référentiel × entité), tolérant aux créations concurrentes. */
@@ -67,11 +51,10 @@ async function getOrCreate(orgId: string, referentiel: string, entite: string) {
  * de la conformité de référence de l'organisation. Body { referentiel, ref, statut }.
  * Crée un snapshot si le mode est CHANGEMENT. Renvoie les stats à jour.
  */
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
-  const { orgId } = await params
-  const g = await guard(req, orgId)
-  if ('error' in g) return g.error
-  const { body, referentiel, entite, orgConfig, userId } = g
+export const PATCH = withAccess(GESTION, async (req, { user: { id: userId }, orgId }) => {
+  const g = await preparer(req, orgId)
+  if (g.error) return g.error
+  const { body, referentiel, entite, orgConfig } = g
 
   const ref = String(body?.ref ?? '').trim()
   const statut = body?.statut as ConformiteStatut
@@ -105,17 +88,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ or
   })
   if (!result) return NextResponse.json({ error: 'NA_JUSTIFICATION_REQUIRED' }, { status: 400 })
   return NextResponse.json({ ok: true, stats: conformiteStats(result, controles.length) })
-}
+})
 
 /**
  * POST /api/organizations/[orgId]/conformite — fige une version (snapshot) de la
  * conformité de référence courante. Body { referentiel, label? }. Mode MANUEL.
  */
-export async function POST(req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
-  const { orgId } = await params
-  const g = await guard(req, orgId)
-  if ('error' in g) return g.error
-  const { body, referentiel, entite, userId } = g
+export const POST = withAccess(GESTION, async (req, { user: { id: userId }, orgId }) => {
+  const g = await preparer(req, orgId)
+  if (g.error) return g.error
+  const { body, referentiel, entite } = g
 
   const conf = await getOrCreate(orgId, referentiel, entite)
   const label = typeof body?.label === 'string' ? body.label.trim().slice(0, 120) || null : null
@@ -124,31 +106,24 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ org
     select: { id: true, createdAt: true, label: true },
   })
   return NextResponse.json({ ok: true, snapshot: snap })
-}
+})
 
 /**
  * DELETE /api/organizations/[orgId]/conformite?referentiel=X&entite=Y — ARRÊTE le
  * suivi de conformité (supprime le suivi + ses snapshots par cascade). Réservé aux
  * rôles de gouvernance ; sans effet si le suivi n'existe pas.
  */
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
-  const { orgId } = await params
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as any).id
-  const instanceRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
-  const userRole = await getEffectiveRoleForOrg(userId, instanceRole, orgId)
-  if (!userRole) return NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 })
-  if (!canManageOrgConformite(userRole)) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+export const DELETE = withAccess(GESTION, async (req, { user, role, orgId }) => {
 
   const sp = new URL(req.url).searchParams
   const referentiel = (sp.get('referentiel') ?? '').trim()
   const entite = cleanEntite(sp.get('entite'))
   if (!referentiel || referentiel === 'CUSTOM') return NextResponse.json({ error: 'Référentiel invalide' }, { status: 400 })
 
-  await prisma.conformite.deleteMany({ where: { organizationId: orgId, referentiel, entite } })
+  const { count } = await prisma.conformite.deleteMany({ where: { organizationId: orgId, referentiel, entite } })
+  if (count) await auditLog('CONFORMITE_UPDATED', { userId: user.id, userRole: role, organizationId: orgId, ip: getClientIp(req), targetType: 'conformite', details: { action: 'suivi-delete', referentiel, entite } })
   return NextResponse.json({ ok: true })
-}
+})
 
 /**
  * GET /api/organizations/[orgId]/conformite?referentiel=ISO27001 — état courant +
@@ -157,12 +132,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ o
  */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as any).id
-  const userRole: UserRole = (session.user as any).role ?? 'ANALYSTE'
-
-  const scope = await getAnalyseScope(userId, userRole)
+  const g = await requireSession()
+  if (g.error) return g.error
+  const scope = await getAnalyseScope(g.user.id, g.user.role)
   if (!canReadOrgResource(orgId, scope.scope)) {
     return NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 })
   }

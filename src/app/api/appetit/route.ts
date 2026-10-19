@@ -1,7 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { NextResponse } from 'next/server'
+import { withAccess } from '@/lib/with-access.server'
 import { Prisma } from '@prisma/client'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig, upsertOrgConfig } from '@/lib/org-config.server'
@@ -18,13 +16,9 @@ function peutGouvernerAppetit(role: UserRole): boolean {
 }
 
 // GET /api/appetit — configuration effective (héritée) + droit d'édition.
-export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const userId = (session.user as { id: string }).id
-
-  const scope = await getAnalyseScope(userId, instanceRole)
+// Sans organisation active : { active: false } (pas de 400) — d'où `org: 'none'`.
+export const GET = withAccess({ org: 'none' }, async (_req, { user }) => {
+  const scope = await getAnalyseScope(user.id, user.role)
   const userRole = scope.role
   if (!scope.activeOrgId) return NextResponse.json({ active: false })
   const cfg = await getOrgConfig(scope.activeOrgId)
@@ -37,19 +31,13 @@ export async function GET() {
     seuilMin: SEUIL_MIN,
     seuilMax: SEUIL_MAX,
   })
-}
+})
 
 // PUT /api/appetit — définit l'appétit de l'organisation ACTIVE (gouvernance).
-export async function PUT(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const userId = (session.user as { id: string }).id
-
-  const scope = await getAnalyseScope(userId, instanceRole)
-  const userRole = scope.role
-  if (!scope.activeOrgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
-  const cfg = await getOrgConfig(scope.activeOrgId)
+// Module vérifié AVANT le rôle (ordre conservé) : le contrôle de rôle reste dans le handler.
+export const PUT = withAccess({ org: 'active', rateLimit: { bucket: 'appetit' } }, async (req, { user, role: userRole, orgId }) => {
+  const userId = user.id
+  const cfg = await getOrgConfig(orgId)
   if (!cfg.registreRisquesActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
   if (!peutGouvernerAppetit(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
@@ -58,11 +46,10 @@ export async function PUT(req: NextRequest) {
   if (erreur) return NextResponse.json({ error: erreur }, { status: 400 })
   const appetitRisque = cleanAppetitConfig(body)
 
-  const orgId = scope.activeOrgId
   await upsertOrgConfig(orgId, { appetitRisque: appetitRisque as unknown as Prisma.InputJsonValue })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId, userRole, organizationId: orgId, targetId: orgId, targetType: 'organization', ip: getClientIp(req),
     details: { scope: 'appetit-risque' },
   })
   return NextResponse.json({ appetit: appetitRisque })
-}
+})

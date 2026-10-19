@@ -10,7 +10,10 @@ vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.config, upsertOrgConfig: (id: string, data: object) => m.upsert({ where: { id }, create: { id, ...data }, update: data }) }))
 vi.mock('@/lib/logger', () => ({ auditLog: m.audit, getClientIp: () => '127.0.0.1' }))
 
-import { GET, PUT } from '@/app/api/incidents/config/route'
+import { GET, PUT as PUT_ROUTE } from '@/app/api/incidents/config/route'
+// Routes migrées vers withAccess : second argument (paramètres de route) obligatoire.
+const NO_PARAMS = { params: Promise.resolve({}) }
+const PUT = (r: NextRequest) => PUT_ROUTE(r, NO_PARAMS)
 
 const put = (body: unknown) => new NextRequest('http://x/api/incidents/config', { method: 'PUT', body: JSON.stringify(body), headers: { 'content-type': 'application/json' } })
 

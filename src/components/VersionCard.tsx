@@ -6,6 +6,7 @@
 //  - instance de démonstration gérée : déclenchement du workflow GitHub (deploy) ;
 //  - instance auto-hébergée avec agent hôte : demande déposée pour l'agent, qui
 //    sauvegarde, met à jour (git), reconstruit et vérifie la santé ;
+//  - profil multi-instance (« ha ») : procédure de mise à jour progressive (scripts/update-ha.sh), sans bouton ;
 //  - sinon : commandes exactes à lancer sur le serveur.
 
 import { useCallback, useEffect, useState } from 'react'
@@ -39,6 +40,8 @@ interface VersionInfo {
   reachable: boolean
   repo: string
   deployConfigured: boolean
+  /** Profil multi-instance (lot H1.4) : mise à jour progressive lancée sur l'hôte, pas de bouton. */
+  haProfile?: boolean
 }
 
 export default function VersionCard() {
@@ -90,6 +93,9 @@ export default function VersionCard() {
   }
 
   const other: Channel = info?.channel === 'beta' ? 'stable' : 'beta'
+  // Le bouton passe par l'agent mono-instance : jamais en profil « ha » (l'API le refuse aussi).
+  const ha = Boolean(info?.haProfile)
+  const viaAgent = Boolean(info && !info.deployConfigured && info.agentAvailable && !ha)
   const st = info?.updateStatus
   const states = v.states as Record<string, string>
 
@@ -139,10 +145,19 @@ export default function VersionCard() {
       </div>
 
       {/* Instance auto-hébergée avec agent : mise à jour depuis l'interface. */}
-      {info && !info.deployConfigured && info.agentAvailable && (
+      {viaAgent && (
         <p className="mt-3 text-xs text-gray-500">{v.restore.preUpdateNote}</p>
       )}
-      {info && !info.deployConfigured && info.agentAvailable && (
+      {info && ha && !info.deployConfigured && (
+        <div className="mt-3 rounded-md border border-ebios-200 bg-ebios-50 px-3 py-2 text-xs text-gray-700 space-y-2">
+          <p className="font-medium text-ebios-800">{v.haTitle}</p>
+          <p>{v.haIntro}</p>
+          <pre className="overflow-x-auto rounded-sm bg-white p-2 font-mono text-[11px]">{`scripts/update-ha.sh ${info.channel} --pitr-confirmed`}</pre>
+          <pre className="overflow-x-auto rounded-sm bg-white p-2 font-mono text-[11px]">{`scripts/update-ha.sh ${info.channel} --backup-cmd "pgbackrest --stanza=acra backup --type=full"`}</pre>
+          <p>{v.haDoc}</p>
+        </div>
+      )}
+      {viaAgent && info && (
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <button onClick={() => requestUpdate(info.channel)} disabled={busy || inProgress} className="btn-primary text-sm inline-flex items-center gap-1.5 disabled:opacity-50">
             <Download size={14} aria-hidden="true" /> {v.updateNow}
@@ -158,13 +173,13 @@ export default function VersionCard() {
         </p>
       )}
       {message && <p className="mt-2 text-sm text-ebios-700">{message}</p>}
-      {info && !info.deployConfigured && (info.agentAvailable || (info.snapshots?.length ?? 0) > 0 || info.updateStatus) && (
+      {info && !info.deployConfigured && !ha && (info.agentAvailable || (info.snapshots?.length ?? 0) > 0 || info.updateStatus) && (
         <UpdateRestorePanel status={(info.updateStatus as FullUpdateStatus | null) ?? null} run={info.run ?? null} snapshots={info.snapshots ?? []} impacts={info.impacts} retentionDays={info.failedDbRetentionDays} offsite={info.offsite ?? null} offsiteMaxAgeHours={info.offsiteMaxAgeHours} agentAvailable={info.agentAvailable} onChanged={load} />
       )}
 
       <details className="mt-3 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">
         <summary className="cursor-pointer font-medium text-gray-700">{v.helpTitle}</summary>
-        {info?.deployConfigured ? <p className="mt-2">{v.helpOneClick}</p> : (
+        {info?.deployConfigured ? <p className="mt-2">{v.helpOneClick}</p> : ha ? <p className="mt-2">{v.haDoc}</p> : (
           <div className="mt-2 space-y-2">
             <p>{v.commandsIntro}</p>
             <p className="font-medium">{v.commandStable}</p>

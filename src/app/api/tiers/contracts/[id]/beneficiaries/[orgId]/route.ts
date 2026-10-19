@@ -1,21 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { decideBeneficiaryTransition } from '@/lib/tier-contract-coverage'
 import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 
 export const dynamic = 'force-dynamic'
 
 // Confirmation locale obligatoire : un droit ADMIN hérité du groupe ne suffit pas.
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string; orgId: string }> }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const { id, orgId } = await params
+// D'où `org: 'none'` : le contrôle porte sur l'appartenance DIRECTE à `orgId` (pas le rôle effectif hérité).
+export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'tier-contract-beneficiaries' } }, async (req, { user, params }) => {
+  const userId = user.id
+  const { id, orgId } = params
   const body = await req.json().catch(() => ({}))
   if (body.decision !== 'CONFIRM' && body.decision !== 'REJECT') {
     return NextResponse.json({ error: 'invalid_decision' }, { status: 400 })
@@ -65,4 +63,4 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     details: { arrangementId: id },
   })
   return NextResponse.json(result.beneficiary)
-}
+})

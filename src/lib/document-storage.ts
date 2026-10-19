@@ -3,15 +3,15 @@
 // (put/get/delete) découple le métier du backend :
 //   - DÉFAUT : volume local (dossier configurable, monté en volume Docker en prod
 //     mono-serveur) — zéro dépendance ;
-//   - PROD scalable : OVH Object Storage (S3-compatible) — adaptateur séparé,
-//     chargé dynamiquement quand DOCUMENT_STORAGE=s3 (à provisionner).
+//   - MULTI-INSTANCE : stockage objet S3 compatible (souverain, versionné, chiffré) —
+//     adaptateur lib/document-storage-s3.ts, chargé quand DOCUMENT_STORAGE=s3.
 // Sélection par variable d'environnement. Aucune URL publique : l'accès passe
 // toujours par une route authentifiée qui lit via get().
 
 import { mkdir, writeFile, readFile, unlink } from 'node:fs/promises'
 import path from 'node:path'
 
-/** Interface de stockage de documents (put/get/delete par clé) ; implémentée par l'adaptateur volume local. */
+/** Interface de stockage de documents (put/get/delete par clé) ; implémentée par le volume local et l'adaptateur S3. */
 export interface DocumentStorage {
   put(key: string, bytes: Buffer, mime?: string): Promise<void>
   get(key: string): Promise<Buffer>
@@ -59,18 +59,12 @@ export async function getDocumentStorage(): Promise<DocumentStorage> {
   const backend = (process.env.DOCUMENT_STORAGE ?? 'local').toLowerCase()
 
   if (backend === 's3') {
-    // Adaptateur OVH Object Storage (S3-compatible), chargé dynamiquement pour ne
-    // pas peser sur les builds qui n'en ont pas besoin. À ajouter au provisioning.
-    try {
-      // Chemin en variable : l'adaptateur est optionnel (ajouté au provisioning),
-      // on ne veut pas que la compilation exige sa présence.
-      const modPath = './document-storage-s3'
-      const mod = await import(modPath) as { s3Storage: () => DocumentStorage }
-      cached = mod.s3Storage()
-      return cached
-    } catch {
-      throw new Error('DOCUMENT_STORAGE=s3 mais l\'adaptateur S3 n\'est pas présent (src/lib/document-storage-s3.ts). Provisionner OVH Object Storage puis ajouter l\'adaptateur, ou repasser à DOCUMENT_STORAGE=local.')
-    }
+    // Adaptateur S3 compatible (lib/document-storage-s3.ts, sans dépendance), chargé à la demande.
+    // Une configuration incomplète lève une erreur nommant la variable manquante : jamais de repli
+    // silencieux sur le disque local (en multi-instance, chaque instance aurait ses propres fichiers).
+    const mod = await import('./document-storage-s3')
+    cached = mod.s3Storage()
+    return cached
   }
 
   const dir = process.env.DOCUMENT_STORAGE_DIR || path.join(process.cwd(), '.data', 'documents')

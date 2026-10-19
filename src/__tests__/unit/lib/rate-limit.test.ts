@@ -1,6 +1,6 @@
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest'
 import {
-  rateLimit, rateLimitHeaders, configureRateLimitStore, getRateLimitStore,
+  rateLimit, rateLimitPeek, rateLimitHeaders, configureRateLimitStore, getRateLimitStore,
   InMemoryRateLimitStore, type RateLimitStore, type RateLimitResult,
 } from '@/lib/rate-limit'
 import { RedisRateLimitStore, type RedisLike } from '@/lib/rate-limit-redis'
@@ -76,6 +76,7 @@ describe('RedisRateLimitStore — store distribué (adaptateur)', () => {
       pexpire: vi.fn(async (k: string, ms: number) => { ttls.set(k, ms); return 1 }),
       pttl: vi.fn(async (k: string) => ttls.get(k) ?? -1),
       del: vi.fn(async (k: string) => { counters.delete(k); ttls.delete(k); return 1 }),
+      get: vi.fn(async (k: string) => (counters.has(k) ? String(counters.get(k)) : null)),
     }
     return { client, counters, ttls }
   }
@@ -110,6 +111,33 @@ describe('RedisRateLimitStore — store distribué (adaptateur)', () => {
     await store.reset('y')
     expect(client.del).toHaveBeenCalledWith('rl:y')
     expect((await store.hit('y', 1, 1_000)).allowed).toBe(true) // repart à zéro après reset
+  })
+})
+
+describe('rateLimitPeek — lecture sans incrément', () => {
+  it('mémoire : lit l\'état sans consommer, bloque au-delà de la limite', async () => {
+    const key = `peek:${Math.random()}`
+    expect(await rateLimitPeek(key, 2)).toMatchObject({ allowed: true, remaining: 2 })
+    await rateLimit(key, 2, 60_000); await rateLimit(key, 2, 60_000)
+    expect(await rateLimitPeek(key, 2)).toMatchObject({ allowed: false, remaining: 0 })
+    expect(await rateLimitPeek(key, 2)).toMatchObject({ allowed: false, remaining: 0 })
+  })
+  it('Redis : lit le compteur partagé (GET), sans INCR', async () => {
+    const counters = new Map<string, number>([['rl:z', 3]])
+    const client: RedisLike = {
+      incr: vi.fn(), pexpire: vi.fn(), pttl: vi.fn(async () => 1_000), del: vi.fn(),
+      get: vi.fn(async (k: string) => (counters.has(k) ? String(counters.get(k)) : null)),
+    }
+    const r = await new RedisRateLimitStore(client).peek('z', 3)
+    expect(r.allowed).toBe(false)
+    expect(client.incr).not.toHaveBeenCalled()
+    expect((await new RedisRateLimitStore(client).peek('absent', 3)).allowed).toBe(true)
+  })
+  it('store sans peek (tiers) : autorise sans consommer', async () => {
+    const hit = vi.fn()
+    configureRateLimitStore({ hit, reset: async () => {} })
+    expect((await rateLimitPeek('k', 1)).allowed).toBe(true)
+    expect(hit).not.toHaveBeenCalled()
   })
 })
 
