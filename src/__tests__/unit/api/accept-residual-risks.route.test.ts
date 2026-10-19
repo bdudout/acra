@@ -67,9 +67,20 @@ describe('POST /api/analyses/[id]/accept-residual-risks — préconditions (n° 
     setSession('DIRECTION_METIER')
     vi.mocked(getEffectiveRoleForOrg).mockResolvedValue('DIRECTION_METIER')
   })
-  const analyseEn = (statut: string) => vi.mocked(prisma.analyse.findFirst).mockResolvedValue({
+  // L'analyse est partagée en lecture avec la direction : la visibilité (n° 63) est acquise, la règle
+  // propre à l'acceptation (n° 56) est seule en jeu.
+  const analyseEn = (statut: string, partagee = true) => vi.mocked(prisma.analyse.findFirst).mockResolvedValue({
     id: 'a1', nom: 'A', organizationId: 'orgX', deletedAt: null, statut, risquesResiduelsStatut: 'EN_ATTENTE',
+    userId: 'auteur', accesUtilisateurs: partagee ? [{ userId: 'u1', permission: 'LECTURE' }] : [],
   } as never)
+
+  it('brouillon EN_COURS non partagé : 403 ACCES_ANALYSE_REFUSE avant toute règle d\'acceptation (n° 63)', async () => {
+    analyseEn('EN_COURS', false)
+    const res = await POST(req({ action: 'ACCEPTER' }), params)
+    expect(res.status).toBe(403)
+    expect((await res.json()).error).toBe('ACCES_ANALYSE_REFUSE')
+    expect(prisma.analyse.update).not.toHaveBeenCalled()
+  })
 
   it('analyse EN_COURS → 400 ANALYSE_NON_SOUMISE (ACCEPTER et REFUSER)', async () => {
     analyseEn('EN_COURS')

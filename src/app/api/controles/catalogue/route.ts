@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
+import { peutDefinir2eLigne, type UserRole, optionsDefinition } from '@/lib/permissions'
 import { withAccess } from '@/lib/with-access.server'
 import { cleanControleInput } from '@/lib/controle'
 import { listControlTemplates } from '@/lib/controle-templates'
@@ -27,7 +27,7 @@ const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().to
 async function context(userId: string, role: UserRole, orgId: string) {
   const cfg = await getOrgConfig(orgId)
   if (!cfg.controlePermanentActive) return { ok: false as const, response: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
-  if (!peutDefinir2eLigne(role, { secondeLigneActive: cfg.secondeLigneActive })) return { ok: false as const, response: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
+  if (!peutDefinir2eLigne(role, optionsDefinition(cfg))) return { ok: false as const, response: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
   return { ok: true as const, userId, role, orgId }
 }
 

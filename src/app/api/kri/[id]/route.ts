@@ -5,7 +5,7 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import type { SessionUser } from '@/lib/route-guard.server'
 import { withAccess } from '@/lib/with-access.server'
 import { validateKriInput, cleanKriInput, evaluerKri, tendanceKri, type KriSens } from '@/lib/kri'
-import { peutDefinirKri } from '@/lib/permissions'
+import { peutDefinirKri, optionsDefinition } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -25,7 +25,7 @@ async function loadInScope(user: SessionUser, id: string) {
   const userRole = await roleSurRessource(userId, user.role, kri.organizationId)
   const cfg = await getOrgConfig(kri.organizationId)
   if (!cfg.kriActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
-  return { error: null, userId, userRole, kri, secondeLigneActive: cfg.secondeLigneActive }
+  return { error: null, userId, userRole, kri, secondeLigneActive: cfg.secondeLigneActive, definition: optionsDefinition(cfg) }
 }
 
 // GET /api/kri/[id] — détail + historique des mesures + statut/tendance.
@@ -56,7 +56,7 @@ export const GET = withAccess({ org: 'none' }, async (_req, { user, params: { id
 export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'kri' } }, async (req, { user, params: { id } }) => {
   const c = await loadInScope(user, id)
   if (c.error) return c.error
-  if (!peutDefinirKri(c.userRole, { secondeLigneActive: c.secondeLigneActive })) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+  if (!peutDefinirKri(c.userRole, c.definition)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
   const erreur = validateKriInput(body, { partial: true })
@@ -85,7 +85,7 @@ export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'kri' } }, a
 export const DELETE = withAccess({ org: 'none', rateLimit: { bucket: 'kri' } }, async (req, { user, params: { id } }) => {
   const c = await loadInScope(user, id)
   if (c.error) return c.error
-  if (!peutDefinirKri(c.userRole, { secondeLigneActive: c.secondeLigneActive })) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+  if (!peutDefinirKri(c.userRole, c.definition)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   await prisma.kri.delete({ where: { id } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {

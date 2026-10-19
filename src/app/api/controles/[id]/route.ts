@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope, roleSurRessource } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
+import { peutDefinir2eLigne, type UserRole, optionsDefinition, type OptionsDefinition } from '@/lib/permissions'
 import { validateControleInput, cleanControleInput } from '@/lib/controle'
 import { champsL3Modification } from '@/lib/controle-l3'
 import { sanitizeChampsConfig, fusionnerChamps, avecChampsVisibles } from '@/lib/champs-perso'
@@ -17,8 +17,8 @@ export const dynamic = 'force-dynamic'
 // org: 'none' : le contrôle est cherché dans tout le périmètre visible (sans org active requise).
 const access = { org: 'none', rateLimit: { bucket: 'controles' } } as const
 
-function peutDefinir(role: UserRole, secondeLigneActive: boolean): boolean {
-  return peutDefinir2eLigne(role, { secondeLigneActive })
+function peutDefinir(role: UserRole, opts: OptionsDefinition): boolean {
+  return peutDefinir2eLigne(role, opts)
 }
 
 async function loadInScope(user: SessionUser, id: string) {
@@ -34,14 +34,14 @@ async function loadInScope(user: SessionUser, id: string) {
   const userRole = await roleSurRessource(userId, user.role, controle.organizationId)
   const cfg = await getOrgConfig(controle.organizationId)
   if (!cfg.controlePermanentActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
-  return { error: null, userId, userRole, orgId: controle.organizationId, secondeLigneActive: cfg.secondeLigneActive, champsPersonnalises: cfg.champsPersonnalises, champsExistants: controle.champs }
+  return { error: null, userId, userRole, orgId: controle.organizationId, secondeLigneActive: cfg.secondeLigneActive, definition: optionsDefinition(cfg), champsPersonnalises: cfg.champsPersonnalises, champsExistants: controle.champs }
 }
 
 // PATCH /api/controles/[id] — modifier un contrôle (2ᵉ ligne). Mise à jour PARTIELLE.
 export const PATCH = withAccess(access, async (req, { user, params: { id } }) => {
   const c = await loadInScope(user, id)
   if (c.error) return c.error
-  if (!peutDefinir(c.userRole, c.secondeLigneActive)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+  if (!peutDefinir(c.userRole, c.definition)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
   const erreur = validateControleInput(body)
@@ -80,7 +80,7 @@ export const PATCH = withAccess(access, async (req, { user, params: { id } }) =>
 export const DELETE = withAccess(access, async (req, { user, params: { id } }) => {
   const c = await loadInScope(user, id)
   if (c.error) return c.error
-  if (!peutDefinir(c.userRole, c.secondeLigneActive)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+  if (!peutDefinir(c.userRole, c.definition)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   await prisma.controle.delete({ where: { id } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {

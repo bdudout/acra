@@ -92,7 +92,9 @@ export const FRAMEWORK_META: Record<FrameworkId, { nom: string; version: string;
   SOC2:       { nom: 'SOC 2 Type II',         version: 'TSC 2017 (rév. 2022)', icon: '🧾', cible: 'Éditeurs SaaS / cloud — assurance clients B2B' },
   NIST_SSDF:  { nom: 'NIST SSDF',             version: 'SP 800-218', icon: '🧬', cible: 'Développement logiciel sécurisé / DevSecOps (CI/CD)' },
   RGS:        { nom: 'RGS',                  version: 'v2.0',     icon: '🏛️', cible: 'Téléservices publics / homologation SSI (France)' },
-  RECYF:      { nom: 'ReCyF',                version: 'ANSSI 2026', icon: '🇫🇷', cible: 'Entités NIS2 (EEI/EE) — transposition opérationnelle française' },
+  // Intitulé officiel ANSSI (cyber.gouv.fr, « La directive NIS 2 ») : « Référentiel Cyber France (ReCyF) » — mesures
+  // recommandées pour atteindre les objectifs de sécurité fixés par NIS 2 (n° 53).
+  RECYF:      { nom: 'ReCyF — Référentiel Cyber France (NIS 2)', version: 'ANSSI 2026', icon: '🇫🇷', cible: 'Entités NIS2 (EEI/EE) — transposition opérationnelle française' },
   TISAX:      { nom: 'TISAX / VDA-ISA',      version: 'VDA-ISA v6', icon: '🚗', cible: 'Filière automobile — fournisseurs/équipementiers (exigence OEM)' },
   NCSC_CAF:   { nom: 'NCSC Cyber Assessment Framework', version: 'v4.0', icon: '🇬🇧', cible: 'Services essentiels et opérateurs critiques (Royaume-Uni)' },
   EIDAS:      { nom: 'eIDAS — prestataires de services de confiance', version: 'UE 910/2014 + 2022/2555, 2024/1183 (CELEX 02014R0910, 18.10.2024)', icon: '🔏', cible: 'Prestataires de services de confiance (signature, cachet, horodatage, envoi recommandé électronique), qualifiés ou non' },

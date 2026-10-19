@@ -13,7 +13,7 @@ interface PlanRow { id: string; titre: string; statut: string; priorite: string;
 const PLAN_STATUTS = ['A_FAIRE', 'EN_COURS', 'FAIT'] as const
 const PLAN_PRIORITES = ['CRITIQUE', 'MAJEUR', 'MODERE'] as const
 
-export default function RiskPlans({ analyseId, riskId, editable }: { analyseId: string; riskId: string; editable: boolean }) {
+export default function RiskPlans({ analyseId, riskId, editable, onCount }: { analyseId: string; riskId: string; editable: boolean; onCount?: (n: number) => void }) {
   const { t } = useTranslation()
   const m = t.risquesDirects
   const statutLabel = (s: string) => (m.plansStatuts as Record<string, string>)[s] ?? s
@@ -32,6 +32,8 @@ export default function RiskPlans({ analyseId, riskId, editable }: { analyseId: 
     setRows(d.plans ?? []); setLoading(false)
   }
   useEffect(() => { reload() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  // n° 43 : le nombre d'éléments remonte à la ligne du risque (compteur, avertissement) dès qu'il change.
+  useEffect(() => { if (!loading) onCount?.(rows.length) }, [loading, rows.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function ajouter() {
     if (!titre.trim() || busy) return

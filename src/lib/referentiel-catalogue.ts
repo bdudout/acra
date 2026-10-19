@@ -61,6 +61,7 @@ export const NOM_ALIAS_CODE: Record<string, FrameworkId> = {
   'soc 2 type ii': 'SOC2',
   'rgs': 'RGS',
   'recyf': 'RECYF',
+  'referentiel cyber france': 'RECYF',
   'iec 62443': 'IEC_62443',
   'tisax': 'TISAX',
   'tisax vda isa': 'TISAX',

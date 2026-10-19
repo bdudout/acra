@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import Navbar from '@/components/Navbar'
-import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
+import { peutDefinir2eLigne, type UserRole, optionsDefinition } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import QuestionnairesManager from '@/components/questionnaires/QuestionnairesManager'
@@ -18,7 +18,7 @@ export default async function QuestionnairesPage() {
   const scope = await getAnalyseScope(userId, ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole)
   const cfg = await getOrgConfig(scope.activeOrgId)
   if (!cfg.controlePermanentActive || !scope.role) redirect('/dashboard')
-  const canDefine = peutDefinir2eLigne(scope.role, { secondeLigneActive: cfg.secondeLigneActive })
+  const canDefine = peutDefinir2eLigne(scope.role, optionsDefinition(cfg))
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />

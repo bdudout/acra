@@ -220,8 +220,8 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Recette n° 32 : action principale et « À traiter » pour les rôles sans analyse, au lieu des compteurs à 0. */}
-        {!accueil.centreAnalyses && (
+        {/* Recette n° 32 / n° 57 : actions du rôle et « À traiter » — à la place des compteurs à 0, ou au-dessus des analyses. */}
+        {accueil.actions.length > 0 && (
           <section className="card p-5 mb-8" aria-labelledby="accueil-role-titre">
             <h2 id="accueil-role-titre" className="font-semibold text-gray-800 mb-3">{t.dashboard.accueilRole.titre}</h2>
             <div className="flex flex-wrap gap-2 mb-5">
@@ -450,7 +450,7 @@ export default async function DashboardPage() {
                   <Upload size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {stats.soumises} {t.dashboard.quickApprove}
                 </Link>
               )}
-              {userRole !== 'LECTEUR' && accueil.centreAnalyses && (
+              {isAdminRole(__org.role ?? userRole) && accueil.centreAnalyses && (
                 <Link href="/configuration" className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 text-sm text-gray-700">
                   <Settings size={15} className="inline align-[-0.15em] mr-1.5" aria-hidden="true" /> {t.dashboard.quickConfig}
                 </Link>

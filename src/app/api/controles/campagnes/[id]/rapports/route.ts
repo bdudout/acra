@@ -8,7 +8,7 @@ import { randomUUID, createHash } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
+import { peutDefinir2eLigne, type UserRole, optionsDefinition } from '@/lib/permissions'
 import { withAccess } from '@/lib/with-access.server'
 import { mimeAutorise, contentMatchesMime, sanitizeFilename, storageKeyFor, MAX_DOCUMENT_SIZE } from '@/lib/document'
 import { getDocumentStorage } from '@/lib/document-storage'
@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic'
 async function loadInScope(userId: string, role: UserRole, orgId: string, id: string) {
   const cfg = await getOrgConfig(orgId)
   if (!cfg.controlePermanentActive) return { error: NextResponse.json({ error: 'module_inactif' }, { status: 403 }) }
-  if (!peutDefinir2eLigne(role, { secondeLigneActive: cfg.secondeLigneActive })) return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
+  if (!peutDefinir2eLigne(role, optionsDefinition(cfg))) return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
   const campagne = await prisma.campagneControle.findFirst({ where: { id, organizationId: orgId }, select: { id: true, rapports: true } })
   if (!campagne) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
   return { error: null, userId, userRole: role, orgId, campagne }

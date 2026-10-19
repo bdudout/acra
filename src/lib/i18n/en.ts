@@ -17,6 +17,8 @@ export const en: Translations = {
   // Codes d'erreur stables des gardes d'API (lib/with-access.server) — cf. lib/api-error.ts
   // Barre de pagination des grandes listes (components/Pagination)
   pagination: {
+    chargement: 'Loading…',
+    miseAJour: 'Updating…',
     navigation: 'Pagination',
     resultats: '{debut}–{fin} of {total}',
     parPage: 'Per page',
@@ -1696,11 +1698,11 @@ export const en: Translations = {
     },
     contexteDesc: 'Scope and criteria for risk assessment.',
     perimetreLabel: 'Scope',
-    objectifsLabel: 'Objectives / criteria',
+    objectifsLabel: 'Objectives',
     noContext: 'Not provided.',
     evaluationNote: 'Risk prioritisation against criteria (read-only).',
     guidance: {
-      contexte: { intro: 'Before assessing risks, define what you are studying and the criteria used to judge their importance.', points: ['Set the scope: activities, systems and stakeholders involved.', 'Define the risk assessment and acceptance criteria.', 'Gather relevant information on the internal and external context.'] },
+      contexte: { intro: 'Before assessing risks, define what you are studying and the criteria used to judge their importance.', points: ['Set the scope: activities, systems and stakeholders involved.', 'Check the organisation’s acceptance criterion shown below: it is the one applied in the evaluation phase.', 'Gather relevant information on the internal and external context.'] },
       identification: { intro: 'List whatever could harm your objectives, without yet judging their importance.', points: ['List the risks: feared events and their possible causes.', 'Draw on varied sources: incidents, lessons learned, experts.', 'Aim for completeness: an unidentified risk will not be treated.'] },
       analyse: { intro: 'For each risk, estimate its severity (impact) and its likelihood (probability).', points: ['Assess the consequences if the risk materialises.', 'Estimate the probability given the controls already in place.', 'The risk level combines severity and likelihood.'] },
       evaluation: { intro: 'Compare risk levels against the criteria to decide which to treat first.', points: ['Prioritise the highest risks.', 'Check each risk against the acceptance criteria.', 'Read-only phase: levels come from the analysis.'] },
@@ -1714,7 +1716,7 @@ export const en: Translations = {
     phases: { prepare: 'Prepare', conduct: 'Conduct', communicate: 'Communicate', maintain: 'Maintain' },
     prepareDesc: 'Prepare for the assessment: scope, objectives and assumptions.',
     perimetreLabel: 'Scope',
-    objectifsLabel: 'Objectives / criteria',
+    objectifsLabel: 'Objectives',
     noContext: 'Not provided.',
     communicateNote: 'Communicate results (read-only).',
     maintainNote: 'Keep the assessment current over time.',
@@ -2230,6 +2232,13 @@ export const en: Translations = {
   },
   exportButtons: { pdf: 'Export PDF', csv: 'Export CSV', xlsx: 'Export Excel' },
   risquesDirects: {
+    critereTitre: 'Acceptance criterion applied',
+    critereAppetit: 'A risk is acceptable up to level {seuil} (the organisation’s risk appetite); above it, it must be treated.',
+    critereAppetitCategories: '{n} threshold(s) per category apply to the risks of those categories.',
+    critereAppetitParCategorie: 'Risk appetite defined per category only: other risks follow the scale ({paliers} to be treated).',
+    critereEchelle: 'No risk appetite defined: the organisation’s scale applies — {paliers} to be treated, the others are acceptable.',
+    critereQui: 'Set by the organisation’s administrator, risk manager or CISO; applied as is in the evaluation phase.',
+    critereLien: 'Set the risk appetite',
     pageTitle: 'Risk assessment',
     pageSubtitle: 'Simple assessment (ISO 31000): enter your risks and their level (severity × likelihood).',
     title: 'Risks',
@@ -3563,6 +3572,14 @@ export const en: Translations = {
   },
 
   access: {
+    accesRefuseTitre:    'Access not allowed',
+    accesRefuseTexte:    'The analysis "{nom}" exists in your organisation, but your role does not give you access to it (unshared draft). You can ask its owner for access.',
+    accesRefuseDemander: 'Request access',
+    accesRefuseEnvoi:    'Sending…',
+    accesRefuseEnvoye:   'Request sent to the analysis owner.',
+    accesRefuseEnregistre: 'Request recorded — the owner could not be notified by e-mail (e-mail not configured).',
+    accesRefuseErreur:   'The request could not be sent. Please try again later.',
+    accesRefuseRetour:   'Back to analyses',
     statusTitle:         'Analysis status',
     permLabels: { LECTURE: 'Read-only', EDITION: 'Edit', APPROBATION: 'Approval' } as Record<string, string>,
     permDescs: {
@@ -4596,6 +4613,8 @@ export const en: Translations = {
     reglementaireDesc: 'ICT incident register (DORA major/significant/minor classification) and loss summary (ACPR LDC). Decision support, CSV export.',
     secondeLigneTitle: '2nd line of defence (segregation of duties)',
     secondeLigneDesc: 'Enabled (default): regulated setup — definition/validation by the 2nd line, four-eyes, N2 control-of-control. Disabled: "single-line" mode for non-regulated organisations (the 1st line performs the tasks, without dual validation).',
+    auditeurHorsDefinitionTitle: 'Single line: exclude the auditor from defining controls',
+    auditeurHorsDefinitionDesc: 'Off by default. When on, in "single line" mode the auditor can no longer create or edit controls, campaigns, KRIs and questionnaires, preserving the independence of the third line. No effect when the second line is active.',
     moduleForcedOn: 'Enforced at instance level',
     moduleForcedOff: 'Disabled at instance level',
     learnMore:          'Learn more ↗',
@@ -4637,6 +4656,8 @@ export const en: Translations = {
     notEvaluated: 'Not evaluated',
   },
   conformiteSocle: {
+    recommandesSecteur: 'Recommended for your sector',
+    autresReferentiels: 'Other frameworks',
     stopBtn: 'Stop tracking',
     stopConfirm: 'Stop tracking compliance for “{ref}”{suffix}? The track and its history will be deleted.',
     suiviLabel: 'Scope tracked',

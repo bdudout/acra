@@ -17,6 +17,8 @@ export const de: Translations = {
   // Codes d'erreur stables des gardes d'API (lib/with-access.server) — cf. lib/api-error.ts
   // Barre de pagination des grandes listes (components/Pagination)
   pagination: {
+    chargement: 'Wird geladen…',
+    miseAJour: 'Wird aktualisiert…',
     navigation: 'Seitennavigation',
     resultats: '{debut}–{fin} von {total}',
     parPage: 'Pro Seite',
@@ -1695,11 +1697,11 @@ export const de: Translations = {
     },
     contexteDesc: 'Umfang und Kriterien der Risikobewertung.',
     perimetreLabel: 'Umfang',
-    objectifsLabel: 'Ziele / Kriterien',
+    objectifsLabel: 'Ziele',
     noContext: 'Nicht angegeben.',
     evaluationNote: 'Priorisierung der Risiken nach Kriterien (schreibgeschützt).',
     guidance: {
-      contexte: { intro: 'Bevor Sie Risiken bewerten, legen Sie fest, was Sie untersuchen und nach welchen Kriterien Sie ihre Bedeutung beurteilen.', points: ['Legen Sie den Geltungsbereich fest: betroffene Aktivitäten, Systeme und Beteiligte.', 'Definieren Sie die Bewertungs- und Akzeptanzkriterien.', 'Sammeln Sie relevante Informationen zum internen und externen Kontext.'] },
+      contexte: { intro: 'Bevor Sie Risiken bewerten, legen Sie fest, was Sie untersuchen und nach welchen Kriterien Sie ihre Bedeutung beurteilen.', points: ['Legen Sie den Geltungsbereich fest: betroffene Aktivitäten, Systeme und Beteiligte.', 'Prüfen Sie das unten angezeigte Akzeptanzkriterium der Organisation: Es wird in der Bewertungsphase angewandt.', 'Sammeln Sie relevante Informationen zum internen und externen Kontext.'] },
       identification: { intro: 'Erfassen Sie alles, was Ihre Ziele gefährden könnte, ohne die Bedeutung schon zu bewerten.', points: ['Listen Sie die Risiken auf: befürchtete Ereignisse und ihre möglichen Ursachen.', 'Nutzen Sie vielfältige Quellen: Vorfälle, Erfahrungen, Experten.', 'Streben Sie Vollständigkeit an: ein nicht erkanntes Risiko wird nicht behandelt.'] },
       analyse: { intro: 'Schätzen Sie für jedes Risiko seine Schwere (Auswirkung) und seine Eintrittswahrscheinlichkeit.', points: ['Bewerten Sie die Folgen, falls das Risiko eintritt.', 'Schätzen Sie die Wahrscheinlichkeit angesichts bestehender Maßnahmen.', 'Das Risikoniveau verbindet Schwere und Wahrscheinlichkeit.'] },
       evaluation: { intro: 'Vergleichen Sie die Risikoniveaus mit den Kriterien, um Prioritäten zu setzen.', points: ['Priorisieren Sie die höchsten Risiken.', 'Gleichen Sie jedes Risiko mit den Akzeptanzkriterien ab.', 'Nur-Lese-Phase: die Niveaus stammen aus der Analyse.'] },
@@ -1713,7 +1715,7 @@ export const de: Translations = {
     phases: { prepare: 'Prepare', conduct: 'Conduct', communicate: 'Communicate', maintain: 'Maintain' },
     prepareDesc: 'Bewertung vorbereiten: Umfang, Ziele und Annahmen.',
     perimetreLabel: 'Umfang',
-    objectifsLabel: 'Ziele / Kriterien',
+    objectifsLabel: 'Ziele',
     noContext: 'Nicht angegeben.',
     communicateNote: 'Ergebnisse kommunizieren (schreibgeschützt).',
     maintainNote: 'Die Bewertung aktuell halten.',
@@ -2229,6 +2231,13 @@ export const de: Translations = {
   },
   exportButtons: { pdf: 'PDF exportieren', csv: 'CSV exportieren', xlsx: 'Excel exportieren' },
   risquesDirects: {
+    critereTitre: 'Angewandtes Akzeptanzkriterium',
+    critereAppetit: 'Ein Risiko ist bis Stufe {seuil} akzeptabel (Risikoappetit der Organisation); darüber ist es zu behandeln.',
+    critereAppetitCategories: '{n} Schwellenwert(e) je Kategorie gelten für die Risiken dieser Kategorien.',
+    critereAppetitParCategorie: 'Risikoappetit nur je Kategorie festgelegt: Die übrigen Risiken folgen der Skala (zu behandeln: {paliers}).',
+    critereEchelle: 'Kein Risikoappetit festgelegt: Es gilt die Skala der Organisation – zu behandeln: {paliers}, die übrigen sind akzeptabel.',
+    critereQui: 'Festgelegt von Administrator, Risikomanager oder CISO der Organisation; unverändert in der Bewertungsphase angewandt.',
+    critereLien: 'Risikoappetit festlegen',
     pageTitle: 'Risikobewertung',
     pageSubtitle: 'Einfache Bewertung (ISO 31000): Erfassen Sie Ihre Risiken und deren Stufe (Schweregrad × Eintrittswahrscheinlichkeit).',
     title: 'Risiken',
@@ -3562,6 +3571,14 @@ export const de: Translations = {
   },
 
   access: {
+    accesRefuseTitre:    'Zugriff nicht erlaubt',
+    accesRefuseTexte:    'Die Analyse „{nom}“ ist in Ihrer Organisation vorhanden, aber Ihre Rolle gewährt keinen Zugriff darauf (nicht geteilter Entwurf). Sie können den Eigentümer um Zugriff bitten.',
+    accesRefuseDemander: 'Zugriff anfragen',
+    accesRefuseEnvoi:    'Wird gesendet…',
+    accesRefuseEnvoye:   'Anfrage an den Eigentümer der Analyse gesendet.',
+    accesRefuseEnregistre: 'Anfrage gespeichert — der Eigentümer konnte nicht per E-Mail benachrichtigt werden (E-Mail nicht konfiguriert).',
+    accesRefuseErreur:   'Die Anfrage konnte nicht gesendet werden. Bitte später erneut versuchen.',
+    accesRefuseRetour:   'Zurück zu den Analysen',
     statusTitle:         'Analysestatus',
     permLabels: { LECTURE: 'Nur Lesen', EDITION: 'Bearbeiten', APPROBATION: 'Genehmigung' } as Record<string, string>,
     permDescs: {
@@ -4595,6 +4612,8 @@ export const de: Translations = {
     reglementaireDesc: 'IKT-Vorfallregister (DORA-Klassifizierung schwer/erheblich/gering) und Verlustübersicht (ACPR LDC). Entscheidungshilfe, CSV-Export.',
     secondeLigneTitle: '2. Verteidigungslinie (Funktionstrennung)',
     secondeLigneDesc: 'Aktiviert (Standard): reguliertes Modell — Definition/Validierung durch die 2. Linie, Vier-Augen-Prinzip, Kontrolle der Kontrolle N2. Deaktiviert: „Einlinien"-Modus für nicht regulierte Organisationen (die 1. Linie führt die Aufgaben ohne Doppelvalidierung aus).',
+    auditeurHorsDefinitionTitle: 'Eine Linie: Prüfer von der Festlegung der Kontrollen ausschließen',
+    auditeurHorsDefinitionDesc: 'Standardmäßig deaktiviert. Aktiviert: Im Modus „eine Linie“ kann der Prüfer Kontrollen, Kampagnen, KRIs und Fragebögen nicht mehr anlegen oder ändern – die Unabhängigkeit der dritten Linie bleibt gewahrt. Ohne Wirkung, wenn die zweite Linie aktiv ist.',
     moduleForcedOn: 'Auf Instanzebene erzwungen',
     moduleForcedOff: 'Auf Instanzebene deaktiviert',
     learnMore:          'Mehr erfahren ↗',
@@ -4636,6 +4655,8 @@ export const de: Translations = {
     notEvaluated: 'Nicht bewertet',
   },
   conformiteSocle: {
+    recommandesSecteur: 'Empfohlen für Ihre Branche',
+    autresReferentiels: 'Weitere Frameworks',
     stopBtn: 'Verfolgung beenden',
     stopConfirm: 'Konformitätsverfolgung für „{ref}“{suffix} beenden? Die Verfolgung und ihr Verlauf werden gelöscht.',
     suiviLabel: 'Verfolgter Bereich',

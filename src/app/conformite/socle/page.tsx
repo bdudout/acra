@@ -11,6 +11,9 @@ import { isAdminRole, peutGererConformite, type UserRole } from '@/lib/permissio
 import { usesConformiteEntity, isEntiteLevelConformite } from '@/lib/conformite-config'
 import { listReferentiels } from '@/lib/referentiel.server'
 import OrgConformiteEditor from '@/components/OrgConformiteEditor'
+import { orgSectors } from '@/lib/sector-context.server'
+import { secteurDepuisCodes } from '@/lib/secteur-catalogue'
+import { recommendedFrameworksForSector } from '@/lib/frameworks-data'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -44,6 +47,10 @@ export default async function ConformiteSoclePage({ searchParams }: {
     .filter(r => r.actif && r.code !== 'CUSTOM')
     // Nom versionné dans le sélecteur (ex. « ISO/IEC 27001 (2022) »).
     .map(r => ({ code: r.code, nom: r.version ? `${r.nom} (${r.version})` : r.nom }))
+
+  // n° 53 : référentiels recommandés pour le secteur de l'organisation (hérité), présentés en tête.
+  const secteurOrg = secteurDepuisCodes((await orgSectors(orgId)).effective)
+  const recommandes = (secteurOrg ? recommendedFrameworksForSector(secteurOrg) : []).filter(c => referentiels.some(r => r.code === c))
 
   // Consultation d'un référentiel précis (arrivée via ?ref=…) → sélecteur verrouillé.
   const lockRef = !!(refParam && referentiels.some(r => r.code === refParam))
@@ -84,11 +91,13 @@ export default async function ConformiteSoclePage({ searchParams }: {
                 referentiels={referentiels}
                 initialRef={
                   refParam && referentiels.some(r => r.code === refParam) ? refParam
+                  : recommandes.length ? recommandes[0]
                   : referentiels.some(r => r.code === 'ISO27001') ? 'ISO27001'
                   : referentiels[0].code
                 }
                 multiSuivi={multiSuivi}
                 lockRef={lockRef}
+                recommandes={recommandes}
               />
             </>
           )}

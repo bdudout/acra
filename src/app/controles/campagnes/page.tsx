@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Navbar from '@/components/Navbar'
-import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
+import { peutDefinir2eLigne, type UserRole, optionsDefinition } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import CampagnesControleManager from '@/components/CampagnesControleManager'
@@ -24,7 +24,7 @@ export default async function CampagnesControlePage() {
   // Définition des campagnes = 2ᵉ ligne (pilotage du plan de contrôle).
   // Aligné sur le garde de l'API /api/controles/campagnes (peutDefinir2eLigne).
   const role = scope.role
-  const canDefine = peutDefinir2eLigne(role, { secondeLigneActive: orgConfig.secondeLigneActive })
+  const canDefine = peutDefinir2eLigne(role, optionsDefinition(orgConfig))
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

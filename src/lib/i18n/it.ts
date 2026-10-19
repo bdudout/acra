@@ -17,6 +17,8 @@ export const it: Translations = {
   // Codes d'erreur stables des gardes d'API (lib/with-access.server) — cf. lib/api-error.ts
   // Barre de pagination des grandes listes (components/Pagination)
   pagination: {
+    chargement: 'Caricamento…',
+    miseAJour: 'Aggiornamento…',
     navigation: 'Paginazione',
     resultats: '{debut}–{fin} di {total}',
     parPage: 'Per pagina',
@@ -1696,11 +1698,11 @@ export const it: Translations = {
     },
     contexteDesc: 'Ambito e criteri della valutazione dei rischi.',
     perimetreLabel: 'Ambito',
-    objectifsLabel: 'Obiettivi / criteri',
+    objectifsLabel: 'Obiettivi',
     noContext: 'Non indicato.',
     evaluationNote: 'Prioritizzazione dei rischi secondo i criteri (sola lettura).',
     guidance: {
-      contexte: { intro: 'Prima di valutare i rischi, delimita ciò che studi e i criteri con cui ne giudicherai l’importanza.', points: ['Precisa il perimetro: attività, sistemi e parti interessate coinvolte.', 'Definisci i criteri di valutazione e di accettazione dei rischi.', 'Raccogli le informazioni utili sul contesto interno ed esterno.'] },
+      contexte: { intro: 'Prima di valutare i rischi, delimita ciò che studi e i criteri con cui ne giudicherai l’importanza.', points: ['Precisa il perimetro: attività, sistemi e parti interessate coinvolte.', 'Verifica il criterio di accettazione dell’organizzazione, mostrato qui sotto: è quello applicato nella fase di valutazione.', 'Raccogli le informazioni utili sul contesto interno ed esterno.'] },
       identification: { intro: 'Elenca ciò che potrebbe compromettere i tuoi obiettivi, senza ancora giudicarne l’importanza.', points: ['Elenca i rischi: eventi temuti e le loro possibili cause.', 'Basati su fonti diverse: incidenti, esperienze, esperti.', 'Punta alla completezza: un rischio non identificato non sarà trattato.'] },
       analyse: { intro: 'Per ogni rischio, stima la sua gravità (impatto) e la sua probabilità.', points: ['Valuta le conseguenze se il rischio si concretizza.', 'Stima la probabilità alla luce delle misure già in atto.', 'Il livello di rischio combina gravità e probabilità.'] },
       evaluation: { intro: 'Confronta i livelli di rischio con i criteri per decidere quali trattare per primi.', points: ['Dai priorità ai rischi più elevati.', 'Confronta ogni rischio con i criteri di accettazione.', 'Fase di sola lettura: i livelli provengono dall’analisi.'] },
@@ -1714,7 +1716,7 @@ export const it: Translations = {
     phases: { prepare: 'Prepare', conduct: 'Conduct', communicate: 'Communicate', maintain: 'Maintain' },
     prepareDesc: 'Preparare la valutazione: ambito, obiettivi e ipotesi.',
     perimetreLabel: 'Ambito',
-    objectifsLabel: 'Obiettivi / criteri',
+    objectifsLabel: 'Obiettivi',
     noContext: 'Non indicato.',
     communicateNote: 'Comunicare i risultati (sola lettura).',
     maintainNote: 'Mantenere aggiornata la valutazione.',
@@ -2230,6 +2232,13 @@ export const it: Translations = {
   },
   exportButtons: { pdf: 'Esporta PDF', csv: 'Esporta CSV', xlsx: 'Esporta Excel' },
   risquesDirects: {
+    critereTitre: 'Criterio di accettazione applicato',
+    critereAppetit: 'Un rischio è accettabile fino al livello {seuil} (propensione al rischio dell’organizzazione); oltre, va trattato.',
+    critereAppetitCategories: '{n} soglia/e per categoria si applicano ai rischi di tali categorie.',
+    critereAppetitParCategorie: 'Propensione al rischio definita solo per categoria: gli altri rischi seguono la scala (da trattare: {paliers}).',
+    critereEchelle: 'Nessuna propensione al rischio definita: si applica la scala dell’organizzazione — da trattare: {paliers}, gli altri sono accettabili.',
+    critereQui: 'Impostato dall’amministratore, dal risk manager o dal CISO dell’organizzazione; applicato così com’è nella fase di valutazione.',
+    critereLien: 'Impostare la propensione al rischio',
     pageTitle: 'Valutazione dei rischi',
     pageSubtitle: 'Valutazione semplice (ISO 31000): inserisci i rischi e il loro livello (gravità × verosimiglianza).',
     title: 'Rischi',
@@ -3563,6 +3572,14 @@ export const it: Translations = {
   },
 
   access: {
+    accesRefuseTitre:    'Accesso non autorizzato',
+    accesRefuseTexte:    'L’analisi «{nom}» esiste nella vostra organizzazione, ma il vostro ruolo non vi dà accesso (bozza non condivisa). Potete chiedere l’accesso al suo proprietario.',
+    accesRefuseDemander: 'Richiedi l’accesso',
+    accesRefuseEnvoi:    'Invio…',
+    accesRefuseEnvoye:   'Richiesta inviata al proprietario dell’analisi.',
+    accesRefuseEnregistre: 'Richiesta registrata: non è stato possibile avvisare il proprietario via e-mail (posta non configurata).',
+    accesRefuseErreur:   'Impossibile inviare la richiesta. Riprovate più tardi.',
+    accesRefuseRetour:   'Torna alle analisi',
     statusTitle:         'Stato dell\'analisi',
     permLabels: { LECTURE: 'Sola lettura', EDITION: 'Modifica', APPROBATION: 'Approvazione' } as Record<string, string>,
     permDescs: {
@@ -4596,6 +4613,8 @@ export const it: Translations = {
     reglementaireDesc: 'Registro incidenti ICT (classificazione DORA grave/significativo/minore) e sintesi perdite (LDC ACPR). Supporto alle decisioni, export CSV.',
     secondeLigneTitle: '2ª linea di difesa (separazione delle funzioni)',
     secondeLigneDesc: 'Attivata (predefinito): dispositivo regolamentato — definizione/validazione da parte della 2ª linea, quattro occhi, controllo del controllo N2. Disattivata: modalità «linea unica» per organizzazioni non regolamentate (la 1ª linea esegue i compiti, senza doppia validazione).',
+    auditeurHorsDefinitionTitle: 'Linea unica: escludere l’auditor dalla definizione dei controlli',
+    auditeurHorsDefinitionDesc: 'Disattivata per impostazione predefinita. Attivata: in modalità «linea unica» l’auditor non può più creare né modificare controlli, campagne, KRI e questionari, preservando l’indipendenza della terza linea. Nessun effetto quando la seconda linea è attiva.',
     moduleForcedOn: 'Imposto a livello di istanza',
     moduleForcedOff: 'Disattivato a livello di istanza',
     learnMore:          'Scopri di più ↗',
@@ -4637,6 +4656,8 @@ export const it: Translations = {
     notEvaluated: 'Non valutato',
   },
   conformiteSocle: {
+    recommandesSecteur: 'Consigliati per il vostro settore',
+    autresReferentiels: 'Altri framework',
     stopBtn: 'Interrompi il monitoraggio',
     stopConfirm: 'Interrompere il monitoraggio di conformità per «{ref}»{suffix}? Il monitoraggio e la sua cronologia saranno eliminati.',
     suiviLabel: 'Ambito monitorato',

@@ -8,7 +8,7 @@ import { authOptions } from './auth'
 import { prisma } from './prisma'
 import { getAnalyseScope } from './org-context.server'
 import { getOrgConfig } from './org-config.server'
-import { peutDefinir2eLigne, type UserRole } from './permissions'
+import { peutDefinir2eLigne, optionsDefinition, type UserRole } from './permissions'
 
 export type QuestionnaireContext = { userId: string; userName: string; role: UserRole; orgId: string; canDefine: boolean }
 
@@ -24,7 +24,7 @@ export async function questionnaireContext(): Promise<{ ok: true; ctx: Questionn
     ok: true,
     ctx: {
       userId, userName: session.user.name ?? session.user.email ?? userId, role: scope.role, orgId: scope.activeOrgId,
-      canDefine: peutDefinir2eLigne(scope.role, { secondeLigneActive: cfg.secondeLigneActive }),
+      canDefine: peutDefinir2eLigne(scope.role, optionsDefinition(cfg)),
     },
   }
 }

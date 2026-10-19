@@ -13,6 +13,7 @@ vi.mock('@/lib/i18n/context', () => ({
         snapshot: 'Figer', snapshotting: '…', snapshotHint: 'h', saved: 'Enregistré',
         evalues: '{n}/{total}', loadError: 'load err', saveError: 'save err',
         nonApplicable: 'na', aucunReferentiel: 'aucun',
+        recommandesSecteur: 'Recommandés pour votre secteur', autresReferentiels: 'Autres référentiels',
       },
     },
   }),
@@ -69,5 +70,15 @@ describe('OrgConformiteEditor', () => {
       expect(patch).toBeTruthy()
       expect(JSON.parse((patch![1] as RequestInit).body as string)).toMatchObject({ referentiel: 'ISO27001', ref: 'A.5.1', statut: 'non_conforme' })
     })
+  })
+
+  it('n° 53 : référentiels recommandés pour le secteur en tête du sélecteur, les autres ensuite', () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }) as unknown as typeof fetch
+    const { container } = render(<OrgConformiteEditor orgId="o1" orgNom="Régie" initialRef="RECYF" recommandes={['RECYF']}
+      referentiels={[{ code: 'ISO27001', nom: 'ISO 27001' }, { code: 'RECYF', nom: 'ReCyF — Référentiel Cyber France (NIS 2)' }]} />)
+    const groupes = [...container.querySelectorAll('optgroup')]
+    expect(groupes.map(g => g.getAttribute('label'))).toEqual(['Recommandés pour votre secteur', 'Autres référentiels'])
+    expect(groupes[0].textContent).toContain('NIS 2')
+    expect(groupes[1].textContent).toContain('ISO 27001')
   })
 })

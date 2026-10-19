@@ -79,6 +79,24 @@ export function evaluateRisk(r: EvaluableRisk, ctx: EvaluationContext): RiskEval
   return { decision: upperHalf(seuil, ctx.scale) ? 'treat' : 'accept', basis: 'ECHELLE', niveau, seuil }
 }
 
+/** Libellés des paliers « à traiter » de l'échelle (moitié haute), dans l'ordre croissant. */
+export function paliersATraiter(scale: ScaleConfig): string[] {
+  const sorted = [...scale.seuilsMatrice].sort((a, b) => a.scoreMin - b.scoreMin)
+  return sorted.slice(Math.ceil(sorted.length / 2)).map(s => s.label)
+}
+
+/** Critère d'acceptation appliqué par `evaluateRisk` (n° 51) — affiché dès l'établissement du contexte. */
+export type CritereAcceptation =
+  | { basis: 'APPETIT'; seuil: number | null; nbCategories: number }
+  | { basis: 'ECHELLE'; aTraiter: string[] }
+
+/** Critère d'acceptation de l'organisation : appétit (global et/ou par catégorie), sinon échelle. */
+export function critereAcceptation(ctx: EvaluationContext): CritereAcceptation {
+  const nbCategories = Object.keys(ctx.appetit.parCategorie ?? {}).length
+  if (ctx.appetit.seuilGlobal != null || nbCategories > 0) return { basis: 'APPETIT', seuil: ctx.appetit.seuilGlobal, nbCategories }
+  return { basis: 'ECHELLE', aTraiter: paliersATraiter(ctx.scale) }
+}
+
 /** Trie les risques par niveau ÉVALUÉ décroissant et annote l'évaluation. Non destructif. */
 export function prioritiseRisks<T extends EvaluableRisk>(rows: T[], ctx: EvaluationContext): { row: T; evaluation: RiskEvaluation }[] {
   return rows

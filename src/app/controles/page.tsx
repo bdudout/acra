@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Navbar from '@/components/Navbar'
-import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
+import { peutDefinir2eLigne, type UserRole, optionsDefinition } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import ControlesManager from '@/components/ControlesManager'
@@ -24,7 +24,7 @@ export default async function ControlesPage() {
   // Rôle EFFECTIF dans l'organisation active, comme les API (/api/controles, /api/controles/catalogue) :
   // un ADMIN d'organisation au rôle global « analyste » voit les actions que l'API lui permet.
   const role = (scope.role ?? userRole) as UserRole
-  const canDefine = peutDefinir2eLigne(role, { secondeLigneActive: orgConfig.secondeLigneActive })
+  const canDefine = peutDefinir2eLigne(role, optionsDefinition(orgConfig))
   const canExecute = role !== 'LECTEUR'
 
   return (

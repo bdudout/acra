@@ -109,7 +109,11 @@ export default function IncidentsManager({ canQualify, canConfigure = false, reg
   const { t, locale } = useTranslation()
   const n = t.incidents
   const liste = useListePaginee<{ incidents: Incident[]; config?: IncidentsConfig; pagination?: MetaPagination; synthese?: SyntheseIncidents }>('/api/incidents')
-  const incidents = useMemo(() => liste.data?.incidents ?? [], [liste.data])
+  // n° 43 : un incident qualifié est mis à jour tout de suite dans la liste (réponse du PATCH), sans attendre
+  // le rechargement ; ces mises à jour locales sont effacées dès que les données rechargées arrivent.
+  const [majLocales, setMajLocales] = useState<Record<string, Partial<Incident>>>({})
+  useEffect(() => { setMajLocales({}) }, [liste.data])
+  const incidents = useMemo(() => (liste.data?.incidents ?? []).map(i => (majLocales[i.id] ? { ...i, ...majLocales[i.id] } : i)), [liste.data, majLocales])
   const synthese = liste.data?.synthese ?? null
   const loading = liste.loading && !liste.data
   // Filtre par statut piloté par l'URL (deep-link pilotage : ?statut=DECLARE), appliqué par le serveur.
@@ -288,6 +292,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false, reg
     const data = await res.json().catch(() => ({}))
     setBusy(false)
     if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
+    if (typeof data?.id === 'string') setMajLocales(m => ({ ...m, [data.id]: data as Partial<Incident> }))
     setQualId(null); reload()
   }
 
@@ -547,6 +552,7 @@ export default function IncidentsManager({ canQualify, canConfigure = false, reg
         </div>
       )}
       <div className="card overflow-x-auto">
+        {liste.loading && liste.data && <p role="status" className="px-4 pt-2 text-xs text-gray-400">{t.pagination.miseAJour}</p>}
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs uppercase text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">

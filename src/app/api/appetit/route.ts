@@ -3,17 +3,13 @@ import { withAccess } from '@/lib/with-access.server'
 import { Prisma } from '@prisma/client'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig, upsertOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { peutGouvernerAppetit } from '@/lib/permissions'
 import { validateAppetitConfig, cleanAppetitConfig, SEUIL_MIN, SEUIL_MAX } from '@/lib/appetit'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
-// L'appétit est une décision de GOUVERNANCE : administrateur d'org, risk manager
-// ou RSSI. Les autres rôles le consultent seulement.
-function peutGouvernerAppetit(role: UserRole): boolean {
-  return isAdminRole(role) || role === 'RISK_MANAGER' || role === 'RSSI'
-}
+// L'appétit est une décision de GOUVERNANCE (`peutGouvernerAppetit`) : les autres rôles le consultent seulement.
 
 // GET /api/appetit — configuration effective (héritée) + droit d'édition.
 // Sans organisation active : { active: false } (pas de 400) — d'où `org: 'none'`.

@@ -12,6 +12,7 @@ import { prisma } from '@/lib/prisma'
 import { analyseAccessWhere, countOrgMembers, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
+import AccesAnalyseRefuse from '@/components/AccesAnalyseRefuse'
 import { ATELIERS_META, getNiveauRisqueLabel } from '@/lib/ebios-data'
 
 // Désactiver le cache Next.js pour toujours afficher les données fraîches
@@ -85,13 +86,25 @@ export default async function AnalyseDetailPage({ params }: { params: Promise<{ 
   const ownership = { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs }
   const sessionUser = { id: userId, role: userRole }
 
-  if (!canViewAnalyse(sessionUser, ownership)) notFound()
-
-  const editable = canEditAnalyse(sessionUser, ownership)
   // Workflow d'approbation : mêmes règles que la route (rôle EFFECTIF dans l'organisation de
   // l'analyse, cumul des rôles en petite structure).
   const orgAnalyse = (analyse as any).organizationId as string | null
   const roleWorkflow = resolveAnalyseRole(userRole, orgAnalyse, orgAnalyse ? await getEffectiveRoleForOrg(userId, userRole, orgAnalyse) : null)
+
+  // Visibilité : même règle que la liste et l'API (rôle effectif + statut, n° 63) ; l'analyse
+  // existe dans l'organisation → écran « Accès non autorisé » avec « Demander l'accès ».
+  if (!canViewAnalyse({ id: userId, role: roleWorkflow }, { ...ownership, statut: analyse.statut })) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Navbar />
+        <main id="main-content" className="max-w-5xl mx-auto px-4 py-8">
+          <AccesAnalyseRefuse analyseId={analyse.id} nom={analyse.nom} />
+        </main>
+      </div>
+    )
+  }
+
+  const editable = canEditAnalyse(sessionUser, ownership)
   const userWorkflow = { id: userId, role: roleWorkflow }
   const structure = await optionsStructure(orgAnalyse)
   const canSubmit = canSubmitAnalyse(userWorkflow, ownership, structure)

@@ -71,6 +71,7 @@ export interface RawOrgConfig {
   kriActive?: boolean
   reglementaireActive?: boolean
   secondeLigneActive?: boolean
+  auditeurHorsDefinition?: boolean
   /** Module « Maturité » (profils cibles CMMI sur les référentiels), optionnel. */
   profilsOperationnelsActive?: boolean
   projets360Active?: boolean
@@ -144,6 +145,8 @@ export interface OrgConfigResolved {
   reglementaireActive: boolean
   /** 2ᵉ ligne de défense (séparation des fonctions). true = mode réglementé (défaut). */
   secondeLigneActive: boolean
+  /** Ligne unique : l'auditeur est exclu de la définition des dispositifs (indépendance 3ᵉ ligne, n° 64). */
+  auditeurHorsDefinition: boolean
   /** Module « Maturité » (profils cibles CMMI, dont NIST CSF 2.0 / NCSC CAF v4.0), désactivé par défaut. */
   profilsOperationnelsActive: boolean
   /** Module « Projets 360 » (onglet Projets, méthode PROJET_360), activé par défaut. */
@@ -225,6 +228,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   kriActive: false,
   reglementaireActive: false,
   secondeLigneActive: true,
+  auditeurHorsDefinition: false,
   profilsOperationnelsActive: false,
   projets360Active: true,
   homologationsActive: false,
@@ -258,7 +262,7 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'secteursMasques' | 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig' | 'planificationConfig' | 'relancesConfig' | 'patternsArchiMasques' | 'risquesProjetDefaut'
-export const BOOL_KEYS = ['mcpActive', 'qualificationActive', 'qualificationObligatoire', 'conformiteActive', 'conseilsAteliersActive', 'acceptationRisquesActive', 'gelApresAcceptationActive', 'interdireAutoApprobation', 'petiteStructure', 'derogationsActive', 'derogationDoubleRegard', 'derogationSortCatalogue', 'registreRisquesActive', 'incidentsActive', 'controlePermanentActive', 'auditInterneActive', 'kriActive', 'reglementaireActive', 'secondeLigneActive', 'profilsOperationnelsActive', 'projets360Active', 'homologationsActive', 'recertificationActive', 'registreIaActive', 'campagnesRcsaActive', 'appetenceActive', 'rapportsGrcActive', 'ropaSousTraitantActive', 'projetSuppressionValidation'] as const
+export const BOOL_KEYS = ['mcpActive', 'qualificationActive', 'qualificationObligatoire', 'conformiteActive', 'conseilsAteliersActive', 'acceptationRisquesActive', 'gelApresAcceptationActive', 'interdireAutoApprobation', 'petiteStructure', 'derogationsActive', 'derogationDoubleRegard', 'derogationSortCatalogue', 'registreRisquesActive', 'incidentsActive', 'controlePermanentActive', 'auditInterneActive', 'kriActive', 'reglementaireActive', 'secondeLigneActive', 'auditeurHorsDefinition', 'profilsOperationnelsActive', 'projets360Active', 'homologationsActive', 'recertificationActive', 'registreIaActive', 'campagnesRcsaActive', 'appetenceActive', 'rapportsGrcActive', 'ropaSousTraitantActive', 'projetSuppressionValidation'] as const
 type BoolKey = (typeof BOOL_KEYS)[number]
 export const STR_KEYS = ['conformiteNiveau', 'conformiteSnapshotMode', 'conformiteSnapshotPeriode', 'derogationWorkflow'] as const
 type StrKey = (typeof STR_KEYS)[number]
@@ -336,6 +340,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     kriActive: pickBool('kriActive', defaults.kriActive),
     reglementaireActive: pickBool('reglementaireActive', defaults.reglementaireActive),
     secondeLigneActive: pickBool('secondeLigneActive', defaults.secondeLigneActive),
+    auditeurHorsDefinition: pickBool('auditeurHorsDefinition', defaults.auditeurHorsDefinition),
     profilsOperationnelsActive: pickBool('profilsOperationnelsActive', defaults.profilsOperationnelsActive),
     projets360Active: pickBool('projets360Active', defaults.projets360Active),
     homologationsActive: pickBool('homologationsActive', defaults.homologationsActive),

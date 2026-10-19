@@ -43,7 +43,7 @@ const URGENCE: Record<RelanceItem['type'], number> = { EN_RETARD: 0, EN_ATTENTE:
 type Destinataire = { email: string; locale: string | null }
 type Membre = { role: string; user: { id: string; email: string; name: string | null; isActive: boolean; locale: string | null } }
 type Config = {
-  relances: RelancesConfig; controle: boolean; audit: boolean; auditConfig: AuditConfig; derogations: boolean; derogationAlerteJours: number; secondeLigne: boolean
+  relances: RelancesConfig; controle: boolean; audit: boolean; auditConfig: AuditConfig; derogations: boolean; derogationAlerteJours: number; secondeLigne: boolean; auditeurHorsDefinition: boolean
   reglementaire: boolean; kri: boolean; homologations: boolean; conformite: boolean; acceptationRisques: boolean; petiteStructure: boolean
   incidents: boolean; mcp: boolean; planification: ReturnType<typeof sanitizePlanificationConfig>; registreIa: boolean
 }
@@ -168,7 +168,7 @@ async function passageRelances(now: Date, apercu: boolean): Promise<ResultatRela
         // Aperçu : relances actives, sans délai d'attente, périodicité minimale (élément ouvert = à traiter).
         relances: apercu ? { ...sanitizeRelancesConfig(c.relancesConfig), actives: true, attenteJours: 0, periodiciteJours: 1e-6 } : sanitizeRelancesConfig(c.relancesConfig), controle: c.controlePermanentActive,
         audit: c.auditInterneActive, auditConfig: apercu ? { ...resolveAuditConfig(c.auditConfig), rappelsActifs: true } : resolveAuditConfig(c.auditConfig),
-        derogations: c.derogationsActive, derogationAlerteJours: c.derogationAlerteJours ?? 30, secondeLigne: c.secondeLigneActive,
+        derogations: c.derogationsActive, derogationAlerteJours: c.derogationAlerteJours ?? 30, secondeLigne: c.secondeLigneActive, auditeurHorsDefinition: c.auditeurHorsDefinition === true,
         reglementaire: !!c.reglementaireActive, kri: !!c.kriActive, homologations: !!c.homologationsActive, conformite: c.conformiteActive, acceptationRisques: c.acceptationRisquesActive, petiteStructure: c.petiteStructure,
         incidents: !!c.incidentsActive, mcp: c.mcpActive, planification: sanitizePlanificationConfig(c.planificationConfig), registreIa: !!c.registreIaActive,
       })
@@ -311,7 +311,7 @@ async function passageRelances(now: Date, apercu: boolean): Promise<ResultatRela
     const depuis = p.realiseeLe ?? p.createdAt
     if (!cfg.controle || !relanceAttenteDue({ depuis, rappelLe: p.rappelLe }, cfg.relances, now)) continue
     // Vérificateur : le contrôleur qui a posé la préconisation, sinon la 2ᵉ ligne ; jamais le responsable.
-    const eligibles = (await decideurs(p.organizationId)).filter(m => peutDefinir2eLigne(m.role as UserRole, { secondeLigneActive: cfg.secondeLigne }) && m.user.id !== p.responsableId)
+    const eligibles = (await decideurs(p.organizationId)).filter(m => peutDefinir2eLigne(m.role as UserRole, { secondeLigneActive: cfg.secondeLigne, auditeurHorsDefinition: cfg.auditeurHorsDefinition }) && m.user.id !== p.responsableId)
     const createur = eligibles.filter(m => m.user.id === p.createdById)
     ajouter(p.organizationId, (createur.length ? createur : eligibles).flatMap(m => versDest(m.user)), { categorie: 'PRECONISATION_A_VERIFIER', intitule: p.intitule, type: 'EN_ATTENTE', echeance: jour(depuis) })
     marques.preconisationsAVerifier.push(p.id)
@@ -398,7 +398,7 @@ async function passageRelances(now: Date, apercu: boolean): Promise<ResultatRela
     const ids = (Array.isArray(c.controleIds) ? c.controleIds : []).filter((v): v is string => typeof v === 'string')
     // Rien à relancer si tous les contrôles du périmètre ont été exécutés depuis le début de la campagne.
     if (!controlesNonExecutes(ids, executionsCampagnes, c.dateDebut ?? c.createdAt).length) continue
-    const deuxiemeLigne = (await decideurs(c.organizationId)).filter(m => peutDefinir2eLigne(m.role as UserRole, { secondeLigneActive: cfg.secondeLigne }))
+    const deuxiemeLigne = (await decideurs(c.organizationId)).filter(m => peutDefinir2eLigne(m.role as UserRole, { secondeLigneActive: cfg.secondeLigne, auditeurHorsDefinition: cfg.auditeurHorsDefinition }))
     ajouter(c.organizationId, deuxiemeLigne.flatMap(m => versDest(m.user)), { categorie: 'CAMPAGNE_CONTROLE', intitule: c.intitule, type, echeance: jour(c.dateFin) })
     marques.campagnes.push(c.id)
   }

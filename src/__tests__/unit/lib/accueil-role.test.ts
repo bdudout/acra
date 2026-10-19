@@ -41,3 +41,19 @@ describe('accueilRole — DPO, gestionnaire des risques, direction métier, RSSI
   })
 })
 
+
+// Recette n° 57 (2026-10-14) : un rôle qui ne mène pas d'analyse garde « Pour commencer » (ses actions + « À traiter »)
+// MÊME quand des analyses lui sont visibles — au-dessus des analyses, pas à la place. Gestionnaire des risques et RSSI,
+// qui travaillent sur les analyses, gardent l'accueil des analyses seul.
+describe('accueilRole — n° 57 : analyses visibles', () => {
+  const plan = { cle: 'planAction', href: '/actions' }
+  it('Direction métier, DPO, Contrôleur, Auditeur, Métier : accueil des analyses ET actions du rôle', () => {
+    expect(accueilRole('DIRECTION_METIER', 3, tous)).toEqual({ centreAnalyses: true, actions: [{ cle: 'pilotage', href: '/pilotage' }, plan] })
+    expect(accueilRole('DPO', 1, tous)).toEqual({ centreAnalyses: true, actions: [{ cle: 'registreTraitements', href: '/rgpd' }, plan] })
+    for (const r of ['CONTROLEUR', 'AUDITEUR', 'METIER'] as const) expect(accueilRole(r, 2, tous).actions.at(-1)).toEqual(plan)
+  })
+  it('Gestionnaire des risques et RSSI avec analyses : accueil des analyses seul', () => {
+    expect(accueilRole('RISK_MANAGER', 2, tous)).toEqual({ centreAnalyses: true, actions: [] })
+    expect(accueilRole('RSSI', 1, tous)).toEqual({ centreAnalyses: true, actions: [] })
+  })
+})

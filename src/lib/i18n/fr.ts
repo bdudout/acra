@@ -16,6 +16,8 @@ export const fr = {
   // Codes d'erreur stables des gardes d'API (lib/with-access.server) — cf. lib/api-error.ts
   // Barre de pagination des grandes listes (components/Pagination)
   pagination: {
+    chargement: 'Chargement…',
+    miseAJour: 'Mise à jour…',
     navigation: 'Pagination',
     resultats: '{debut} à {fin} sur {total}',
     parPage: 'Par page',
@@ -1720,11 +1722,11 @@ export const fr = {
     },
     contexteDesc: "Périmètre et critères de l'appréciation des risques.",
     perimetreLabel: 'Périmètre',
-    objectifsLabel: 'Objectifs / critères',
+    objectifsLabel: 'Objectifs',
     noContext: 'Non renseigné.',
     evaluationNote: 'Priorisation des risques selon les critères (lecture seule).',
     guidance: {
-      contexte: { intro: 'Avant d’apprécier les risques, délimitez ce que vous étudiez et selon quels critères vous jugerez leur importance.', points: ['Précisez le périmètre : activités, systèmes et parties prenantes concernés.', 'Fixez les critères d’appréciation et d’acceptation des risques.', 'Réunissez les informations utiles sur le contexte interne et externe.'] },
+      contexte: { intro: 'Avant d’apprécier les risques, délimitez ce que vous étudiez et selon quels critères vous jugerez leur importance.', points: ['Précisez le périmètre : activités, systèmes et parties prenantes concernés.', 'Vérifiez le critère d’acceptation de l’organisation, affiché ci-dessous : c’est lui qui décide en phase d’évaluation.', 'Réunissez les informations utiles sur le contexte interne et externe.'] },
       identification: { intro: 'Recensez ce qui pourrait porter atteinte à vos objectifs, sans encore juger de leur importance.', points: ['Listez les risques : événements redoutés et leurs causes possibles.', 'Appuyez-vous sur des sources variées : incidents, retours d’expérience, experts.', 'Visez l’exhaustivité : un risque non identifié ne sera pas traité.'] },
       analyse: { intro: 'Pour chaque risque, estimez sa gravité (impact) et sa vraisemblance (probabilité).', points: ['Évaluez les conséquences si le risque se réalise.', 'Estimez la probabilité au regard des mesures déjà en place.', 'Le niveau de risque combine gravité et vraisemblance.'] },
       evaluation: { intro: 'Comparez les niveaux de risque aux critères pour décider lesquels traiter en priorité.', points: ['Priorisez les risques les plus élevés.', 'Confrontez chaque risque aux critères d’acceptation.', 'Phase de lecture : les niveaux proviennent de l’analyse.'] },
@@ -1738,7 +1740,7 @@ export const fr = {
     phases: { prepare: 'Prepare', conduct: 'Conduct', communicate: 'Communicate', maintain: 'Maintain' },
     prepareDesc: "Préparer l'appréciation : périmètre, objectifs et hypothèses.",
     perimetreLabel: 'Périmètre',
-    objectifsLabel: 'Objectifs / critères',
+    objectifsLabel: 'Objectifs',
     noContext: 'Non renseigné.',
     communicateNote: 'Communication des résultats (lecture seule).',
     maintainNote: "Tenir l'appréciation à jour dans le temps.",
@@ -2254,6 +2256,13 @@ export const fr = {
   },
   exportButtons: { pdf: 'Exporter PDF', csv: 'Exporter CSV', xlsx: 'Exporter Excel' },
   risquesDirects: {
+    critereTitre: 'Critère d’acceptation appliqué',
+    critereAppetit: 'Un risque est acceptable jusqu’au niveau {seuil} (appétit au risque de l’organisation) ; au-delà, il est à traiter.',
+    critereAppetitCategories: '{n} seuil(s) par catégorie s’appliquent aux risques de ces catégories.',
+    critereAppetitParCategorie: 'Appétit au risque défini par catégorie uniquement : les autres risques suivent l’échelle (paliers {paliers} à traiter).',
+    critereEchelle: 'Aucun appétit au risque défini : l’échelle de l’organisation s’applique — paliers {paliers} à traiter, les autres sont acceptables.',
+    critereQui: 'Réglé par l’administrateur, gestionnaire des risques ou RSSI de l’organisation ; appliqué tel quel en phase d’évaluation.',
+    critereLien: 'Régler l’appétit au risque',
     pageTitle: 'Appréciation des risques',
     pageSubtitle: 'Évaluation simple (ISO 31000) : saisissez vos risques et leur niveau (gravité × vraisemblance).',
     title: 'Risques',
@@ -3604,6 +3613,14 @@ export const fr = {
 
   // ─── Panel d'accès / approbation ─────────────────────────────────────────
   access: {
+    accesRefuseTitre:    'Accès non autorisé',
+    accesRefuseTexte:    'L’analyse « {nom} » existe dans votre organisation, mais votre rôle n’y donne pas accès (brouillon non partagé). Vous pouvez demander l’accès à son propriétaire.',
+    accesRefuseDemander: 'Demander l’accès',
+    accesRefuseEnvoi:    'Envoi…',
+    accesRefuseEnvoye:   'Demande envoyée au propriétaire de l’analyse.',
+    accesRefuseEnregistre: 'Demande enregistrée — le propriétaire n’a pas pu être prévenu par e-mail (messagerie non configurée).',
+    accesRefuseErreur:   'La demande n’a pas pu être envoyée. Réessayez plus tard.',
+    accesRefuseRetour:   'Retour aux analyses',
     statusTitle:         "Statut de l'analyse",
     permLabels: { LECTURE: 'Lecture seule', EDITION: 'Édition', APPROBATION: 'Approbation' } as Record<string, string>,
     permDescs: {
@@ -4645,6 +4662,8 @@ export const fr = {
     reglementaireDesc: 'Registre d\'incidents TIC (classification DORA majeur/significatif/mineur) et synthèse des pertes (LDC ACPR). Aide à la décision, export CSV.',
     secondeLigneTitle: '2ᵉ ligne de défense (séparation des fonctions)',
     secondeLigneDesc: 'Activée (défaut) : dispositif réglementé — définition/validation par la 2ᵉ ligne, quatre-yeux, contrôle du contrôle N2. Désactivée : mode « ligne unique » pour les organisations non régulées (la 1ʳᵉ ligne réalise les tâches, sans double validation).',
+    auditeurHorsDefinitionTitle: 'Ligne unique : exclure l’auditeur de la définition des dispositifs',
+    auditeurHorsDefinitionDesc: 'Désactivée par défaut. Activée : en mode « ligne unique », l’auditeur ne peut plus créer ni modifier les contrôles, campagnes, KRI et questionnaires — il garde l’indépendance de la 3ᵉ ligne. Sans effet quand la 2ᵉ ligne est active.',
     moduleForcedOn: 'Imposé au niveau de l\'instance',
     moduleForcedOff: 'Désactivé au niveau de l\'instance',
     learnMore:          'En savoir plus ↗',
@@ -4686,6 +4705,8 @@ export const fr = {
     notEvaluated: 'Non évalué',
   },
   conformiteSocle: {
+    recommandesSecteur: 'Recommandés pour votre secteur',
+    autresReferentiels: 'Autres référentiels',
     stopBtn: 'Arrêter le suivi',
     stopConfirm: 'Arrêter le suivi de conformité de « {ref} »{suffix} ? Le suivi et son historique seront supprimés.',
     suiviLabel: 'Périmètre suivi',

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAccessibleOrgIds, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { peutDefinir, type UserRole } from '@/lib/permissions'
+import { peutDefinir, type UserRole, optionsDefinition } from '@/lib/permissions'
 import { donneesDeclinaison, planDeclinaison } from '@/lib/controle-reseau'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { withAccess } from '@/lib/with-access.server'
@@ -27,7 +27,7 @@ export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'controles-de
   if (!cfg.controlePermanentActive) return NextResponse.json({ error: 'Module inactif' }, { status: 403 })
   // Rôle EFFECTIF dans l'organisation mère : définir le plan de contrôle du réseau relève de la 2ᵉ ligne.
   const role = ((await getEffectiveRoleForOrg(userId, instanceRole, ref.organizationId)) ?? instanceRole) as UserRole
-  if (!peutDefinir(role, { secondeLigneActive: cfg.secondeLigneActive })) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
+  if (!peutDefinir(role, optionsDefinition(cfg))) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
   if (ref.referenceId) return NextResponse.json({ error: 'deja_declinaison' }, { status: 409 })
 
   const mere = await prisma.organization.findUnique({ where: { id: ref.organizationId }, select: { path: true } })

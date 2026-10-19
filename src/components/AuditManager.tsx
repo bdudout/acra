@@ -7,6 +7,7 @@
 // criticité). Transitions de statut gardées par lib/audit. Synthèse (taux de
 // résolution, retards, critiques) calculée côté API.
 
+import { etatListe, fusionnerEnregistrement } from '@/lib/etat-liste'
 import { AlertTriangle, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -96,6 +97,8 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
   const [risks, setRisks] = useState<Risk[]>([])
   const [openId, setOpenId] = useState<string | null>(null)
   const [constats, setConstats] = useState<Constat[]>([])
+  // n° 43 : rechargement en cours des constats (pas de « Aucun constat. » pendant la mise à jour).
+  const [constatsEnChargement, setConstatsEnChargement] = useState(false)
   const [mForm, setMForm] = useState<MForm>(EMPTY_M)
   const [showMForm, setShowMForm] = useState(false)
   const [cForm, setCForm] = useState<CForm>(EMPTY_C)
@@ -146,8 +149,11 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
     if (openId) chargerConstats(openId)
   }
   async function chargerConstats(id: string) {
-    const d = await fetch(`/api/audit/missions/${id}`).then(x => x.ok ? x.json() : { constats: [] })
-    setConstats(d.constats ?? [])
+    setConstatsEnChargement(true)
+    try {
+      const d = await fetch(`/api/audit/missions/${id}`).then(x => x.ok ? x.json() : { constats: [] })
+      setConstats(d.constats ?? [])
+    } finally { setConstatsEnChargement(false) }
   }
 
   async function creerMission() {
@@ -241,6 +247,8 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
     const data = await res.json().catch(() => ({}))
     setBusy(false)
     if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
+    // n° 43 : le constat enregistré apparaît tout de suite, le rechargement confirme ensuite.
+    setConstats(prev => fusionnerEnregistrement(prev, data as Constat))
     setShowCForm(false); setCEditId(null); reload()
   }
 
@@ -543,7 +551,7 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
                     )}
 
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{a.constats}</p>
+                      <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{a.constats}{etatListe(constats.length, constatsEnChargement) === 'miseAJour' && <span role="status" className="ml-2 text-xs font-normal text-gray-400">{t.pagination.miseAJour}</span>}</p>
                       {canWrite && !showCForm && <button onClick={() => startConstat()} className="btn-secondary text-xs">{a.newConstatBtn}</button>}
                     </div>
 
@@ -604,7 +612,7 @@ export default function AuditManager({ canWrite, canFollow = false }: { canWrite
                         </select>
                       </div>
                     )}
-                    {(() => { const cf = filtrerConstats(constats, cFiltre); return constats.length === 0 ? <p className="text-xs text-gray-400 italic">{a.aucunConstat}</p> : cf.length === 0 ? <p className="text-xs text-gray-400 italic">{a.filtreAucun}</p> : (
+                    {(() => { const cf = filtrerConstats(constats, cFiltre); const etat = etatListe(constats.length, constatsEnChargement); return etat === 'chargement' ? <p className="text-xs text-gray-400 italic" role="status">{t.pagination.chargement}</p> : etat === 'vide' ? <p className="text-xs text-gray-400 italic">{a.aucunConstat}</p> : cf.length === 0 ? <p className="text-xs text-gray-400 italic">{a.filtreAucun}</p> : (
                       <ul className="space-y-2">
                         {cf.map(cc => (
                           <li key={cc.id} className="text-sm border-b border-gray-100 dark:border-gray-800 pb-2">

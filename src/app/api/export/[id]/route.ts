@@ -61,7 +61,7 @@ export async function GET(
 
   if (!canViewAnalyse(
     { id: userId, role: userRole },
-    { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs }
+    { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs, statut: analyse.statut }
   )) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
   }

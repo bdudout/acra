@@ -12,6 +12,7 @@ import { prisma } from '@/lib/prisma'
 import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
+import AccesAnalyseRefuse from '@/components/AccesAnalyseRefuse'
 import QuitterFlashButton from '@/components/QuitterFlashButton'
 import WorkshopProgress from '@/components/WorkshopProgress'
 import AtelierGuidancePanel from '@/components/AtelierGuidancePanel'
@@ -28,7 +29,7 @@ import ExportButtons from '@/components/ExportButtons'
 import { isRiskMethod, methodSteps } from '@/lib/methodes'
 import { suggestRisqueExemples } from '@/lib/risque-exemples'
 import { patternsOf } from '@/lib/patterns-archi'
-import { canViewAnalyse, canEditAnalyse, type UserRole } from '@/lib/permissions'
+import { canViewAnalyse, canEditAnalyse, peutGouvernerAppetit, resolveAnalyseRole, type UserRole } from '@/lib/permissions'
 import { getEffectiveScaleConfig } from '@/lib/configuration-server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { ownerSuggestions } from '@/lib/risque-proprietaire'
@@ -83,7 +84,18 @@ export default async function AtelierPage({
   // Vérifier les droits (propriétaire OU accès partagé en lecture/édition)
   const ownership = { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs }
   const sessionUser = { id: userId, role: userRole }
-  if (!canViewAnalyse(sessionUser, ownership)) notFound()
+  // Visibilité : même règle que la liste et l'API (rôle effectif + statut, n° 63).
+  const roleVue = resolveAnalyseRole(userRole, analyse.organizationId, analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null)
+  if (!canViewAnalyse({ id: userId, role: roleVue }, { ...ownership, statut: analyse.statut })) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Navbar />
+        <main id="main-content" className="max-w-4xl mx-auto px-4 py-8">
+          <AccesAnalyseRefuse analyseId={analyse.id} nom={analyse.nom} />
+        </main>
+      </div>
+    )
+  }
   const editable = canEditAnalyse(sessionUser, ownership)
   // Analyse cyber rattachée à un projet 360 accessible : bascule de vue vers le projet.
   const projetLie = await projetLieAccessible(userId, userRole, analyse.projetSourceId)
@@ -208,6 +220,7 @@ export default async function AtelierPage({
             risqueSuggestions={risqueSuggestions}
             withVulnerabilites={methode === 'ISO_27005'}
             scale={directScale} appetit={directAppetit} ownerSuggestions={directOwnerSuggestions}
+            peutGouvernerCritere={peutGouvernerAppetit(roleVue)}
             contexteSave={t.contexteEditor.save} contexteSaved={t.contexteEditor.saved}
             perimetrePlaceholder={t.contexteEditor.perimetrePlaceholder} objectifsPlaceholder={methode === 'PROJET_360' ? t.projet360.objectifsPlaceholder : t.contexteEditor.objectifsPlaceholder}
             initialPhaseKey={typeof resolvedSearchParams.phase === 'string' ? resolvedSearchParams.phase : undefined}
