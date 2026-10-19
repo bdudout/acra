@@ -6,6 +6,49 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-19 (108) — Claude : décisions utilisateur, n° 63/64/51/57/43/53, eIDAS ×4, recette automatisée
+
+Branche `feat/historical-excel-import`. **#276 fusionnée** dans `main` (squash `2a019424` : dazzling-edison + n° 62/56/46/37
++ tas Node 4 Go) puis `main` refusionnée (441257df, conflits add/add = versions antérieures de nos propres fichiers).
+Commits suivants **non poussés** (attendre l'accord de l'utilisateur pour la PR).
+
+- **Décisions utilisateur** (mémoire `decisions-2026-10-19`) : release v1.0.6 seulement quand une version est stable ;
+  déploiement prod après v1.0.6 stable ; HA selon le VPS, après la release ; n° 63 = pas d'accès mais « demander
+  l'accès » ; n° 64 = option désactivée par défaut ; eIDAS : points regroupés + vérifier EN/DE/ES/IT.
+- `ff76ebf8` — `NODE_OPTIONS=--max-old-space-size=4096` (Dockerfile + étape build CI) : `next build` et `tsc`
+  dépassent le tas par défaut (2 144 Mo sur ce poste) ; Docker doit avoir ≥ 6 Go.
+- `5cacf858` — **n° 63** : `canViewAnalyse` prend le statut (lecture globale = SOUMIS/APPROUVE/REJETE/TERMINE —
+  `STATUTS_ANALYSE_PUBLIES`, même ensemble que `analyseWhereClause` ; TERMINE ajouté à la liste) ; `withAccess`
+  (cible analyse) → 403 `ACCES_ANALYSE_REFUSE` ; pages analyse/atelier → `AccesAnalyseRefuse` + POST
+  `/api/analyses/[id]/demande-acces` (e-mail localisé au propriétaire si SMTP, audit `ANALYSE_ACCES_DEMANDE`).
+  **n° 64** : `OrganizationConfig.auditeurHorsDefinition` (migration `20261019120000`, défaut false, toggle
+  Configuration › Fonctionnalités sous « 2ᵉ ligne ») ; `peutDefinir2eLigne(role, optionsDefinition(cfg))`.
+- `2102a842` — eIDAS EN/DE/ES/IT : descriptions = texte officiel (chapeau + point) extrait de CELEX
+  02014R0910-20241018 (publications.europa.eu, Accept-Language) ; libellés alignés (ES « interrupciones »,
+  « … électroniques qualifiées d'attributs » ×4). FR inchangé. Rectificatifs : couverts par la version consolidée.
+- `640cb7fe` — **n° 51** : `critereAcceptation`/`paliersATraiter` (risque-priorisation) + `CritereAcceptationApplique`
+  en phase 1 des méthodes directes ; « Objectifs / critères » → « Objectifs » ; `peutGouvernerAppetit` dans permissions.
+- `66019f0a` — **n° 57** : `accueilRole` garde les actions des rôles hors analyse au-dessus des analyses ; lien
+  « Configuration des échelles » réservé à l'ADMIN.
+- `6e981a71` — **n° 43** : `lib/etat-liste` ; constats (fusion immédiate + « Chargement… »), incidents (maj locale
+  après PATCH), `RiskPlans`/`RiskMesures` `onCount` → compteurs de la phase Traitement à jour.
+- `86c46b66` — **n° 53** : ReCyF « ReCyF — Référentiel Cyber France (NIS 2) » (intitulé ANSSI, cyber.gouv.fr) ;
+  socle : « Recommandés pour votre secteur » en tête (`lib/socle-referentiels`).
+- Recette (`0c0edc54`, `bfae72c9`) : `.claude/skills/acra-scenarios/scripts/preparer-env.sh` / `arreter-env.sh`
+  (Docker, base seule, migrations, :3005, comptes + `recette-superadmin@acra.test`) ; tâches planifiées mises à jour.
+- **Pièges** : (1) un fichier écrit DANS le dépôt pendant `next dev` (journal) relance la compilation et recharge la
+  page en boucle → journaux dans `$TMPDIR/acra-recette`. (2) Après `prisma generate`, redémarrer le dev (« Unknown
+  field »). (3) `preview_start {name}` refusé par macOS (accès Documents) → `preview_start {url}`. (4) La quasi-totalité
+  des orgs « Bac à sable » n'a pas de secteur → les fonctions sectorielles y sont peu testées.
+- **Vérifications** : `tsc` (tas 4 Go) 0 erreur ; tests ciblés verts à chaque lot ; vérifié au navigateur : n° 63
+  (écran + demande 200), n° 51, n° 57, n° 62, n° 43 (« 1 plans » en ~1 s), n° 53 (HTML du socle, org POSTAL).
+  `npx vitest run` (état final) : 718 fichiers, 5 345 / 5 346 verts ; seul échec `redis-resp.test.ts` (pipeline TCP,
+  sensible à la charge — 22/22 verts relancé seul ×3). `npm run build` (tas 4 Go) : OK. Fin de tour non poussée.
+- **À faire / à décider** : suppression des branches obsolètes et du worktree brave-goldberg (refusée en mode auto —
+  commandes données à l'utilisateur) ; PR des commits ci-dessus ; secteurs des orgs bac à sable.
+
+---
+
 ## 2026-10-19 (107) — Claude (session annexe) : 4 défauts de la recette métier du 2026-10-19 (n° 62, 56, 46, 37)
 
 Branche `feat/historical-excel-import` (fusion d7055e28 main + dazzling-edison, **non poussée**). Un commit par défaut :
