@@ -142,3 +142,20 @@ describe('DeclarationModal', () => {
     expect(JSON.parse(String(calls('PUT')[0][1]!.body)).declaration).toMatchObject({ 'nis2.malveillance': 'OUI', 'nis2.indicateursCompromission': 'IP 203.0.113.7' })
   })
 })
+
+// Recette n° 46 : incident pas (encore) classé majeur → lien vers l'évaluation DORA du registre (Réglementaire).
+describe('DeclarationModal — lien vers l’évaluation DORA (n° 46)', () => {
+  const nonMajeur = { ...incident, dora: { ...incident.dora!, classe: 'MINEUR' } }
+  it('incident non majeur : lien « Évaluer la classification DORA » vers le registre', () => {
+    render(<DeclarationModal {...props({ incident: nonMajeur, doraEvaluationHref: '/reglementaire?incident=i1' })} />)
+    expect(screen.getByRole('link', { name: 'Évaluer la classification DORA' })).toHaveAttribute('href', '/reglementaire?incident=i1')
+  })
+  it('incident majeur : pas de lien', () => {
+    render(<DeclarationModal {...props({ doraEvaluationHref: '/reglementaire?incident=i1' })} />)
+    expect(screen.queryByRole('link', { name: 'Évaluer la classification DORA' })).toBeNull()
+  })
+  it('module réglementaire inactif (pas de lien fourni) : texte seul', () => {
+    render(<DeclarationModal {...props({ incident: nonMajeur })} />)
+    expect(screen.queryByRole('link', { name: 'Évaluer la classification DORA' })).toBeNull()
+  })
+})

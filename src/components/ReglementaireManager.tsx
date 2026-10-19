@@ -6,9 +6,10 @@
 // d'indisponibilité, impact économique, réputation, services critiques…) →
 // classe MAJEUR / SIGNIFICATIF / MINEUR et obligations de notification
 // déclenchées. Cf. lib/dora et lib/dora-reporting.
+// `?incident=<id>` (lien de la fenêtre Déclaration d'un incident, n° 46) ouvre son évaluation.
 
 import { Landmark } from 'lucide-react'
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 
 type DoraClasse = 'MAJEUR' | 'SIGNIFICATIF' | 'MINEUR'
@@ -49,6 +50,19 @@ export default function ReglementaireManager({ canAssess }: { canAssess: boolean
     setData(d); setLoading(false)
   }
   useEffect(() => { reload() }, [])
+
+  // Lien profond depuis un incident : ouvrir une seule fois son évaluation (si le rôle le permet).
+  const cibleTraitee = useRef(false)
+  useEffect(() => {
+    if (cibleTraitee.current || !data || !canAssess) return
+    cibleTraitee.current = true
+    const cible = new URLSearchParams(window.location.search).get('incident')
+    const row = cible ? data.incidents.find(x => x.id === cible) : undefined
+    if (!row) return
+    openEdit(row)
+    document.getElementById(`dora-${row.id}`)?.scrollIntoView({ block: 'center' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- openEdit ne dépend que de setState
+  }, [data, canAssess])
 
   const euros = (n: number) => new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
 
@@ -114,7 +128,7 @@ export default function ReglementaireManager({ canAssess }: { canAssess: boolean
             {data.incidents.length === 0 ? <tr><td colSpan={4} className="px-4 py-6 text-center text-gray-400 italic">{r.empty}</td></tr>
               : data.incidents.map(row => (
                 <Fragment key={row.id}>
-                  <tr className="border-b border-gray-100 dark:border-gray-800">
+                  <tr id={`dora-${row.id}`} className="border-b border-gray-100 dark:border-gray-800">
                     <td className="px-4 py-3">
                       <div className="font-medium text-gray-800 dark:text-gray-100">{row.intitule}</div>
                       <div className="text-xs text-gray-400">{row.dateSurvenance ? new Date(row.dateSurvenance).toLocaleDateString(locale) : ''}</div>

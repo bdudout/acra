@@ -101,7 +101,11 @@ const STATUT_BADGE: Record<string, string> = {
   REJETE: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300',
 }
 
-export default function IncidentsManager({ canQualify, canConfigure = false }: { canQualify: boolean; canConfigure?: boolean }) {
+export default function IncidentsManager({ canQualify, canConfigure = false, reglementaireActive = false }: {
+  canQualify: boolean; canConfigure?: boolean
+  /** Module Réglementaire actif : la fenêtre Déclaration renvoie vers l'évaluation DORA du registre (n° 46). */
+  reglementaireActive?: boolean
+}) {
   const { t, locale } = useTranslation()
   const n = t.incidents
   const liste = useListePaginee<{ incidents: Incident[]; config?: IncidentsConfig; pagination?: MetaPagination; synthese?: SyntheseIncidents }>('/api/incidents')
@@ -744,7 +748,8 @@ export default function IncidentsManager({ canQualify, canConfigure = false }: {
         if (!i) return null
         return <DeclarationModal incident={{ id: i.id, intitule: i.intitule, dora: i.doraReporting ?? null, horloges: i.l1?.horloges ?? [], attributs: i.attributs, catalogueKey: i.catalogueKey ?? null }}
           available={(cfg?.regimes ?? []).filter(r => r.actif).map(r => ({ code: r.code, label: r.label, labelKey: r.labelKey, autorite: r.autorite }))}
-          canQualify={canQualify} onClose={() => setDeclId(null)} onChanged={() => { void reload() }} />
+          canQualify={canQualify} onClose={() => setDeclId(null)} onChanged={() => { void reload() }}
+          doraEvaluationHref={reglementaireActive ? `/reglementaire?incident=${encodeURIComponent(i.id)}` : null} />
       })()}
 
       {/* Détail de la déclaration DORA (3 phases) — art. 19 */}
