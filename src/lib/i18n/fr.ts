@@ -571,7 +571,7 @@ export const fr = {
     kpi: {
       total:          'Analyses totales',
       inProgress:     'En cours',
-      completed:      'Terminées',
+      completed:      'Approuvées / terminées',
       critical:       'Risques critiques',
       pending:        'Mesures P1 à faire',
       toApprove:      'En attente approbation',

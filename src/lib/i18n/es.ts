@@ -561,7 +561,7 @@ export const es: Translations = {
     kpi: {
       total:          'Análisis totales',
       inProgress:     'En curso',
-      completed:      'Completados',
+      completed:      'Aprobados / completados',
       critical:       'Riesgos críticos',
       pending:        'Medidas P1 pendientes',
       toApprove:      'Pendiente de aprobación',
