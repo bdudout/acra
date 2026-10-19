@@ -24,7 +24,9 @@ ENV NEXT_TELEMETRY_DISABLED 1
 ENV DATABASE_URL=postgresql://placeholder:placeholder@placeholder:5432/placeholder
 # Borne le heap V8 pour éviter que le worker de build Next soit tué (OOM) sur les
 # machines à mémoire Docker limitée (build worker exited with code 1 / signal null).
-ENV NODE_OPTIONS=--max-old-space-size=2048
+# 4096 : la vérification TypeScript de `next build` dépasse 2 Go depuis la pagination côté serveur et la garde
+# withAccess (OOM « heap out of memory » constaté le 2026-10-19 avec un tas de 2 Go) ; Docker doit disposer d'au moins 6 Go.
+ENV NODE_OPTIONS=--max-old-space-size=4096
 # Profil « ha » (docker-compose.ha.yml, lot H1.4) : lus par `next build` et EMBARQUÉS dans la sortie — clé des Server
 # Functions commune à tous les réplicas et à toutes les versions, identifiant de déploiement (protection contre le décalage
 # de versions pendant une mise à jour progressive). Vides par défaut : comportement Next.js inchangé (mono-instance).
