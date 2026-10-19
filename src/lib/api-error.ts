@@ -4,7 +4,7 @@
 // au lieu d'afficher le code brut. Les codes métier propres à un écran restent traduits
 // par cet écran ; un code inconnu est rendu tel quel (comportement antérieur).
 
-export const API_ERROR_CODES = ['unauthorized', 'organization_required', 'forbidden', 'rate_limited', 'invalid_body', 'not_found', 'ANALYSE_GELEE', 'CONFLIT_EDITION'] as const
+export const API_ERROR_CODES = ['unauthorized', 'organization_required', 'forbidden', 'rate_limited', 'invalid_body', 'not_found', 'ANALYSE_GELEE', 'CONFLIT_EDITION', 'ANALYSE_NON_SOUMISE', 'RISQUES_NON_COTES'] as const
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number]
 
 export function isApiErrorCode(code: unknown): code is ApiErrorCode {

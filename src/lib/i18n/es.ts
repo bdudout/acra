@@ -78,6 +78,8 @@ export const es: Translations = {
     not_found: 'Elemento no encontrado o fuera de su ámbito.',
     ANALYSE_GELEE: 'Análisis congelado: se han aceptado los riesgos residuales. Abra una nueva versión para modificarlo.',
     CONFLIT_EDITION: 'Otro usuario ha modificado este taller desde que lo abrió. Vuelva a cargar la página para obtener su versión: su último cambio no se ha guardado.',
+    ANALYSE_NON_SOUMISE: 'Los riesgos residuales solo pueden aceptarse en un análisis enviado o aprobado.',
+    RISQUES_NON_COTES: 'Algunos riesgos no tienen nivel residual evaluado: evalúelos antes de decidir.',
   },
   loading:    'Cargando…',
   saving:     'Guardando…',
@@ -1065,6 +1067,11 @@ export const es: Translations = {
     reopen: 'Reabrir en una nueva versión',
     reopenBusy: 'Reabriendo…',
     reopenNote: 'Reapertura tras la aceptación de los riesgos residuales',
+    summaryTitle: 'Riesgos residuales sometidos a la decisión',
+    unrated: 'Sin evaluar',
+    seeRisks: 'Ver la lista de riesgos',
+    noRisks: 'Ningún riesgo en el análisis.',
+    blocked: { ANALYSE_NON_SOUMISE: 'Decisión posible una vez enviado o aprobado el análisis.', RISQUES_NON_COTES: 'Decisión posible una vez evaluados todos los riesgos (nivel residual).' },
   },
 
   adminDashboard: {

@@ -78,6 +78,8 @@ export const de: Translations = {
     not_found: 'Element nicht gefunden oder außerhalb Ihres Bereichs.',
     ANALYSE_GELEE: 'Analyse eingefroren: Die Restrisiken wurden akzeptiert. Öffnen Sie eine neue Version, um sie zu ändern.',
     CONFLIT_EDITION: 'Dieser Workshop wurde seit dem Öffnen von einem anderen Benutzer geändert. Laden Sie die Seite neu, um dessen Version zu erhalten: Ihre letzte Änderung wurde nicht gespeichert.',
+    ANALYSE_NON_SOUMISE: 'Restrisiken können nur bei einer eingereichten oder genehmigten Analyse akzeptiert werden.',
+    RISQUES_NON_COTES: 'Einige Risiken haben kein bewertetes Restrisikoniveau: Bewerten Sie sie vor der Entscheidung.',
   },
   loading:    'Wird geladen…',
   saving:     'Speichern…',
@@ -1065,6 +1067,11 @@ export const de: Translations = {
     reopen: 'Als neue Version öffnen',
     reopenBusy: 'Wird geöffnet…',
     reopenNote: 'Wiedereröffnung nach Akzeptanz der Restrisiken',
+    summaryTitle: 'Zur Entscheidung vorgelegte Restrisiken',
+    unrated: 'Nicht bewertet',
+    seeRisks: 'Risikoliste anzeigen',
+    noRisks: 'Keine Risiken in der Analyse.',
+    blocked: { ANALYSE_NON_SOUMISE: 'Entscheidung möglich, sobald die Analyse eingereicht oder genehmigt ist.', RISQUES_NON_COTES: 'Entscheidung möglich, sobald alle Risiken bewertet sind (Restrisikoniveau).' },
   },
 
   adminDashboard: {

@@ -77,6 +77,8 @@ export const fr = {
     not_found: 'Élément introuvable ou hors de votre périmètre.',
     ANALYSE_GELEE: 'Analyse gelée : les risques résiduels ont été acceptés. Ouvrez une nouvelle version pour la modifier.',
     CONFLIT_EDITION: 'Cet atelier a été modifié par un autre utilisateur depuis son ouverture. Rechargez la page pour récupérer sa version : votre dernière modification n\'a pas été enregistrée.',
+    ANALYSE_NON_SOUMISE: 'L’acceptation des risques résiduels n’est possible que sur une analyse soumise ou approuvée.',
+    RISQUES_NON_COTES: 'Des risques n’ont pas de niveau résiduel coté : cotez-les avant de décider.',
   },
   loading:    'Chargement…',
   saving:     'Sauvegarde…',
@@ -1082,6 +1084,11 @@ export const fr = {
     reopen: 'Rouvrir en nouvelle version',
     reopenBusy: 'Réouverture…',
     reopenNote: 'Réouverture après acceptation des risques résiduels',
+    summaryTitle: 'Risques résiduels soumis à la décision',
+    unrated: 'Non cotés',
+    seeRisks: 'Voir la liste des risques',
+    noRisks: 'Aucun risque dans l’analyse.',
+    blocked: { ANALYSE_NON_SOUMISE: 'Décision possible une fois l’analyse soumise ou approuvée.', RISQUES_NON_COTES: 'Décision possible une fois tous les risques cotés (niveau résiduel).' },
   },
 
   adminDashboard: {

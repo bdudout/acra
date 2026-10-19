@@ -78,6 +78,8 @@ export const it: Translations = {
     not_found: 'Elemento non trovato o fuori dal suo perimetro.',
     ANALYSE_GELEE: 'Analisi congelata: i rischi residui sono stati accettati. Apra una nuova versione per modificarla.',
     CONFLIT_EDITION: 'Questo workshop è stato modificato da un altro utente dopo la sua apertura. Ricarichi la pagina per ottenere la sua versione: l\'ultima modifica non è stata salvata.',
+    ANALYSE_NON_SOUMISE: 'I rischi residui possono essere accettati solo su un\'analisi inviata o approvata.',
+    RISQUES_NON_COTES: 'Alcuni rischi non hanno un livello residuo valutato: valutateli prima di decidere.',
   },
   loading:    'Caricamento…',
   saving:     'Salvataggio…',
@@ -1065,6 +1067,11 @@ export const it: Translations = {
     reopen: 'Riapri in una nuova versione',
     reopenBusy: 'Riapertura…',
     reopenNote: 'Riapertura dopo l\'accettazione dei rischi residui',
+    summaryTitle: 'Rischi residui sottoposti alla decisione',
+    unrated: 'Non valutati',
+    seeRisks: 'Vedi l\'elenco dei rischi',
+    noRisks: 'Nessun rischio nell\'analisi.',
+    blocked: { ANALYSE_NON_SOUMISE: 'Decisione possibile una volta inviata o approvata l\'analisi.', RISQUES_NON_COTES: 'Decisione possibile una volta valutati tutti i rischi (livello residuo).' },
   },
 
   adminDashboard: {

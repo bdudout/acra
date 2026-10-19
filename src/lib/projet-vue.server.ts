@@ -24,10 +24,12 @@ import { burndownPlans } from '@/lib/projet-burndown'
 import { sanitizeApprobations } from '@/lib/projet360'
 import { analysesCyberDuProjet } from '@/lib/projet360-sources.server'
 import { normalizePatterns, PATTERNS_MAX_MAX } from '@/lib/patterns-archi'
+import { resumeRisquesResiduels } from '@/lib/acceptation-residuels'
+import { riskTreatmentHref } from '@/lib/methodes'
 
 const RISQUE_SELECT = {
   id: true, nom: true, gravite: true, vraisemblance: true, niveauRisque: true, graviteActuelle: true, vraisemblanceActuelle: true,
-  niveauActuel: true, graviteResiduelle: true, vraisemblanceResiduelle: true, taxonomieCode: true, domaine: true,
+  niveauActuel: true, graviteResiduelle: true, vraisemblanceResiduelle: true, niveauResiduel: true, taxonomieCode: true, domaine: true,
 } as const
 
 export async function chargerVueProjet(id: string, userId: string, instanceRole: UserRole, locale: Locale) {
@@ -101,6 +103,7 @@ export async function chargerVueProjet(id: string, userId: string, instanceRole:
       analyseId: analyse.id, statut: analyse.risquesResiduelsStatut ?? 'EN_ATTENTE',
       le: analyse.risquesResiduelsLe ? analyse.risquesResiduelsLe.toISOString() : null,
       commentaire: analyse.risquesResiduelsCommentaire ?? null,
+      statutAnalyse: analyse.statut, resume: resumeRisquesResiduels(analyse.risques), risquesHref: riskTreatmentHref(analyse.id, analyse.methode),
       canAct: canAcceptResidualRisks(sessionUser, orgConfig.acceptationRisquesActive),
       gelActive: orgConfig.gelApresAcceptationActive, canReopen: canEdit, locale,
     } : undefined,

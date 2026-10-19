@@ -78,6 +78,8 @@ export const en: Translations = {
     not_found: 'Item not found or outside your scope.',
     ANALYSE_GELEE: 'Analysis frozen: residual risks have been accepted. Open a new version to modify it.',
     CONFLIT_EDITION: 'This workshop was modified by another user since you opened it. Reload the page to get their version: your last change was not saved.',
+    ANALYSE_NON_SOUMISE: 'Residual risks can only be accepted on a submitted or approved analysis.',
+    RISQUES_NON_COTES: 'Some risks have no rated residual level: rate them before deciding.',
   },
   loading:    'Loading…',
   saving:     'Saving…',
@@ -1065,6 +1067,11 @@ export const en: Translations = {
     reopen: 'Reopen as a new version',
     reopenBusy: 'Reopening…',
     reopenNote: 'Reopened after residual risk acceptance',
+    summaryTitle: 'Residual risks subject to the decision',
+    unrated: 'Not rated',
+    seeRisks: 'See the list of risks',
+    noRisks: 'No risk in the analysis.',
+    blocked: { ANALYSE_NON_SOUMISE: 'Decision possible once the analysis is submitted or approved.', RISQUES_NON_COTES: 'Decision possible once every risk is rated (residual level).' },
   },
 
   adminDashboard: {

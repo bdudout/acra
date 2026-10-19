@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { canAcceptResidualRisks } from '@/lib/permissions'
 import { withAccess } from '@/lib/with-access.server'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { motifBlocageAcceptation, resumeRisquesResiduels } from '@/lib/acceptation-residuels'
 
 /**
  * POST /api/analyses/[id]/accept-residual-risks
@@ -15,6 +16,7 @@ import { auditLog, getClientIp } from '@/lib/logger'
  * uniquement si `acceptationRisquesActive` est activé dans la configuration de l'org.
  * Accès à l'analyse (404) et rôle EFFECTIF dans son organisation (#130) : `withAccess`.
  * Pas de contrôle de gel : c'est cette décision qui gèle (ou dégèle) l'analyse.
+ * Accepter / refuser : analyse SOUMIS ou APPROUVE et tous les risques cotés (n° 56, 400 avec code).
  */
 export const POST = withAccess(
   { org: { analyse: 'id' }, rateLimit: { bucket: 'accept-residual-risks' } },
@@ -45,6 +47,13 @@ export const POST = withAccess(
     else if (action === 'REFUSER')        statut = 'REFUSES'
     else if (action === 'REINITIALISER')  statut = 'EN_ATTENTE'
     else return NextResponse.json({ error: 'Action inconnue' }, { status: 400 })
+
+    // Décision sur un livrable abouti : analyse soumise / approuvée, risques résiduels tous cotés (n° 56).
+    if (action !== 'REINITIALISER') {
+      const risques = await prisma.risque.findMany({ where: { analyseId: id }, select: { niveauResiduel: true } })
+      const motif = motifBlocageAcceptation(analyse.statut, resumeRisquesResiduels(risques))
+      if (motif) return NextResponse.json({ error: motif }, { status: 400 })
+    }
 
     // Four-eyes (config org) : l'auteur de l'analyse ne peut pas accepter ses propres
     // risques résiduels (décision distincte de l'auteur).
