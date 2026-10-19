@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { accesResultats } from '@/lib/acces-resultats.server'
 import { visibiliteMission } from '@/lib/acces-resultats'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { withAccess } from '@/lib/with-access.server'
+import type { SessionUser } from '@/lib/route-guard.server'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAnalyseScope, roleSurRessource } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { peutEcrireAudit, type UserRole } from '@/lib/permissions'
 import {
   validateMissionInput, cleanMissionInput, transitionMissionAutorisee,
   synthetiserConstats, constatEnRetard, prochaineFenetreMission,
@@ -17,36 +17,30 @@ import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
-type Params = { params: Promise<{ id: string }> }
+// Mission cherchée dans le périmètre visible, sans organisation active exigée : `org: 'none'`
+// et résolution du rôle effectif ici ; 404 avant le contrôle de rôle (ordre conservé).
+const ACCESS_ECRITURE = { org: 'none', rateLimit: { bucket: 'audit-missions' } } as const
 
-function peutEcrireAudit(role: UserRole): boolean {
-  return role === 'AUDITEUR' || isAdminRole(role)
-}
-
-async function loadInScope(session: { user: { id: string; role?: string } }, id: string) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
+async function loadInScope(user: SessionUser, id: string) {
+  const userId = user.id
+  const scope = await getAnalyseScope(userId, user.role)
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
   const mission = await prisma.auditMission.findFirst({
     where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },
     select: { id: true, organizationId: true, statut: true, champs: true },
   })
   if (!mission) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
+  // Rôle EFFECTIF dans l'organisation DE LA RESSOURCE, jamais celui de l'org active (CWE-863).
+  const userRole = await roleSurRessource(userId, user.role, mission.organizationId)
   const cfg = await getOrgConfig(mission.organizationId)
   if (!cfg.auditInterneActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
   return { userId, userRole, mission, champsPersonnalises: cfg.champsPersonnalises }
 }
 
 // GET /api/audit/missions/[id] — détail + constats (avec « en retard » calculé).
-export async function GET(_req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in c) return c.error
+export const GET = withAccess({ org: 'none' }, async (_req, { user, params: { id } }) => {
+  const c = await loadInScope(user, id)
+  if (c.error) return c.error
 
   const mission = await prisma.auditMission.findUnique({
     where: { id },
@@ -76,15 +70,12 @@ export async function GET(_req: NextRequest, { params }: Params) {
     })),
     synthese: synthetiserConstats(constats, now),
   })
-}
+})
 
 // PATCH /api/audit/missions/[id] — éditer ou faire transitionner la mission.
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in c) return c.error
+export const PATCH = withAccess(ACCESS_ECRITURE, async (req, { user, params: { id } }) => {
+  const c = await loadInScope(user, id)
+  if (c.error) return c.error
   if (!peutEcrireAudit(c.userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
@@ -149,15 +140,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     details: { scope: 'audit-mission', action: vers !== depuis ? `transition:${depuis}->${vers}` : 'update', id, ...(suivanteId ? { suivanteId } : {}) },
   })
   return NextResponse.json({ ...avecChampsVisibles(updated, sanitizeChampsConfig(c.champsPersonnalises).mission ?? [], c.userRole), suivanteId })
-}
+})
 
 // DELETE /api/audit/missions/[id] — supprimer une mission et ses constats.
-export async function DELETE(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in c) return c.error
+export const DELETE = withAccess(ACCESS_ECRITURE, async (req, { user, params: { id } }) => {
+  const c = await loadInScope(user, id)
+  if (c.error) return c.error
   if (!peutEcrireAudit(c.userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   await prisma.auditMission.delete({ where: { id } })
@@ -166,4 +154,4 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     details: { scope: 'audit-mission', action: 'delete', id },
   })
   return NextResponse.json({ ok: true })
-}
+})

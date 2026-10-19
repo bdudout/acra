@@ -84,6 +84,23 @@ describe('update.sh v2 — mise à jour réussie', () => {
   })
 })
 
+describe('update.sh — profil « ha » (lot H1.4)', () => {
+  it.each([
+    [{ ACRA_COMPOSE_FILES: '-f docker-compose.yml -f docker-compose.production.yml -f docker-compose.ha.yml' }],
+    [{ ACRA_DEPLOY_PROFILE: 'ha' }],
+  ])('refuse sans rien arrêter ni modifier et renvoie vers scripts/update-ha.sh (%o)', env => {
+    inst = makeInstance()
+    for (const args of [['stable', '--yes', '--status-file', STATUS], ['rollback', '20261016T120000Z-manual-1.0.4', '--yes', '--status-file', STATUS], ['resume', '--status-file', STATUS]]) {
+      const r = inst.run('scripts/update.sh', args, env)
+      expect(r.status, args.join(' ')).not.toBe(0)
+      expect(r.stderr).toContain('scripts/update-ha.sh')
+      expect(status()).toMatchObject({ state: 'FAILED', code: 'ha_profile' })
+    }
+    expect(inst.calls().some(c => /\b(stop|up|run|pg_dump)\b/.test(c))).toBe(false)
+    expect(inst.gitIn('rev-parse', 'HEAD')).toBe(inst.shaA)
+  })
+})
+
 describe('update.sh v2 — échecs avant toute modification du code', () => {
   it('échec du point de restauration : aucun merge, ancienne app redémarrée, statut snapshot_failed', () => {
     inst = makeInstance(); inst.fakeFile('dump_fail')

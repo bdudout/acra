@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { FileBarChart, Plus } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import ModuleGuide from '@/components/ModuleGuide'
 import RapportsGabaritsEditor from '@/components/RapportsGabaritsEditor'
 import { PERIODE_PRESETS, periodePreset } from '@/lib/rapport-model'
@@ -59,7 +60,7 @@ export default function RapportsManager() {
     const res = await fetch('/api/rapports', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, periode, langue }) }).catch(() => null)
     const d = await res?.json().catch(() => ({}))
     setBusy(false)
-    if (!res || !res.ok || !d?.id) { setError((r.errors as Record<string, string>)[d?.error] ?? String(d?.error ?? res?.status ?? '—')); return }
+    if (!res || !res.ok || !d?.id) { setError((r.errors as Record<string, string>)[d?.error] ?? apiErrorMessage(d?.error, t, String(res?.status ?? '—'))); return }
     router.push(`/rapports/${d.id}`)
   }
 

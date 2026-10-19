@@ -1,39 +1,35 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
-import { type UserRole } from '@/lib/permissions'
+import { getAnalyseScope, roleSurRessource } from '@/lib/org-context.server'
+import { withAccess } from '@/lib/with-access.server'
+import { type SessionUser } from '@/lib/route-guard.server'
 import { validateRiskItemInput, cleanRiskItem } from '@/lib/risk-item'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { entiteIdPourTexte } from '@/lib/entites.server'
 
-type Params = { params: Promise<{ id: string }> }
+// `org: 'none'` : le risque est cherché dans tout le périmètre visible (SUPER_ADMIN non focalisé inclus).
+const access = { org: 'none', rateLimit: { bucket: 'risk-items' } } as const
 
 // Charge le risque dans le périmètre de l'utilisateur (tout rôle sauf LECTEUR).
-async function loadInScope(session: { user: { id: string; role?: string } }, id: string) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
-  if (userRole === 'LECTEUR') return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
+async function loadInScope(user: SessionUser, id: string) {
+  const userId = user.id
+  const scope = await getAnalyseScope(userId, user.role)
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
   const r = await prisma.riskItem.findFirst({
     where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },
     select: { id: true, organizationId: true },
   })
   if (!r) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
-  return { userId, userRole, orgId: r.organizationId }
+  // Rôle EFFECTIF dans l'organisation DE LA RESSOURCE, jamais celui de l'org active (CWE-863).
+  const userRole = await roleSurRessource(userId, user.role, r.organizationId)
+  if (userRole === 'LECTEUR') return { error: NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 }) }
+  return { error: null, userId, userRole, orgId: r.organizationId }
 }
 
 // PATCH /api/risk-items/[id] — mettre à jour un risque.
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const ctx = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in ctx) return ctx.error
+export const PATCH = withAccess(access, async (req, { user, params: { id } }) => {
+  const ctx = await loadInScope(user, id)
+  if (ctx.error) return ctx.error
 
   const body = await req.json().catch(() => ({}))
   const erreur = validateRiskItemInput(body)
@@ -49,16 +45,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const updated = await prisma.riskItem.update({ where: { id }, data: { ...rest, entiteId: await entiteIdPourTexte(ctx.orgId, rest.entite) } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: ctx.userId, userRole: ctx.userRole, ip: getClientIp(req), details: { scope: 'risk-item', action: 'update', id } })
   return NextResponse.json(updated)
-}
+})
 
 // DELETE /api/risk-items/[id] — supprimer un risque.
-export async function DELETE(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const ctx = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in ctx) return ctx.error
+export const DELETE = withAccess(access, async (req, { user, params: { id } }) => {
+  const ctx = await loadInScope(user, id)
+  if (ctx.error) return ctx.error
   await prisma.riskItem.delete({ where: { id } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: ctx.userId, userRole: ctx.userRole, ip: getClientIp(req), details: { scope: 'risk-item', action: 'delete', id } })
   return NextResponse.json({ ok: true })
-}
+})

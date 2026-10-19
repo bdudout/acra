@@ -1,8 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { canAdmin, isAdminRole, ROLES_ATTRIBUABLES } from '@/lib/permissions'
+import { isAdminRole, ROLES_ATTRIBUABLES } from '@/lib/permissions'
 import type { UserRole } from '@/lib/permissions'
 import { UserRole as PrismaUserRole } from '@prisma/client'
 import { auditLog, getClientIp } from '@/lib/logger'
@@ -14,6 +12,10 @@ import { sendEmail } from '@/lib/email'
 import { emailLayout } from '@/lib/email-html'
 import { getAdminScope, getAccessibleOrgIds } from '@/lib/org-context.server'
 import { decideUserDeletion, decideUserManagement, planAnalysesReassignment } from '@/lib/user-deletion'
+import { withAccess } from '@/lib/with-access.server'
+
+// Gestion des comptes : réservée aux administrateurs (rôle d'instance, `canAdmin`).
+const ADMIN = { org: 'none', allow: isAdminRole } as const
 
 /**
  * Périmètre de gestion des comptes. SUPER_ADMIN non focalisé → tous les comptes.
@@ -53,15 +55,9 @@ async function loadPasswordPolicy(): Promise<PasswordPolicyShape> {
 // POST /api/admin/users — créer un compte (ADMIN). Génère un mot de passe
 // temporaire conforme à la politique, à changer obligatoirement à la 1re connexion.
 // Le mot de passe généré est renvoyé UNE seule fois pour affichage à l'admin.
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const currentUserId = (session.user as any).id
-  const userRole = (session.user as any).role ?? 'ANALYSTE'
-  if (!canAdmin({ id: currentUserId, role: userRole })) {
-    return NextResponse.json({ error: 'Accès réservé aux administrateurs' }, { status: 403 })
-  }
+export const POST = withAccess({ ...ADMIN, rateLimit: { bucket: 'admin-users' } }, async (req, { user: actor }) => {
+  const currentUserId = actor.id
+  const userRole = actor.role
 
   let body: unknown
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Corps invalide' }, { status: 400 }) }
@@ -117,19 +113,12 @@ export async function POST(req: NextRequest) {
 
   // Le mot de passe temporaire n'est renvoyé qu'ici, une seule fois.
   return NextResponse.json({ user: { ...user, _count: { analyses: 0 } }, tempPassword }, { status: 201 })
-}
+})
 
 // GET /api/admin/users — liste tous les utilisateurs (ADMIN seulement)
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const userId = (session.user as any).id
-  const userRole = (session.user as any).role ?? 'ANALYSTE'
-
-  if (!canAdmin({ id: userId, role: userRole })) {
-    return NextResponse.json({ error: 'Accès réservé aux administrateurs' }, { status: 403 })
-  }
+export const GET = withAccess(ADMIN, async (_req, { user: actor }) => {
+  const userId = actor.id
+  const userRole = actor.role
 
   // #12 — désactivation paresseuse des comptes inactifs (hors ADMIN) selon la politique
   await deactivateInactiveAccounts()
@@ -137,7 +126,6 @@ export async function GET(req: NextRequest) {
   // Périmètre : un ADMIN ne voit que les comptes de SON organisation.
   const scope = await usersScope(userId, userRole)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const users = await prisma.user.findMany({
     where: scope.where,
     orderBy: { createdAt: 'asc' },
@@ -153,21 +141,14 @@ export async function GET(req: NextRequest) {
   })
 
   return NextResponse.json({ users })
-}
+})
 
 // PATCH /api/admin/users — changer le rôle OU suspendre/réactiver un utilisateur
 // body: { userId: string, role: UserRole }
 //    OR { userId: string, action: 'suspend' | 'activate' }
-export async function PATCH(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const currentUserId = (session.user as any).id
-  const userRole = (session.user as any).role ?? 'ANALYSTE'
-
-  if (!canAdmin({ id: currentUserId, role: userRole })) {
-    return NextResponse.json({ error: 'Accès réservé aux administrateurs' }, { status: 403 })
-  }
+export const PATCH = withAccess({ ...ADMIN, rateLimit: { bucket: 'admin-users' } }, async (req, { user: actor }) => {
+  const currentUserId = actor.id
+  const userRole = actor.role
 
   const body = await req.json() as { userId: string; role?: UserRole; action?: 'suspend' | 'activate' | 'reset-password' | 'reassign-analyses'; toUserId?: string }
   const { userId: targetId, role, action } = body
@@ -349,20 +330,13 @@ export async function PATCH(req: NextRequest) {
   })
 
   return NextResponse.json({ user: updated })
-}
+})
 
 // DELETE /api/admin/users — supprimer définitivement un utilisateur
 // body: { userId: string }
-export async function DELETE(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const currentUserId = (session.user as any).id
-  const userRole = (session.user as any).role ?? 'ANALYSTE'
-
-  if (!canAdmin({ id: currentUserId, role: userRole })) {
-    return NextResponse.json({ error: 'Accès réservé aux administrateurs' }, { status: 403 })
-  }
+export const DELETE = withAccess({ ...ADMIN, rateLimit: { bucket: 'admin-users' } }, async (req, { user: actor }) => {
+  const currentUserId = actor.id
+  const userRole = actor.role
 
   const { userId: targetId } = await req.json() as { userId: string }
 
@@ -420,7 +394,7 @@ export async function DELETE(req: NextRequest) {
   })
 
   return NextResponse.json({ success: true })
-}
+})
 
 // POST /api/admin/users — créer un compte utilisateur (ADMIN seulement)
 // body: { name: string, email: string, password: string, role: UserRole }

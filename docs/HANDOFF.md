@@ -6,6 +6,100 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-10-16 (106) — Claude (session cloud) : grandes listes paginées, intégrité des saisies et des tâches, H1, eIDAS
+
+Suite de (105), même branche. Décisions de l'utilisateur : spec scalabilité § 5 (intégrité avant disponibilité ;
+base managée **ou** Patroni ; S3 si multi-instance ; tableau paginé côté serveur) et L9 option B (eIDAS).
+
+- **V1 — pagination côté serveur, fait** (`lib/pagination`, `lib/use-liste-paginee`, `components/Pagination`) :
+  contrôles, registre des risques, incidents, analyses, dérogations, plans d'action unifiés (nouvelle route
+  `GET /api/actions`), préconisations, documents, missions d'audit. Contrat : **sans `page`, réponse historique
+  inchangée** ; avec `page` → `pagination` + `synthese` (compteurs sur tout le périmètre) ; requête légère pour
+  filtrer/trier/compter puis détail des seules lignes de la page. Menus : `?vue=options` (contrôles, risques,
+  incidents, analyses). État de la vue dans l'URL. `/analyses` n'est plus rendu côté serveur (chargement initial).
+  Tri catégorie/origine sur le code, pas sur le libellé traduit.
+- **Saisies non enregistrées** : brouillon local par atelier (`lib/atelier-save`), reprises espacées
+  (`useAutoSave`, `DELAIS_REPRISE_MS`), alerte avant de quitter, bandeau `BrouillonAtelier` (renvoyer, télécharger, ignorer).
+- **Traitements de fond** : journal `ExecutionTache` (migration), `executerTache` dans `cronRoute`, audit
+  `TACHE_PLANIFIEE_ECHEC`/`_RELANCEE`, `/api/admin/taches` + section « Tâches planifiées » (super-admin) : relance
+  manuelle, remise en file des webhooks en échec.
+- **H1 — activable, fait** : `REDIS_URL` → limites de débit **et verrouillage de compte** partagés (le verrouillage
+  était en mémoire seule : seuil × nombre d'instances) ; client RESP intégré (`lib/redis-resp`), Redis injoignable →
+  arrêt au démarrage (`REDIS_OPTIONNEL=1` pour un repli). `DOCUMENT_STORAGE=s3` (`lib/document-storage-s3`, SigV4
+  sans dépendance). `docker-compose.ha.yml` + `Caddyfile.ha`. Guide `docs/deploiement-haute-disponibilite.md`
+  (paramètres Patroni/pgBackRest marqués « [à vérifier] »).
+- **L9 — eIDAS** : 24 points relus sur le texte consolidé officiel fourni par l'utilisateur (CELEX 02014R0910,
+  FR, 18.10.2024, 002.008) : notification d'incident au point f ter (24 h **à compter de l'incident**), point g
+  (falsification), point j supprimé (abrogé), 24 § 4 bis ajouté ; art. 19 abrogé (NIS2 art. 42). Proposé à
+  `numerique-confiance` et `numerique-identite`. Traductions EN/DE/ES/IT non relues contre les versions officielles ;
+  rectificatifs C1-C4 non relus un à un.
+- **Suite (décisions utilisateur)** : **Redis HA** — client intégré : reconnexion après bascule (coupure, délai,
+  `-READONLY`), **Sentinel** (`REDIS_SENTINELS`, `REDIS_SENTINEL_MASTER`, 3 hôtes, quorum 2), délais bornés
+  (`REDIS_TIMEOUT_MS`, 2 s), erreur `redis_indisponible` affichée à la connexion ; essai réel Redis 7.0.15
+  (1 primaire, 1 réplique, 3 sentinelles) : reprise 2,25 s après `SIGKILL` du primaire. **S3_SSE** désactivé par
+  défaut, chiffrement et versioning recommandés (guide § 4). **H1.4 mise à jour sans interruption** :
+  `scripts/update-ha.sh` (point de restauration exigé, migrations une fois, réplicas remplacés un par un avec
+  drainage `/api/health` 503, retour arrière vers `acra-app:ha-rollback`), `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` et
+  `NEXT_DEPLOYMENT_ID` partagés, affinité Caddy par cookie, cliquet expand/contract (`-- contract:` exigé sur les
+  migrations destructives depuis 20261016000000), bouton « Mettre à jour » remplacé par la procédure en « ha ».
+- **Questions ouvertes** : un point eIDAS par méthode de vérification d'identité (choix actuel : regroupées par
+  paragraphe) ; `scripts/setup.sh` ne génère pas encore la clé Server Actions ; sauvegardes planifiées de l'agent
+  inadaptées au profil « ha » (base externe).
+- **Vérifications (état final)** : `tsc` 0 ; `i18n:check` OK (1 683 clés) ; `npm test` 702 fichiers / 5 263 tests
+  verts (lancé seul ; sous charge, les tests des scripts shell `acra-*`/`update*` échouent parfois au hasard et passent
+  seuls — minutage) ; `npm run test:db` 21 fichiers / 98 tests verts ; `prisma migrate diff` sans dérive ;
+  `npm run build` OK sans avertissement. **Non vérifié** : profil « ha » démarré (pas de démon Docker), `up --no-recreate
+  --scale` réel, Caddy `lb_policy cookie` + santé sur réplicas dynamiques, S3 réel, Redis TLS et managé, vecteurs
+  SigV4 relus contre la doc AWS, mesures de charge après pagination, parcours navigateur.
+
+---
+
+## 2026-10-16 (105) — Claude (session cloud) : T3 phase 2, T9, T21, sécurité, chantier scalabilité / HA
+
+Branche `claude/dazzling-edison-qzmwlg` (poussée, pas de PR). Base PostgreSQL 16 locale montée dans la session
+(`/var/lib/postgresql/acra-test`, port 5433) : tests `*.db.test.ts` et recette sur serveur de production réels.
+
+- **T3 phase 2 — fait.** `withAccess` (`lib/with-access.server`) : modes org active / org en paramètre /
+  analyse (`{ analyse: 'id', write }` : `analyseAccessWhere` + rôle effectif + `canEditAnalyse` + gel) / sans org ;
+  surcharges `RouteHandler` (Next contrôle la signature complète, `GET()` reste appelable en test). **Toutes les
+  routes d'écriture migrées** (≈ 230, dont 200 par 6 agents en parallèle, relus) ; cliquet : liste figée 131 → 1
+  (`invitations/[token]`, publique). Codes d'erreur stables traduits côté UI (`lib/api-error`, `t.apiErrors` ×5,
+  ≈ 30 écrans). Reste : 51 routes GET qui lisent encore la session.
+- **Sécurité (CWE-863)** : 21 routes `[id]` appliquaient le rôle de l'org ACTIVE à une ressource d'une autre org du
+  périmètre (ADMIN « sous-arbre » d'un groupe, LECTEUR d'une filiale → modifiait la filiale) → `roleSurRessource`
+  (test sur base réelle). Dérogations (PATCH) sur le rôle effectif ; accès aux analyses validés + journalisés
+  (ACCESS_GRANTED/REVOKED) ; statut d'une proposition MCP hors périmètre non divulgué ; journal pour plans
+  d'action et suivis de conformité (`PLAN_ACTION_UPDATED`, `CONFORMITE_UPDATED`).
+- **T9 — ateliers faits** : `Analyse.revisionAtelier1..5` (migration), `If-Match`, 409 `CONFLIT_EDITION`,
+  `lib/atelier-save` dans les 5 ateliers ; l'acceptation MCP fait avancer la révision de l'atelier 5.
+- **T21 — fait** : `src/proxy.ts` (runtime Node) ; CSP à nonce vérifiée sur le serveur de production.
+- **MCP 4c-5** : déjà livré (backlog obsolète, corrigé).
+- **Chantier scalabilité / HA ouvert** : `docs/specs/scalabilite-haute-disponibilite.md` (inventaire, mesures
+  « grand groupe », feuille de route V1/V2/H1/O1, décisions attendues). Déjà corrigé et vérifié en réel :
+  limite de connexion par IP sur les seuls échecs (NAT : 60/60), pool PostgreSQL réglable (`DB_POOL_*`),
+  documents 10-25 Mo tronqués par le proxy (`proxyClientMaxBodySize` 26 Mo + Caddy), bail des tâches
+  planifiées (`CronVerrou`, 3 appels simultanés → 1 exécution). Runbook § « Capacité et contraintes ».
+- **Prochain pas** : lot V1 (pagination par curseur + listes allégées : `controles` renvoie 22,8 Mo et met 30 s
+  sous 20 requêtes simultanées pour 10 000 contrôles) — décision UX à prendre (pages ou chargement progressif) ;
+  décisions d'hébergement pour le lot H1 (cible de disponibilité, RPO/RTO, base managée, S3).
+- **Constaté, non traité** : 26 `req.json()` sans `catch` (500 au lieu de 400 sur JSON mal formé) ; gel non
+  contrôlé sur `derogations` POST et `accept-residual-risks` (décision produit) ; `workshop/[num]` lève le blocage
+  APPROUVE sur le rôle d'INSTANCE `ADMIN` (conservé) ; `tiers` PUT sans gel ni audit ; `cleanSourceRisque`
+  (workshop) sans catégorie → 500.
+- **Pièges** : `pkill -f`/`pgrep -f` avec un motif présent dans la commande tue le shell lui-même (arrêter le
+  serveur par `/proc/*/environ`, cf. script de la session) ; l'utilisateur `postgres` n'accède pas au scratchpad ;
+  colonne `User.passwordHash` ; un RSSI ne voit des autres que les analyses soumises/approuvées/rejetées ; les
+  agents en parallèle ne doivent pas toucher les fichiers partagés (liste figée, lib) — l'orchestrateur les met à jour.
+- **Vérifications (état final)** : `tsc` 0 erreur ; `npm test` 673 fichiers / 5 046 tests verts ; `npm run test:db`
+  (PostgreSQL 16 local) 19 fichiers / 90 tests verts ; ESLint 0 erreur sur les fichiers modifiés depuis `origin/main` ;
+  `npm run build` OK sans avertissement de dépréciation ; `prisma migrate diff` : aucune dérive. **Recette sur serveur de
+  production local** : `/api/health` 200, page protégée → 307, CSP à nonce unique ; envoi de documents 5/12/24 Mo
+  (SHA-256 identiques) ; 60 connexions depuis une même IP ; tâches planifiées simultanées ; mesures de charge
+  (cf. spec). **Non vérifié** : parcours navigateur des écrans (message de conflit d'atelier, libellés d'erreur
+  traduits) ; CI GitHub de la branche.
+
+---
+
 ## 2026-10-13 (104) — Claude : pack postal, défauts probables + lots L8 et L7 (consigne : « valeurs les plus probables »)
 
 - `13d3e778` — base légale par défaut des données destinataires reçues des e-commerçants : intérêt légitime (le

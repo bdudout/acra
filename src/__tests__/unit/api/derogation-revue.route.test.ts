@@ -6,7 +6,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const state = vi.hoisted(() => ({ userId: 'dem', role: 'ANALYSTE' }))
+const state = vi.hoisted(() => ({ userId: 'dem', role: 'ANALYSTE', membre: true }))
 const db = vi.hoisted(() => ({ derogation: { findUnique: vi.fn(), update: vi.fn() } }))
 const auditLog = vi.hoisted(() => vi.fn())
 
@@ -16,8 +16,10 @@ vi.mock('@/lib/prisma', () => ({ prisma: db }))
 vi.mock('@/lib/org-context.server', () => ({
   analyseAccessWhere: vi.fn(),
   getAccessibleOrgIds: vi.fn(async () => ({ all: false, ids: ['org1'] })),
-  // Rôle effectif d'organisation : absent → rôle de session (comportement historique de ces cas).
-  getEffectiveRoleForOrg: vi.fn(async () => null),
+  // Rôle effectif d'organisation = rôle d'appartenance (simulé par le rôle de l'état) ;
+  // `membre: false` → aucune appartenance couvrante (null).
+  getEffectiveRoleForOrg: vi.fn(async () => (state.membre ? state.role : null)),
+  roleSurRessource: vi.fn(async () => (state.membre ? state.role : 'LECTEUR')),
 }))
 vi.mock('@/lib/org-config.server', () => ({
   getOrgConfig: vi.fn(async () => ({ derogationWorkflow: 'RSSI_METIER', derogationDoubleRegard: false, derogationDureeDefautJours: 180, derogationDureeMaxJours: 365, secondeLigneActive: true })),
@@ -35,7 +37,7 @@ const call = (body: unknown) => PATCH({ json: async () => body, headers: new Hea
 
 beforeEach(() => {
   vi.clearAllMocks()
-  Object.assign(state, { userId: 'dem', role: 'ANALYSTE' })
+  Object.assign(state, { userId: 'dem', role: 'ANALYSTE', membre: true })
   db.derogation.findUnique.mockResolvedValue({ ...base })
   db.derogation.update.mockImplementation(async (a: { data: Record<string, unknown> }) => ({ ...base, ...a.data }))
 })
@@ -95,5 +97,25 @@ describe('AVIS_RSSI favorable avec réserves', () => {
   it('avis favorable simple : aucune réserve enregistrée', async () => {
     await call({ action: 'AVIS_RSSI', favorable: true })
     expect(db.derogation.update.mock.calls[0][0].data.avisRssiReserves).toBeNull()
+  })
+})
+
+describe('rôle EFFECTIF dans l\'organisation de la dérogation (F01, CWE-863)', () => {
+  it('un RSSI d\'INSTANCE sans appartenance à l\'organisation ne rend pas l\'avis RSSI', async () => {
+    Object.assign(state, { userId: 'rssi-ailleurs', role: 'RSSI', membre: false })
+    const res = await call({ action: 'AVIS_RSSI', avis: 'FAVORABLE', commentaire: 'ok' })
+    expect(res.status).toBe(403)
+    expect(db.derogation.update).not.toHaveBeenCalled()
+  })
+  it('un RSSI d\'INSTANCE sans appartenance ne prolonge pas une dérogation active', async () => {
+    db.derogation.findUnique.mockResolvedValueOnce({ ...base, statut: 'ACTIVE', dateFin: new Date('2027-01-01') })
+    Object.assign(state, { userId: 'rssi-ailleurs', role: 'RSSI', membre: false })
+    const res = await call({ action: 'PROLONGER', dateFin: '2027-06-01', commentaire: 'x' })
+    expect(res.status).toBe(403)
+    expect(db.derogation.update).not.toHaveBeenCalled()
+  })
+  it('le journal porte l\'organisation de la dérogation et le rôle effectif', async () => {
+    await call({ action: 'MODIFIER', intitule: 'Nouveau', motif: 'Motif revu', mesuresCompensatoires: 'MFA' })
+    expect(auditLog).toHaveBeenCalledWith('DEROGATION_UPDATED', expect.objectContaining({ organizationId: 'org1', userRole: 'ANALYSTE' }))
   })
 })

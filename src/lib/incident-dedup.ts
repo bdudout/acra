@@ -125,6 +125,8 @@ export function findIncidentDuplicates(
 export function findDuplicatesForAll(
   items: IncidentDedupItem[],
   opts: DedupOptions = {},
+  /** Liste paginée (lot V1) : ne calcule les doublons que de ces incidents (comparés à TOUS les autres). */
+  seulement?: ReadonlySet<string>,
 ): Map<string, DuplicateMatch[]> {
   const seuil = opts.seuil ?? 0.5
   const fenetre = opts.fenetreJours ?? 14
@@ -132,6 +134,7 @@ export function findDuplicatesForAll(
   const result = new Map<string, DuplicateMatch[]>()
   for (let i = 0; i < items.length; i++) {
     const a = items[i]
+    if (seulement && !seulement.has(a.id)) continue
     const matches: DuplicateMatch[] = []
     for (let j = 0; j < items.length; j++) {
       const b = items[j]

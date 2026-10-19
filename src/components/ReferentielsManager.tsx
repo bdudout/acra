@@ -10,6 +10,7 @@
 import { Plus, Trash2, Pencil, AlertTriangle, BookMarked, Lock, Gauge, ShieldCheck, Power } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { parseExigences, parseMissions, REFERENTIEL_TYPES } from '@/lib/referentiel'
 import { DOMAINES, DOMAINE_META } from '@/lib/referentiel-domaines'
@@ -95,7 +96,7 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
     if (!res.ok) {
       const d = await res.json().catch(() => ({}))
       const map: Record<string, string> = { code_requis: r.errorRequired, nom_requis: r.errorRequired, code_existant: r.errorCode }
-      setErr(map[d.error] ?? d.error ?? 'Erreur')
+      setErr(map[d.error] ?? apiErrorMessage(d.error, t, 'Erreur'))
       return
     }
     setShowForm(false); reload()
@@ -106,7 +107,7 @@ export default function ReferentielsManager({ canManage }: { canManage: boolean 
     setSeeding(true); setErr(null)
     const res = await fetch('/api/referentiels/politique-defaut', { method: 'POST' })
     setSeeding(false)
-    if (!res.ok && res.status !== 409) { const d = await res.json().catch(() => ({})); setErr(d.error ?? 'Erreur') }
+    if (!res.ok && res.status !== 409) { const d = await res.json().catch(() => ({})); setErr(apiErrorMessage(d.error, t, 'Erreur')) }
     reload()
   }
 

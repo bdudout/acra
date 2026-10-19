@@ -5,21 +5,19 @@ import Navbar from '@/components/Navbar'
 import { type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { resolvePageOrganizationIds } from '@/lib/org-context'
-import { getOrgConfig } from '@/lib/org-config.server'
-import { gatherActionItems } from '@/lib/action-items.server'
-import PlansActionsView, { type SerializedActionItem } from '@/components/PlansActionsView'
-import type { ActionPriorite } from '@/lib/risk-action'
+import PlansActionsView from '@/components/PlansActionsView'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-
-interface PageProps { searchParams: Promise<{ priorite?: string; filtre?: string }> }
 
 // Plan d'action UNIFIÉ (source unique) : agrège mesures d'analyse (A5) et
 // d'écosystème (A3), actions du registre, conformité, audit, régulateur,
 // contrôle et incidents. Remplace l'ancienne page /actions (mesures seules) ;
 // /plans-actions redirige ici.
-export default async function ActionsPage({ searchParams }: PageProps) {
+// Liste paginée côté serveur (lot V1) : la vue interroge GET /api/actions avec les
+// paramètres de l'URL (filtres, tri, page), deep-links historiques compris
+// (?priorite=1 → CRITIQUE, ?filtre=retard, ?statut=EN_RETARD).
+export default async function ActionsPage() {
   const session = await getServerSession(authOptions)
   if (!session?.user) redirect('/auth/signin')
   const userId = (session.user as { id: string }).id
@@ -32,33 +30,11 @@ export default async function ActionsPage({ searchParams }: PageProps) {
   // Sans organisation focalisée, le SUPER_ADMIN consulte un bilan consolidé,
   // strictement en lecture : l'édition d'une action orpheline reste liée à une
   // organisation active explicite (prop orgId ci-dessous).
-  const items = (await Promise.all(orgIds.map(async (orgId) => {
-    const orgConfig = await getOrgConfig(orgId)
-    return gatherActionItems(orgId, {
-      incidentsActive: orgConfig.incidentsActive,
-      controlePermanentActive: orgConfig.controlePermanentActive,
-      auditInterneActive: orgConfig.auditInterneActive,
-      registreRisquesActive: orgConfig.registreRisquesActive,
-      conformiteActive: orgConfig.conformiteActive,
-    }, { userId, role: scope.role, scope: scope.scope })
-  }))).flat()
-
-  const serialized: SerializedActionItem[] = items.map((i) => ({
-    ...i,
-    echeance: i.echeance ? i.echeance.toISOString() : null,
-  }))
-
-  // Deep-links historiques : /actions?priorite=1 (P1→CRITIQUE) ou ?filtre=retard.
-  const { priorite, filtre } = await searchParams
-  const initialPriorite: ActionPriorite | '' =
-    priorite === '1' ? 'CRITIQUE' : priorite === '2' ? 'MAJEUR' : priorite === '3' ? 'MODERE' : ''
-  const initialEcheance = filtre === 'retard' ? 'retard' : ''
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <PlansActionsView items={serialized} orgId={scope.activeOrgId ?? undefined} initialPriorite={initialPriorite} initialEcheance={initialEcheance} />
+        <PlansActionsView orgId={scope.activeOrgId ?? undefined} />
       </main>
     </div>
   )

@@ -25,12 +25,14 @@
  */
 
 import { AlertTriangle, BarChart3, Bot, CheckCircle2, Clock, Sparkles, Star, Target, VenetianMask, Zap } from 'lucide-react'
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { uid } from '@/lib/uid'
 import ConfirmDialog from '@/components/ConfirmDialog'
+import BrouillonAtelier from '@/components/BrouillonAtelier'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
+import { enregistrerAtelier } from '@/lib/atelier-save'
 import { useAutoSave } from '@/lib/useAutoSave'
 import { resolveExemples } from '@/lib/exemples-ateliers'
 import { rankExemples } from '@/lib/exemples-context'
@@ -131,16 +133,11 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode, e
     couplesTitle: t.workshop.a2.radarCouples,
     hint: t.workshop.a2.radarHint,
   }), [t])
+  const revisionRef = useRef<number>(Number(analyse?.revisionAtelier2 ?? 0))
   const { status: autoStatus, lastSaved, error: autoError, saveNow } = useAutoSave(
     autoSaveData,
-    async (data) => {
-      const res = await fetch(`/api/analyses/${analyseId}/workshop/2`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      if (!res.ok) throw new Error('Sauvegarde échouée')
-    },
+    // Verrou optimiste (T9) : un autre éditeur a enregistré cet atelier → 409, rien n'est écrasé.
+    (data) => enregistrerAtelier(analyseId, 2, data, revisionRef, { conflit: t.apiErrors.CONFLIT_EDITION, echec: t.brouillonAtelier.reprise }),
     { delay: 1500, disabled: !editable }
   )
 
@@ -275,7 +272,7 @@ export default function Atelier2({ analyseId, initialData, analyse, flashMode, e
             <div className="flex items-center justify-between mb-1">
               {/* h3 commenté : titre déjà affiché en h1 par la page atelier */}
               {/* <h3 className="font-semibold text-red-900">{t.workshop.a2.title}</h3> */}
-              <AutoSaveBadge status={autoStatus} lastSaved={lastSaved} error={autoError} />
+              <AutoSaveBadge status={autoStatus} lastSaved={lastSaved} error={autoError} /><BrouillonAtelier analyseId={analyseId} num={2} />
             </div>
             <p className="text-sm text-red-800">{t.workshop.a2.desc}</p>
           </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { AlertTriangle, Check, CheckCircle2, Globe, Lock, Monitor, Moon, Palette, Sun, User, type LucideIcon } from 'lucide-react'
 import Navbar from '@/components/Navbar'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { LOCALES, LOCALE_LABELS } from '@/lib/i18n'
 import { useTheme, type ThemeMode } from '@/lib/theme'
 import SelfServiceDeletionPanel from '@/components/SelfServiceDeletionPanel'
@@ -105,7 +106,7 @@ export default function ProfilePage() {
       setProfileSuccess(true)
     } else {
       const d = await res.json()
-      setProfileError(d.error || t.error)
+      setProfileError(apiErrorMessage(d.error, t, t.error))
     }
   }
 
@@ -138,7 +139,7 @@ export default function ProfilePage() {
       setConfirmPassword('')
     } else {
       const d = await res.json()
-      setPwdError(d.error === 'PASSWORD_POLICY' ? t.passwordPolicy.policyError : (d.error || t.error))
+      setPwdError(d.error === 'PASSWORD_POLICY' ? t.passwordPolicy.policyError : apiErrorMessage(d.error, t, t.error))
     }
   }
 

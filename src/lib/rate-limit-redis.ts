@@ -5,12 +5,9 @@
  * atomique `INCR` + expiration `PEXPIRE` posée au premier hit (fenêtre fixe).
  * Toutes les instances de l'application partagent alors le même compteur.
  *
- * Aucune dépendance ajoutée : le client Redis est passé par l'appelant via
- * l'interface minimale `RedisLike` (compatible `redis` / `ioredis`). Câblage au
- * démarrage :
- *   import { createClient } from 'redis'
- *   const client = createClient({ url: process.env.REDIS_URL }); await client.connect()
- *   configureRateLimitStore(new RedisRateLimitStore(client))
+ * Aucune dépendance ajoutée : le client est passé via l'interface minimale `RedisLike`.
+ * Câblage automatique au démarrage quand REDIS_URL ou REDIS_SENTINELS est défini : lib/shared-store.server.ts
+ * (client intégré lib/redis-resp.ts ; le verrouillage de compte partage le même client).
  */
 import type { RateLimitStore, RateLimitResult } from '@/lib/rate-limit'
 
@@ -22,6 +19,7 @@ export interface RedisLike {
   /** TTL restant en ms ; < 0 si la clé n'a pas d'expiration (ou n'existe pas). */
   pttl(key: string): Promise<number>
   del(key: string): Promise<unknown>
+  get(key: string): Promise<string | null>
 }
 
 export class RedisRateLimitStore implements RateLimitStore {
@@ -51,5 +49,13 @@ export class RedisRateLimitStore implements RateLimitStore {
 
   async reset(key: string): Promise<void> {
     await this.redis.del(this.prefix + key)
+  }
+
+  async peek(key: string, limit: number): Promise<RateLimitResult> {
+    const k = this.prefix + key
+    const count = Number(await this.redis.get(k) ?? 0) || 0
+    const ttl = count ? await this.redis.pttl(k) : 0
+    const remaining = Number.isFinite(limit) ? Math.max(0, limit - count) : Infinity
+    return { allowed: count < limit, remaining, resetAt: Date.now() + Math.max(0, ttl) }
   }
 }

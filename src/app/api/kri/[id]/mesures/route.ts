@@ -1,16 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAnalyseScope, roleSurRessource } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { validateMesureInput, cleanMesureInput } from '@/lib/kri'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
-
-type Params = { params: Promise<{ id: string }> }
 
 // La SAISIE d'une mesure relève de la 1ʳᵉ ligne (le propriétaire relève la valeur).
 // Ouverte à tous sauf le LECTEUR (consultation seule).
@@ -19,17 +16,10 @@ function peutMesurerKri(role: UserRole): boolean {
 }
 
 // POST /api/kri/[id]/mesures — relever une valeur (1ʳᵉ ligne).
-export async function POST(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-
-  const { id } = await params
-  const scope = await getAnalyseScope(userId, instanceRole)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
-  if (!peutMesurerKri(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
+// org: 'none' — le KRI est cherché dans tout le périmètre visible (pas d'organisation active exigée).
+export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'kri-mesures' } }, async (req, { user, params: { id } }) => {
+  const userId = user.id
+  const scope = await getAnalyseScope(userId, user.role)
   const orgIds = scope.scope.visibleOrgIds
   const spansAll = scope.scope.isSuperAdmin && orgIds.length === 0
   const kri = await prisma.kri.findFirst({
@@ -37,6 +27,9 @@ export async function POST(req: NextRequest, { params }: Params) {
     select: { id: true, organizationId: true },
   })
   if (!kri) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+  // Rôle EFFECTIF dans l'organisation DE LA RESSOURCE, jamais celui de l'org active (CWE-863).
+  const userRole = await roleSurRessource(userId, user.role, kri.organizationId)
+  if (!peutMesurerKri(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   const cfg = await getOrgConfig(kri.organizationId)
   if (!cfg.kriActive) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
 
@@ -60,4 +53,4 @@ export async function POST(req: NextRequest, { params }: Params) {
     details: { scope: 'kri-mesure', action: 'create', kriId: id, id: mesure.id },
   })
   return NextResponse.json(mesure, { status: 201 })
-}
+})

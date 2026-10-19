@@ -1,26 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAccessibleOrgIds, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { peutDefinir, type UserRole } from '@/lib/permissions'
 import { donneesDeclinaison, planDeclinaison } from '@/lib/controle-reseau'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { withAccess } from '@/lib/with-access.server'
 
 export const dynamic = 'force-dynamic'
-
-type Params = { params: Promise<{ id: string }> }
 
 // POST /api/controles/[id]/decliner — fait du contrôle un contrôle « de référence » et le décline dans les entités
 // descendantes visibles (body facultatif : { organizationIds }). Idempotent ; n'écrase jamais une déclinaison.
 // Spec : docs/specs/protection-sociale-specs.md (P3).
-export async function POST(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const { id } = await params
+// Rôle effectif résolu dans l'organisation DU CONTRÔLE (et dépend de la config : module, 2ᵉ ligne) → `org: 'none'`.
+export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'controles-decliner' } }, async (req, { user, params }) => {
+  const userId = user.id
+  const instanceRole = user.role
+  const { id } = params
 
   const ref = await prisma.controle.findUnique({ where: { id } })
   const acces = await getAccessibleOrgIds(userId, instanceRole)
@@ -61,4 +57,4 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!ref.estReference) await prisma.controle.update({ where: { id: ref.id }, data: { estReference: true } })
   await auditLog('CONTROLE_DECLINE', { userId, userRole: role, targetId: ref.id, targetType: 'controle', ip: getClientIp(req), details: { intitule: ref.intitule, crees: crees.length, ignores: ignores.length } })
   return NextResponse.json({ crees, ignores, dejaDeclinees: demandees.filter(o => existants.includes(o)).length })
-}
+})

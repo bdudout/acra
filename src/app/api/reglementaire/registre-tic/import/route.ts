@@ -1,12 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { z } from 'zod'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { peutGererRegistreTic, type UserRole } from '@/lib/permissions'
+import { peutGererRegistreTic } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { rateLimit, rateLimitHeaders, LIMIT_EXCEL_PARSE } from '@/lib/rate-limit'
 import { checkTabularUpload } from '@/lib/import-file-format'
@@ -32,15 +30,10 @@ const asAliases = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x 
  * Import guidé de contrats TIC (CSV / XLSX) : `dryRun` = aperçu ligne à ligne sans écriture ; sinon création des lignes valides
  * (rôles habilités au registre TIC, module réglementaire actif). Une référence déjà présente n'est jamais écrasée.
  */
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = (session.user as { role?: UserRole }).role ?? 'ANALYSTE'
-  const scope = await getAnalyseScope(userId, instanceRole)
-  const orgId = scope.activeOrgId
-  if (!orgId) return NextResponse.json({ error: 'organization_required' }, { status: 400 })
-  if (!scope.role || !peutGererRegistreTic(scope.role)) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+// Rate limit `excel-parse` (LIMIT_EXCEL_PARSE, code `excel_rate_limited` affiché par l'UI) conservé dans le handler :
+// partagé avec les autres imports tabulaires et évalué après le contrôle de format du fichier.
+export const POST = withAccess({ org: 'active', allow: peutGererRegistreTic }, async (req, { user, role, orgId }) => {
+  const userId = user.id
   if (!(await getOrgConfig(orgId)).reglementaireActive) return NextResponse.json({ error: 'module_inactive' }, { status: 403 })
 
   let body: z.infer<typeof schema>
@@ -103,10 +96,10 @@ export async function POST(req: NextRequest) {
       }
       return { plan, created: plan.toCreate.length, linked }
     })
-    await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId, userRole: scope.role, organizationId: orgId, ip: getClientIp(req), details: { scope: 'registre-tic', action: 'import', file: body.filename.slice(0, 120), created: result.created, linked: result.linked, counts: result.plan.counts } })
+    await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId, userRole: role, organizationId: orgId, ip: getClientIp(req), details: { scope: 'registre-tic', action: 'import', file: body.filename.slice(0, 120), created: result.created, linked: result.linked, counts: result.plan.counts } })
     return NextResponse.json({ sheet: sheetName, columns, lines: result.plan.lines, counts: result.plan.counts, created: result.created, linked: result.linked }, { status: result.created ? 201 : 200 })
   } catch (error) {
     console.error('[registre-tic import]', error instanceof Error ? error.message : error)
     return NextResponse.json({ error: 'import_failed' }, { status: 500 })
   }
-}
+})

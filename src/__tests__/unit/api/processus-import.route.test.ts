@@ -10,7 +10,10 @@ vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.cfg }))
 vi.mock('@/lib/rate-limit', () => ({ rateLimit: m.rl, rateLimitHeaders: () => ({}), LIMIT_EXCEL_PARSE: { limit: 30, windowMs: 600_000 } }))
 vi.mock('@/lib/logger', () => ({ auditLog: m.audit, getClientIp: () => '127.0.0.1' }))
 vi.mock('@/lib/prisma', () => ({ prisma: { processus: { findMany: m.findMany, create: m.create }, $transaction: m.tx } }))
-import { POST } from '@/app/api/processus/import/route'
+import { POST as POST_ROUTE } from '@/app/api/processus/import/route'
+// Routes migrées vers withAccess : second argument (paramètres de route) obligatoire.
+const NO_PARAMS = { params: Promise.resolve({}) }
+const POST = (r: NextRequest) => POST_ROUTE(r, NO_PARAMS)
 
 const csv = (text: string, filename = 'processus.csv') => ({ filename, data: Buffer.from(text, 'utf8').toString('base64') })
 const req = (body: object) => new NextRequest('http://x/api/processus/import', { method: 'POST', body: JSON.stringify(body) })

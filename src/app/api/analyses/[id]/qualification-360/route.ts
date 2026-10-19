@@ -2,26 +2,20 @@
 // PUT { answers } : fusionne les réponses `p360.*` dans Analyse.qualification sans
 // toucher aux réponses du questionnaire général. Gardes : accès (404), méthode
 // PROJET_360 (400), édition (403), gel (403) — `guardDirectRisk`.
+// Session et rate limit : withAccess (org 'none').
 
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
-import type { UserRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { guardDirectRisk } from '@/lib/analyse-direct-risk.server'
 import { sanitizeAnswers360, progression360 } from '@/lib/projet360'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
-type Params = { params: Promise<{ id: string }> }
 
-export async function PUT(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  const user = session?.user as { id?: string; role?: string } | undefined
-  if (!user?.id) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const role = (user.role ?? 'ANALYSTE') as UserRole
-  const { id } = await params
+export const PUT = withAccess({ org: 'none', rateLimit: { bucket: 'qualification-360' } }, async (req, { user, params: { id } }) => {
+  const role = user.role
   const g = await guardDirectRisk(id, user.id, role)
   if (!g.ok) return NextResponse.json({ error: g.error }, { status: g.status })
   if (g.analyse.methode !== 'PROJET_360') return NextResponse.json({ error: 'methode_non_360' }, { status: 400 })
@@ -39,4 +33,4 @@ export async function PUT(req: NextRequest, { params }: Params) {
     ip: getClientIp(req), details: { scope: 'qualification-360', answered: Object.keys(answers).length },
   })
   return NextResponse.json({ answers, progression: progression360(answers) })
-}
+})

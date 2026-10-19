@@ -1,24 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { canManageRopa, type UserRole } from '@/lib/permissions'
+import { canManageRopa } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
+import { type SessionUser } from '@/lib/route-guard.server'
 import { sanitizeDateRevue } from '@/lib/revues'
 import { sanitizeTraitement, evaluerTraitement } from '@/lib/ropa'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
-type Params = { params: Promise<{ id: string }> }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = prisma as any
 
-async function ctx(session: { user: { id: string; role?: string } }) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  return { userId, userRole: scope.role, orgId: scope.activeOrgId }
+// Sans organisation active, la route répond 403 (et non 400) : org active résolue ici, `org: 'none'`.
+async function ctx(user: SessionUser) {
+  const scope = await getAnalyseScope(user.id, user.role)
+  return { userId: user.id, userRole: scope.role, orgId: scope.activeOrgId }
 }
 
 async function loadOwned(orgId: string, id: string) {
@@ -26,24 +24,18 @@ async function loadOwned(orgId: string, id: string) {
 }
 
 // GET /api/ropa/[id]
-export async function GET(_req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+export const GET = withAccess({ org: 'none' }, async (_req, { user, params: { id } }) => {
+  const { userRole, orgId } = await ctx(user)
   if (!orgId || !canManageRopa(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
-  const { id } = await params
   const t = await loadOwned(orgId, id)
   if (!t) return NextResponse.json({ error: 'introuvable' }, { status: 404 })
   return NextResponse.json({ ...t, evaluation: evaluerTraitement(sanitizeTraitement(t)) })
-}
+})
 
 // PATCH /api/ropa/[id] — mettre à jour un traitement (DPO / ADMIN).
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+export const PATCH = withAccess({ org: 'none', rateLimit: { bucket: 'ropa' } }, async (req, { user, params: { id } }) => {
+  const { userId, userRole, orgId } = await ctx(user)
   if (!orgId || !canManageRopa(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
-  const { id } = await params
   const existing = await loadOwned(orgId, id)
   if (!existing) return NextResponse.json({ error: 'introuvable' }, { status: 404 })
 
@@ -56,18 +48,15 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const updated = await db.traitement.update({ where: { id }, data: { ...data, ...(derniereRevue !== undefined ? { derniereRevue } : {}) } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId, userRole, organizationId: orgId, ip: getClientIp(req), details: { scope: 'ropa', action: 'update', id } })
   return NextResponse.json(updated)
-}
+})
 
 // DELETE /api/ropa/[id]
-export async function DELETE(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+export const DELETE = withAccess({ org: 'none', rateLimit: { bucket: 'ropa' } }, async (req, { user, params: { id } }) => {
+  const { userId, userRole, orgId } = await ctx(user)
   if (!orgId || !canManageRopa(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
-  const { id } = await params
   const existing = await loadOwned(orgId, id)
   if (!existing) return NextResponse.json({ error: 'introuvable' }, { status: 404 })
   await db.traitement.delete({ where: { id } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId, userRole, organizationId: orgId, ip: getClientIp(req), details: { scope: 'ropa', action: 'delete', id } })
   return NextResponse.json({ ok: true })
-}
+})

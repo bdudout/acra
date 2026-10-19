@@ -1,36 +1,18 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { canEditAnalyse, resolveAnalyseRole, type UserRole } from '@/lib/permissions'
+import { canEditAnalyse } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { validateDerogationInput, statutInitial, calcDateFin, type DerogationWorkflow } from '@/lib/derogation'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 
-type Params = { params: Promise<{ id: string }> }
-
-async function loadAnalyse(userId: string, userRole: UserRole, id: string) {
-  return prisma.analyse.findFirst({
-    where: await analyseAccessWhere(userId, userRole, id),
-    select: { id: true, organizationId: true, userId: true, deletedAt: true, accesUtilisateurs: true },
-  })
-}
+// Accès à l'analyse (404 hors périmètre ou en corbeille) et rôle EFFECTIF dans son organisation : `withAccess`.
 
 // GET /api/analyses/[id]/derogations — liste des dérogations de l'analyse.
-export async function GET(_req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-
-  const { id } = await params
-  const analyse = await loadAnalyse(userId, userRole, id)
-  if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
-
+export const GET = withAccess({ org: { analyse: 'id' } }, async (_req, { analyse }) => {
   const orgConfig = await getOrgConfig(analyse.organizationId)
   const derogations = await prisma.derogation.findMany({
-    where: { analyseId: id },
+    where: { analyseId: analyse.id },
     orderBy: { createdAt: 'desc' },
   })
   return NextResponse.json({
@@ -45,27 +27,22 @@ export async function GET(_req: NextRequest, { params }: Params) {
       petiteStructure: orgConfig.petiteStructure,
     },
   })
-}
+})
 
 // POST /api/analyses/[id]/derogations — créer une demande de dérogation (porteur).
-export async function POST(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-
-  const { id } = await params
-  const analyse = await loadAnalyse(userId, userRole, id)
-  if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+// Pas de `write` : l'ordre « module désactivé » (403) avant « édition » (403) est conservé, et la
+// demande n'est pas soumise au gel (comportement inchangé).
+export const POST = withAccess({ org: { analyse: 'id' }, rateLimit: { bucket: 'derogations' } }, async (req, { user, role, analyse }) => {
+  const id = analyse.id
+  const userId = user.id
+  const userRole = user.role
 
   const orgConfig = await getOrgConfig(analyse.organizationId)
   if (!orgConfig.derogationsActive) {
     return NextResponse.json({ error: 'Les dérogations ne sont pas activées pour cette organisation' }, { status: 403 })
   }
-  // RBAC sur le rôle EFFECTIF d'org (pas l'instance) — #130.
-  const membershipRole = analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null
-  const effRole = resolveAnalyseRole(userRole, analyse.organizationId, membershipRole)
-  if (!canEditAnalyse({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
+  // RBAC sur le rôle EFFECTIF d'org (pas l'instance) — #130 (résolu par withAccess).
+  if (!canEditAnalyse({ id: userId, role }, analyse)) {
     return NextResponse.json({ error: 'Accès refusé — seul le porteur peut demander une dérogation' }, { status: 403 })
   }
 
@@ -117,4 +94,4 @@ export async function POST(req: NextRequest, { params }: Params) {
     details: { analyseId: id, portee: input.portee, intitule: input.intitule, workflow: orgConfig.derogationWorkflow },
   })
   return NextResponse.json(derogation, { status: 201 })
-}
+})

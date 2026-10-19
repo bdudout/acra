@@ -1,5 +1,7 @@
 // ─── Préconisations des contrôleurs (cf. docs/specs/questionnaires-controle.md) ─
 // GET : la 2ᵉ ligne voit toutes les préconisations ; un métier voit celles dont il est responsable.
+//   Sans `page` : liste complète (réponse historique) ; avec `?page=&taille=&q=` (+ `preconisation=<id>` : page
+//   contenant la préconisation ciblée) : + `pagination` et `synthese` (total, nombre par statut) — lot V1.
 // POST (2ᵉ ligne) : création, éventuellement depuis une réponse revue (reponseId + questionId) : la cible
 // de la question (exigence, risque, processus, point de contrôle) est alors reprise.
 import { NextRequest, NextResponse } from 'next/server'
@@ -8,17 +10,42 @@ import { auditLog, getClientIp } from '@/lib/logger'
 import { questionnaireContext, refuse, repondantsPossibles } from '@/lib/questionnaire.server'
 import { cleanConstatInput, validateConstatInput } from '@/lib/audit'
 import { sanitizeQuestions } from '@/lib/questionnaire'
+import { lirePagination, paginer, correspond } from '@/lib/pagination'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(): Promise<NextResponse> {
+// Tri unique (ordre historique : statut, échéance, plus récente) ; liste paginée côté serveur (lot V1).
+const TRIS = ['defaut'] as const
+const ORDRE = [{ statut: 'asc' as const }, { echeance: 'asc' as const }, { createdAt: 'desc' as const }]
+
+export async function GET(req: NextRequest): Promise<NextResponse> {
   const r = await questionnaireContext()
   if (!r.ok) return r.response
   const { ctx } = r
-  const preconisations = await prisma.preconisation.findMany({
-    where: { organizationId: ctx.orgId, ...(ctx.canDefine ? {} : { responsableId: ctx.userId }) },
-    orderBy: [{ statut: 'asc' }, { echeance: 'asc' }, { createdAt: 'desc' }],
-  })
+  const where = { organizationId: ctx.orgId, ...(ctx.canDefine ? {} : { responsableId: ctx.userId }) }
+  const sp = req.nextUrl.searchParams
+  const pg = lirePagination(sp, { tris: TRIS, triDefaut: 'defaut' })
+  let preconisations
+  let pagination = null
+  let synthese = null
+  if (pg) {
+    // Requête LÉGÈRE (identifiant, statut, recherche) sur toute la liste, puis détail des seules lignes de la page.
+    const legers = (await prisma.preconisation.findMany({ where, orderBy: ORDRE, select: { id: true, statut: true, intitule: true, recommandation: true, responsableAction: true } }))
+      .filter(p => correspond(pg.q, p.intitule, p.recommandation, p.responsableAction))
+    // Deep-link `?preconisation=<id>` : la page affichée est celle qui contient la préconisation ciblée.
+    const focus = sp.get('preconisation')
+    const idx = focus ? legers.findIndex(p => p.id === focus) : -1
+    const page = paginer(legers, idx >= 0 ? { ...pg, page: Math.floor(idx / pg.taille) + 1 } : pg)
+    pagination = page.pagination
+    const parStatut: Record<string, number> = {}
+    for (const p of legers) parStatut[p.statut] = (parStatut[p.statut] ?? 0) + 1
+    synthese = { total: legers.length, parStatut }
+    const rang = new Map(page.items.map((p, i) => [p.id, i]))
+    preconisations = (await prisma.preconisation.findMany({ where: { id: { in: page.items.map(p => p.id) } } }))
+      .sort((a, b) => (rang.get(a.id) ?? 0) - (rang.get(b.id) ?? 0))
+  } else {
+    preconisations = await prisma.preconisation.findMany({ where, orderBy: ORDRE })
+  }
   // Plans d'action liés (lien PRECONISATION), pour le suivi.
   const liens = await prisma.planActionLien.findMany({
     where: { type: 'PRECONISATION', targetId: { in: preconisations.map(p => p.id) }, planAction: { organizationId: ctx.orgId } },
@@ -30,6 +57,7 @@ export async function GET(): Promise<NextResponse> {
     preconisations: preconisations.map(p => ({ ...p, plansAction: plans.get(p.id) ?? [] })),
     canDefine: ctx.canDefine,
     ...(ctx.canDefine ? { responsables: await repondantsPossibles(ctx.orgId) } : {}),
+    ...(pagination ? { pagination, synthese } : {}),
   })
 }
 

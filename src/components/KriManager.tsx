@@ -63,7 +63,7 @@ export default function KriManager({ canDefine, canMeasure }: { canDefine: boole
     const [kk, tt, rr] = await Promise.all([
       fetch('/api/kri').then(x => x.ok ? x.json() : { kris: [], synthese: null }),
       fetch('/api/taxonomie').then(x => x.ok ? x.json() : { taxonomie: [] }),
-      fetch('/api/risk-items').then(x => x.ok ? x.json() : { risks: [] }),
+      fetch('/api/risk-items?vue=options').then(x => x.ok ? x.json() : { risks: [] }),
     ])
     setData({ kris: kk.kris ?? [], synthese: kk.synthese ?? { total: 0, normal: 0, alerte: 0, critique: 0, inconnu: 0, enAlerte: 0 } })
     setTaxo(tt.taxonomie ?? []); setRisks((rr.risks ?? []).map((r: { id: string; intitule: string }) => ({ id: r.id, intitule: r.intitule })))

@@ -174,6 +174,16 @@ export async function getEffectiveRoleForOrg(userId: string, instanceRole: UserR
 }
 
 /**
+ * Rôle à appliquer à une RESSOURCE trouvée dans le périmètre visible (contrôle, mission, risque,
+ * KRI…) : rôle EFFECTIF dans l'organisation DE LA RESSOURCE, jamais celui de l'organisation active
+ * (CWE-863, 2026-10-16 : un ADMIN « sous-arbre » de A, LECTEUR direct d'une filiale C, pouvait
+ * modifier les ressources de C). Aucune appartenance couvrante → LECTEUR (moindre privilège).
+ */
+export async function roleSurRessource(userId: string, instanceRole: UserRole, resourceOrgId: string): Promise<UserRole> {
+  return (await getEffectiveRoleForOrg(userId, instanceRole, resourceOrgId)) ?? 'LECTEUR'
+}
+
+/**
  * Ensemble des organisations accessibles à un utilisateur, UNION de toutes ses
  * appartenances (NODE → l'org ; SUBTREE → l'org + descendants). Sert au contrôle
  * d'accès à une analyse par id (au-delà de la seule organisation active).

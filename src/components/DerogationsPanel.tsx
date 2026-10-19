@@ -10,6 +10,7 @@
 import { IdCard } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { formatDate } from '@/lib/format'
 import AutocompleteInput from '@/components/AutocompleteInput'
 import {
@@ -130,7 +131,7 @@ export default function DerogationsPanel({
     })
     const data = await res.json().catch(() => ({}))
     setBusy(false)
-    if (!res.ok) { setError((d.errors as Record<string, string>)[data.error] ?? data.error ?? 'Erreur'); return }
+    if (!res.ok) { setError((d.errors as Record<string, string>)[data.error] ?? apiErrorMessage(data.error, t, 'Erreur')); return }
     setCreating(false)
     setForm({ portee: 'CONTROLE', referentiel: referentielCourant ?? '', ref: '', risqueId: '', intitule: '', motif: '', mesures: '', dureeJours: '' })
     reload()
@@ -145,7 +146,7 @@ export default function DerogationsPanel({
     })
     const data = await res.json().catch(() => ({}))
     setBusy(false)
-    if (!res.ok) { setError(data.error ?? 'Erreur'); return }
+    if (!res.ok) { setError(apiErrorMessage(data.error, t, 'Erreur')); return }
     // Rechargement de la liste seule : la dérogation reste dépliée, avec une
     // confirmation visible (plus de fermeture qui masquait le résultat).
     setOkId(id)

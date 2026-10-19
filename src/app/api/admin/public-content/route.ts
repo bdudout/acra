@@ -1,20 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { canAdminInstance } from '@/lib/permissions'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { requireInstanceAdmin } from '@/lib/route-guard.server'
+import { withAccess } from '@/lib/with-access.server'
 
 // GET /api/admin/public-content — contenu public configuré de l'instance (brut).
 // Vides ⇒ défauts i18n appliqués côté client (resolvePublicContent).
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const u = session.user as any
-  if (!canAdminInstance({ id: u.id, role: u.role })) {
-    return NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 })
-  }
+  const g = await requireInstanceAdmin()
+  if (g.error) return g.error
   const cfg = await prisma.configuration.findUnique({
     where: { id: 'global' },
     select: { publicNotice: true, publicContactUrl: true, publicContactLabel: true },
@@ -27,11 +22,7 @@ export async function GET() {
 }
 
 // PUT /api/admin/public-content — définit le contenu public (SUPER_ADMIN).
-export async function PUT(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const u = session.user as any
+export const PUT = withAccess({ org: 'none', rateLimit: { bucket: 'admin-public-content' } }, async (req, { user: u }) => {
   if (!canAdminInstance({ id: u.id, role: u.role })) {
     return NextResponse.json({ error: 'Réservé au super-administrateur' }, { status: 403 })
   }
@@ -55,4 +46,4 @@ export async function PUT(req: NextRequest) {
     details: { scope: 'publicContent', ...data },
   })
   return NextResponse.json({ ok: true, ...data })
-}
+})

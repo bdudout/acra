@@ -1,32 +1,24 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { lockAnalyse } from '@/lib/row-lock.server'
-import { analyseAccessWhere, countOrgMembers, getEffectiveRoleForOrg } from '@/lib/org-context.server'
+import { countOrgMembers } from '@/lib/org-context.server'
 import { getOrgConfig, optionsStructure } from '@/lib/org-config.server'
-import { NextRequest, NextResponse } from 'next/server'
-import { canSubmitAnalyse, canApproveAnalyse, canAutoValidateAnalyse, resolveAnalyseRole } from '@/lib/permissions'
+import { NextResponse } from 'next/server'
+import { canSubmitAnalyse, canApproveAnalyse, canAutoValidateAnalyse } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { applyApprobation, sanitizeApprobations } from '@/lib/projet360'
 import type { Prisma } from '@prisma/client'
 
-type Params = { params: Promise<{ id: string }> }
-
 // POST /api/analyses/[id]/approbation
 // body: { action: 'SOUMETTRE' | 'APPROUVER' | 'REJETER' | 'VALIDER', commentaire?: string }
-export async function POST(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const { id } = await params
-  const userId = (session.user as any).id
-  const userRole = (session.user as any).role ?? 'ANALYSTE'
-
-  const analyse = await prisma.analyse.findFirst({
-    where: await analyseAccessWhere(userId, userRole, id),
-    include: { accesUtilisateurs: true },
-  })
-  if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+// Accès à l'analyse (404) et rôle EFFECTIF dans son organisation (#130) : `withAccess` (sans `write` :
+// la soumission/approbation relève de ses propres permissions, évaluées ci-dessous, et n'est pas soumise au gel).
+export const POST = withAccess({ org: { analyse: 'id' }, rateLimit: { bucket: 'approbation' } }, async (req, { user, role: effRole, analyse }) => {
+  const id = analyse.id
+  const userId = user.id
+  const userRole = user.role
+  // Nom de l'analyse pour le journal (non porté par le contexte d'accès).
+  const nom = (await prisma.analyse.findFirst({ where: { id }, select: { nom: true } }))?.nom
 
   const { action, commentaire } = await req.json() as {
     action: 'SOUMETTRE' | 'APPROUVER' | 'REJETER' | 'VALIDER'
@@ -34,9 +26,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   const ownership = { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs }
-  // RBAC sur le rôle EFFECTIF d'org (pas l'instance) — #130.
-  const membershipRole = analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null
-  const effRole = resolveAnalyseRole(userRole, analyse.organizationId, membershipRole)
+  // RBAC sur le rôle EFFECTIF d'org (pas l'instance) — #130 (résolu par withAccess).
   const sessionUser = { id: userId, role: effRole }
   // Petite structure : cumul RSSI + gestionnaire des risques + analyste (quatre-yeux relâché, journalisé).
   const structure = await optionsStructure(analyse.organizationId)
@@ -57,7 +47,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       where: { id },
       data: { statut: 'APPROUVE', approbateurId: userId, approuveLe: new Date(), commentaireApprobation: commentaire ?? null },
     })
-    await auditLog('ANALYSE_APPROVED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom, commentaire, autoValidation: true, petiteStructure: structure.petiteStructure } })
+    await auditLog('ANALYSE_APPROVED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom, commentaire, autoValidation: true, petiteStructure: structure.petiteStructure } })
     return NextResponse.json(updated)
   }
 
@@ -73,7 +63,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       where: { id },
       data: { statut: 'SOUMIS', soumisLe: new Date(), commentaireApprobation: null, approbateurId: null, approuveLe: null, approbations: [] },
     })
-    await auditLog('ANALYSE_SUBMITTED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom } })
+    await auditLog('ANALYSE_SUBMITTED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom } })
     return NextResponse.json(updated)
   }
 
@@ -116,7 +106,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       })
       if (!outcome.ok) return NextResponse.json({ error: outcome.error }, { status: outcome.status })
       const { r, updated } = outcome
-      await auditLog('ANALYSE_APPROVED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom, commentaire, role: effRole, complete: r.complete, approbations: r.approbations.map(a => a.role), cumul: r.approbations.some(a => a.cumul), selfApproval: analyse.userId === userId } })
+      await auditLog('ANALYSE_APPROVED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom, commentaire, role: effRole, complete: r.complete, approbations: r.approbations.map(a => a.role), cumul: r.approbations.some(a => a.cumul), selfApproval: analyse.userId === userId } })
       return NextResponse.json(updated)
     }
 
@@ -132,7 +122,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     // Séparation des tâches (#120) : les RISK_MANAGER/RSSI propriétaires sont bloqués
     // par canApproveAnalyse ; seul un ADMIN-propriétaire peut atteindre ce point en
     // auto-approuvant → on le rend visible en audit (`selfApproval`).
-    await auditLog('ANALYSE_APPROVED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom, commentaire, selfApproval: analyse.userId === userId, petiteStructure: structure.petiteStructure } })
+    await auditLog('ANALYSE_APPROVED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom, commentaire, selfApproval: analyse.userId === userId, petiteStructure: structure.petiteStructure } })
     return NextResponse.json(updated)
   }
 
@@ -157,9 +147,9 @@ export async function POST(req: NextRequest, { params }: Params) {
         approbations: [],
       },
     })
-    await auditLog('ANALYSE_REJECTED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom: analyse.nom, commentaire } })
+    await auditLog('ANALYSE_REJECTED', { userId, userRole, targetId: id, targetType: 'analyse', ip: getClientIp(req), details: { nom, commentaire } })
     return NextResponse.json(updated)
   }
 
   return NextResponse.json({ error: 'Action inconnue' }, { status: 400 })
-}
+})

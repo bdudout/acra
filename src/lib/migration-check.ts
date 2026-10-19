@@ -1,7 +1,7 @@
 // ─── Vérification des migrations (PUR) — lot 5 : CI (politique) et PRECHECK de la mise à jour (migrations en attente) ───
-import { classifyMigration, validateNewMigration, type MigrationClass } from '@/lib/migration-policy'
+import { classifyMigration, soumiseExpandContract, validateExpandContract, validateNewMigration, type MigrationClass } from '@/lib/migration-policy'
 
-export interface MigrationViolation { migration: string; code: 'destructive_without_header' | 'modified' | 'removed'; message: string }
+export interface MigrationViolation { migration: string; code: 'destructive_without_header' | 'contract_without_justification' | 'modified' | 'removed'; message: string }
 export interface MigrationCheck { violations: MigrationViolation[]; pending: Array<{ migration: string; class: MigrationClass }>; destructive: string[] }
 
 /**
@@ -15,6 +15,9 @@ export function evaluateMigrations(current: Record<string, string>, base: Record
       if (!(name in base)) {
         const v = validateNewMigration(sql)
         if (!v.ok) violations.push({ migration: name, code: 'destructive_without_header', message: v.reason ?? 'migration destructive sans en-tête' })
+        // Lot H1.4 : règle expand/contract (déploiement progressif, deux versions en service sur la même base).
+        const ec = soumiseExpandContract(name) ? validateExpandContract(sql) : null
+        if (ec && !ec.ok) violations.push({ migration: name, code: 'contract_without_justification', message: ec.reason ?? 'phase contract sans justification' })
       } else if (base[name] !== sql) {
         violations.push({ migration: name, code: 'modified', message: 'une migration déjà publiée ne doit jamais être modifiée' })
       }

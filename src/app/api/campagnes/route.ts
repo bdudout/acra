@@ -1,10 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
+import { withAccess } from '@/lib/with-access.server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
 import { validateCampagneInput, cleanCampagneInput, avancementCampagne } from '@/lib/campagne'
 import { auditLog, getClientIp } from '@/lib/logger'
 
@@ -14,20 +12,10 @@ export const dynamic = 'force-dynamic'
 import { peutPiloter } from '@/lib/permissions'
 import { campagnesRcsaActives } from '@/lib/org-config'
 
-async function ctx(session: { user: { id: string; role?: string } }) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
-  return { userId, userRole, orgId: scope.activeOrgId }
-}
-
 // GET /api/campagnes — campagnes de l'organisation active + avancement.
-export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+// Sans organisation active : { campagnes: [], active: false } (pas de 400) — d'où `org: 'none'`.
+export const GET = withAccess({ org: 'none' }, async (_req, { user }) => {
+  const orgId = (await getAnalyseScope(user.id, user.role)).activeOrgId
   if (!orgId) return NextResponse.json({ campagnes: [], active: false })
   // Les campagnes portent sur le registre : elles suivent le module registre.
   const cfg = await getOrgConfig(orgId)
@@ -43,14 +31,13 @@ export async function GET() {
     avancement: avancementCampagne(evaluations),
   }))
   return NextResponse.json({ campagnes, active: true })
-}
+})
 
 // POST /api/campagnes — créer une campagne (BROUILLON, 2ᵉ ligne).
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
-  if (!orgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
+// Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863 ; le contrôle
+// de rôle dépend de `secondeLigneActive` (config d'org) : il reste dans le handler.
+export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'campagnes' } }, async (req, { user, role: userRole, orgId }) => {
+  const userId = user.id
   const cfg = await getOrgConfig(orgId)
   if (!peutPiloter(userRole, { secondeLigneActive: cfg.secondeLigneActive })) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
   if (!campagnesRcsaActives(cfg)) return NextResponse.json({ error: 'Module non activé' }, { status: 403 })
@@ -66,4 +53,4 @@ export async function POST(req: NextRequest) {
     details: { scope: 'campagne', action: 'create', id: campagne.id },
   })
   return NextResponse.json(campagne, { status: 201 })
-}
+})

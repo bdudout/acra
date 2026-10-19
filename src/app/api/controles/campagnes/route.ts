@@ -1,31 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { accesResultats } from '@/lib/acces-resultats.server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
 import { peutDefinir } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { validateCampagneControleInput, cleanCampagneControleInput, avancementCampagne, campagneEnRetard, type ExecutionControleLite } from '@/lib/campagne-controle'
 import { estArchivable, cleanArchivageDuree } from '@/lib/archivage'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
-async function ctx(session: { user: { id: string; role?: string } }) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  // Rôle EFFECTIF dans l'organisation active (A01/CWE-863).
-  return { userId, userRole: scope.role, orgId: scope.activeOrgId }
-}
-
 // GET /api/controles/campagnes — campagnes + avancement + contrôles disponibles.
-export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+// org: 'none' : sans organisation active, réponse « inactive » (et non 400).
+export const GET = withAccess({ org: 'none' }, async (_req, { user }) => {
+  const userId = user.id
+  // Rôle EFFECTIF dans l'organisation active (A01/CWE-863).
+  const { role: userRole, activeOrgId: orgId } = await getAnalyseScope(userId, user.role)
   if (!orgId) return NextResponse.json({ active: false, campagnes: [], controles: [] })
   const cfg = await getOrgConfig(orgId)
   if (!cfg.controlePermanentActive) return NextResponse.json({ active: false, campagnes: [], controles: [] })
@@ -56,14 +48,11 @@ export async function GET() {
   })
 
   return NextResponse.json({ active: true, campagnes, controles, canDefine: peutDefinir(userRole, { secondeLigneActive: cfg.secondeLigneActive }), archivageDureeAnnees: dureeAnnees })
-}
+})
 
 // POST /api/controles/campagnes — crée une campagne (2ᵉ ligne).
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
-  if (!orgId) return NextResponse.json({ error: 'org_absente' }, { status: 400 })
+export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'campagnes-controle' } }, async (req, { user, role: userRole, orgId }) => {
+  const userId = user.id
   const cfg = await getOrgConfig(orgId)
   if (!cfg.controlePermanentActive) return NextResponse.json({ error: 'module_inactif' }, { status: 403 })
   if (!peutDefinir(userRole, { secondeLigneActive: cfg.secondeLigneActive })) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
@@ -86,4 +75,4 @@ export async function POST(req: NextRequest) {
     details: { scope: 'campagne-controle', action: 'create', id: created.id },
   })
   return NextResponse.json(created, { status: 201 })
-}
+})

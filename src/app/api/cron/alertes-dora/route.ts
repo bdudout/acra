@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { assertCronAuth } from '@/lib/cron-auth'
+import { cronRoute } from '@/lib/cron-route.server'
 import { envoyerAlertesDora } from '@/lib/alertes-dora.server'
 
 export const dynamic = 'force-dynamic'
@@ -10,8 +10,7 @@ export const dynamic = 'force-dynamic'
  * E-mail dédié, hors synthèse quotidienne ; une alerte par phase et par statut (idempotent).
  * Planificateur externe, `Authorization: Bearer <CRON_SECRET>` ; 503 sans secret, 401 si invalide.
  */
-export async function POST(req: NextRequest) {
-  const denied = assertCronAuth(req)
-  if (denied) return denied
+// Authentification + une seule exécution simultanée (bail « alertes-dora »).
+export const POST = cronRoute('alertes-dora', async (req: NextRequest) => {
   return NextResponse.json({ ok: true, ...(await envoyerAlertesDora()) })
-}
+})

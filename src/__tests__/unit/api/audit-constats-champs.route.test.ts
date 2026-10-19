@@ -6,7 +6,8 @@ const m = vi.hoisted(() => ({ session: vi.fn(), scope: vi.fn(), config: vi.fn(),
 vi.mock('next-auth', () => ({ getServerSession: m.session }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/prisma', () => ({ prisma: { auditMission: { findFirst: m.mFind }, auditConstat: { findFirst: m.cFind, create: m.create, update: m.update }, riskItem: { findFirst: vi.fn() } } }))
-vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope }))
+// Ressource de l'org active : rôle sur la ressource = rôle du périmètre simulé.
+vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: m.scope, roleSurRessource: async () => (await m.scope()).role }))
 vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: m.config }))
 vi.mock('@/lib/logger', () => ({ auditLog: m.audit, getClientIp: () => '127.0.0.1' }))
 

@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { ACTIVE_ORG_COOKIE, resolveOrgContext, getAccessibleOrgIds, getAnalyseScope } from '@/lib/org-context.server'
+import { requireSession } from '@/lib/route-guard.server'
+import { withAccess } from '@/lib/with-access.server'
 
 // orgId vide ⇒ retour à la vue par défaut (toutes organisations pour un super-admin).
 const schema = z.object({ orgId: z.string().max(40) })
@@ -13,11 +13,11 @@ const schema = z.object({ orgId: z.string().max(40) })
  * Pour un SUPER_ADMIN : toutes les organisations. Sinon : ses appartenances.
  */
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  const g = await requireSession()
+  if (g.error) return g.error
 
-  const userId = (session.user as any).id as string
-  const role = (session.user as any).role ?? 'ANALYSTE'
+  const userId = g.user.id
+  const role = g.user.role
 
   const ctx = await resolveOrgContext(userId, role)
 
@@ -40,19 +40,9 @@ export async function GET() {
  * Sécurité : l'organisation doit être une appartenance de l'utilisateur
  * (ou n'importe quelle organisation pour un SUPER_ADMIN).
  */
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const userId = (session.user as any).id as string
-  const role = (session.user as any).role ?? 'ANALYSTE'
-
-  let orgId: string
-  try {
-    orgId = schema.parse(await req.json()).orgId
-  } catch {
-    return NextResponse.json({ error: 'Requête invalide' }, { status: 400 })
-  }
+export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'org-active' }, body: schema }, async (_req, { user, body: { orgId } }) => {
+  const userId = user.id
+  const role = user.role
 
   // orgId vide ⇒ effacer la focalisation (retour vue par défaut / toutes orgs).
   if (orgId === '') {
@@ -75,4 +65,4 @@ export async function POST(req: NextRequest) {
     httpOnly: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 365,
   })
   return res
-}
+})

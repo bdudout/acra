@@ -1,7 +1,8 @@
 name: Migrations Prisma
 
 # Lot 5 de docs/specs/sauvegarde-rollback-spec.md : une migration nouvelle destructive exige l'en-tête
-# `-- acra:destructive <raison>` ; une migration déjà publiée ne se modifie ni ne se supprime jamais.
+# `-- acra:destructive <raison>` (et, à partir du 16/10/2026, `-- contract: <justification>` : règle expand/contract du
+# déploiement progressif, lot H1.4) ; une migration déjà publiée ne se modifie ni ne se supprime jamais.
 on:
   pull_request:
     paths: ['prisma/migrations/**', 'src/lib/migration-policy.ts', 'src/lib/migration-check.ts', 'scripts/check-migrations.ts']

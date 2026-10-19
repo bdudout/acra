@@ -2,34 +2,28 @@
 // PATCH  : recrée l'incident à l'identique (même identifiant, liens encore valides) et vide l'entrée de corbeille.
 // DELETE : purge définitive de l'instantané. Périmètre : organisations administrées (SUPER_ADMIN : toutes).
 // Logique pure : lib/corbeille.
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { NextResponse } from 'next/server'
 import type { Prisma } from '@prisma/client'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { canAdmin, type UserRole } from '@/lib/permissions'
+import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { getAdminOrgIds } from '@/lib/org-context.server'
 import { restaurationIncident, type InstantaneIncident } from '@/lib/corbeille'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { withAccess } from '@/lib/with-access.server'
 
-type Params = { params: Promise<{ id: string }> }
+// Corbeille : réservée aux administrateurs (rôle d'instance, `canAdmin`).
+const ADMIN = { org: 'none', allow: isAdminRole, rateLimit: { bucket: 'admin-recovery-elements' } } as const
 
-async function contexte(params: Params['params']) {
-  const u = (await getServerSession(authOptions))?.user as { id?: string; role?: string } | undefined
-  if (!u?.id) return { erreur: NextResponse.json({ error: 'Non autorisé' }, { status: 401 }) }
-  const role = (u.role ?? 'ANALYSTE') as UserRole
-  if (!canAdmin({ id: u.id, role })) return { erreur: NextResponse.json({ error: 'Accès réservé aux administrateurs' }, { status: 403 }) }
-  const { all, ids } = await getAdminOrgIds(u.id, role)
-  const { id } = await params
-  const element = await prisma.elementSupprime.findFirst({ where: { id, ...(all ? {} : { organizationId: { in: ids } }) } })
-  if (!element) return { erreur: NextResponse.json({ error: 'Élément introuvable dans la corbeille' }, { status: 404 }) }
-  return { userId: u.id, role, element }
+/** Élément de la corbeille dans le périmètre administré (404 sinon). */
+async function elementDansPerimetre(userId: string, role: UserRole, id: string) {
+  const { all, ids } = await getAdminOrgIds(userId, role)
+  return prisma.elementSupprime.findFirst({ where: { id, ...(all ? {} : { organizationId: { in: ids } }) } })
 }
+const introuvable = () => NextResponse.json({ error: 'Élément introuvable dans la corbeille' }, { status: 404 })
 
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const c = await contexte(params)
-  if ('erreur' in c) return c.erreur
-  const { element } = c
+export const PATCH = withAccess(ADMIN, async (req, { user, params }) => {
+  const element = await elementDansPerimetre(user.id, user.role, params.id)
+  if (!element) return introuvable()
   if (element.type !== 'INCIDENT') return NextResponse.json({ error: 'type_inconnu' }, { status: 400 })
   const instantane = element.donnees as unknown as InstantaneIncident
   const resultat = await prisma.$transaction(async tx => {
@@ -49,19 +43,19 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   })
   if (resultat === 'existe') return NextResponse.json({ error: 'deja_restaure' }, { status: 409 })
   await auditLog('INCIDENT_RESTORED', {
-    userId: c.userId, userRole: c.role, organizationId: element.organizationId, targetId: element.objetId, targetType: 'incident', ip: getClientIp(req),
+    userId: user.id, userRole: user.role, organizationId: element.organizationId, targetId: element.objetId, targetType: 'incident', ip: getClientIp(req),
     details: { intitule: element.intitule, corbeilleId: element.id },
   })
   return NextResponse.json({ ok: true })
-}
+})
 
-export async function DELETE(req: NextRequest, { params }: Params) {
-  const c = await contexte(params)
-  if ('erreur' in c) return c.erreur
-  await prisma.elementSupprime.delete({ where: { id: c.element.id } })
+export const DELETE = withAccess(ADMIN, async (req, { user, params }) => {
+  const element = await elementDansPerimetre(user.id, user.role, params.id)
+  if (!element) return introuvable()
+  await prisma.elementSupprime.delete({ where: { id: element.id } })
   await auditLog('INCIDENT_PURGED', {
-    userId: c.userId, userRole: c.role, organizationId: c.element.organizationId, targetId: c.element.objetId, targetType: 'incident', ip: getClientIp(req),
-    details: { intitule: c.element.intitule, corbeilleId: c.element.id },
+    userId: user.id, userRole: user.role, organizationId: element.organizationId, targetId: element.objetId, targetType: 'incident', ip: getClientIp(req),
+    details: { intitule: element.intitule, corbeilleId: element.id },
   })
   return NextResponse.json({ ok: true })
-}
+})

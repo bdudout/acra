@@ -1,4 +1,3 @@
-import { canReadOrgResource, peutGererConformite } from '@/lib/permissions'
 /**
  * Traitements RÉELS des écarts de conformité (plan d'action / dérogation /
  * acceptation de risque), au niveau du socle d'organisation.
@@ -7,30 +6,26 @@ import { canReadOrgResource, peutGererConformite } from '@/lib/permissions'
  * Écriture réservée aux rôles de gouvernance (ADMIN / RSSI / Risk Manager).
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
-import { getAnalyseScope, getEffectiveRoleForOrg } from '@/lib/org-context.server'
-import { isAdminRole, type UserRole } from '@/lib/permissions'
+import { getAnalyseScope } from '@/lib/org-context.server'
+import { canReadOrgResource, peutGererConformite } from '@/lib/permissions'
+import { requireSession } from '@/lib/route-guard.server'
+import { withAccess } from '@/lib/with-access.server'
 import { isTraitementType, sanitizeRefs } from '@/lib/conformite-traitement'
-import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
+import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 type Params = { params: Promise<{ orgId: string }> }
 
-/** Gestion de la conformité : gouvernance, dont CONFORMITE et DPO (lib/permissions). */
-const canManage = (role: UserRole): boolean => peutGererConformite(role)
 const cleanEntite = (v: unknown) => (typeof v === 'string' ? v.trim().slice(0, 80) : '')
 
 // GET /api/organizations/[orgId]/conformite/traitements — liste les traitements d'écarts de conformité de l'org.
 export async function GET(req: NextRequest, { params }: Params) {
   const { orgId } = await params
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const userRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, userRole)
+  const g = await requireSession()
+  if (g.error) return g.error
+  const scope = await getAnalyseScope(g.user.id, g.user.role)
   if (!canReadOrgResource(orgId, scope.scope)) {
     return NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 })
   }
@@ -50,19 +45,8 @@ export async function GET(req: NextRequest, { params }: Params) {
 }
 
 // POST /api/organizations/[orgId]/conformite/traitements — crée un traitement d'écart (plan d'action / dérogation / acceptation) sur un contrôle.
-export async function POST(req: NextRequest, { params }: Params) {
-  const { orgId } = await params
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const role = await getEffectiveRoleForOrg(userId, instanceRole, orgId)
-  if (!role) return NextResponse.json({ error: 'Organisation hors périmètre' }, { status: 403 })
-  if (!canManage(role)) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
-
-  const rl = await rateLimit(`conf-traitements:${userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
-  if (!rl.allowed) return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
-
+// Gestion de la conformité : gouvernance, dont CONFORMITE et DPO (lib/permissions).
+export const POST = withAccess({ org: { param: 'orgId' }, allow: peutGererConformite, rateLimit: { bucket: 'conf-traitements' } }, async (req, { user, role, orgId }) => {
   const body = await req.json().catch(() => ({}))
   const referentiel = typeof body?.referentiel === 'string' ? body.referentiel.trim() : ''
   const entite = cleanEntite(body?.entite)
@@ -83,9 +67,10 @@ export async function POST(req: NextRequest, { params }: Params) {
       niveauRisqueMaintenu: type === 'ACCEPTATION_RISQUE' ? Boolean(body?.niveauRisqueMaintenu) : false,
       niveauRisque: type === 'ACCEPTATION_RISQUE' && typeof body?.niveauRisque === 'string' ? body.niveauRisque.trim().slice(0, 60) || null : null,
       refs: refs as unknown as Prisma.InputJsonValue,
-      createdById: userId,
+      createdById: user.id,
     },
     select: { id: true, type: true, intitule: true, refs: true, statut: true },
   })
+  await auditLog('CONFORMITE_UPDATED', { userId: user.id, userRole: role, organizationId: orgId, ip: getClientIp(req), targetType: 'conformite_traitement', targetId: created.id, details: { action: 'traitement-create', type, referentiel, entite, refs: refs.length } })
   return NextResponse.json({ traitement: created }, { status: 201 })
-}
+})

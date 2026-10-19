@@ -1251,6 +1251,96 @@ export const TISAX_CONTROLES: FrameworkControl[] = [
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
+// eIDAS — prestataires de services de confiance (lot L9)
+// Texte : règlement (UE) n° 910/2014 modifié par la directive (UE) 2022/2555
+// (NIS2) et le règlement (UE) 2024/1183 — version consolidée CELEX 02014R0910,
+// FR, 18.10.2024 (002.008), relue intégralement pour les art. 19 bis, 20, 21 et 24.
+// Une exigence = un point de contrôle, reformulé de façon synthétique (aucun
+// ajout), réf. eIDAS-<art>.<§>.<pt> (« bis » → a, « ter » → b : 24.1a = § 1 bis,
+// 24.2.fb = § 2, point f ter).
+//
+// Périmètre : art. 19 bis (prestataires non qualifiés), 20 (contrôle de
+// conformité), 21 (lancement d'un service qualifié), 24 (prestataires qualifiés).
+// - L'art. 19 (exigences de sécurité) est SUPPRIMÉ dans cette version (art. 42
+//   de la directive (UE) 2022/2555) : aucun point ne s'y rattache.
+// - L'art. 24 § 2 j (traitement licite des données, ancien renvoi à la directive
+//   95/46/CE) est SUPPRIMÉ par le règlement 2024/1183 : aucun point.
+// - Les dispositions adressées à l'organe de contrôle, aux États membres ou à la
+//   Commission (art. 20 § 1 ter, 2 à 4 ; art. 21 § 2 et 4 ; art. 24 § 1 quater,
+//   4 ter, 5) ne sont pas des points de contrôle du prestataire.
+// - Méthodes de vérification (art. 24 § 1 bis et 1 ter) : alternatives (« l'une
+//   des méthodes suivantes ou […] une combinaison »), donc UN point par
+//   paragraphe énumérant les méthodes lettrées, et non un point par méthode (un
+//   prestataire n'en utilisant qu'une ne doit pas apparaître non conforme).
+// Normes ETSI volontairement non citées (décision produit L9, option B).
+// Source de tous les points : CELEX 02014R0910 version 18.10.2024 (002.008).
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const EIDAS_CATEGORIES: Record<string, FrameworkCategory> = {
+  RISQ:   { label: 'Gestion des risques et sécurité',            icon: '🛡️', color: 'text-indigo-700', bg: 'bg-indigo-50' },
+  NOTIF:  { label: 'Notifications à l\'organe de contrôle',     icon: '📣', color: 'text-red-700',    bg: 'bg-red-50'    },
+  QUALIF: { label: 'Statut qualifié et contrôle de conformité', icon: '✅', color: 'text-green-700',  bg: 'bg-green-50'  },
+  IDENT:  { label: 'Vérification de l\'identité et des attributs', icon: '🪪', color: 'text-blue-700', bg: 'bg-blue-50'  },
+  EXPL:   { label: 'Exploitation du service qualifié',          icon: '⚙️', color: 'text-slate-700',  bg: 'bg-slate-50'  },
+  CERT:   { label: 'Certificats qualifiés et révocation',       icon: '📜', color: 'text-amber-700',  bg: 'bg-amber-50'  },
+}
+
+export const EIDAS_CONTROLES: FrameworkControl[] = [
+  // ── Art. 19 bis — prestataires de services de confiance NON qualifiés ──
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 19 bis § 1 a
+  { ref:'eIDAS-19a.1.a', type:'ORGANISATIONNELLE', categorie:'RISQ', nom:'Gestion des risques (prestataire non qualifié)', description:'Prestataire non qualifié : se doter de procédures appropriées et prendre les mesures correspondantes pour gérer les risques juridiques, commerciaux et opérationnels ainsi que les autres risques directs ou indirects liés à la fourniture du service, comprenant au moins, nonobstant l\'article 21 de la directive (UE) 2022/2555, des mesures relatives i) aux procédures d\'enregistrement et d\'enrôlement, ii) aux vérifications procédurales ou administratives nécessaires et iii) à la gestion et la mise en œuvre des services de confiance (art. 19 bis, § 1, a).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 19 bis § 1 b
+  { ref:'eIDAS-19a.1.b', type:'ORGANISATIONNELLE', categorie:'NOTIF', nom:'Notification des atteintes (prestataire non qualifié)', description:'Prestataire non qualifié : notifier à l\'organe de contrôle, aux personnes affectées identifiables, au public si cela est dans l\'intérêt public et, le cas échéant, aux autres autorités compétentes concernées, toute atteinte à la sécurité ou perturbation dans la fourniture du service ou dans la mise en œuvre des mesures du point a) ayant une incidence importante sur le service ou sur les données à caractère personnel qui y sont conservées, dans les meilleurs délais et au plus tard 24 heures à compter du moment où il en a eu connaissance (art. 19 bis, § 1, b).' },
+  // ── Art. 20 — contrôle des prestataires qualifiés ──
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 20 § 1
+  { ref:'eIDAS-20.1', type:'ORGANISATIONNELLE', categorie:'QUALIF', nom:'Audit de conformité au moins tous les 24 mois', description:'Faire l\'objet, au moins tous les 24 mois et à ses frais, d\'un audit par un organisme d\'évaluation de la conformité confirmant que le prestataire et ses services qualifiés respectent les exigences du règlement et de l\'article 21 de la directive (UE) 2022/2555 ; transmettre le rapport d\'évaluation de la conformité à l\'organe de contrôle dans un délai de trois jours ouvrables à compter de sa réception (art. 20, § 1).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 20 § 1 bis
+  { ref:'eIDAS-20.1a', type:'ORGANISATIONNELLE', categorie:'QUALIF', nom:'Information préalable des audits', description:'Informer l\'organe de contrôle au plus tard un mois avant tout audit planifié et l\'autoriser, sur demande, à y participer en qualité d\'observateur (art. 20, § 1 bis).' },
+  // ── Art. 21 — lancement d'un service de confiance qualifié ──
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 21 § 1
+  { ref:'eIDAS-21.1', type:'ORGANISATIONNELLE', categorie:'QUALIF', nom:'Notification du lancement d\'un service qualifié', description:'Avant de commencer à fournir un service de confiance qualifié, notifier son intention à l\'organe de contrôle, accompagnée d\'un rapport d\'évaluation de la conformité délivré par un organisme d\'évaluation de la conformité confirmant le respect des exigences du règlement et de l\'article 21 de la directive (UE) 2022/2555 (art. 21, § 1).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 21 § 3
+  { ref:'eIDAS-21.3', type:'ORGANISATIONNELLE', categorie:'QUALIF', nom:'Démarrage après inscription sur les listes de confiance', description:'Ne commencer à fournir le service de confiance qualifié qu\'une fois le statut qualifié indiqué sur les listes de confiance visées à l\'article 22, § 1 (art. 21, § 3).' },
+  // ── Art. 24 — exigences applicables aux prestataires de services de confiance qualifiés ──
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 24 § 1
+  { ref:'eIDAS-24.1', type:'ORGANISATIONNELLE', categorie:'IDENT', nom:'Vérification de l\'identité et des attributs', description:'Lors de la délivrance d\'un certificat qualifié ou d\'une attestation électronique d\'attributs qualifiée, vérifier l\'identité et, s\'il y a lieu, tous les attributs spécifiques de la personne physique ou morale à laquelle il est délivré (art. 24, § 1).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 24 § 1 bis, points a à d
+  { ref:'eIDAS-24.1a', type:'ORGANISATIONNELLE', categorie:'IDENT', nom:'Méthodes de vérification de l\'identité', description:'Vérifier l\'identité par des moyens appropriés, directement ou en ayant recours à un tiers, selon l\'une des méthodes suivantes ou, si nécessaire, une combinaison, conformément aux actes d\'exécution du § 1 quater : a) portefeuille européen d\'identité numérique ou moyen d\'identification électronique notifié de niveau de garantie élevé (art. 8) ; b) certificat de signature électronique qualifiée ou de cachet électronique qualifié délivré selon le point a), c) ou d) ; c) autre méthode d\'identification garantissant un degré de confiance élevé, dont la conformité est confirmée par un organisme d\'évaluation de la conformité ; d) présence en personne de la personne physique ou d\'un représentant autorisé de la personne morale, avec preuves et procédures appropriées conformément au droit national (art. 24, § 1 bis).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 24 § 1 ter, points a à e
+  { ref:'eIDAS-24.1b', type:'ORGANISATIONNELLE', categorie:'IDENT', nom:'Méthodes de vérification des attributs', description:'Vérifier les attributs par des moyens appropriés, directement ou en ayant recours à un tiers, selon l\'une des méthodes suivantes ou, si nécessaire, une combinaison, conformément aux actes d\'exécution du § 1 quater : a) portefeuille européen d\'identité numérique ou moyen d\'identification électronique notifié de niveau de garantie élevé (art. 8) ; b) certificat de signature électronique qualifiée ou de cachet électronique qualifié délivré selon le § 1 bis, point a), c) ou d) ; c) attestation électronique d\'attributs qualifiée ; d) autre méthode garantissant une vérification des attributs avec un degré de confiance élevé, dont la conformité est confirmée par un organisme d\'évaluation de la conformité ; e) présence en personne de la personne physique ou d\'un représentant autorisé de la personne morale, avec preuves et procédures appropriées conformément au droit national (art. 24, § 1 ter).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 24 § 2 a et second alinéa
+  { ref:'eIDAS-24.2.a', type:'ORGANISATIONNELLE', categorie:'NOTIF', nom:'Information de l\'organe de contrôle sur les changements', description:'Informer l\'organe de contrôle au moins un mois avant la mise en œuvre de toute modification dans la fourniture des services de confiance qualifiés, ou au moins trois mois à l\'avance en cas d\'intention de cesser ces activités ; répondre aux demandes d\'informations complémentaires ou d\'évaluation de la conformité et respecter les conditions dont l\'organe de contrôle peut assortir l\'autorisation des modifications (art. 24, § 2, a, et second alinéa).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 24 § 2 b
+  { ref:'eIDAS-24.2.b', type:'HUMAINE', categorie:'EXPL', nom:'Personnel et sous-traitants compétents et formés', description:'Employer du personnel et, le cas échéant, des sous-traitants possédant l\'expertise, la fiabilité, l\'expérience et les qualifications nécessaires, ayant reçu une formation appropriée aux règles de sécurité et de protection des données à caractère personnel, et appliquant des procédures administratives et de gestion correspondant à des normes européennes ou internationales (art. 24, § 2, b).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 24 § 2 c
+  { ref:'eIDAS-24.2.c', type:'ORGANISATIONNELLE', categorie:'EXPL', nom:'Ressources financières et assurance responsabilité', description:'Au regard du risque de responsabilité pour dommages prévu à l\'article 13, maintenir des ressources financières suffisantes et/ou contracter une assurance responsabilité appropriée, conformément au droit national (art. 24, § 2, c).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 24 § 2 d
+  { ref:'eIDAS-24.2.d', type:'ORGANISATIONNELLE', categorie:'EXPL', nom:'Information préalable des utilisateurs', description:'Avant d\'établir une relation contractuelle, informer de manière claire, exhaustive et aisément accessible, dans un espace accessible au public et de manière individuelle, toute personne désireuse d\'utiliser le service qualifié des conditions précises de son utilisation, y compris toute limite quant à son utilisation (art. 24, § 2, d).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 24 § 2 e
+  { ref:'eIDAS-24.2.e', type:'TECHNOLOGIQUE', categorie:'RISQ', nom:'Systèmes et produits fiables', description:'Utiliser des systèmes et des produits fiables, protégés contre les modifications, et assurer la sécurité technique et la fiabilité des processus qu\'ils prennent en charge, y compris par des techniques cryptographiques appropriées (art. 24, § 2, e).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 24 § 2 f
+  { ref:'eIDAS-24.2.f', type:'TECHNOLOGIQUE', categorie:'RISQ', nom:'Stockage fiable des données', description:'Utiliser des systèmes fiables pour stocker les données fournies, sous une forme vérifiable de manière que : i) les données ne soient publiquement disponibles pour des traitements qu\'après consentement de la personne concernée ; ii) seules des personnes autorisées puissent introduire et modifier les données conservées ; iii) l\'authenticité des données puisse être vérifiée (art. 24, § 2, f).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 24 § 2 f bis
+  { ref:'eIDAS-24.2.fa', type:'ORGANISATIONNELLE', categorie:'RISQ', nom:'Gestion des risques du service qualifié', description:'Nonobstant l\'article 21 de la directive (UE) 2022/2555, se doter de procédures appropriées et prendre les mesures correspondantes pour gérer les risques juridiques, commerciaux et opérationnels ainsi que les autres risques directs ou indirects liés à la fourniture du service qualifié, y compris au moins des mesures relatives i) aux procédures d\'enregistrement et d\'enrôlement, ii) aux vérifications procédurales ou administratives et iii) à la gestion et la mise en œuvre des services (art. 24, § 2, f bis).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 24 § 2 f ter
+  { ref:'eIDAS-24.2.fb', type:'ORGANISATIONNELLE', categorie:'NOTIF', nom:'Notification des atteintes et perturbations sous 24 h', description:'Notifier à l\'organe de contrôle, aux personnes affectées identifiables, le cas échéant aux autres organismes compétents concernés et, à la demande de l\'organe de contrôle, au public si cela est dans l\'intérêt public, toute atteinte à la sécurité ou perturbation dans la fourniture du service ou dans la mise en œuvre des mesures du point f bis) ayant une incidence importante sur le service ou sur les données à caractère personnel qui y sont conservées, dans les meilleurs délais et en tout état de cause dans les 24 heures à compter de l\'incident (art. 24, § 2, f ter).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 24 § 2 g
+  { ref:'eIDAS-24.2.g', type:'TECHNOLOGIQUE', categorie:'RISQ', nom:'Protection contre la falsification et le vol de données', description:'Prendre des mesures appropriées contre la falsification, le vol ou le détournement de données, ou le fait d\'effacer, de modifier ou de rendre inaccessibles des données sans en avoir le droit (art. 24, § 2, g).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 24 § 2 h
+  { ref:'eIDAS-24.2.h', type:'ORGANISATIONNELLE', categorie:'EXPL', nom:'Enregistrement et conservation des informations', description:'Enregistrer et maintenir accessibles, aussi longtemps que nécessaire après la cessation des activités, toutes les informations pertinentes concernant les données délivrées et reçues, aux fins de fournir des preuves en justice et d\'assurer la continuité du service ; l\'enregistrement peut être électronique (art. 24, § 2, h).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 24 § 2 i
+  { ref:'eIDAS-24.2.i', type:'ORGANISATIONNELLE', categorie:'EXPL', nom:'Plan d\'arrêt d\'activité actualisé', description:'Disposer d\'un plan actualisé d\'arrêt d\'activité afin d\'assurer la continuité du service, conformément à des dispositions vérifiées par l\'organe de contrôle en vertu de l\'article 46 ter, § 4, point i) (art. 24, § 2, i).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 24 § 2 k
+  { ref:'eIDAS-24.2.k', type:'TECHNOLOGIQUE', categorie:'CERT', nom:'Base de données des certificats', description:'Pour un prestataire délivrant des certificats qualifiés : établir et tenir à jour une base de données relative aux certificats (art. 24, § 2, k).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 24 § 3
+  { ref:'eIDAS-24.3', type:'ORGANISATIONNELLE', categorie:'CERT', nom:'Révocation des certificats sous 24 h', description:'Lorsque le prestataire décide de révoquer un certificat qualifié, enregistrer la révocation dans sa base de données relative aux certificats et publier le statut de révocation en temps utile, et en tout état de cause dans les 24 heures suivant la réception de la demande ; la révocation devient effective immédiatement dès sa publication (art. 24, § 3).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 24 § 4
+  { ref:'eIDAS-24.4', type:'TECHNOLOGIQUE', categorie:'CERT', nom:'Information sur la validité des certificats', description:'Fournir à toute partie utilisatrice des informations sur la validité ou le statut de révocation des certificats qualifiés délivrés, disponibles au moins par certificat, à tout moment et au-delà de la période de validité du certificat, sous une forme automatisée fiable, gratuite et efficace (art. 24, § 4).' },
+  // src: CELEX 02014R0910 version 18.10.2024 (002.008), art. 24 § 4 bis
+  { ref:'eIDAS-24.4a', type:'ORGANISATIONNELLE', categorie:'CERT', nom:'Révocation des attestations d\'attributs qualifiées', description:'Pour un prestataire délivrant des attestations électroniques d\'attributs qualifiées : appliquer à leur révocation les règles des paragraphes 3 et 4 (enregistrement et publication du statut de révocation sous 24 heures, information automatisée, fiable, gratuite et efficace des parties utilisatrices) (art. 24, § 4 bis).' },
+]
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Contrôles NIST CSF / NIST 800-53 / CIS v8 / HDS / PCI-DSS (issue #87)
 // Déplacés depuis frameworks-data.ts pour bénéficier de la machinerie i18n.
 // ─────────────────────────────────────────────────────────────────────────────

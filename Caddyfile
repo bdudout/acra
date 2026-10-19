@@ -8,6 +8,13 @@
 
 {$DOMAIN} {
 	encode gzip zstd
+
+	# Taille maximale d'une requête : documents jusqu'à 25 Mo (+ enveloppe multipart),
+	# cohérent avec proxyClientMaxBodySize (next.config.js). Au-delà : 413 sans solliciter l'application.
+	request_body {
+		max_size 26MB
+	}
+
 	reverse_proxy app:3000
 
 	# En-têtes de sécurité (complètent ceux posés par l'application).

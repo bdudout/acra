@@ -10,8 +10,11 @@
 import { FlaskConical, Paperclip, X } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
-import { useSearchParams } from 'next/navigation'
-import { CONTROLE_NIVEAUX, PERIODICITES, RESULTATS, deduireResultatChecklist, filtrerControles, resumeEfficaciteProvisoire, type ControleFiltre } from '@/lib/controle'
+import { apiErrorMessage } from '@/lib/api-error'
+import { useListePaginee } from '@/lib/use-liste-paginee'
+import Pagination from '@/components/Pagination'
+import type { MetaPagination } from '@/lib/pagination'
+import { CONTROLE_NIVEAUX, PERIODICITES, RESULTATS, deduireResultatChecklist, resumeEfficaciteProvisoire } from '@/lib/controle'
 import ControleCataloguePanel from '@/components/ControleCataloguePanel'
 import { todayInputDate, suggestionsFromValues, defaultResponsable } from '@/lib/form-defaults'
 import Link from 'next/link'
@@ -92,6 +95,11 @@ const CHECK_BADGE: Record<string, string> = {
   NA: 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-200',
 }
 
+/** Compteurs calculés par le serveur sur toute la bibliothèque (pas la seule page). */
+interface SyntheseControles { total: number; actifs: number; enRetard: number; dus: number; avecAnomalies: number }
+/** Contrôle réduit aux champs des menus (vue « options »). */
+interface ControleOption { id: string; intitule: string; responsable: string | null; niveau: string; actif: boolean; efficacite: Controle['efficacite'] }
+
 export default function ControlesManager({ canDefine, canExecute, currentUserName, secondeLigneActive = true }: { canDefine: boolean; canExecute: boolean; currentUserName?: string | null; secondeLigneActive?: boolean }) {
   const { t, locale } = useTranslation()
   const c = t.controles
@@ -99,14 +107,19 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
   const emptyForm = (): Form => ({ ...EMPTY, responsable: defaultResponsable(currentUserName) })
   // Saisie d'exécution vierge : date de réalisation = aujourd'hui par défaut.
   const emptyExec = (): ExecForm => ({ ...EMPTY_EXEC, dateRealisation: todayInputDate() })
-  const [controles, setControles] = useState<Controle[]>([])
+  // Liste paginée côté serveur (lot V1) : page, filtres, tri et recherche dans l'URL.
+  const liste = useListePaginee<{ controles: Controle[]; tiers?: { id: string; prestataireNom: string }[]; projets?: Lien[]; pagination?: MetaPagination; synthese?: SyntheseControles }>('/api/controles')
+  const controles = useMemo(() => liste.data?.controles ?? [], [liste.data])
+  const synthese = liste.data?.synthese ?? null
+  // Menus (supervision des N1, suggestions de saisie) : vue légère de toute la bibliothèque.
+  const [options, setOptions] = useState<ControleOption[]>([])
   const [procs, setProcs] = useState<Proc[]>([])
   const [tiersOpts, setTiersOpts] = useState<{ id: string; prestataireNom: string }[]>([])
   const [projetsOpts, setProjetsOpts] = useState<Lien[]>([])
   const [risks, setRisks] = useState<Risk[]>([])
   const [refs, setRefs] = useState<RefLite[]>([])
   const [exigencesRef, setExigencesRef] = useState<ExigenceLite[]>([])
-  const [loading, setLoading] = useState(true)
+  const loading = liste.loading && !liste.data
   const [form, setForm] = useState<Form>(emptyForm)
   const [editId, setEditId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -118,7 +131,6 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
   const [error, setError] = useState<string | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
   const [preuves, setPreuves] = useState<Preuve[]>([])
-  const [filtre, setFiltre] = useState<ControleFiltre>({ q: '', niveau: '', etat: '', referentielCode: '', actif: '' })
 
   // Lit les fichiers choisis en data URL (même stockage que les dérogations).
   async function chargerPreuves(files: FileList | null) {
@@ -135,19 +147,20 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
   const jour = (d: string | null) => (d ? new Date(d).toLocaleDateString(locale) : '—')
   const lbl = (dict: unknown, k: string) => (dict as Record<string, string>)[k] ?? k
 
-  async function reload() {
-    const [cc, pp, rr, ff] = await Promise.all([
-      fetch('/api/controles').then(x => x.ok ? x.json() : { controles: [] }),
+  async function chargerOptions() {
+    const [oo, pp, rr, ff] = await Promise.all([
+      fetch('/api/controles?vue=options').then(x => x.ok ? x.json() : { controles: [] }),
       fetch('/api/processus').then(x => x.ok ? x.json() : { processus: [] }),
-      fetch('/api/risk-items').then(x => x.ok ? x.json() : { risks: [] }),
+      fetch('/api/risk-items?vue=options').then(x => x.ok ? x.json() : { risks: [] }),
       fetch('/api/referentiels').then(x => x.ok ? x.json() : { referentiels: [] }),
     ])
-    setControles(cc.controles ?? []); setProcs(pp.processus ?? []); setTiersOpts(cc.tiers ?? []); setProjetsOpts(cc.projets ?? [])
+    setOptions(oo.controles ?? []); setProcs(pp.processus ?? [])
     setRisks((rr.risks ?? []).map((r: Risk) => ({ id: r.id, intitule: r.intitule })))
     setRefs((ff.referentiels ?? []).map((r: RefLite) => ({ code: r.code, nom: r.nom })))
-    setLoading(false)
   }
-  useEffect(() => { reload() }, [])
+  useEffect(() => { chargerOptions() }, [])
+  useEffect(() => { if (liste.data) { setTiersOpts(liste.data.tiers ?? []); setProjetsOpts(liste.data.projets ?? []) } }, [liste.data])
+  function reload() { liste.recharger(); void chargerOptions() }
 
   // Charge les exigences du référentiel choisi (pour la sélection des points couverts).
   useEffect(() => {
@@ -160,7 +173,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
     return () => { annule = true }
   }, [form.referentielCode])
 
-  function err(code: string) { return (c.errors as Record<string, string>)[code] ?? (t.personnalisation.errors as Record<string, string>)[code] ?? code }
+  function err(code: string) { return (c.errors as Record<string, string>)[code] ?? (t.personnalisation.errors as Record<string, string>)[code] ?? apiErrorMessage(code, t, code) }
 
   async function submit() {
     if (!form.intitule.trim()) { setError(err('intitule_requis')); return }
@@ -243,17 +256,17 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
 
   const inp = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
   // Suggestions d'autocomplétion à partir des contrôles déjà saisis (org courante).
-  const intituleSug = suggestionsFromValues(controles.map(x => x.intitule))
-  const responsableSug = suggestionsFromValues(controles.map(x => x.responsable))
-  const controlesFiltresBase = filtrerControles(controles, filtre)
-  // Deep-link pilotage : ?vue=anomalies → ne montre que les contrôles avec anomalies.
-  const _sp = useSearchParams()
-  const [vueAnomalies, setVueAnomalies] = useState<boolean>(_sp.get('vue') === 'anomalies')
-  const controlesFiltres = vueAnomalies ? controlesFiltresBase.filter(x => x.efficacite.anomalies > 0) : controlesFiltresBase
-  const filtreActif = Boolean(filtre.q || filtre.niveau || filtre.etat || filtre.referentielCode || filtre.actif)
-  const enRetard = controles.filter(x => x.etatEcheance === 'EN_RETARD').length
-  const dus = controles.filter(x => x.etatEcheance === 'DU').length
-  const actifs = controles.filter(x => x.actif).length
+  const intituleSug = suggestionsFromValues(options.map(x => x.intitule))
+  const responsableSug = suggestionsFromValues(options.map(x => x.responsable))
+  // Filtres appliqués par le serveur (lot V1) ; deep-link pilotage : ?vue=anomalies.
+  const filtre = { niveau: liste.param('niveau'), etat: liste.param('etat'), referentielCode: liste.param('referentielCode'), actif: liste.param('actif') }
+  const vueAnomalies = liste.param('vue') === 'anomalies'
+  const controlesFiltres = controles
+  const filtreActif = Boolean(liste.recherche || filtre.niveau || filtre.etat || filtre.referentielCode || filtre.actif || vueAnomalies)
+  const enRetard = synthese?.enRetard ?? 0
+  const dus = synthese?.dus ?? 0
+  const actifs = synthese?.actifs ?? 0
+  const totalBibliotheque = synthese?.total ?? controles.length
 
   return (
     <div>
@@ -361,11 +374,11 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
           {secondeLigneActive && form.niveau === 'N2' && (
             <div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{c.supervise} <span className="text-gray-400">— {c.superviseHint}</span> ({form.superviseIds.length})</div>
-              {controles.filter(x => x.niveau === 'N1' && x.id !== editId).length === 0
+              {options.filter(x => x.niveau === 'N1' && x.id !== editId).length === 0
                 ? <div className="text-xs text-gray-400">{c.superviseVide}</div>
                 : (
                   <div className="max-h-32 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-100 dark:divide-gray-800">
-                    {controles.filter(x => x.niveau === 'N1' && x.id !== editId).map(n1 => (
+                    {options.filter(x => x.niveau === 'N1' && x.id !== editId).map(n1 => (
                       <label key={n1.id} className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
                         <input type="checkbox" checked={form.superviseIds.includes(n1.id)}
                           onChange={() => setForm(f => ({ ...f, superviseIds: f.superviseIds.includes(n1.id) ? f.superviseIds.filter(i => i !== n1.id) : [...f.superviseIds, n1.id] }))} />
@@ -400,24 +413,24 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
       )}
 
       {/* Barre de filtres : recherche + facettes (niveau, échéance, référentiel, actif) */}
-      {!loading && controles.length > 0 && (
+      {!loading && totalBibliotheque > 0 && (
         <div className="mb-4 flex flex-wrap gap-2 items-center">
-          <input value={filtre.q ?? ''} onChange={e => setFiltre(f => ({ ...f, q: e.target.value }))} placeholder={c.filtreRecherche} className={`${inp} min-w-[200px]`} />
-          <select value={filtre.niveau ?? ''} onChange={e => setFiltre(f => ({ ...f, niveau: e.target.value }))} className={inp} aria-label={c.niveau}>
+          <input value={liste.recherche} onChange={e => liste.setRecherche(e.target.value)} placeholder={c.filtreRecherche} className={`${inp} min-w-[200px]`} />
+          <select value={filtre.niveau} onChange={e => liste.definir({ niveau: e.target.value })} className={inp} aria-label={c.niveau}>
             <option value="">{c.filtreNiveauTous}</option>
             {CONTROLE_NIVEAUX.map(n => <option key={n} value={n}>{lbl(c.niveaux, n)}</option>)}
           </select>
-          <select value={filtre.etat ?? ''} onChange={e => setFiltre(f => ({ ...f, etat: e.target.value }))} className={inp} aria-label={c.colEcheance}>
+          <select value={filtre.etat} onChange={e => liste.definir({ etat: e.target.value })} className={inp} aria-label={c.colEcheance}>
             <option value="">{c.filtreEtatTous}</option>
             {['A_VENIR', 'DU', 'EN_RETARD'].map(s => <option key={s} value={s}>{lbl(c.etats, s)}</option>)}
           </select>
           {refs.length > 0 && (
-            <select value={filtre.referentielCode ?? ''} onChange={e => setFiltre(f => ({ ...f, referentielCode: e.target.value }))} className={inp} aria-label={c.refNone}>
+            <select value={filtre.referentielCode} onChange={e => liste.definir({ referentielCode: e.target.value })} className={inp} aria-label={c.refNone}>
               <option value="">{c.filtreRefTous}</option>
               {refs.map(r => <option key={r.code} value={r.code}>{r.nom}</option>)}
             </select>
           )}
-          <select value={filtre.actif ?? ''} onChange={e => setFiltre(f => ({ ...f, actif: e.target.value }))} className={inp} aria-label={c.filtreActifTous}>
+          <select value={filtre.actif} onChange={e => liste.definir({ actif: e.target.value })} className={inp} aria-label={c.filtreActifTous}>
             <option value="">{c.filtreActifTous}</option>
             <option value="true">{c.filtreActifsSeuls}</option>
             <option value="false">{c.filtreInactifsSeuls}</option>
@@ -427,11 +440,11 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
               {vueAnomalies && (
                 <span className="mr-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 font-medium">
                   {c.anomaliesTrouvees}
-                  <button onClick={() => setVueAnomalies(false)} className="hover:text-amber-950 dark:hover:text-amber-100"><X size={12} /></button>
+                  <button onClick={() => liste.definir({ vue: null })} className="hover:text-amber-950 dark:hover:text-amber-100"><X size={12} /></button>
                 </span>
               )}
-              <span className="text-xs text-gray-400">{c.filtreResultat.replace('{n}', String(controlesFiltres.length)).replace('{total}', String(controles.length))}</span>
-              <button onClick={() => setFiltre({ q: '', niveau: '', etat: '', referentielCode: '', actif: '' })} className="text-xs text-ebios-600 hover:underline">✕ {c.filtreEffacer}</button>
+              <span className="text-xs text-gray-400">{c.filtreResultat.replace('{n}', String(liste.pagination?.total ?? controles.length)).replace('{total}', String(totalBibliotheque))}</span>
+              <button onClick={() => { liste.setRecherche(''); liste.definir({ q: null, niveau: null, etat: null, referentielCode: null, actif: null, vue: null }) }} className="text-xs text-ebios-600 hover:underline">✕ {c.filtreEffacer}</button>
             </>
           )}
         </div>
@@ -451,7 +464,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
           </thead>
           <tbody>
             {loading ? <tr><td colSpan={6} className="px-4 py-6 text-gray-400">…</td></tr>
-              : controles.length === 0 ? <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-400 italic">{c.empty}</td></tr>
+              : totalBibliotheque === 0 ? <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-400 italic">{c.empty}</td></tr>
               : controlesFiltres.length === 0 ? <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-400 italic">{c.filtreAucun}</td></tr>
               : controlesFiltres.map(x => (
                 <Fragment key={x.id}>
@@ -656,6 +669,7 @@ export default function ControlesManager({ canDefine, canExecute, currentUserNam
           </tbody>
         </table>
       </div>
+      <Pagination pagination={liste.pagination} onPage={page => liste.definir({ page })} onTaille={taille => liste.definir({ taille })} />
     </div>
   )
 }

@@ -22,13 +22,15 @@
 
 import PartyTierLink from '@/components/PartyTierLink'
 import { AlertTriangle, BookOpen, CheckCircle2, ClipboardList, FileText, Handshake, Lightbulb, Map as MapIcon, Puzzle, ShieldCheck, Star } from 'lucide-react'
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import AutocompleteInput from '@/components/AutocompleteInput'
 import { uid } from '@/lib/uid'
 import ConfirmDialog from '@/components/ConfirmDialog'
+import BrouillonAtelier from '@/components/BrouillonAtelier'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
+import { enregistrerAtelier } from '@/lib/atelier-save'
 import { useAutoSave } from '@/lib/useAutoSave'
 import { useAddedFeedback } from '@/lib/useAddedFeedback'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
@@ -251,16 +253,11 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode, e
   // ── Auto-save ─────────────────────────────────────────────────────────────
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const autoSaveData = useMemo(() => ({ partiesPrenantes: parties, scenariosStrategiques: scenarios }), [parties, scenarios])
+  const revisionRef = useRef<number>(Number(analyse?.revisionAtelier3 ?? 0))
   const { status: autoStatus, lastSaved, error: autoError, saveNow } = useAutoSave(
     autoSaveData,
-    async (data) => {
-      const res = await fetch(`/api/analyses/${analyseId}/workshop/3`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      if (!res.ok) throw new Error('Sauvegarde échouée')
-    },
+    // Verrou optimiste (T9) : un autre éditeur a enregistré cet atelier → 409, rien n'est écrasé.
+    (data) => enregistrerAtelier(analyseId, 3, data, revisionRef, { conflit: t.apiErrors.CONFLIT_EDITION, echec: t.brouillonAtelier.reprise }),
     { delay: 1500, disabled: !editable }
   )
 
@@ -553,7 +550,7 @@ export default function Atelier3({ analyseId, initialData, analyse, flashMode, e
             <div className="flex items-center justify-between mb-1">
               {/* h3 commenté : titre déjà affiché en h1 par la page atelier */}
               {/* <h3 className="font-semibold text-orange-900">{t.workshop.a3.title}</h3> */}
-              <AutoSaveBadge status={autoStatus} lastSaved={lastSaved} error={autoError} />
+              <AutoSaveBadge status={autoStatus} lastSaved={lastSaved} error={autoError} /><BrouillonAtelier analyseId={analyseId} num={3} />
             </div>
             <p className="text-sm text-orange-800">{t.workshop.a3.desc}</p>
           </div>

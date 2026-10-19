@@ -23,12 +23,14 @@
  */
 
 import { AlertTriangle, CheckCircle2, ClipboardList, Settings, Star, Zap } from 'lucide-react'
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n/context'
 import { uid } from '@/lib/uid'
 import ConfirmDialog from '@/components/ConfirmDialog'
+import BrouillonAtelier from '@/components/BrouillonAtelier'
 import AutoSaveBadge from '@/components/AutoSaveBadge'
+import { enregistrerAtelier } from '@/lib/atelier-save'
 import { useAutoSave } from '@/lib/useAutoSave'
 import { useEbiosData } from '@/lib/i18n/use-ebios-data'
 import { resolveExemples } from '@/lib/exemples-ateliers'
@@ -114,16 +116,11 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode, e
   // ── Auto-save ─────────────────────────────────────────────────────────────
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const autoSaveData = useMemo(() => ({ scenariosOperationnels: scenarios }), [scenarios])
+  const revisionRef = useRef<number>(Number(analyse?.revisionAtelier4 ?? 0))
   const { status: autoStatus, lastSaved, error: autoError, saveNow } = useAutoSave(
     autoSaveData,
-    async (data) => {
-      const res = await fetch(`/api/analyses/${analyseId}/workshop/4`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      if (!res.ok) throw new Error('Sauvegarde échouée')
-    },
+    // Verrou optimiste (T9) : un autre éditeur a enregistré cet atelier → 409, rien n'est écrasé.
+    (data) => enregistrerAtelier(analyseId, 4, data, revisionRef, { conflit: t.apiErrors.CONFLIT_EDITION, echec: t.brouillonAtelier.reprise }),
     { delay: 1500, disabled: !editable }
   )
 
@@ -254,7 +251,7 @@ export default function Atelier4({ analyseId, initialData, analyse, flashMode, e
             <div className="flex items-center justify-between mb-1">
               {/* h3 commenté : titre déjà affiché en h1 par la page atelier */}
               {/* <h3 className="font-semibold text-yellow-900">{t.workshop.a4.title}</h3> */}
-              <AutoSaveBadge status={autoStatus} lastSaved={lastSaved} error={autoError} />
+              <AutoSaveBadge status={autoStatus} lastSaved={lastSaved} error={autoError} /><BrouillonAtelier analyseId={analyseId} num={4} />
             </div>
             <p className="text-sm text-yellow-800">{t.workshop.a4.desc}</p>
           </div>

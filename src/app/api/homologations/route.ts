@@ -1,50 +1,38 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { analyseAccessWhere, getAnalyseScope } from '@/lib/org-context.server'
+import { analyseAccessWhere } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { type UserRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { canPreparerHomologation, etatValidite, piecesInitiales, sanitizeDuree } from '@/lib/homologation'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 
 // ─── Homologations (registre) ─────────────────────────────────────────────────
 // Module optionnel (homologationsActive, 3 niveaux). Spec : docs/specs/protection-sociale-specs.md (P2).
 
 // GET /api/homologations — registre des homologations des organisations visibles, avec l'état de validité.
-export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  const orgId = scope.activeOrgId
-  if (!orgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
+// Organisation active obligatoire (400 sinon) ; `role` = rôle effectif, `scope` = périmètre de visibilité.
+export const GET = withAccess({ org: 'active' }, async (_req, { role, orgId, scope }) => {
   if (!(await getOrgConfig(orgId)).homologationsActive) return NextResponse.json({ error: 'Module inactif' }, { status: 403 })
 
   const rows = await prisma.homologation.findMany({
-    where: scope.scope.isSuperAdmin ? {} : { organizationId: { in: scope.scope.visibleOrgIds } },
+    where: scope.isSuperAdmin ? {} : { organizationId: { in: scope.visibleOrgIds } },
     include: { analyse: { select: { nom: true } } },
     orderBy: { updatedAt: 'desc' },
   })
   const now = new Date()
   return NextResponse.json({
-    role: scope.role,
+    role,
     items: rows.map(h => ({ ...h, analyseNom: h.analyse?.nom ?? null, analyse: undefined, etat: etatValidite(h, now) })),
   })
-}
+})
 
 // POST /api/homologations — ouvrir un dossier d'homologation (RSSI, gestionnaire des risques, administrateur).
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  const orgId = scope.activeOrgId
-  if (!orgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
+// Le contrôle du module (config d'org) précède celui du rôle : les deux restent dans le handler, dans cet ordre.
+export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'homologations' } }, async (req, { user, role, orgId }) => {
+  const userId = user.id
+  const instanceRole = user.role
   if (!(await getOrgConfig(orgId)).homologationsActive) return NextResponse.json({ error: 'Module inactif' }, { status: 403 })
-  if (!canPreparerHomologation(scope.role)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
+  if (!canPreparerHomologation(role)) return NextResponse.json({ error: 'Action non autorisée' }, { status: 403 })
 
   const body = await req.json().catch(() => ({})) as Record<string, unknown>
   const systeme = typeof body.systeme === 'string' ? body.systeme.trim().slice(0, 200) : ''
@@ -65,6 +53,6 @@ export async function POST(req: NextRequest) {
       dureeMois: sanitizeDuree(body.dureeMois), pieces: piecesInitiales() as never, reserves: [] as never,
     },
   })
-  await auditLog('HOMOLOGATION_CREATED', { userId, userRole: scope.role, targetId: created.id, targetType: 'homologation', ip: getClientIp(req), details: { systeme, analyseId } })
+  await auditLog('HOMOLOGATION_CREATED', { userId, userRole: role, targetId: created.id, targetType: 'homologation', ip: getClientIp(req), details: { systeme, analyseId } })
   return NextResponse.json(created, { status: 201 })
-}
+})

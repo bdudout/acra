@@ -53,7 +53,7 @@ export default function TestsResilienceManager() {
   }
   useEffect(() => {
     load(null)
-    fetch('/api/risk-items', { cache: 'no-store' }).then(x => (x.ok ? x.json() : null)).then(d => setRisks(Array.isArray(d?.risks) ? d.risks.map((x: { id: string; intitule: string }) => ({ id: x.id, intitule: x.intitule })) : [])).catch(() => {})
+    fetch('/api/risk-items?vue=options', { cache: 'no-store' }).then(x => (x.ok ? x.json() : null)).then(d => setRisks(Array.isArray(d?.risks) ? d.risks.map((x: { id: string; intitule: string }) => ({ id: x.id, intitule: x.intitule })) : [])).catch(() => {})
   }, [])
 
   function edit(row: TestRow) {

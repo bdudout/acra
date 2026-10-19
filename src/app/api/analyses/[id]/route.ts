@@ -1,13 +1,10 @@
 import { sanitizeAnswers360 } from '@/lib/projet360'
 import { dateSaisie } from '@/lib/date-saisie'
 import { sanitizeMeteo } from '@/lib/projet-meteo'
-import { analyseGelee } from '@/lib/gel-analyse'
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { canViewAnalyse, canEditAnalyse, isAdminRole, analyseWhereClause, resolveAnalyseRole, type UserRole } from '@/lib/permissions'
-import { analyseAccessWhere, getEffectiveRoleForOrg } from '@/lib/org-context.server'
+import { canViewAnalyse, canEditAnalyse, isAdminRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { sanitizeQualification } from '@/lib/qualification'
@@ -17,27 +14,12 @@ import { mergePrefill, prefillFromPatterns } from '@/lib/projet360'
 import { normalizeMentionProtection } from '@/lib/mention-protection'
 import { normalizeMethode } from '@/lib/vraisemblance-methode'
 
-type Params = { params: Promise<{ id: string }> }
-
-// Charge une analyse en respectant l'isolation multi-organisation (filtre d'org).
-async function loadAnalyse(id: string, userId: string, userRole: UserRole) {
-  return prisma.analyse.findFirst({
-    where: await analyseAccessWhere(userId, userRole, id),
-    include: { accesUtilisateurs: true },
-  })
-}
-
 // GET /api/analyses/:id — détail complet
-export async function GET(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const { id } = await params
-  const userId = (session.user as any).id
-  const userRole = (session.user as any).role ?? 'ANALYSTE'
-
+// L'analyse est chargée dans le périmètre (analyseAccessWhere) par withAccess : hors périmètre ou en corbeille
+// (soft delete, récupérable via /admin/recovery) → 404 pour tous.
+export const GET = withAccess({ org: { analyse: 'id' } }, async (_req, { user, role, analyse: acces }) => {
   const analyse = await prisma.analyse.findFirst({
-    where: await analyseAccessWhere(userId, userRole, id),
+    where: { id: acces.id },
     include: {
       cadrage: true,
       sourcesRisque: true,
@@ -52,46 +34,28 @@ export async function GET(req: NextRequest, { params }: Params) {
     },
   })
 
-  // Une analyse en corbeille (soft delete) est introuvable pour tous (récupérable via /admin/recovery).
   if (!analyse || analyse.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
 
   // F01 (CWE-863) : lecture ET édition se décident sur le rôle EFFECTIF dans
   // l'organisation de l'analyse (pas le rôle d'instance) — un rôle de gouvernance
   // GLOBAL (RSSI/AUDITEUR…) ne doit pas ouvrir la lecture d'une analyse d'une org
   // où le rôle effectif de l'utilisateur est inférieur. Cohérent avec PATCH/DELETE.
-  const effRole = resolveAnalyseRole(userRole, analyse.organizationId, analyse.organizationId ? await getEffectiveRoleForOrg(userId, userRole, analyse.organizationId) : null)
-
-  if (!canViewAnalyse({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })) {
+  // `role` = rôle effectif dans l'organisation de l'analyse (resolveAnalyseRole, via withAccess).
+  if (!canViewAnalyse({ id: user.id, role }, { userId: acces.userId, accesUtilisateurs: acces.accesUtilisateurs })) {
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
   }
 
-  const editable = canEditAnalyse({ id: userId, role: effRole }, { userId: analyse.userId, accesUtilisateurs: analyse.accesUtilisateurs })
+  const editable = canEditAnalyse({ id: user.id, role }, { userId: acces.userId, accesUtilisateurs: acces.accesUtilisateurs })
 
   return NextResponse.json({ analyse, editable })
-}
+})
 
 // PATCH /api/analyses/:id — modifier les infos générales ou le statut
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const { id } = await params
-  const userId = (session.user as any).id
-  const userRole = (session.user as any).role ?? 'ANALYSTE'
-
-  const existing = await loadAnalyse(id, userId, userRole)
+// withAccess (write) : analyse dans le périmètre (404), édition sur le rôle EFFECTIF dans l'organisation de
+// l'analyse (F01, CWE-863 ; 403) et analyse non gelée (403 ANALYSE_GELEE).
+export const PATCH = withAccess({ org: { analyse: 'id', write: true }, rateLimit: { bucket: 'analyses' } }, async (req, { analyse: acces, params: { id } }) => {
+  const existing = await prisma.analyse.findFirst({ where: { id: acces.id } })
   if (!existing || existing.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
-
-  // F01 (CWE-863) : rôle EFFECTIF dans l'organisation de l'analyse, pas le rôle d'instance.
-  const effRole = resolveAnalyseRole(userRole, existing.organizationId, existing.organizationId ? await getEffectiveRoleForOrg(userId, userRole, existing.organizationId) : null)
-  if (!canEditAnalyse({ id: userId, role: effRole }, { userId: existing.userId, accesUtilisateurs: existing.accesUtilisateurs })) {
-    return NextResponse.json({ error: 'Accès refusé — édition non autorisée' }, { status: 403 })
-  }
-
-  const orgConfig = await getOrgConfig(existing.organizationId)
-  if (analyseGelee(existing.risquesResiduelsStatut, orgConfig.gelApresAcceptationActive)) {
-    return NextResponse.json({ error: 'ANALYSE_GELEE' }, { status: 403 })
-  }
 
   const body = await req.json()
   const allowed = ['nom', 'description', 'organisation', 'secteur', 'sousSecteur', 'atelierCourant', 'dateEcheance', 'referentielMesures', 'isSocle']
@@ -174,30 +138,25 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const updated = await prisma.analyse.update({ where: { id }, data })
   return NextResponse.json({ analyse: updated })
-}
+})
 
 // DELETE /api/analyses/:id — seul le propriétaire ou ADMIN peut supprimer
-export async function DELETE(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-
-  const { id } = await params
-  const userId = (session.user as any).id
-  const userRole = (session.user as any).role ?? 'ANALYSTE'
-
-  const existing = await loadAnalyse(id, userId, userRole)
-  if (!existing || existing.deletedAt) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
+// Pas de contrôle de gel (inchangé) : la suppression relève du propriétaire / de l'administrateur.
+export const DELETE = withAccess({ org: { analyse: 'id' }, rateLimit: { bucket: 'analyses' } }, async (req, { user, role, analyse: acces, params: { id } }) => {
+  const userId = user.id
+  const userRole = user.role
 
   // F01 (CWE-863) : « ADMIN » s'entend du rôle EFFECTIF dans l'organisation de
-  // l'analyse — un admin d'un autre périmètre ne peut pas supprimer ici.
-  const effRole = resolveAnalyseRole(userRole, existing.organizationId, existing.organizationId ? await getEffectiveRoleForOrg(userId, userRole, existing.organizationId) : null)
+  // l'analyse (`role`, résolu par withAccess) — un admin d'un autre périmètre ne peut pas supprimer ici.
   // Seul le propriétaire ou un ADMIN (effectif) peut supprimer
-  if (existing.userId !== userId && !isAdminRole(effRole)) {
+  if (acces.userId !== userId && !isAdminRole(role)) {
     return NextResponse.json({ error: 'Seul le propriétaire peut supprimer cette analyse' }, { status: 403 })
   }
 
   // Suppression DOUCE : l'analyse disparaît des vues mais reste récupérable par un
   // ADMIN pendant 30 jours (module Récupération). cf. lib/recovery.ts.
+  const existing = await prisma.analyse.findFirst({ where: { id: acces.id }, select: { nom: true } })
+  if (!existing) return NextResponse.json({ error: 'Analyse introuvable' }, { status: 404 })
   await prisma.analyse.update({ where: { id }, data: { deletedAt: new Date(), deletedById: userId } })
   await auditLog('ANALYSE_DELETED', {
     userId, userRole,
@@ -206,4 +165,4 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     details: { nom: existing.nom, soft: true },
   })
   return NextResponse.json({ ok: true })
-}
+})

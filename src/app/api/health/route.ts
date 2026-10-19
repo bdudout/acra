@@ -1,6 +1,7 @@
 import { releaseInfo } from '@/lib/release-info'
 import { depotIssues } from '@/lib/signalement-erreur'
 import { NextResponse } from 'next/server'
+import { existsSync } from 'node:fs'
 import { prisma } from '@/lib/prisma'
 import { migrationDrift, type MigrationRow } from '@/lib/migration-drift'
 import { listShippedMigrations } from '@/lib/migrations-on-disk.server'
@@ -18,10 +19,18 @@ export const dynamic = 'force-dynamic'
  *
  * La vérification des migrations est systématique, y compris pour Docker. `?deep=1`
  * (mise à jour : scripts/update-lib.sh) ajoute les noms et comptes des migrations.
+ *
+ * Drainage (profil « ha », scripts/update-ha.sh) : tant que ACRA_DRAIN_FILE (défaut /tmp/acra-drain) existe dans le
+ * conteneur, la réponse est 503 « draining » : le frontal cesse d'envoyer de nouvelles requêtes à ce réplica, qui
+ * termine celles en cours avant son arrêt (SIGTERM).
  */
 export async function GET(req: Request) {
   const start = Date.now()
   const deep = new URL(req.url).searchParams.get('deep') === '1'
+
+  if (existsSync(process.env.ACRA_DRAIN_FILE || '/tmp/acra-drain')) {
+    return NextResponse.json({ status: 'draining', ...releaseInfo(process.env), uptime: Math.floor(process.uptime()) }, { status: 503 })
+  }
 
   // Probe the database before checking that its schema matches this release.
   let dbStatus: 'connected' | 'error' = 'error'

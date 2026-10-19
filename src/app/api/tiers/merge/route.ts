@@ -1,17 +1,14 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import {
   analyseWhereClause,
   canEditAnalyse,
-  type UserRole,
   type SessionUser,
 } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { validateMergeRequest, planTierRename } from '@/lib/tiers'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,22 +23,12 @@ export const dynamic = 'force-dynamic'
  * Les PP situées dans des analyses verrouillées ou hors périmètre d'édition sont
  * laissées intactes et comptées dans `blocked`. Écriture auditée.
  */
-export async function POST(request: Request) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-
-  const userId = (session.user as { id: string }).id
-  const userRole: UserRole = (session.user as { role?: UserRole }).role ?? 'ANALYSTE'
+// `org: 'none'` : rôle d'instance (comme avant), périmètre résolu ci-dessous via getAnalyseScope.
+// Rate limiting (#118) : borne la fréquence des fusions comme les autres écritures.
+export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'tiers-merge' } }, async (request, { user: sessionUser }) => {
+  const userId = sessionUser.id
+  const userRole = sessionUser.role
   const user: SessionUser = { id: userId, role: userRole }
-
-  // Rate limiting (#118) : borne la fréquence des fusions comme les autres écritures.
-  const rl = await rateLimit(`tiers-merge:${userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Trop de requêtes. Réessayez dans un instant.' },
-      { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) }
-    )
-  }
 
   let body: { noms?: unknown; cible?: unknown }
   try {
@@ -107,4 +94,4 @@ export async function POST(request: Request) {
   })
 
   return NextResponse.json({ renamed: renameIds.length, blocked, cible: target })
-}
+})

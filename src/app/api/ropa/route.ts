@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
-import { canCreateAnalyse, canManageRopa, type UserRole } from '@/lib/permissions'
+import { canCreateAnalyse, canManageRopa } from '@/lib/permissions'
+import { requireSession } from '@/lib/route-guard.server'
+import { withAccess } from '@/lib/with-access.server'
 import { optionsStructure } from '@/lib/org-config.server'
 import { alerteAipd, type StatutAipd } from '@/lib/ropa-aipd'
 import { sanitizeTraitement, evaluerTraitement } from '@/lib/ropa'
@@ -15,18 +15,12 @@ export const dynamic = 'force-dynamic'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = prisma as any
 
-async function ctx(session: { user: { id: string; role?: string } }) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  return { userId, userRole: scope.role, orgId: scope.activeOrgId }
-}
-
 // GET /api/ropa — registre des traitements de l'org active + évaluation (art. 30 / PIA).
+// Sans organisation active : registre vide (pas d'erreur) → session seule, org active résolue ici.
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
+  const g = await requireSession()
+  if (g.error) return g.error
+  const { role: userRole, activeOrgId: orgId } = await getAnalyseScope(g.user.id, g.user.role)
   if (!orgId) return NextResponse.json({ traitements: [], canManage: false })
   if (!canManageRopa(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
@@ -48,13 +42,8 @@ export async function GET() {
 }
 
 // POST /api/ropa — créer un traitement (DPO / ADMIN).
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { userId, userRole, orgId } = await ctx(session as unknown as { user: { id: string; role?: string } })
-  if (!orgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
-  if (!canManageRopa(userRole)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
-
+export const POST = withAccess({ org: 'active', allow: canManageRopa, rateLimit: { bucket: 'ropa' } }, async (req, { user, role: userRole, orgId }) => {
+  const userId = user.id
   const body = await req.json().catch(() => ({}))
   const t = sanitizeTraitement(body)
   if (!t.nom.trim()) return NextResponse.json({ error: 'nom_requis' }, { status: 400 })
@@ -67,4 +56,4 @@ export async function POST(req: NextRequest) {
     details: { scope: 'ropa', action: 'create', id: created.id },
   })
   return NextResponse.json(created, { status: 201 })
-}
+})

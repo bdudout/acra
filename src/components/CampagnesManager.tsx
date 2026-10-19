@@ -10,6 +10,7 @@
 import { ClipboardList } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { EFFICACITES, suggestResiduel, type EfficaciteControle } from '@/lib/campagne'
 
 interface Avancement {
@@ -68,7 +69,7 @@ export default function CampagnesManager({ canPilot, canCote }: { canPilot: bool
 
   const jour = (d: string | null) => (d ? new Date(d).toLocaleDateString(locale) : '—')
   const lbl = (dict: unknown, k: string) => (dict as Record<string, string>)[k] ?? k
-  function err(code: string) { return lbl(c.errors, code) }
+  function err(code: string) { return (c.errors as Record<string, string>)[code] ?? apiErrorMessage(code, t, code) }
 
   async function reload() {
     const d = await fetch('/api/campagnes').then(x => x.ok ? x.json() : { campagnes: [] })

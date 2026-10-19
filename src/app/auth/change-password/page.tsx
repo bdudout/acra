@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { validatePassword, DEFAULT_POLICY, type PasswordPolicyShape, type PasswordRuleCode } from '@/lib/password-policy'
 
 export default function ChangePasswordPage() {
@@ -61,7 +62,7 @@ export default function ChangePasswordPage() {
       router.replace('/dashboard')
     } else {
       const d = await res.json().catch(() => ({}))
-      setError(d.error === 'PASSWORD_POLICY' ? t.passwordPolicy.policyError : (d.error || t.changePassword.genericError))
+      setError(d.error === 'PASSWORD_POLICY' ? t.passwordPolicy.policyError : apiErrorMessage(d.error, t, t.changePassword.genericError))
     }
   }
 

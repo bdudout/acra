@@ -11,6 +11,7 @@ import { useTranslation } from '@/lib/i18n/context'
 import { isAdminRole } from '@/lib/permissions'
 import ApiKeysManager from '@/components/ApiKeysManager'
 import WebhooksManager from '@/components/WebhooksManager'
+import TachesPlanifiees from '@/components/TachesPlanifiees'
 import { grouperParMenu, menuDuModule, type MenuFonctionnalite } from '@/lib/fonctionnalites-menus'
 import type { GovernableModule } from '@/lib/module-policy'
 
@@ -262,6 +263,14 @@ export default function AdminInstancePage() {
               })}
             </div>
             <p className="text-xs text-gray-400 mt-2">{t.methodesConfig.hint}</p>
+          </section>
+        )}
+
+        {isSuperAdmin && (
+          <section className="card p-6">
+            <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">{t.tachesPlanifiees.sectionTitle}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t.tachesPlanifiees.sectionDesc}</p>
+            <TachesPlanifiees />
           </section>
         )}
 

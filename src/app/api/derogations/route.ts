@@ -1,30 +1,42 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig, optionsStructure } from '@/lib/org-config.server'
-import { type UserRole } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import {
   validateDerogationInput, statutInitial, calcDateFin,
   canAvisRssiDerogation, canDoubleRegardDerogation, canValiderDerogation,
   type DerogationWorkflow, type DerogationStatut,
 } from '@/lib/derogation'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
+import { lirePagination, paginer } from '@/lib/pagination'
+import { TRIS_REGISTRE, compterParFiltre, filtrerRegistre, lireFiltreRegistre, trierRegistre } from '@/lib/derogations-registre'
+import { chargerRegistreDerogations } from '@/lib/derogations-registre.server'
 
 // GET /api/derogations — nombre de dérogations en attente de l'ACTION de
 // l'utilisateur courant (file d'attente du valideur) : avis RSSI, double regard,
 // validation métier — dans son périmètre d'organisations. Alimente le badge de
 // la navbar. Réutilise les gardes RBAC pures (mêmes règles que les transitions).
-export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
+// org: 'none' : périmètre multi-organisation (scope.scope), sans organisation active requise.
+// `?page=N&taille=&tri=&ordre=&q=&filtre=` : registre paginé de l'écran /derogations (lot V1) —
+// lignes visibles (analyses accessibles + dérogations autonomes des organisations visibles), compteurs
+// des filtres sur tout le registre. Sans `page` : réponse historique `{ pending }` (badge de la navbar).
+export const GET = withAccess({ org: 'none' }, async (req, { user }) => {
+  const userId = user.id
+  const scope = await getAnalyseScope(userId, user.role)
   // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
   const userRole = scope.role
   const sessionUser = { id: userId, role: userRole }
+
+  const sp = req.nextUrl.searchParams
+  const pg = lirePagination(sp, { tris: TRIS_REGISTRE, triDefaut: 'defaut' })
+  if (pg) {
+    const now = new Date()
+    const tous = await chargerRegistreDerogations(userId, userRole, scope.scope)
+    const filtres = filtrerRegistre(tous, { filtre: lireFiltreRegistre(sp.get('filtre')), q: pg.q }, now)
+    const page = paginer(trierRegistre(filtres, pg.tri, pg.ordre, now), pg)
+    return NextResponse.json({ rows: page.items, pagination: page.pagination, synthese: { total: tous.length, compteurs: compterParFiltre(tous, now) } })
+  }
 
   // Seuls les rôles susceptibles d'agir font la requête complète.
   // (RISK_MANAGER : peut agir en petite structure, où il exerce aussi le rôle RSSI.)
@@ -50,27 +62,21 @@ export async function GET() {
   }).length
 
   return NextResponse.json({ pending })
-}
+})
 
 // POST /api/derogations — créer une dérogation AUTONOME (niveau organisation, sans
 // analyse). Toujours rattachée à une mesure de référentiel (portée CONTROLE) : un
 // risque appartient forcément à une analyse (donc pas de dérogation-risque autonome).
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
+export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'derogations' } }, async (req, { user, role, orgId }) => {
+  const userId = user.id
   // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
+  const userRole = role
 
   // Rôles pouvant porter une dérogation : pas les lecteurs, ni la Direction métier
   // (qui valide) — c'est un « porteur » qui la demande.
   if (userRole === 'LECTEUR' || userRole === 'DIRECTION_METIER') {
     return NextResponse.json({ error: 'Rôle non autorisé à demander une dérogation' }, { status: 403 })
   }
-  const orgId = scope.activeOrgId
-  if (!orgId) return NextResponse.json({ error: 'Aucune organisation active' }, { status: 400 })
 
   const orgConfig = await getOrgConfig(orgId)
   if (!orgConfig.derogationsActive) {
@@ -120,4 +126,4 @@ export async function POST(req: NextRequest) {
     details: { organizationId: orgId, portee: 'CONTROLE', intitule: input.intitule, standalone: true, workflow: orgConfig.derogationWorkflow },
   })
   return NextResponse.json(derogation, { status: 201 })
-}
+})

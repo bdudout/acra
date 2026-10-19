@@ -1,8 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAnalyseScope } from '@/lib/org-context.server'
+import { getAnalyseScope, roleSurRessource } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { peutDefinir2eLigne, type UserRole } from '@/lib/permissions'
 import { validateControleInput, cleanControleInput } from '@/lib/controle'
@@ -11,39 +9,38 @@ import { sanitizeChampsConfig, fusionnerChamps, avecChampsVisibles } from '@/lib
 import { Prisma } from '@prisma/client'
 import { verifierRattachements } from '@/lib/controle-rattachements.server'
 import { auditLog, getClientIp } from '@/lib/logger'
+import { withAccess } from '@/lib/with-access.server'
+import type { SessionUser } from '@/lib/route-guard.server'
 
 export const dynamic = 'force-dynamic'
 
-type Params = { params: Promise<{ id: string }> }
+// org: 'none' : le contrôle est cherché dans tout le périmètre visible (sans org active requise).
+const access = { org: 'none', rateLimit: { bucket: 'controles' } } as const
 
 function peutDefinir(role: UserRole, secondeLigneActive: boolean): boolean {
   return peutDefinir2eLigne(role, { secondeLigneActive })
 }
 
-async function loadInScope(session: { user: { id: string; role?: string } }, id: string) {
-  const userId = session.user.id
-  const instanceRole = (session.user.role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  // Rôle EFFECTIF dans l'organisation active (pas le rôle d'instance) → A01/CWE-863.
-  const userRole = scope.role
+async function loadInScope(user: SessionUser, id: string) {
+  const userId = user.id
+  const scope = await getAnalyseScope(userId, user.role)
   const orgIds = scope.scope.isSuperAdmin ? null : scope.scope.visibleOrgIds
   const controle = await prisma.controle.findFirst({
     where: { id, ...(orgIds ? { organizationId: { in: orgIds } } : {}) },
     select: { id: true, organizationId: true, champs: true },
   })
   if (!controle) return { error: NextResponse.json({ error: 'Introuvable' }, { status: 404 }) }
+  // Rôle EFFECTIF dans l'organisation DE LA RESSOURCE, jamais celui de l'org active (CWE-863).
+  const userRole = await roleSurRessource(userId, user.role, controle.organizationId)
   const cfg = await getOrgConfig(controle.organizationId)
   if (!cfg.controlePermanentActive) return { error: NextResponse.json({ error: 'Module non activé' }, { status: 403 }) }
-  return { userId, userRole, orgId: controle.organizationId, secondeLigneActive: cfg.secondeLigneActive, champsPersonnalises: cfg.champsPersonnalises, champsExistants: controle.champs }
+  return { error: null, userId, userRole, orgId: controle.organizationId, secondeLigneActive: cfg.secondeLigneActive, champsPersonnalises: cfg.champsPersonnalises, champsExistants: controle.champs }
 }
 
 // PATCH /api/controles/[id] — modifier un contrôle (2ᵉ ligne). Mise à jour PARTIELLE.
-export async function PATCH(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in c) return c.error
+export const PATCH = withAccess(access, async (req, { user, params: { id } }) => {
+  const c = await loadInScope(user, id)
+  if (c.error) return c.error
   if (!peutDefinir(c.userRole, c.secondeLigneActive)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
@@ -77,15 +74,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     details: { scope: 'controle', action: 'update', id },
   })
   return NextResponse.json(avecChampsVisibles(updated, defsChamps, c.userRole))
-}
+})
 
 // DELETE /api/controles/[id] — supprimer un contrôle et son historique (2ᵉ ligne).
-export async function DELETE(req: NextRequest, { params }: Params) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  const { id } = await params
-  const c = await loadInScope(session as unknown as { user: { id: string; role?: string } }, id)
-  if ('error' in c) return c.error
+export const DELETE = withAccess(access, async (req, { user, params: { id } }) => {
+  const c = await loadInScope(user, id)
+  if (c.error) return c.error
   if (!peutDefinir(c.userRole, c.secondeLigneActive)) return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 })
 
   await prisma.controle.delete({ where: { id } })
@@ -94,4 +88,4 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     details: { scope: 'controle', action: 'delete', id },
   })
   return NextResponse.json({ ok: true })
-}
+})

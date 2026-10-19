@@ -19,7 +19,7 @@ vi.mock('@/lib/org-config.server', async () => {
   return { getOrgConfig: vi.fn(), upsertOrgConfig: (id: string, data: object) => prisma.organizationConfig.upsert({ where: { id }, create: { id, ...data }, update: data } as never) }
 })
 vi.mock('@/lib/logger', () => ({ auditLog: vi.fn() }))
-vi.mock('@/lib/rate-limit', () => ({ LIMIT_SEARCH: { limit: 60, windowMs: 60_000 }, rateLimit: vi.fn(() => ({ allowed: true })), rateLimitHeaders: vi.fn() }))
+vi.mock('@/lib/rate-limit', () => ({ LIMIT_SEARCH: { limit: 60, windowMs: 60_000 }, LIMIT_API_WRITE: { limit: 30, windowMs: 60_000 }, rateLimit: vi.fn(() => ({ allowed: true })), rateLimitHeaders: vi.fn() }))
 
 import { PUT } from '@/app/api/admin/organization-config/route'
 import { prisma } from '@/lib/prisma'
@@ -29,7 +29,7 @@ beforeEach(() => vi.clearAllMocks())
 it('autorise l’ADMIN effectif de sa propre organisation, même si son rôle d’instance est ANALYSTE', async () => {
   const response = await PUT(new Request('http://localhost/api/admin/organization-config', {
     method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ conseilsAteliersActive: false }),
-  }) as never)
+  }) as never, { params: Promise.resolve({}) })
 
   expect(response.status).toBe(200)
   expect(vi.mocked(prisma.organizationConfig.upsert)).toHaveBeenCalledWith(expect.objectContaining({

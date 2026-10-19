@@ -6,7 +6,8 @@ vi.mock('@/lib/i18n/context', async () => {
   const { fr } = await import('@/lib/i18n/fr')
   return { useTranslation: () => ({ t: fr, locale: 'fr' }) }
 })
-vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams() }))
+const nav = vi.hoisted(() => ({ params: new URLSearchParams(), replace: vi.fn() }))
+vi.mock('next/navigation', () => ({ useSearchParams: () => nav.params, useRouter: () => ({ replace: nav.replace }), usePathname: () => '/incidents' }))
 vi.mock('@/components/AutocompleteInput', () => ({ default: () => <input /> }))
 
 const incident = {
@@ -21,10 +22,10 @@ const ok = (b: unknown) => Promise.resolve({ ok: true, status: 200, json: async 
 beforeEach(() => {
   fetchMock.mockReset()
   fetchMock.mockImplementation((url: string, init?: RequestInit) => {
-    if (url === '/api/incidents' && !init?.method) return ok({ incidents: [incident], active: true })
+    if (url.startsWith('/api/incidents?') && !url.includes('vue=') && !init?.method) return ok({ incidents: [incident], active: true })
     if (url === '/api/taxonomie') return ok({ taxonomie: [] })
     if (url === '/api/processus') return ok({ processus: [] })
-    if (url === '/api/risk-items') return ok({ risks })
+    if (url === '/api/risk-items?vue=options') return ok({ risks })
     return ok({ ok: true })
   })
   vi.stubGlobal('fetch', fetchMock)

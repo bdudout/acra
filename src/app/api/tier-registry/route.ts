@@ -1,37 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { partiesRattachables } from '@/lib/tier-registry.server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
-import { analyseWhereClause, isAdminRole, peutGererRegistreTic, type UserRole } from '@/lib/permissions'
+import { analyseWhereClause, isAdminRole, peutGererRegistreTic } from '@/lib/permissions'
+import { withAccess } from '@/lib/with-access.server'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { rateLimit, rateLimitHeaders, LIMIT_API_WRITE } from '@/lib/rate-limit'
 import { resolveEchelles, type EchellesEcosysteme } from '@/lib/ecosystem-echelles'
 import { coterEvaluation, sanitizeEvaluationTiers, syntheseTiersGroupe, type UsageGroupe } from '@/lib/tier-evaluation'
 import { classifyTierCoverage, cleanTierInput, findTierCandidates, normalizeLei, rootOrganizationIdOf, type TierLite } from '@/lib/tier-identity'
 
 export const dynamic = 'force-dynamic'
 
-async function context() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return null
-  const userId = (session.user as { id: string }).id
-  const instanceRole = ((session.user as { role?: string }).role ?? 'ANALYSTE') as UserRole
-  const scope = await getAnalyseScope(userId, instanceRole)
-  return { userId, scope }
-}
 const asAliases = (value: unknown): string[] => (Array.isArray(value) ? value.filter((a): a is string => typeof a === 'string') : [])
 
 /**
  * Identités de tiers autorisées pour l'organisation active : couverture (cyber / TIC), arrangements TIC à rapprocher avec leurs
  * candidats. Aucun lien n'est décidé ici ; les analyses comptées sont celles auxquelles l'utilisateur a accès.
  */
-export async function GET(_req: NextRequest) {
-  const ctx = await context()
-  if (!ctx) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  const orgId = ctx.scope.activeOrgId
+// Sans organisation active : réponse vide (pas d'erreur) → `org: 'none'`, scope résolu ici.
+export const GET = withAccess({ org: 'none' }, async (_req, { user }) => {
+  const scope = await getAnalyseScope(user.id, user.role)
+  const orgId = scope.activeOrgId
   if (!orgId) return NextResponse.json({ active: false, tiers: [], unlinkedArrangements: [] })
   const cfg = await getOrgConfig(orgId)
 
@@ -42,7 +32,7 @@ export async function GET(_req: NextRequest) {
     : []
   const ids = tiers.map(t => t.id)
   const parties = ids.length
-    ? await prisma.partiePrenante.findMany({ where: { tierId: { in: ids }, analyse: analyseWhereClause(ctx.userId, ctx.scope.role, ctx.scope.scope) }, select: { tierId: true, analyseId: true } })
+    ? await prisma.partiePrenante.findMany({ where: { tierId: { in: ids }, analyse: analyseWhereClause(user.id, scope.role, scope.scope) }, select: { tierId: true, analyseId: true } })
     : []
   const analysesByTier = new Map<string, Set<string>>()
   for (const p of parties) if (p.tierId) analysesByTier.set(p.tierId, (analysesByTier.get(p.tierId) ?? new Set()).add(p.analyseId))
@@ -51,7 +41,7 @@ export async function GET(_req: NextRequest) {
   // détail par organisation du sous-arbre visible (évaluation par organisation, synthèse groupe au pire niveau).
   const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { path: true } })
   const sousArbre = org ? await prisma.organization.findMany({ where: { path: { startsWith: org.path }, actif: true }, select: { id: true, nom: true } }) : []
-  const visibles = new Set([...(ctx.scope.scope.visibleOrgIds ?? []), orgId])
+  const visibles = new Set([...(scope.scope.visibleOrgIds ?? []), orgId])
   const orgsGroupe = sousArbre.filter(o => visibles.has(o.id))
   const nomOrg = new Map(orgsGroupe.map(o => [o.id, o.nom]))
   const echelles = resolveEchelles(cfg.echellesEcosysteme as Partial<EchellesEcosysteme> | null)
@@ -83,18 +73,11 @@ export async function GET(_req: NextRequest) {
   // Contrats groupe proposés à CETTE organisation : visibles pour décision (confirmer / refuser), sans aucun accès accordé d'avance.
   const pending = await prisma.tierContractBeneficiary.findMany({ where: { organizationId: orgId, status: 'PROPOSED' }, select: { arrangementId: true, arrangement: { select: { reference: true, prestataireNom: true, organization: { select: { nom: true } } } } } })
   const proposals = pending.map(p => ({ arrangementId: p.arrangementId, reference: p.arrangement.reference, prestataireNom: p.arrangement.prestataireNom, ownerNom: p.arrangement.organization.nom }))
-  return NextResponse.json({ active: true, canManage: peutGererRegistreTic(ctx.scope.role), isAdmin: isAdminRole(ctx.scope.role), orgId, tiers: rows, unlinkedArrangements, proposals })
-}
+  return NextResponse.json({ active: true, canManage: peutGererRegistreTic(scope.role), isAdmin: isAdminRole(scope.role), orgId, tiers: rows, unlinkedArrangements, proposals })
+})
 
 /** Crée une identité de tiers (ADMIN ou 2ᵉ ligne) : jamais de doublon silencieux, jamais de fuite d'un tiers d'une autre organisation. */
-export async function POST(req: NextRequest) {
-  const ctx = await context()
-  if (!ctx) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  const orgId = ctx.scope.activeOrgId
-  if (!orgId) return NextResponse.json({ error: 'organization_required' }, { status: 400 })
-  if (!peutGererRegistreTic(ctx.scope.role)) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
-  const rl = await rateLimit(`tier-registry:${ctx.userId}`, LIMIT_API_WRITE.limit, LIMIT_API_WRITE.windowMs)
-  if (!rl.allowed) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: rateLimitHeaders(rl.remaining, rl.resetAt) })
+export const POST = withAccess({ org: 'active', allow: peutGererRegistreTic, rateLimit: { bucket: 'tier-registry' } }, async (req, { user, role, orgId, scope }) => {
 
   const body = await req.json().catch(() => ({}))
   const cleaned = cleanTierInput(body)
@@ -120,7 +103,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'possible_duplicate', candidates: candidates.map(c => ({ ...c, nom: known.find(t => t.id === c.tierId)?.nom ?? '' })) }, { status: 409 })
   }
 
-  const partiesALier = linkPartieIds.length ? await partiesRattachables({ userId: ctx.userId, orgId, role: ctx.scope.role, canManage: true, isAdmin: isAdminRole(ctx.scope.role), scope: ctx.scope.scope }, linkPartieIds) : []
+  const partiesALier = linkPartieIds.length ? await partiesRattachables({ userId: user.id, orgId, role, canManage: true, isAdmin: isAdminRole(role), scope }, linkPartieIds) : []
   const tier = await prisma.$transaction(async tx => {
     const created = await tx.tier.create({ data: { rootOrganizationId: rootId, nom, lei, pays, aliases } })
     await tx.tierOrganization.create({ data: { tierId: created.id, organizationId: orgId } })
@@ -128,6 +111,6 @@ export async function POST(req: NextRequest) {
     if (partiesALier.length) await tx.partiePrenante.updateMany({ where: { id: { in: partiesALier }, tierId: null }, data: { tierId: created.id } })
     return created
   })
-  await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: ctx.userId, userRole: ctx.scope.role, organizationId: orgId, ip: getClientIp(req), details: { scope: 'tier-registry', action: 'create', tierId: tier.id, nom, linked: linkArrangementIds.length, linkedParties: partiesALier.length } })
+  await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: user.id, userRole: role, organizationId: orgId, ip: getClientIp(req), details: { scope: 'tier-registry', action: 'create', tierId: tier.id, nom, linked: linkArrangementIds.length, linkedParties: partiesALier.length } })
   return NextResponse.json({ id: tier.id, nom, lei, pays }, { status: 201 })
-}
+})

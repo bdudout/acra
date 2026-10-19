@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react'
 import { Check, X, Bot } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/context'
+import { apiErrorMessage } from '@/lib/api-error'
 import { METHOD_META, type RiskMethod } from '@/lib/methodes'
 
 interface Payload {
@@ -57,7 +58,7 @@ export default function McpProposalsQueue() {
     if (res && res.ok) { setItems(prev => prev.filter(p => p.id !== id)); return }
     // Refus du serveur (droits du relecteur, module désactivé, code déjà pris…) : motif affiché sur la carte.
     const motif = res ? ((await res.json().catch(() => ({}))) as { error?: string }).error : undefined
-    setErreurs(prev => ({ ...prev, [id]: `${m.refusServeur} : ${motif ?? '—'}` }))
+    setErreurs(prev => ({ ...prev, [id]: `${m.refusServeur} : ${apiErrorMessage(motif, t, '—')}` }))
   }
 
   const jour = (d: string) => new Date(d).toLocaleString(locale)

@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server'
 import { APP_VERSION, GITHUB_REPO } from '@/lib/app-version'
 import { describeVersion } from '@/lib/version-check'
 import { readUpdateAgent } from '@/lib/update-request.server'
+import { isHaProfile } from '@/lib/update-request'
 import { snapshotImpacts, failedDbRetentionDays } from '@/lib/snapshot-impact.server'
 import { requireInstanceAdmin } from '@/lib/route-guard.server'
 
@@ -71,5 +72,7 @@ export async function GET() {
     reachable,
     repo: GITHUB_REPO,
     deployConfigured: Boolean(process.env.GITHUB_DEPLOY_TOKEN),
+    // Profil multi-instance (lot H1.4) : l'interface affiche la procédure de mise à jour progressive au lieu du bouton.
+    haProfile: isHaProfile(process.env),
   })
 }
