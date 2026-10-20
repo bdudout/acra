@@ -222,6 +222,20 @@ Une session restée « en cours » empêche les déclenchements suivants (consta
 de l'outil Bash), aucune attente d'une réponse de l'utilisateur, pas de commande
 en arrière-plan laissée en suspens en fin de run, et **toujours** terminer par le
 rapport de l'étape 7 — même partiel (« run interrompu à l'étape N : raison »).
+
+**Garde de durée (2 h max).** Au tout début du run, noter l'heure :
+`date +%s > "${TMPDIR:-/tmp}/acra-recette/debut-run"`. Avant chaque scénario et avant
+chaque étape longue, calculer le temps écoulé
+(`echo $(( ($(date +%s) - $(cat "${TMPDIR:-/tmp}/acra-recette/debut-run")) / 60 ))` min) :
+- **≥ 90 min** : ne pas commencer de nouveau scénario ; finir le scénario en cours au
+  plus court.
+- **≥ 110 min** : arrêter tout, écrire le journal et la liste d'améliorations avec ce
+  qui est acquis, nettoyer (étape 8), puis le rapport (« run écourté par la garde de
+  durée à l'étape N »).
+- Chaque appel Bash porte un `timeout` explicite (≤ 600000) ; une commande qui
+  peut attendre un service (docker, prisma, curl, node) est bornée (`--max-time`
+  pour curl, fonction `borne` de `preparer-env.sh` sinon). Un outil du navigateur qui
+  ne répond pas deux fois de suite → variante B pour le reste du run.
 - Aucun fichier hors `.acra-test-memory/` ne doit être modifié — vérifier avec
   `git status --short` (seuls les fichiers non suivis préexistants sont tolérés).
 
