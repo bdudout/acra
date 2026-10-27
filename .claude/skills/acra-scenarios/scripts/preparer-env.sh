@@ -19,22 +19,26 @@ mkdir -p "$RUN"
 cd "$REPO" || { echo "ECHEC etape=repo"; exit 1; }
 
 echec() { echo "ECHEC etape=$1 ${2:-}"; exit 1; }
+# Borne de durée portable (pas de `timeout` sur macOS) : tue la commande après N secondes.
+# Indispensable : un `docker …` peut attendre indéfiniment quand Docker Desktop est à moitié
+# démarré, ce qui laisse la session planifiée « en cours » et bloque les runs suivants (20/10/2026).
+borne() { local s="$1"; shift; perl -e 'alarm shift; exec @ARGV or exit 127' "$s" "$@"; }
 
 # 1. Docker Desktop
-if ! docker info >/dev/null 2>&1; then
+if ! borne 15 docker info >/dev/null 2>&1; then
   echo "ETAT docker=demarrage"
   open -ga Docker 2>/dev/null || echec docker "Docker Desktop introuvable"
-  for _ in $(seq 1 60); do docker info >/dev/null 2>&1 && break; sleep 3; done
-  docker info >/dev/null 2>&1 || echec docker "pas prêt après 3 min"
+  for _ in $(seq 1 60); do borne 10 docker info >/dev/null 2>&1 && break; sleep 3; done
+  borne 15 docker info >/dev/null 2>&1 || echec docker "pas prêt après 3 min"
 fi
 echo "ETAT docker=ok"
 
 # 2. Base Postgres seule (jamais `docker compose up` complet : reconstruit toutes les images)
-docker start ebios_db >/dev/null 2>&1 || docker compose up -d db >/dev/null 2>&1 || echec db "conteneur ebios_db"
+borne 60 docker start ebios_db >/dev/null 2>&1 || borne 120 docker compose up -d db >/dev/null 2>&1 || echec db "conteneur ebios_db"
 for _ in $(seq 1 40); do
-  [ "$(docker inspect -f '{{.State.Health.Status}}' ebios_db 2>/dev/null)" = "healthy" ] && break; sleep 2
+  [ "$(borne 10 docker inspect -f '{{.State.Health.Status}}' ebios_db 2>/dev/null)" = "healthy" ] && break; sleep 2
 done
-[ "$(docker inspect -f '{{.State.Health.Status}}' ebios_db 2>/dev/null)" = "healthy" ] || echec db "non sain"
+[ "$(borne 10 docker inspect -f '{{.State.Health.Status}}' ebios_db 2>/dev/null)" = "healthy" ] || echec db "non sain"
 echo "ETAT db=ok"
 
 # 3. Environnement (sans rien afficher) : base sur localhost
@@ -43,22 +47,22 @@ export DATABASE_URL="${DATABASE_URL/@db:5432/@localhost:5432}"
 export NEXTAUTH_URL="http://localhost:$PORT" AUTH_URL="http://localhost:$PORT"
 
 # 4. Migrations + client Prisma (le client est régénéré si le schéma a changé)
-npx prisma migrate deploy >"$RUN/migrate.log" 2>&1 || echec migrations "voir $RUN/migrate.log"
+borne 180 npx prisma migrate deploy </dev/null >"$RUN/migrate.log" 2>&1 || echec migrations "voir $RUN/migrate.log"
 SUM="$(shasum prisma/schema.prisma | cut -d' ' -f1)"
 SCHEMA_CHANGE=0
 if [ "$(cat "$RUN/schema.sha" 2>/dev/null)" != "$SUM" ]; then
-  npx prisma generate >/dev/null 2>&1 || echec prisma-generate
+  borne 240 npx prisma generate </dev/null >/dev/null 2>&1 || echec prisma-generate
   echo "$SUM" > "$RUN/schema.sha"; SCHEMA_CHANGE=1
 fi
 echo "ETAT migrations=ok schema_regenere=$SCHEMA_CHANGE"
 
 # 5. Serveur de dev :3005 (redémarré seulement s'il a été lancé par ce script et que le client a changé)
-EN_ECOUTE="$(lsof -nP -iTCP:$PORT -sTCP:LISTEN -t 2>/dev/null | head -1)"
+EN_ECOUTE="$(borne 10 lsof -nP -iTCP:$PORT -sTCP:LISTEN -t 2>/dev/null | head -1)"
 if [ -n "$EN_ECOUTE" ] && [ "$SCHEMA_CHANGE" = 1 ] && [ "$(cat "$RUN/dev-3005.pid" 2>/dev/null)" = "$EN_ECOUTE" ]; then
   kill "$EN_ECOUTE" 2>/dev/null; sleep 3; EN_ECOUTE=""
 fi
 if [ -z "$EN_ECOUTE" ]; then
-  nohup npx next dev -p $PORT >"$LOG" 2>&1 &
+  nohup npx next dev -p $PORT </dev/null >"$LOG" 2>&1 &
   echo $! > "$RUN/dev-3005.pid"
   echo "ETAT serveur=demarrage"
 else
@@ -76,7 +80,7 @@ echo "ETAT serveur=ok"
 
 # 6. Comptes de recette (mot de passe commun du fichier + SUPER_ADMIN de recette)
 [ -f "$MEM/recette-roles.json" ] || echec comptes "recette-roles.json absent"
-node "$REPO/.claude/skills/acra-scenarios/scripts/comptes-recette.mjs" "$MEM/recette-roles.json" >"$RUN/comptes.log" 2>&1 \
+borne 90 node "$REPO/.claude/skills/acra-scenarios/scripts/comptes-recette.mjs" "$MEM/recette-roles.json" >"$RUN/comptes.log" 2>&1 \
   || echec comptes "voir $RUN/comptes.log"
 echo "ETAT comptes=ok ($(grep -c '^✓' "$RUN/comptes.log"))"
 
