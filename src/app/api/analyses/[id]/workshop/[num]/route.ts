@@ -1,6 +1,8 @@
 import { missingExclusionJustifications } from '@/lib/conformite'
 import { NextResponse } from 'next/server'
+import { randomUUID } from 'node:crypto'
 import { dedupeQualificationRuleIds } from '@/lib/qualification-risks'
+import { planRisquesA5, remapRisqueIdMesure } from '@/lib/atelier5-risques-save'
 import { prisma } from '@/lib/prisma'
 import { withAccess, type AccessContext } from '@/lib/with-access.server'
 import { revisionField, parseIfMatch } from '@/lib/atelier-revision'
@@ -30,7 +32,7 @@ import { sanitizeTierLinks } from '@/lib/tier-registry.server'
  *  - A2 : delete-all + createMany for SourceRisque
  *  - A3 : delete-all + createMany for PartiePrenante + ScenarioStrategique
  *  - A4 : delete-all + createMany for ScenarioOperationnel
- *  - A5 : delete-all + createMany for Risque + Mesure
+ *  - A5 : upsert Risque (ids stables, #279) + delete-all/createMany for Mesure
  *
  * UI-only fields (labels, computed names) are stripped before DB writes via
  * destructuring to avoid Prisma "Unknown argument" errors.
@@ -187,22 +189,25 @@ export const PUT = withAccess(access, async (req, ctx) => {
       }
 
       case 5: {
-        // A5 : risques + mesures en une seule transaction atomique
+        // A5 : risques + mesures en une seule transaction atomique. Les risques gardent
+        // leur id (mise à jour en place) pour ne pas rendre orphelins mesures, dérogations
+        // et liens de plan d'action (issue #279) ; cf. lib/atelier5-risques-save.
+        // Règle de qualification unique par analyse : dédoublonnée pour ne
+        // jamais faire échouer la sauvegarde sur la contrainte unique.
+        const risquesIn = dedupeQualificationRuleIds((Array.isArray(body.risques) ? body.risques : []) as Record<string, unknown>[])
+        const idsIn = risquesIn.map(r => r.id).filter((id): id is string => typeof id === 'string' && id !== '')
+        const connusRows = idsIn.length
+          ? await prisma.risque.findMany({ where: { id: { in: idsIn } }, select: { id: true, analyseId: true } })
+          : []
+        const plan = planRisquesA5(risquesIn, {
+          owned:   new Set(connusRows.filter(r => r.analyseId === analyseId).map(r => r.id)),
+          foreign: new Set(connusRows.filter(r => r.analyseId !== analyseId).map(r => r.id)),
+        }, randomUUID)
         await prisma.$transaction([
-          prisma.risque.deleteMany({ where: { analyseId } }),
-          ...(body.risques?.length
-            ? [prisma.risque.createMany({
-                // Règle de qualification unique par analyse : dédoublonnée pour ne
-                // jamais faire échouer la sauvegarde sur la contrainte unique.
-                data: dedupeQualificationRuleIds(body.risques as any[]).map((r: any) => {
-                  const {
-                    id: _id, analyseId: _aid, analyse: _rel,
-                    createdAt: _ca, updatedAt: _ua, scenarioOpNom: _son,
-                    ...rest
-                  } = r
-                  return { ...rest, analyseId }
-                }),
-              })]
+          prisma.risque.deleteMany({ where: { analyseId, id: { notIn: plan.keptIds } } }),
+          ...plan.toUpdate.map(u => prisma.risque.update({ where: { id: u.id, analyseId }, data: u.data as any })),
+          ...(plan.toCreate.length
+            ? [prisma.risque.createMany({ data: plan.toCreate.map(r => ({ ...r, analyseId }) as any) })]
             : []),
           prisma.mesure.deleteMany({ where: { analyseId } }),
           ...(body.mesures?.length
@@ -219,7 +224,7 @@ export const PUT = withAccess(access, async (req, ctx) => {
                     responsable: m.responsable != null ? String(m.responsable).slice(0, 200) : undefined,
                     entite:      m.entite      != null ? String(m.entite).trim().slice(0, 100) : undefined,
                     echeance:    m.echeance             ? new Date(m.echeance) : undefined,
-                    risqueId:    m.risqueId    != null ? String(m.risqueId) : undefined,
+                    risqueId:    remapRisqueIdMesure(m.risqueId, plan),
                     cout:        m.cout        != null ? String(m.cout).slice(0, 100) : undefined,
                     efficacite:  m.efficacite  != null ? Number(m.efficacite) : undefined,
                     categorieEbios: normalizeCategorieMesure(m.categorieEbios),
