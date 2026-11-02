@@ -7,13 +7,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 import RevuePeriodiqueChamp from '@/components/RevuePeriodiqueChamp'
+import PointsAccesUsage, { type PointAcces } from '@/components/PointsAccesUsage'
 import EvaluationUsagePanel from '@/components/EvaluationUsagePanel'
 import { TYPES_SERVICE_TIC } from '@/lib/registre-tic'
 
 type NiveauEval = { menace: number; zone: string } | null
 // Évaluation d'un usage (lot T1) : statut, menace et zone actuelles / cibles, prochaine réévaluation.
 type EvalResume = { statut: string; actuelle: NiveauEval; cible: NiveauEval; prochaine: string | null } | null
-type Usage = { id: string; useCase: string; processusNom: string | null; contractServiceId: string | null; criticite: string | null; exposeInternet?: boolean | null; perimetrePci?: boolean | null; avecSi?: boolean | null; interconnexion?: string | null; criticiteEcart: boolean; criticiteContrat: string | null; coverage: 'CONFIRMED' | 'UNCONFIRMED'; evaluation?: EvalResume }
+type Usage = { id: string; useCase: string; processusNom: string | null; contractServiceId: string | null; criticite: string | null; exposeInternet?: boolean | null; perimetrePci?: boolean | null; avecSi?: boolean | null; interconnexion?: string | null; pointsAcces?: PointAcces[]; criticiteEcart: boolean; criticiteContrat: string | null; coverage: 'CONFIRMED' | 'UNCONFIRMED'; evaluation?: EvalResume }
 type Service = { id: string; nom: string; typeService: string; actif: boolean; synthese?: { menace: number; zone: string; evalues: number } | null; coveredBy: { arrangementId: string; reference: string; contractServiceId: string }[]; usages: Usage[] }
 type Detail = {
   orgId: string; canManage: boolean; isAdmin: boolean
@@ -66,6 +67,12 @@ export default function TierDetailPanel({ tierId, onChange }: { tierId: string; 
   useEffect(() => { void load() }, [load])
 
   if (!detail) return null
+  // Concentration : pour chaque usage, nombre d'AUTRES usages de ce tiers qui déclarent le même hôte.
+  const usagesParHote = new Map<string, Set<string>>()
+  for (const sv of detail.services) for (const u of sv.usages) for (const pa of u.pointsAcces ?? []) {
+    const set = usagesParHote.get(pa.hote) ?? new Set<string>(); set.add(u.id); usagesParHote.set(pa.hote, set)
+  }
+  const hotesPartages = (usageId: string) => Object.fromEntries([...usagesParHote].map(([h, ids]) => [h, ids.size - (ids.has(usageId) ? 1 : 0)]))
   const errorText = (code: string, extra?: { blocked?: { usages: number }[] }) => {
     if (code === 'date_invalide') return t.revues.erreur
     if (code === 'has_usages') return c.errors.has_usages.replace('{n}', String((extra?.blocked ?? []).reduce((n, b) => n + b.usages, 0)))
@@ -153,6 +160,7 @@ export default function TierDetailPanel({ tierId, onChange }: { tierId: string; 
                         : <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-500 dark:bg-gray-800">{t.tierEval.nonEvalue}</span>}
                       <button type="button" className="btn-secondary px-2 py-0.5 text-xs" aria-expanded={evalOuverte === u.id} onClick={() => setEvalOuverte(evalOuverte === u.id ? null : u.id)}>{evalOuverte === u.id ? t.tierEval.masquer : t.tierEval.evaluer}</button>
                       {detail.canManage && <button type="button" className="btn-secondary px-2 py-0.5 text-xs" disabled={busy} aria-label={c.deleteUsage.replace('{name}', u.useCase)} onClick={() => void run(() => send(`/api/tier-registry/usages/${u.id}`, 'DELETE'))}>✕</button>}
+                      <PointsAccesUsage usageId={u.id} usageNom={u.useCase} points={u.pointsAcces ?? []} canManage={detail.canManage} hotesPartages={hotesPartages(u.id)} onChange={() => void load()} />
                       {evalOuverte === u.id && <div className="basis-full"><EvaluationUsagePanel usageId={u.id} usageNom={u.useCase} onChange={() => { void load(); onChange?.() }} /></div>}
                     </li>
                   ))}

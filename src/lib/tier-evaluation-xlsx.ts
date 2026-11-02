@@ -11,7 +11,7 @@ export type LangueExport = 'fr' | 'en' | 'de' | 'es' | 'it'
 export interface LigneExportTiers {
   tiers: string; offre: string; organisation: string; usage: string; processus: string | null; criticite: string | null; statut: string | null
   actuelle: { menace: number; zone: string } | null; cible: { menace: number; zone: string } | null; prochaine: string | null; clauses: string[]
-  exposeInternet?: boolean | null; perimetrePci?: boolean | null; avecSi?: boolean | null; interconnexion?: string | null
+  exposeInternet?: boolean | null; perimetrePci?: boolean | null; avecSi?: boolean | null; interconnexion?: string | null; pointsAcces?: string[]
 }
 const FEUILLE: Record<LangueExport, string> = { fr: 'Évaluation des tiers', en: 'Third-party assessment', de: 'Bewertung der Drittanbieter', es: 'Evaluación de terceros', it: 'Valutazione dei terzi' }
 
@@ -28,13 +28,13 @@ export async function buildTierEvaluationWorkbook(lignes: LigneExportTiers[], la
   const inter = d.interconnexionLabels as Record<string, string>
   const wb = new ExcelJS.Workbook()
   const ws = wb.addWorksheet(FEUILLE[lang])
-  ws.addRow([e.colTiers, e.colOffre, e.colOrganisation, e.colUsage, e.colProcessus, t.tierDetail.criticality, d.expositionColonne, d.pci, d.si, d.interconnexion,
+  ws.addRow([e.colTiers, e.colOffre, e.colOrganisation, e.colUsage, e.colProcessus, t.tierDetail.criticality, d.expositionColonne, d.pci, d.si, d.interconnexion, t.pointsAcces.titre,
     e.colStatut, `${e.menace} — ${e.actuelle}`, `${e.colZone} — ${e.actuelle}`, `${e.menace} — ${e.cible}`, `${e.colZone} — ${e.cible}`, e.colProchaine, e.clauses].map(v => S(String(v))))
   ws.getRow(1).font = { bold: true }
   for (const l of lignes) {
     ws.addRow([
       S(l.tiers), S(l.offre), S(l.organisation), S(l.usage), S(l.processus ?? ''), l.criticite ? crit[l.criticite] ?? l.criticite : '',
-      oui(l.exposeInternet, d.expositionLabels), oui(l.perimetrePci, d.pciLabels), oui(l.avecSi, d.siLabels), l.interconnexion ? inter[l.interconnexion] ?? l.interconnexion : '',
+      oui(l.exposeInternet, d.expositionLabels), oui(l.perimetrePci, d.pciLabels), oui(l.avecSi, d.siLabels), l.interconnexion ? inter[l.interconnexion] ?? l.interconnexion : '', S((l.pointsAcces ?? []).join(' ; ')),
       l.statut ? (e.statuts as Record<string, string>)[l.statut] ?? l.statut : e.nonEvalue,
       l.actuelle ? menace(l.actuelle.menace) : '', l.actuelle ? zone(l.actuelle.zone) : '', l.cible ? menace(l.cible.menace) : '', l.cible ? zone(l.cible.zone) : '',
       l.prochaine ?? '', S(l.clauses.map(k => clauses[k] ?? k).join(' ; ')),

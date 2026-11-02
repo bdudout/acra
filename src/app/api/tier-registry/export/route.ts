@@ -26,7 +26,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const echelles = resolveEchelles((await getOrgConfig(ctx.orgId)).echellesEcosysteme as Partial<EchellesEcosysteme> | null)
   const usages = orgs.length ? await prisma.tierServiceUsage.findMany({
     where: { organizationId: { in: orgs.map(o => o.id) } },
-    select: { organizationId: true, useCase: true, criticite: true, exposeInternet: true, perimetrePci: true, avecSi: true, interconnexion: true, processus: { select: { nom: true } }, tierService: { select: { nom: true, tier: { select: { nom: true } } } }, evaluation: { select: { statut: true, actuelle: true, cible: true, clauses: true, valideLe: true } } },
+    select: { organizationId: true, useCase: true, criticite: true, exposeInternet: true, perimetrePci: true, avecSi: true, interconnexion: true, pointsAcces: { select: { adresse: true }, orderBy: { createdAt: 'asc' } }, processus: { select: { nom: true } }, tierService: { select: { nom: true, tier: { select: { nom: true } } } }, evaluation: { select: { statut: true, actuelle: true, cible: true, clauses: true, valideLe: true } } },
     orderBy: [{ organizationId: 'asc' }, { createdAt: 'asc' }], take: 5000,
   }) : []
   const lignes = usages.map(u => {
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const brief = (n: typeof c.actuelle) => (n ? { menace: n.menace, zone: n.zone } : null)
     return {
       tiers: u.tierService.tier.nom, offre: u.tierService.nom, organisation: nomOrg.get(u.organizationId) ?? '', usage: u.useCase, processus: u.processus?.nom ?? null, criticite: u.criticite,
-      exposeInternet: u.exposeInternet, perimetrePci: u.perimetrePci, avecSi: u.avecSi, interconnexion: u.interconnexion,
+      exposeInternet: u.exposeInternet, perimetrePci: u.perimetrePci, avecSi: u.avecSi, interconnexion: u.interconnexion, pointsAcces: u.pointsAcces.map(pa => pa.adresse),
       statut: u.evaluation?.statut ?? null, actuelle: brief(c.actuelle), cible: brief(c.cible), prochaine: prochaineEvaluation(u.evaluation?.valideLe ?? null)?.toISOString().slice(0, 10) ?? null, clauses: saisie?.clauses ?? [],
     }
   })

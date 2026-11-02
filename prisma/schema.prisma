@@ -1126,6 +1126,7 @@ model TierServiceUsage {
   avecSi            Boolean?
   // Mode d'interconnexion au SI (si avec SI) : LIGNE_SPECIALISEE | INTERNET ; null = non renseigné (cf. lib/tier-offers.ts).
   interconnexion    String?
+  pointsAcces       TierUsageEndpoint[]
   evaluation        EvaluationUsageTiers?
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
@@ -1133,6 +1134,26 @@ model TierServiceUsage {
   @@index([organizationId, tierServiceId])
   @@index([processusId])
   @@index([contractServiceId])
+}
+
+// Point d'accès d'un usage de service TIC (URL, hôte, type, environnement, authentification) — cartographie
+// déclarative : ACRA ne contacte jamais ces adresses. `organizationId` = celle de l'usage (isolation). cf. lib/tier-endpoints.ts
+model TierUsageEndpoint {
+  id               String           @id @default(cuid())
+  usageId          String
+  usage            TierServiceUsage @relation(fields: [usageId], references: [id], onDelete: Cascade)
+  organizationId   String
+  adresse          String
+  hote             String
+  type             String // WEB | API | SFTP | TENANT_SAAS | VPN | AUTRE
+  environnement    String? // PRODUCTION | RECETTE | AUTRE
+  authentification String? // SSO | MFA | LOCALE | CERTIFICAT | CLE_API | AUCUNE
+  commentaire      String?          @db.Text
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([usageId])
+  @@index([organizationId, hote])
 }
 
 // ─── Socle GRC — M2 : plan d'action / traitement d'un RiskItem ───────────────
