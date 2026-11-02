@@ -1118,8 +1118,14 @@ model TierServiceUsage {
   useCase           String
   description       String?               @db.Text
   criticite         String? // CRITIQUE | IMPORTANTE | NON_CRITIQUE — facultative (cf. lib/tier-offers.ts)
-  // Exposition à Internet de l'usage : true / false / null (non renseignée).
+  // Exposition de l'usage : true = exposé sur Internet, false = intranet (non exposé), null = non renseignée.
   exposeInternet    Boolean?
+  // Périmètre PCI DSS (données de cartes de paiement) : true = PCI, false = non PCI, null = non renseigné.
+  perimetrePci      Boolean?
+  // Raccordement au SI de l'entité : true = avec SI (échanges de données ou raccordement), false = sans SI, null = non renseigné.
+  avecSi            Boolean?
+  // Mode d'interconnexion au SI (si avec SI) : LIGNE_SPECIALISEE | INTERNET ; null = non renseigné (cf. lib/tier-offers.ts).
+  interconnexion    String?
   evaluation        EvaluationUsageTiers?
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt

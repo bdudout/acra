@@ -54,6 +54,44 @@ export function cleanExpositionInternet(raw: unknown): { ok: true; value: boolea
   return typeof raw === 'boolean' ? { ok: true, value: raw } : { ok: false, error: 'exposition_invalide' }
 }
 
+// ─── Qualification technique d'un usage : PCI, raccordement au SI, interconnexion ───────────────────────────────────────
+export const INTERCONNEXIONS = ['LIGNE_SPECIALISEE', 'INTERNET'] as const
+export type Interconnexion = typeof INTERCONNEXIONS[number]
+export type QualificationUsage = { perimetrePci?: boolean | null; avecSi?: boolean | null; interconnexion?: Interconnexion | null }
+type ErreurQualification = 'pci_invalide' | 'si_invalide' | 'interconnexion_invalide' | 'interconnexion_sans_si'
+
+const booleenFacultatif = (raw: unknown): boolean | null | undefined =>
+  raw === null || raw === '' ? null : typeof raw === 'boolean' ? raw : undefined
+
+/**
+ * Lit les champs PRÉSENTS (mise à jour partielle) ; vide = non renseigné ; valeur inconnue refusée.
+ * Cohérence : une interconnexion (LS ou Internet) implique « avec SI » ; « sans SI » efface l'interconnexion ;
+ * les deux contradictoires dans la même demande sont refusés.
+ */
+export function lireQualificationUsage(body: Record<string, unknown>): { ok: true; data: QualificationUsage } | { ok: false; error: ErreurQualification } {
+  const data: QualificationUsage = {}
+  if ('perimetrePci' in body) {
+    const v = booleenFacultatif(body.perimetrePci); if (v === undefined) return { ok: false, error: 'pci_invalide' }
+    data.perimetrePci = v
+  }
+  if ('avecSi' in body) {
+    const v = booleenFacultatif(body.avecSi); if (v === undefined) return { ok: false, error: 'si_invalide' }
+    data.avecSi = v
+  }
+  if ('interconnexion' in body) {
+    const raw = body.interconnexion
+    if (raw === null || raw === '') data.interconnexion = null
+    else if ((INTERCONNEXIONS as readonly unknown[]).includes(raw)) data.interconnexion = raw as Interconnexion
+    else return { ok: false, error: 'interconnexion_invalide' }
+  }
+  if (data.interconnexion) {
+    if (data.avecSi === false) return { ok: false, error: 'interconnexion_sans_si' }
+    data.avecSi = true
+  }
+  if (data.avecSi === false) data.interconnexion = null
+  return { ok: true, data }
+}
+
 /** Vrai si l'usage est plus critique que le contrat qui le couvre : le contrat est sous-qualifié (à revoir), sans jamais le modifier seul. */
 export function usageCriticalityGap(usage: NiveauCriticite | null, contract: NiveauCriticite | null): boolean {
   if (!usage || !contract) return false

@@ -13,7 +13,7 @@ import { TYPES_SERVICE_TIC } from '@/lib/registre-tic'
 type NiveauEval = { menace: number; zone: string } | null
 // Évaluation d'un usage (lot T1) : statut, menace et zone actuelles / cibles, prochaine réévaluation.
 type EvalResume = { statut: string; actuelle: NiveauEval; cible: NiveauEval; prochaine: string | null } | null
-type Usage = { id: string; useCase: string; processusNom: string | null; contractServiceId: string | null; criticite: string | null; exposeInternet?: boolean | null; criticiteEcart: boolean; criticiteContrat: string | null; coverage: 'CONFIRMED' | 'UNCONFIRMED'; evaluation?: EvalResume }
+type Usage = { id: string; useCase: string; processusNom: string | null; contractServiceId: string | null; criticite: string | null; exposeInternet?: boolean | null; perimetrePci?: boolean | null; avecSi?: boolean | null; interconnexion?: string | null; criticiteEcart: boolean; criticiteContrat: string | null; coverage: 'CONFIRMED' | 'UNCONFIRMED'; evaluation?: EvalResume }
 type Service = { id: string; nom: string; typeService: string; actif: boolean; synthese?: { menace: number; zone: string; evalues: number } | null; coveredBy: { arrangementId: string; reference: string; contractServiceId: string }[]; usages: Usage[] }
 type Detail = {
   orgId: string; canManage: boolean; isAdmin: boolean
@@ -27,6 +27,10 @@ type Detail = {
 const send = (url: string, method: string, body?: object) => fetch(url, { method, headers: { 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) })
 
 /** `onChange` : prévient la liste parente (niveau, concentration) après une évaluation enregistrée (recette n° 18). */
+// Qualification d'un usage à la création : criticité, exposition (Internet / intranet), PCI, SI, interconnexion (LS / Internet).
+type FormUsage = { useCase: string; processusId: string; contractServiceId: string; criticite: string; exposition: string; pci: string; si: string; interconnexion: string }
+const FORM_USAGE_VIDE: FormUsage = { useCase: '', processusId: '', contractServiceId: '', criticite: '', exposition: '', pci: '', si: '', interconnexion: '' }
+
 export default function TierDetailPanel({ tierId, onChange }: { tierId: string; onChange?: () => void }) {
   const { t, locale } = useTranslation()
   const c = t.tierDetail
@@ -45,7 +49,7 @@ export default function TierDetailPanel({ tierId, onChange }: { tierId: string; 
   const [revue, setRevue] = useState('')
   const [evalOuverte, setEvalOuverte] = useState<string | null>(null)
   const [revueOk, setRevueOk] = useState(false)
-  const [usageForms, setUsageForms] = useState<Record<string, { useCase: string; processusId: string; contractServiceId: string; criticite: string; exposition: string }>>({})
+  const [usageForms, setUsageForms] = useState<Record<string, FormUsage>>({})
 
   const load = useCallback(async () => {
     try {
@@ -100,7 +104,7 @@ export default function TierDetailPanel({ tierId, onChange }: { tierId: string; 
       {detail.services.length === 0 && <p className="text-sm text-gray-600 dark:text-gray-300">{c.noOffers}</p>}
       <ul className="space-y-3">
         {detail.services.map(s => {
-          const form = usageForms[s.id] ?? { useCase: '', processusId: '', contractServiceId: '', criticite: '', exposition: '' }
+          const form = usageForms[s.id] ?? FORM_USAGE_VIDE
           const setForm = (patch: Partial<typeof form>) => setUsageForms(f => ({ ...f, [s.id]: { ...form, ...patch } }))
           const choices = detail.contractServices.filter(cs => cs.serviceId === s.id)
           return (
@@ -125,6 +129,24 @@ export default function TierDetailPanel({ tierId, onChange }: { tierId: string; 
                             <option value="">{c.expositionNone}</option><option value="OUI">{c.expositionLabels.OUI}</option><option value="NON">{c.expositionLabels.NON}</option>
                           </select>
                         : u.exposeInternet === true && <span className="rounded-full bg-orange-100 px-2 py-0.5 text-orange-900 dark:bg-orange-900/40 dark:text-orange-100">{c.expositionLabels.OUI}</span>}
+                      {/* PCI / non PCI, avec / sans SI, interconnexion LS / Internet (mise à jour partielle ; « sans SI » efface l'interconnexion). */}
+                      {detail.canManage
+                        ? <>
+                            <select aria-label={c.pciOf.replace('{name}', u.useCase)} className="input py-0.5 text-xs" value={expoVal(u.perimetrePci)} disabled={busy} onChange={e => void run(() => send(`/api/tier-registry/usages/${u.id}`, 'PATCH', { perimetrePci: expoBody(e.target.value) }))}>
+                              <option value="">{c.pciNone}</option><option value="OUI">{c.pciLabels.OUI}</option><option value="NON">{c.pciLabels.NON}</option>
+                            </select>
+                            <select aria-label={c.siOf.replace('{name}', u.useCase)} className="input py-0.5 text-xs" value={expoVal(u.avecSi)} disabled={busy} onChange={e => void run(() => send(`/api/tier-registry/usages/${u.id}`, 'PATCH', { avecSi: expoBody(e.target.value) }))}>
+                              <option value="">{c.siNone}</option><option value="OUI">{c.siLabels.OUI}</option><option value="NON">{c.siLabels.NON}</option>
+                            </select>
+                            <select aria-label={c.interconnexionOf.replace('{name}', u.useCase)} className="input py-0.5 text-xs" value={u.interconnexion ?? ''} disabled={busy || u.avecSi === false} onChange={e => void run(() => send(`/api/tier-registry/usages/${u.id}`, 'PATCH', { interconnexion: e.target.value }))}>
+                              <option value="">{c.interconnexionNone}</option>{Object.entries(c.interconnexionLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                            </select>
+                          </>
+                        : <>
+                            {u.perimetrePci != null && <span className={`rounded-full px-2 py-0.5 ${u.perimetrePci ? 'bg-purple-100 text-purple-900 dark:bg-purple-900/40 dark:text-purple-100' : 'bg-gray-100 dark:bg-gray-800'}`}>{u.perimetrePci ? c.pciLabels.OUI : c.pciLabels.NON}</span>}
+                            {u.avecSi != null && <span className="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-gray-800">{u.avecSi ? c.siLabels.OUI : c.siLabels.NON}</span>}
+                            {u.interconnexion && <span className="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-gray-800">{c.interconnexionLabels[u.interconnexion as keyof typeof c.interconnexionLabels] ?? u.interconnexion}</span>}
+                          </>}
                       {u.criticiteEcart && <span role="status" className="rounded-full bg-red-100 px-2 py-0.5 text-red-900 dark:bg-red-900/40 dark:text-red-100">{c.criticalityGap.replace('{contract}', c.criticalityLabels[u.criticiteContrat as keyof typeof c.criticalityLabels] ?? String(u.criticiteContrat))}</span>}
                       {u.evaluation?.actuelle
                         ? <span className={`rounded-full px-2 py-0.5 ${ZONE_BADGE[u.evaluation.actuelle.zone]}`}>{niveau(u.evaluation.actuelle)} · {t.tierEval.statuts[u.evaluation.statut as keyof typeof t.tierEval.statuts] ?? u.evaluation.statut}</span>
@@ -137,7 +159,7 @@ export default function TierDetailPanel({ tierId, onChange }: { tierId: string; 
                 </ul>
               )}
               {detail.canManage && s.actif && (
-                <div className="mt-2 grid gap-2 sm:grid-cols-[2fr_1fr_1fr_1fr_auto] sm:items-end">
+                <div className="mt-2 grid gap-2 sm:grid-cols-4 sm:items-end">
                   <label className="text-xs text-gray-700 dark:text-gray-200">{c.useCase}<input aria-label={c.useCase} className="input mt-1 block w-full text-sm" value={form.useCase} maxLength={1000} onChange={e => setForm({ useCase: e.target.value })} /></label>
                   <label className="text-xs text-gray-700 dark:text-gray-200">{c.process}
                     <select aria-label={c.process} className="input mt-1 block w-full text-sm" value={form.processusId} onChange={e => setForm({ processusId: e.target.value })}>
@@ -159,9 +181,24 @@ export default function TierDetailPanel({ tierId, onChange }: { tierId: string; 
                       <option value="">{c.expositionNone}</option><option value="OUI">{c.expositionLabels.OUI}</option><option value="NON">{c.expositionLabels.NON}</option>
                     </select>
                   </label>
+                  <label className="text-xs text-gray-700 dark:text-gray-200">{c.pci}
+                    <select aria-label={c.pci} className="input mt-1 block w-full text-sm" value={form.pci} onChange={e => setForm({ pci: e.target.value })}>
+                      <option value="">{c.pciNone}</option><option value="OUI">{c.pciLabels.OUI}</option><option value="NON">{c.pciLabels.NON}</option>
+                    </select>
+                  </label>
+                  <label className="text-xs text-gray-700 dark:text-gray-200">{c.si}
+                    <select aria-label={c.si} title={c.siAide} className="input mt-1 block w-full text-sm" value={form.si} onChange={e => setForm(e.target.value === 'NON' ? { si: 'NON', interconnexion: '' } : { si: e.target.value })}>
+                      <option value="">{c.siNone}</option><option value="OUI">{c.siLabels.OUI}</option><option value="NON">{c.siLabels.NON}</option>
+                    </select>
+                  </label>
+                  <label className="text-xs text-gray-700 dark:text-gray-200">{c.interconnexion}
+                    <select aria-label={c.interconnexion} className="input mt-1 block w-full text-sm" value={form.interconnexion} disabled={form.si === 'NON'} onChange={e => setForm(e.target.value ? { interconnexion: e.target.value, si: 'OUI' } : { interconnexion: '' })}>
+                      <option value="">{c.interconnexionNone}</option>{Object.entries(c.interconnexionLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    </select>
+                  </label>
                   <button type="button" className="btn-secondary text-sm" disabled={busy || !form.useCase.trim()} onClick={() => void run(async () => {
-                    const res = await send(`/api/tiers/services/${s.id}/usages`, 'POST', { organizationId: detail.orgId, useCase: form.useCase, ...(form.processusId ? { processusId: form.processusId } : {}), ...(form.contractServiceId ? { contractServiceId: form.contractServiceId } : {}), ...(form.criticite ? { criticite: form.criticite } : {}), ...(form.exposition ? { exposeInternet: form.exposition === 'OUI' } : {}) })
-                    if (res.ok) setUsageForms(f => ({ ...f, [s.id]: { useCase: '', processusId: '', contractServiceId: '', criticite: '', exposition: '' } }))
+                    const res = await send(`/api/tiers/services/${s.id}/usages`, 'POST', { organizationId: detail.orgId, useCase: form.useCase, ...(form.processusId ? { processusId: form.processusId } : {}), ...(form.contractServiceId ? { contractServiceId: form.contractServiceId } : {}), ...(form.criticite ? { criticite: form.criticite } : {}), ...(form.exposition ? { exposeInternet: form.exposition === 'OUI' } : {}), ...(form.pci ? { perimetrePci: form.pci === 'OUI' } : {}), ...(form.si ? { avecSi: form.si === 'OUI' } : {}), ...(form.interconnexion ? { interconnexion: form.interconnexion } : {}) })
+                    if (res.ok) setUsageForms(f => ({ ...f, [s.id]: FORM_USAGE_VIDE }))
                     return res
                   })}>{c.addUsage}</button>
                 </div>

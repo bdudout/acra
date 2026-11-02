@@ -50,6 +50,14 @@ describe('usages locaux d’une offre de tiers', () => {
     expect(db.usage.create).not.toHaveBeenCalled()
   })
 
+  it('PCI, raccordement au SI et interconnexion enregistrés à la création ; incohérence refusée', async () => {
+    expect((await POST(request({ ...body, perimetrePci: true, interconnexion: 'INTERNET' }), ctx)).status).toBe(201)
+    expect(db.usage.create).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ perimetrePci: true, avecSi: true, interconnexion: 'INTERNET' }) }))
+    db.usage.create.mockClear()
+    expect((await POST(request({ ...body, avecSi: false, interconnexion: 'LIGNE_SPECIALISEE' }), ctx)).status).toBe(400)
+    expect(db.usage.create).not.toHaveBeenCalled()
+  })
+
   it('conserve un usage sans contrat mais le marque explicitement non couvert', async () => {
     const res = await POST(request({ organizationId: 'sub1', useCase: 'Signature des avenants' }), ctx)
     expect(res.status).toBe(201)

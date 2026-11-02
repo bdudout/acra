@@ -56,3 +56,20 @@ describe('PATCH usage — exposition à Internet (mise à jour partielle)', () =
   })
 })
 
+describe('PATCH usage — PCI, SI, interconnexion', () => {
+  it('qualifie PCI et interconnexion par LS (avec SI implicite)', async () => {
+    const res = await call({ perimetrePci: true, interconnexion: 'LIGNE_SPECIALISEE' })
+    expect(res.status).toBe(200)
+    expect(m.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { perimetrePci: true, interconnexion: 'LIGNE_SPECIALISEE', avecSi: true } })
+  })
+  it('sans SI efface l’interconnexion', async () => {
+    await call({ avecSi: false })
+    expect(m.update.mock.calls[0][0].data).toEqual({ avecSi: false, interconnexion: null })
+  })
+  it('valeur inconnue ou incohérente : 400, rien écrit', async () => {
+    expect((await call({ interconnexion: 'VPN' })).status).toBe(400)
+    expect((await call({ avecSi: false, interconnexion: 'INTERNET' })).status).toBe(400)
+    expect(m.update).not.toHaveBeenCalled()
+  })
+})
+

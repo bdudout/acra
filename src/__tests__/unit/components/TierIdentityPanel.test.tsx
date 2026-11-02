@@ -14,7 +14,7 @@ const data = {
   active: true, canManage: true, isAdmin: true, orgId: 'fil1', proposals: [{ arrangementId: 'aG', reference: 'CG-7', prestataireNom: 'Hébergeur Groupe', ownerNom: 'Holding' }],
   tiers: [
     { id: 't1', nom: 'Acme', lei: '549300ABCDEFGHIJ1234', pays: 'FR', aliases: [], analysesCount: 2, arrangements: [{ id: 'a1', reference: 'C-1' }], coverage: 'CYBER_AND_TIC', exposeInternet: true, evaluation: { pire: null, concentration: { usagesCritiques: 1, processusCritiques: 0, exposesCritiques: 1 } } },
-    { id: 't2', nom: 'Hébergeur TIC', lei: null, pays: null, aliases: [], analysesCount: 0, arrangements: [{ id: 'a2', reference: 'C-2' }], coverage: 'TIC_ONLY' },
+    { id: 't2', nom: 'Hébergeur TIC', lei: null, pays: null, aliases: [], analysesCount: 0, arrangements: [{ id: 'a2', reference: 'C-2' }], coverage: 'TIC_ONLY', perimetrePci: true },
     { id: 't3', nom: 'Fournisseur cyber', lei: null, pays: null, aliases: [], analysesCount: 1, arrangements: [], coverage: 'CYBER_ONLY' },
   ],
   unlinkedArrangements: [
@@ -187,5 +187,12 @@ describe('TierIdentityPanel — évaluation des usages (lot T2)', () => {
     fireEvent.click(screen.getByLabelText('Exposés à Internet uniquement'))
     expect(screen.queryByText('Hébergeur TIC')).toBeNull()
     expect(screen.getAllByText('Acme').length).toBeGreaterThan(0)
+  })
+  it('filtre « périmètre PCI uniquement »', async () => {
+    render(<TierIdentityPanel sansTitre />)
+    await screen.findByRole('table', { name: 'Entités de tiers' })
+    fireEvent.click(screen.getByLabelText('Périmètre PCI uniquement'))
+    expect(screen.getByText('Hébergeur TIC')).toBeInTheDocument()
+    expect(within(screen.getByRole('table', { name: 'Entités de tiers' })).queryByText('Acme')).toBeNull()
   })
 })

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auditLog, getClientIp } from '@/lib/logger'
-import { cleanUsageCriticality, cleanExpositionInternet } from '@/lib/tier-offers'
+import { cleanUsageCriticality, cleanExpositionInternet, lireQualificationUsage, type QualificationUsage } from '@/lib/tier-offers'
 import { tierContext } from '@/lib/tier-registry.server'
 
 export const dynamic = 'force-dynamic'
@@ -19,7 +19,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ u
 }
 
 /**
- * Qualifie un usage DE L'ORGANISATION ACTIVE (gestionnaires du registre TIC) : criticité et / ou exposition à Internet.
+ * Qualifie un usage DE L'ORGANISATION ACTIVE (gestionnaires du registre TIC) : criticité, exposition (Internet /
+ * intranet), périmètre PCI, raccordement au SI (avec / sans) et interconnexion (LS / Internet).
  * Mise à jour partielle : seuls les champs présents changent ; vide = non renseigné.
  */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ usageId: string }> }) {
@@ -27,7 +28,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ us
   const { ctx } = got
   const { usageId } = await params
   const body = await req.json().catch(() => ({}))
-  const data: { criticite?: string | null; exposeInternet?: boolean | null } = {}
+  const data: { criticite?: string | null; exposeInternet?: boolean | null } & QualificationUsage = {}
   if ('criticite' in body) {
     const crit = cleanUsageCriticality(body.criticite)
     if (!crit.ok) return NextResponse.json({ error: crit.error }, { status: 400 })
@@ -38,6 +39,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ us
     if (!expo.ok) return NextResponse.json({ error: expo.error }, { status: 400 })
     data.exposeInternet = expo.value
   }
+  const qualif = lireQualificationUsage(body)
+  if (!qualif.ok) return NextResponse.json({ error: qualif.error }, { status: 400 })
+  Object.assign(data, qualif.data)
   if (!Object.keys(data).length) return NextResponse.json({ error: 'aucun_champ' }, { status: 400 })
   const usage = await prisma.tierServiceUsage.findUnique({ where: { id: usageId }, select: { id: true, organizationId: true } })
   if (!usage || usage.organizationId !== ctx.orgId) return NextResponse.json({ error: 'not_found' }, { status: 404 })

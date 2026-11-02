@@ -6,6 +6,31 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-11-02 (109) — Claude (session cloud) : qualification des usages de services TIC (PCI, SI, exposition, interconnexion)
+
+Branche `claude/dazzling-edison-qzmwlg` repartie de `main` (99c92f8c) : la précédente a été fusionnée (#276). Le travail
+interrompu le 19/10 (installation et sauvegarde en profil « ha », agents arrêtés par la limite d'usage) est conservé
+**localement** sous l'étiquette `wip/installation-sauvegarde-ha` (non poussée, non vérifiée, base antérieure à #277) —
+à reprendre après la release v1.0.6 (décision du 19/10).
+
+- **Demande** : « identifier les services TIC PCI ou non PCI, avec SI ou sans SI, exposés sur Internet, en intranet,
+  interconnectés via une LS ou via Internet ». Portée : **l'usage** d'une offre par une organisation (`TierServiceUsage`),
+  comme la criticité — le périmètre PCI et le raccordement dépendent de l'entité.
+- Migration `20261102100000_usage_tic_qualification` (ajouts facultatifs : `perimetrePci`, `avecSi`, `interconnexion`
+  LIGNE_SPECIALISEE | INTERNET). Exposition : champ existant `exposeInternet` conservé (vrai = Internet, faux =
+  intranet), libellés « Exposé sur Internet » / « Intranet (non exposé) ».
+- Règles (`lireQualificationUsage`, lib/tier-offers) : mise à jour partielle ; une interconnexion implique « avec SI » ;
+  « sans SI » efface l'interconnexion ; contradiction explicite → 400 `interconnexion_sans_si` ; valeur inconnue refusée.
+- Routes POST `/api/tiers/services/[id]/usages`, PATCH `/api/tier-registry/usages/[usageId]` (journalisé), détail
+  `/api/tier-registry/[id]` ; liste : indicateur `perimetrePci` + filtre « Périmètre PCI uniquement ». Interface :
+  `TierDetailPanel` (sélecteurs par usage + formulaire d'ajout), i18n ×5.
+- **Vérifications** : `tsc` 0 (avec `NODE_OPTIONS=--max-old-space-size=4096`, sinon tas saturé) ; `i18n:check` OK ;
+  vitest tiers/usages/projet360 27 fichiers / 226 tests verts ; cliquet expand/contract 19/19 ; migration appliquée sur
+  PostgreSQL 16 local, `prisma migrate diff` sans dérive ; ESLint 0 erreur (2 avertissements préexistants).
+  **Non fait** : suite complète, build, parcours navigateur ; export du registre / tableaux de bord non enrichis.
+
+---
+
 ## 2026-10-19 (108) — Claude : décisions utilisateur, n° 63/64/51/57/43/53, eIDAS ×4, recette automatisée
 
 Branche `feat/historical-excel-import`. **#276 fusionnée** dans `main` (squash `2a019424` : dazzling-edison + n° 62/56/46/37
