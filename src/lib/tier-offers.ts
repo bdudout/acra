@@ -126,3 +126,28 @@ export function cleanCoverageDetails(raw: unknown, coveredServiceIds: readonly s
   }
   return { ok: true, value: out }
 }
+
+// ─── Synthèse des usages de services TIC (tableau de bord de pilotage) ───────────────────────────────────────────────────
+export type UsageQualifie = { criticite: string | null; exposeInternet: boolean | null; perimetrePci: boolean | null; avecSi: boolean | null; interconnexion: string | null }
+export interface SyntheseUsagesTic {
+  total: number; pci: number; exposesInternet: number; avecSi: number; viaInternet: number; viaLs: number
+  /** Combinaisons à risque : PCI exposé sur Internet ; usage critique ou important interconnecté via Internet. */
+  pciExposes: number; critiquesViaInternet: number
+  /** Usages dont au moins un des quatre axes (PCI, SI, exposition, interconnexion si avec SI) n'est pas renseigné. */
+  nonQualifies: number
+}
+const critiqueOuImportant = (c: string | null) => c === 'CRITIQUE' || c === 'IMPORTANTE'
+export function synthetiserUsagesTic(usages: UsageQualifie[]): SyntheseUsagesTic {
+  const n = (f: (u: UsageQualifie) => boolean) => usages.filter(f).length
+  return {
+    total: usages.length,
+    pci: n(u => u.perimetrePci === true),
+    exposesInternet: n(u => u.exposeInternet === true),
+    avecSi: n(u => u.avecSi === true),
+    viaInternet: n(u => u.interconnexion === 'INTERNET'),
+    viaLs: n(u => u.interconnexion === 'LIGNE_SPECIALISEE'),
+    pciExposes: n(u => u.perimetrePci === true && u.exposeInternet === true),
+    critiquesViaInternet: n(u => critiqueOuImportant(u.criticite) && u.interconnexion === 'INTERNET'),
+    nonQualifies: n(u => u.perimetrePci == null || u.avecSi == null || u.exposeInternet == null || (u.avecSi === true && !u.interconnexion)),
+  }
+}

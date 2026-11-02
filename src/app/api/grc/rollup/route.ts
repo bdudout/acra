@@ -27,6 +27,7 @@ import type { EntiteRef } from '@/lib/entites'
 import { synthetiserAppetit, cleanAppetitConfig, type RiskAppetitLite } from '@/lib/appetit'
 import { evaluerKri, synthetiserKri, type KriSens, type KriStatut } from '@/lib/kri'
 import { classifierIncident, estEvalueDora, synthetiserDora, type DoraCriteres, type DoraClasse } from '@/lib/dora'
+import { synthetiserUsagesTic } from '@/lib/tier-offers'
 import { synthetiserSuiviRegulateur, type ConstatRegulateur } from '@/lib/suivi-regulateur'
 
 export const dynamic = 'force-dynamic'
@@ -105,6 +106,11 @@ export async function GET(req: NextRequest) {
       ? prisma.incident.findMany({ where: orgFilter, select: { organizationId: true, doraCriteres: true } })
       : Promise.resolve([]),
   ])
+
+  // Usages de services TIC (registre TIC) : PCI, raccordement au SI, exposition, interconnexion — comptes seulement.
+  const usagesTic = withReglementaire
+    ? await prisma.tierServiceUsage.findMany({ where: orgFilter, select: { criticite: true, exposeInternet: true, perimetrePci: true, avecSi: true, interconnexion: true } })
+    : []
 
   // Référentiel des entités du périmètre (consolidation des entités) : filtre par entité et synthèse par entité.
   const entiteRows = await prisma.entite.findMany({ where: orgFilter, select: { id: true, nom: true, type: true, alias: true, codeExterne: true, parentId: true, source: true, valideAu: true } })
@@ -257,6 +263,7 @@ export async function GET(req: NextRequest) {
       ...(appetitDefini ? { appetit: synthetiserAppetit(appetitRows, appetit) } : {}),
       ...(withKri ? { kri: synthetiserKri(kriStatuts.map(k => ({ statut: k.statut }))) } : {}),
       ...(withReglementaire ? { dora: synthetiserDora(doraClasses) } : {}),
+      ...(withReglementaire ? { servicesTic: synthetiserUsagesTic(usagesTic) } : {}),
       // Suivi régulateur (constats de source REGULATEUR) : alimente le signal
       // « échéances régulateur dépassées » du verdict de pilotage. Les constats
       // portant une source ne sont chargés qu'avec le module audit ; sinon vide.

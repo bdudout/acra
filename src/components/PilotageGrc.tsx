@@ -21,6 +21,7 @@ import RiskFiltersBar from '@/components/RiskFiltersBar'
 import { useReferentielEntites } from '@/lib/use-referentiel-entites'
 import ProjetsSuivi from '@/components/ProjetsSuivi'
 import type { ProjetsSynthese } from '@/lib/projet360'
+import type { SyntheseUsagesTic } from '@/lib/tier-offers'
 
 interface RiskTotals { total: number; eleve: number; moyen: number; faible: number; nonCote: number; grid?: HeatGrid }
 interface ActionsSummary { total: number; faits: number; enCours: number; aFaire: number; enRetard: number; tauxAvancement: number }
@@ -40,7 +41,7 @@ interface OrgPosture {
 interface Rollup {
   active: boolean; orgCount: number
   modules: { incidents: boolean; controles: boolean; audit: boolean; appetit: boolean; ras?: boolean; kri: boolean; reglementaire: boolean }
-  consolide: { risques: RiskTotals; actions: ActionsSummary; projets?: ProjetsSynthese; incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; appetit?: AppetitSynthese; kri?: KriSynthese; dora?: DoraSynthese; regulateur?: RegulateurSynthese; quatreNiveaux?: NiveauSuivi[]; parEntite?: { lignes: LigneEntite[]; nonRattache: Omit<LigneEntite, 'id' | 'nom' | 'niveau'> } }
+  consolide: { risques: RiskTotals; actions: ActionsSummary; projets?: ProjetsSynthese; incidents?: IncidentTotals; controles?: ControleTotals; audit?: AuditTotals; appetit?: AppetitSynthese; kri?: KriSynthese; dora?: DoraSynthese; servicesTic?: SyntheseUsagesTic; regulateur?: RegulateurSynthese; quatreNiveaux?: NiveauSuivi[]; parEntite?: { lignes: LigneEntite[]; nonRattache: Omit<LigneEntite, 'id' | 'nom' | 'niveau'> } }
   parOrg: OrgPosture[]
 }
 
@@ -290,6 +291,26 @@ export default function PilotageGrc({ canCreateAnalyse = false, projets360 = fal
           </>}
         </div>
       )}
+
+      {/* Services TIC (registre TIC) : PCI, exposition, interconnexion ; combinaisons à risque en premier. */}
+      {data.consolide.servicesTic && data.consolide.servicesTic.total > 0 && (() => {
+        const st = data.consolide.servicesTic
+        return (
+          <section aria-label={p.servicesTic} className="mb-6">
+            <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">{p.servicesTic} <span className="font-normal text-gray-500">({st.total})</span></h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Tile label={p.ticPciExposes} value={st.pciExposes} tone={st.pciExposes > 0 ? 'red' : undefined} href="/tiers/entites" />
+              <Tile label={p.ticCritiquesViaInternet} value={st.critiquesViaInternet} tone={st.critiquesViaInternet > 0 ? 'amber' : undefined} href="/tiers/entites" />
+              <Tile label={p.ticPci} value={st.pci} href="/tiers/entites" />
+              <Tile label={p.ticExposes} value={st.exposesInternet} href="/tiers/entites" />
+              <Tile label={p.ticViaInternet} value={st.viaInternet} />
+              <Tile label={p.ticViaLs} value={st.viaLs} />
+              <Tile label={p.ticAvecSi} value={st.avecSi} />
+              <Tile label={p.ticNonQualifies} value={st.nonQualifies} tone={st.nonQualifies > 0 ? 'amber' : undefined} href="/tiers/entites" />
+            </div>
+          </section>
+        )
+      })()}
 
       {/* Suivi des projets 360 (module Projets 360) */}
       {data.consolide.projets && <div className="mb-6"><ProjetsSuivi synthese={data.consolide.projets} /></div>}

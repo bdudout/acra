@@ -27,3 +27,20 @@ describe('lireQualificationUsage', () => {
     expect(lireQualificationUsage({ interconnexion: 'VPN' })).toEqual({ ok: false, error: 'interconnexion_invalide' })
   })
 })
+
+import { synthetiserUsagesTic } from '@/lib/tier-offers'
+describe('synthetiserUsagesTic', () => {
+  const u = (o: Partial<Parameters<typeof synthetiserUsagesTic>[0][number]>) => ({ criticite: null, exposeInternet: null, perimetrePci: null, avecSi: null, interconnexion: null, ...o })
+  it('compte les axes, les combinaisons à risque et les usages non qualifiés', () => {
+    const s = synthetiserUsagesTic([
+      u({ criticite: 'CRITIQUE', exposeInternet: true, perimetrePci: true, avecSi: true, interconnexion: 'INTERNET' }),
+      u({ criticite: 'NON_CRITIQUE', exposeInternet: false, perimetrePci: false, avecSi: true, interconnexion: 'LIGNE_SPECIALISEE' }),
+      u({ exposeInternet: false, perimetrePci: false, avecSi: false }),
+      u({ perimetrePci: true, avecSi: true }),
+    ])
+    expect(s).toEqual({ total: 4, pci: 2, exposesInternet: 1, avecSi: 3, viaInternet: 1, viaLs: 1, pciExposes: 1, critiquesViaInternet: 1, nonQualifies: 1 })
+  })
+  it('liste vide', () => {
+    expect(synthetiserUsagesTic([]).total).toBe(0)
+  })
+})
