@@ -7,6 +7,7 @@
 // proposés avec leur raison, lien posé seulement au clic, jamais automatiquement.
 
 import { Fragment, useCallback, useEffect, useState } from 'react'
+import TierUsageImportPanel from '@/components/TierUsageImportPanel'
 import { useTranslation } from '@/lib/i18n/context'
 import { certainMatches } from '@/lib/tier-identity'
 import TierDetailPanel from '@/components/TierDetailPanel'
@@ -177,6 +178,13 @@ export default function TierIdentityPanel({ sansTitre = false, ouvrir }: { sansT
             ))}
           </ul>
         </div>
+      )}
+
+      {canManage && (
+        <details className="mb-2">
+          <summary className="cursor-pointer text-sm text-gray-700 dark:text-gray-200">{t.usageImport.ouvrir}</summary>
+          <div className="mt-2"><TierUsageImportPanel onImported={() => void load()} /></div>
+        </details>
       )}
 
       {canManage && (

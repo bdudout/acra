@@ -14,7 +14,7 @@ type Result = { sheet: string; lines: Line[]; counts: Counts; created?: number; 
 
 const TEMPLATE = '﻿Reference;Provider;LEI;Country;Service type;Criticality;Start date;End date;Function\nC-001;Acme Cloud SAS;549300ABCDEFGHIJ1234;FR;CLOUD;CRITIQUE;2024-01-15;2027-01-14;Paie\nC-002;Beta Support;;DE;SUPPORT;;;;\n'
 
-function readBytes(blob: Blob): Promise<Uint8Array> {
+export function readBytes(blob: Blob): Promise<Uint8Array> {
   if (typeof blob.arrayBuffer === 'function') return blob.arrayBuffer().then(b => new Uint8Array(b))
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -22,7 +22,7 @@ function readBytes(blob: Blob): Promise<Uint8Array> {
     reader.readAsArrayBuffer(blob)
   })
 }
-async function toBase64(file: File): Promise<string> {
+export async function toBase64(file: File): Promise<string> {
   const bytes = await readBytes(file)
   let binary = ''
   for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))

@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { tierContext } from '@/lib/tier-registry.server'
-import { lirePointAcces } from '@/lib/tier-endpoints'
+import { lirePointAcces, MAX_POINTS_PAR_USAGE } from '@/lib/tier-endpoints'
 
 export const dynamic = 'force-dynamic'
-/** Plafond par usage : la cartographie reste lisible et la saisie ne peut pas être détournée en stockage. */
-export const MAX_POINTS_PAR_USAGE = 50
 
 /**
  * Ajoute un point d'accès (URL / hôte) à un usage DE L'ORGANISATION ACTIVE (gestionnaires du registre TIC).

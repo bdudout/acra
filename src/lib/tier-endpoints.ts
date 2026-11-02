@@ -13,6 +13,8 @@ export type Authentification = typeof AUTHENTIFICATIONS[number]
 const SCHEMAS = new Set(['http:', 'https:', 'sftp:', 'ftps:', 'ftp:', 'ssh:', 'wss:', 'ws:', 'ldaps:', 'smtps:'])
 export const MAX_ADRESSE = 2048
 export const MAX_COMMENTAIRE = 1000
+/** Plafond par usage : la cartographie reste lisible et la saisie ne peut pas être détournée en stockage. */
+export const MAX_POINTS_PAR_USAGE = 50
 
 type ErreurAdresse = 'adresse_requise' | 'adresse_invalide' | 'identifiants_interdits'
 /** Normalise une adresse : URL à schéma passif, ou nom d'hôte / IP avec port facultatif. Fragment retiré. */
