@@ -1,4 +1,11 @@
 {
   "_comment": "Exceptions d'audit npm SCOPÉES et DOCUMENTÉES. Chaque entrée suspend UNE advisory précise (par GHSA) sur UN paquet précis, avec justification et date de revue. scripts/audit-check.mjs échoue sur toute advisory moderate+ NON listée ici. À vider dès qu'un correctif amont existe (préférer un override dans package.json).",
-  "allow": []
+  "allow": [
+    {
+      "ghsa": "GHSA-g3hv-75wg-m249",
+      "package": "minimatch",
+      "reason": "Corrigé seulement dans minimatch >= 11.0.1 (API ESM incompatible avec glob@7 / readdir-glob, qui font require(\"minimatch\") comme fonction : un override casserait archiver). Chemin exceljs > archiver > glob/readdir-glob, utilisé seulement par archiver.glob(), qu ACRA n appelle jamais : aucun motif de glob issu d une saisie utilisateur. À retirer quand exceljs/archiver passent à un minimatch corrigé.",
+      "review": "2026-12-02"
+    }
+  ]
 }
