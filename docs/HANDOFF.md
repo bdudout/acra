@@ -27,7 +27,23 @@ interrompu le 19/10 (installation et sauvegarde en profil « ha », agents arrê
 - **Vérifications** : `tsc` 0 (avec `NODE_OPTIONS=--max-old-space-size=4096`, sinon tas saturé) ; `i18n:check` OK ;
   vitest tiers/usages/projet360 27 fichiers / 226 tests verts ; cliquet expand/contract 19/19 ; migration appliquée sur
   PostgreSQL 16 local, `prisma migrate diff` sans dérive ; ESLint 0 erreur (2 avertissements préexistants).
-  **Non fait** : suite complète, build, parcours navigateur ; export du registre / tableaux de bord non enrichis.
+  **Non fait** (à ce stade) : suite complète, build, parcours navigateur.
+- **Suite le même jour** :
+  - export Excel des usages (`/api/tier-registry/export`) : colonnes exposition, PCI, SI, interconnexion, points d'accès ;
+    cockpit `PilotageGrc` : section « Services TIC » (`synthetiserUsagesTic` via `/api/grc/rollup`) — PCI exposés sur
+    Internet, critiques ou importants via Internet, PCI, exposés, via Internet, par LS, avec SI, à qualifier ;
+  - **points d'accès** `TierUsageEndpoint` (migration `20261102110000`) : adresse normalisée, hôte, type, environnement,
+    authentification (`lib/tier-endpoints`) ; identifiants dans l'URL et schémas actifs refusés ; **jamais contactés par
+    ACRA** ; 50 par usage ; routes POST / PUT / DELETE `/api/tier-registry/usages/[usageId]/points-acces[/pointId]`
+    (organisation active, journalisé) ; `PointsAccesUsage` dans la fiche du tiers, hôtes partagés entre usages signalés ;
+  - **import CSV / XLSX** `/api/tier-registry/usages/import` (`lib/tier-usage-import`, `TierUsageImportPanel` dans
+    Entités de tiers) : aperçu puis application, rattachement aux usages EXISTANTS uniquement, vocabulaire fermé FR/EN.
+- **Corrigé de mon appréciation** : un double regard existe déjà (dérogations demandeur ≠ valideur, approbation Risk
+  Manager, `validePar`) ; reste à décider quelles autres actions l'exigent (question posée à l'utilisateur).
+- **Vérifications finales** : `npm test` 725 fichiers / 5 388 tests verts après correction du seul échec (mock du test
+  d'export sans `pointsAcces`, relancé seul : 2/2) ; `npm run test:db` 23 fichiers / 103 tests verts ; `npm run build` OK
+  (à la 2ᵉ exécution : la 1ʳᵉ s'arrête sur une recommandation de sécurité de Next.js — mise à jour de `next` à décider
+  par l'utilisateur, non faite) ; `tsc` 0 ; `i18n:check` OK ; ESLint 0 erreur.
 
 ---
 
