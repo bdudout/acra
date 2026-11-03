@@ -69,7 +69,7 @@ export default function Navbar() {
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d && typeof d.enAttente === 'number') setValidationsPending(d.enAttente) })
       .catch(() => {})
-  }, [isLecteur, session?.user]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isLecteur, session?.user])
 
   // Modules GRC actifs (état effectif) → alimentent le modèle de navigation.
   // Initialisé depuis le cache MÉMOIRE (peek) : null au 1er rendu (SSR + 1re
