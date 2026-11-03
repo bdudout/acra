@@ -52,7 +52,7 @@ export default function PropositionsRisquesTic({ onValidee }: { onValidee?: () =
 
   if (!props || (props.length === 0 && !msg)) return null
   return (
-    <section ref={encart} id="propositions-tic" aria-label={l.titre} className="card mb-5 p-4 text-sm">
+    <section ref={encart} id="propositions-tic" aria-label={l.titre} className="card mb-5 p-4 text-sm scroll-mt-24">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{l.titre}</h2>
         <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-900 dark:bg-indigo-900/40 dark:text-indigo-100">{l.compteur.replace('{n}', String(props.length))}</span>
