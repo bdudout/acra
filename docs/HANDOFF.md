@@ -6,6 +6,33 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-11-03 (110) — Claude (session cloud) : double validation (quatre yeux) activable par organisation
+
+Décision utilisateur : « pour l'acceptation d'un risque résiduel hors appétit ou la suppression d'un presta TIC critique il
+faut une double validation activable par orga » ; mise à jour de Next.js « dans un worktree séparé ».
+
+- Option `OrganizationConfig.doubleValidationActive` (défaut false ; Configuration › Fonctionnalités, menu « analyses »),
+  file `DemandeValidation` (migration `20261103090000`). Logique pure `lib/double-validation` (déclencheurs, contrôle de
+  décision), exécution `lib/double-validation.server` (création sans doublon, décision, **exécution dans la transaction
+  de la décision après revérification**, clôture unique `updateMany … statut EN_ATTENTE`), audit
+  `DOUBLE_VALIDATION_DEMANDEE` / `_DECIDEE` (SIEM : GOUVERNANCE).
+- Déclencheurs (option active) :
+  - `accept-residual-risks` ACCEPTER avec ≥ 1 risque résiduel hors appétit (seuil par catégorie, sinon global) → 202 ;
+    approbateur : `canAcceptResidualRisks` (+ non-auteur si `interdireAutoApprobation`) ;
+  - registre : PATCH statut → ACCEPTE hors appétit (autres champs appliqués, statut inchangé) ; **création directe** POST
+    `/api/risk-items` et **API** `/api/v1/import` au statut ACCEPTE → enregistrés EVALUE + demande (pas de contournement) ;
+    approbateur : `peutGouvernerAppetit` ;
+  - suppression d'un contrat du registre TIC **CRITIQUE ou IMPORTANTE** (fonction critique ou importante, DORA) → 202 ;
+    approbateur : `peutGererRegistreTic`. Les entités de tiers ne se suppriment pas (fusion seulement).
+- Le demandeur ne tranche jamais sa propre demande (annulation seulement) ; rejet motivé ; demande close une seule fois.
+- UI : page `/validations` (`DemandesValidation`), pastille « N validation(s) en attente » + entrée du menu utilisateur
+  (Navbar), bandeau « demande transmise » dans le registre des risques, le registre TIC et le panneau d'acceptation.
+- **Vérifications** : `tsc` 0 ; `i18n:check` OK ; vitest 18 fichiers liés / 107 tests verts ; base réelle
+  `double-validation.db.test.ts` 5/5 (analyse, registre PATCH et création, contrat TIC rejet puis approbation, option
+  désactivée) ; ESLint 0 erreur. Mise à jour Next.js : agent en worktree isolé (voir entrée suivante si intégrée).
+
+---
+
 ## 2026-11-02 (109) — Claude (session cloud) : qualification des usages de services TIC (PCI, SI, exposition, interconnexion)
 
 Branche `claude/dazzling-edison-qzmwlg` repartie de `main` (99c92f8c) : la précédente a été fusionnée (#276). Le travail
