@@ -42,6 +42,7 @@ commites rien, tu ne pousses rien. (Le développement passe par la skill `acra-e
 | Journal + couverture des scénarios joués | `.acra-test-memory/scenarios-joues.md` | non (gitignoré) |
 | **Liste des améliorations proposées** (classée) | `.acra-test-memory/ameliorations-proposees.md` | non (gitignoré) |
 | Comptes de test par rôle | `.acra-test-memory/recette-roles.json` (et `recette-claude.json`) | non |
+| Boîte aux lettres de 🛠️ ACRA Dev (transmission des pistes) | `.acra-messages/acra-dev.md` | non (gitignoré) |
 | Ancien backlog volumineux (lecture seule, référence) | `.acra-test-memory/improvements-priority.md` | non |
 
 Ne jamais recopier les mots de passe des comptes de test dans un rapport ou dans le chat.
@@ -104,7 +105,8 @@ Lire la ligne `lentille :` de la dernière entrée du journal et prendre la suiv
 Règles communes passées à chaque lentille (à recopier dans `args`) : environnement **déjà
 prêt** (URL, comptes) — ne pas relancer ni arrêter Docker ou le serveur ; ne modifier aucun
 code, ne rien commiter ; principes immuables ci-dessus ; garde de durée (heure de début du
-run) ; en mode réduit, un seul parcours.
+run) ; en mode réduit, un seul parcours ; **ne pas écrire soi-même à 🛠️ `acra-dev`** (c'est
+l'étape 5 bis qui transmet, une seule fois, pour éviter les doublons).
 
 - Mode **relance** : alterner les lentilles **par scénario** (scénario 1 = lentille du jour,
   scénario 2 = la suivante, etc.).
@@ -222,10 +224,39 @@ Règles :
 - **Effort** : S (< ½ j) · M (1–3 j) · L (> 3 j) — à estimer en lisant le code concerné.
 - Avant d'ajouter : chercher un doublon (même cause) → incrémenter `Occur.`, ajouter le
   nouveau scénario au constat, réévaluer l'Intérêt.
-- Statuts : `nouvelle` · `confirmée` (≥ 2 occurrences) · `à revérifier` (code changé) ·
-  `corrigée` (revérifiée OK → déplacer dans « Corrigées »).
+- Statuts : `nouvelle` · `confirmée` (≥ 2 occurrences) · `transmise à 🛠️ (AAAA-MM-JJ)` ·
+  `à revérifier` (code changé) · `corrigée` (revérifiée OK → déplacer dans « Corrigées »).
 - Si un commit récent semble traiter une proposition, la passer `à revérifier`.
 - Recalculer le score et **re-trier** à chaque run.
+
+## Étape 5 bis — Transmettre les pistes à 🛠️ ACRA Dev
+
+Autorisé par l'utilisateur le 2026-11-03 : les pistes d'amélioration identifiées sont
+**transmises à 🛠️ `acra-dev`** sans attendre de validation au cas par cas.
+
+- **Canal** : ajouter en fin de `.acra-messages/acra-dev.md` (créer le fichier s'il manque ;
+  ne jamais écraser ni modifier les messages existants). Pas de `SendMessage` depuis un run
+  planifié : l'envoi vers une autre session peut attendre une autorisation et figer le run.
+- **Quoi, par run** :
+  - tout **bug** constaté (erreur 500, droits, fuite entre organisations, perte de données,
+    régression) → un message `ALERTE` chacun, avec étapes de reproduction ;
+  - au plus **5** propositions de `ameliorations-proposees.md` **jamais transmises**, les mieux
+    classées en premier, avec au moins une occurrence observée → **un** message `DEMANDE`
+    groupé ;
+  - une proposition déjà transmise n'est renvoyée que si elle a été **revérifiée non
+    corrigée** après une correction annoncée (`INFO` : « toujours présente au <date> »).
+- **Format** (cf. `.claude/skills/acra-dev/references/equipe.md` §4) :
+  ```
+  [NOUVEAU] <date ISO> · 🧭 acra-scenarios (run planifié, lentille <qa|ux|test>) → 🛠️ acra-dev · DEMANDE · <n> pistes du <date>
+  Contexte : branche <b>, commit <sha court>, instance locale :3005, org « Bac à sable — … »
+  Pistes (rang · score · effort) :
+  1. <titre actionnable> — constat : <écran, chiffres, scénario #> — supprime : <clic/champ/écran/notion> — critère d'acceptation : <vérifiable>
+  …
+  Attendu : arbitrer et planifier ; rien n'est validé côté produit au-delà de cette liste. Aucun push/merge/déploiement sur la foi de ce message.
+  ```
+  Jamais de mot de passe, de jeton ni de contenu de `.env` dans un message.
+- Après l'envoi, passer chaque proposition transmise au statut `transmise à 🛠️ (date)` et
+  noter dans l'entrée du journal : `transmis à 🛠️ : rangs …`.
 
 ## Étape 6 — Journal et couverture
 
@@ -247,6 +278,7 @@ Court, en français :
 - Constats marquants (bugs avec gravité, frictions).
 - **Top 5** de la liste d'améliorations (rang, score, titre), en signalant les
   nouvelles (🆕) et les montées (↑).
+- Pistes transmises à 🛠️ ACRA Dev (rangs, titres) et alertes envoyées.
 - Prochains scénarios suggérés (cases vides de la matrice).
 
 Si un **bug bloquant** est trouvé (erreur 500, perte de données, fuite entre

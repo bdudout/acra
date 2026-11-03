@@ -100,6 +100,9 @@ TYPE ∈ `DEMANDE` · `RÉSULTAT` · `ALERTE` (régression, sécurité, prod) ·
 - 🧪 → 🛠️ `ALERTE` / `RÉSULTAT` : régression avec étapes de reproduction, ou « vert » avec commandes jouées.
 - 🎨 → 🛠️ `DEMANDE` : amélioration UX **validée par l'utilisateur**, avec constat et critère d'acceptation.
 - 🛠️ → 🎨 `DEMANDE` : « revoir l'écran X après refonte ».
+- 🧭 `acra-scenarios` (run planifié quotidien) → 🛠️ `DEMANDE` groupée (≤ 5 pistes classées) et `ALERTE` par bug,
+  par la boîte fichier uniquement — transmission autorisée par l'utilisateur le 2026-11-03 ; vaut demande
+  d'arbitrage, pas validation produit ni autorisation de push/merge/déploiement.
 - 🛠️ → 🚀 `INFO` : « lots fusionnés depuis la dernière version : … ».
 - 🚀 → 🧪 `DEMANDE` : recette de la release candidate ; 🚀 → 🛠️ `ALERTE` : bloquant de release.
 
