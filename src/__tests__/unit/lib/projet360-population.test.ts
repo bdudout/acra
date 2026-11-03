@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const db = vi.hoisted(() => ({
   analyse: { count: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
   arrangementTic: { count: vi.fn() },
-  processus: { count: vi.fn() },
+  processus: { count: vi.fn(), findMany: vi.fn(async () => []) },
+  testResilience: { findMany: vi.fn(async () => []) },
   traitement: { count: vi.fn() },
   risque: { createMany: vi.fn(), findMany: vi.fn() },
   planAction: { create: vi.fn() },

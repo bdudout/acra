@@ -13,7 +13,7 @@ import { getOrgConfig } from './org-config.server'
 import { getEffectiveScaleConfig } from './configuration-server'
 import { RISK_METHODS, METHOD_META } from './methodes'
 import { sanitizeDirectRisque } from './risque-direct'
-import { defaultAnswers360, planPopulation360, isDomaine360, type Faits360 } from './projet360'
+import { defaultAnswers360, planPopulation360, isDomaine360, synthetiserContinuite360, type Faits360 } from './projet360'
 import { patternsOf } from './patterns-archi'
 import type { Translations } from './i18n'
 
@@ -22,14 +22,17 @@ const CYBER_METHODS = RISK_METHODS.filter(m => METHOD_META[m].cyber) as string[]
 /** Comptages des données existantes de l'organisation utiles au questionnaire 360. */
 export async function collectFaits360(orgId: string): Promise<Faits360> {
   const cfg = await getOrgConfig(orgId)
-  const [analysesCyber, ticCritiques, ticCloud, processusCritiques, traitementsRgpd] = await Promise.all([
+  const critiqueWhere = { organizationId: orgId, OR: [{ criticite: { gte: 3 } }, { criticiteDora: { in: ['CRITIQUE', 'IMPORTANTE'] } }] }
+  const [analysesCyber, ticCritiques, ticCloud, processusCritiques, traitementsRgpd, processusContinuite, testsRealises] = await Promise.all([
     prisma.analyse.count({ where: { organizationId: orgId, deletedAt: null, methode: { in: CYBER_METHODS } } }),
     prisma.arrangementTic.count({ where: { organizationId: orgId, criticite: { in: ['CRITIQUE', 'IMPORTANTE'] } } }),
     prisma.arrangementTic.count({ where: { organizationId: orgId, typeService: { in: ['CLOUD', 'HEBERGEMENT'] } } }),
-    prisma.processus.count({ where: { organizationId: orgId, OR: [{ criticite: { gte: 3 } }, { criticiteDora: { in: ['CRITIQUE', 'IMPORTANTE'] } }] } }),
+    prisma.processus.count({ where: critiqueWhere }),
     prisma.traitement.count({ where: { organizationId: orgId } }),
+    prisma.processus.findMany({ where: critiqueWhere, select: { rtoMinutes: true, rpoMinutes: true, toleranceImpactMinutes: true } }),
+    prisma.testResilience.findMany({ where: { organizationId: orgId, statut: 'REALISE' }, select: { statut: true, dateRealisation: true }, orderBy: { dateRealisation: 'desc' }, take: 5 }),
   ])
-  return { analysesCyber, ticCritiques, ticCloud, processusCritiques, traitementsRgpd, doraActif: cfg.reglementaireActive }
+  return { analysesCyber, ticCritiques, ticCloud, processusCritiques, traitementsRgpd, doraActif: cfg.reglementaireActive, continuite: synthetiserContinuite360(processusContinuite, testsRealises, new Date()) }
 }
 
 /** Peuple une analyse projet 360 : réponses pré-remplies (avec sources) + risques proposés. */
