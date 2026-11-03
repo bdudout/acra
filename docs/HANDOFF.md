@@ -53,10 +53,14 @@ Branche `claude/dazzling-edison-qzmwlg` (PR 291), poussée jusqu'à `02848918`.
   (demande créée, bandeau, auto-validation 403, annulation) ; 2.3 partiel OK (alerte RTO > tolérance). Non joué :
   2.1 second valideur, 2.2 (/ecosysteme en 500 « Panic » : disque plein pendant la compilation), 2.4 (super-admin ;
   `audit-scellement` exige CRON_SECRET), 2.5, 2.6 ; vérification navigateur de KO-1/3/4/5.
-- **⚠️ État de la base locale de recette** : `OrganizationConfig.doubleValidationActive` **resté à true** sur l'org de
-  recette (Docker Desktop s'est arrêté — démon injoignable — avant la remise à false) → à remettre à false au prochain
-  démarrage. Données de test laissées : risque « RECETTE-DV risque hors appétit », projet 360 « Migration vers le
+- **Base locale de recette** : `OrganizationConfig.doubleValidationActive` (id `global`) remis à false après redémarrage
+  de Docker. Données de test laissées : risque « RECETTE-DV risque hors appétit », projet 360 « Migration vers le
   cloud », processus « RECETTE-L4 … », 3 risques issus de propositions.
+- **Suite (même jour)** : `10d89544` — 5 alertes CodeQL high (js/incomplete-url-substring-sanitization) dans les tests
+  acra-snapshot / acra-restore-ha → helper `viseHote` (« @hôte: ») ; **CodeQL vert** sur la PR 291. `86f41d53` — **KO-2** :
+  `useFiltresUrl` (router.replace, autres paramètres conservés, `fusionnerFiltresDansParams` pure) sur /cartographie et
+  /pilotage (+ mode inhérent/résiduel), pages sous Suspense. Vérif. : tsc 0, vitest 752/752 (5 652 tests), i18n OK,
+  `next build` OK. Non vérifié au navigateur.
 - **Reprise** : session ADMIN ouverte par l'utilisateur dans le volet navigateur (+ comptes AUDITEUR, RISK_MANAGER,
   super-admin) ; libérer du disque ; relancer KO-1/3/4/5 puis 2.1–2.6, puis §1 (setup.sh), §3 (profil ha), §4 (charge).
 
