@@ -13,10 +13,11 @@ import Link from 'next/link'
 import NouvelleAnalyseMenu from '@/components/NouvelleAnalyseMenu'
 import { useTranslation } from '@/lib/i18n/context'
 import { type TaxonomieNode } from '@/lib/taxonomie'
-import { distinctEntites, filtersToQuery, type RiskFilters } from '@/lib/risk-filters'
+import { distinctEntites, filtersToQuery } from '@/lib/risk-filters'
 import { verdictDispositif, verdictSignauxActifs, type VerdictSignalKey } from '@/lib/comite-pack'
 import HeatmapGridHtml from '@/components/HeatmapGridHtml'
 import type { HeatGrid } from '@/lib/carto-export'
+import { useFiltresUrl } from '@/lib/use-filtres-url'
 import RiskFiltersBar from '@/components/RiskFiltersBar'
 import { useReferentielEntites } from '@/lib/use-referentiel-entites'
 import ProjetsSuivi from '@/components/ProjetsSuivi'
@@ -73,7 +74,7 @@ export default function PilotageGrc({ canCreateAnalyse = false, projets360 = fal
   const p = t.pilotage
   const [data, setData] = useState<Rollup | null>(null)
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState<RiskFilters>({})
+  const [filters, setFilters] = useFiltresUrl()
   const [taxo, setTaxo] = useState<TaxonomieNode[]>([])
   const [procs, setProcs] = useState<{ id: string; nom: string }[]>([])
   const [entites, setEntites] = useState<string[]>([])

@@ -162,3 +162,17 @@ describe('filtres famille TIC et provenance (L5)', () => {
     expect(filtersToQuery({ familleTic: 'IT', provenance: 'AUDIT' })).toBe('familleTic=IT&provenance=AUDIT')
   })
 })
+
+import { fusionnerFiltresDansParams } from '@/lib/risk-filters'
+
+describe('fusionnerFiltresDansParams', () => {
+  it('écrit les filtres et conserve les autres paramètres', () => {
+    expect(fusionnerFiltresDansParams('tab=x', { statut: 'OUVERT', niveau: 'eleve' })).toBe('tab=x&statut=OUVERT&niveau=eleve')
+  })
+  it('remplace les anciens filtres et supprime ceux effacés, sans toucher au reste', () => {
+    expect(fusionnerFiltresDansParams('tab=x&statut=A&niveau=eleve&mode=inherent&sousEntites=0&entiteId=e1', { niveau: 'faible' })).toBe('tab=x&niveau=faible')
+  })
+  it('réinitialiser ne retire que les paramètres de filtre', () => {
+    expect(fusionnerFiltresDansParams('page=2&statut=A', {})).toBe('page=2')
+  })
+})

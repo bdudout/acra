@@ -18,10 +18,11 @@ import {
 } from '@/lib/cartographie'
 import { buildRiskMatrixModel, type ScaleConfig } from '@/lib/risk-scale'
 import { readableTextColor } from '@/lib/contrast-color'
-import { applyFilters, distinctEntites, filtersToQuery, type RiskFilters } from '@/lib/risk-filters'
+import { applyFilters, distinctEntites, filtersToQuery } from '@/lib/risk-filters'
 import { useReferentielEntites } from '@/lib/use-referentiel-entites'
 import { synthetiserAppetit, type AppetitConfig } from '@/lib/appetit'
 import { publicationFailureMessage } from '@/lib/risk-publication'
+import { useFiltresUrl } from '@/lib/use-filtres-url'
 import RiskFiltersBar from '@/components/RiskFiltersBar'
 
 /** Ajoute un canal alpha (hex 2 caractères) à une couleur hex #rrggbb. */
@@ -62,9 +63,11 @@ export default function Cartographie({ canPublish, scaleConfig }: { canPublish: 
   const [procs, setProcs] = useState<{ id: string; nom: string }[]>([])
   const [analyses, setAnalyses] = useState<PublishAnalyse[]>([])
   const [loading, setLoading] = useState(true)
-  const [mode, setMode] = useState<CartoMode>('residual')
   const [dimension, setDimension] = useState<CartoDimension>('taxonomie')
-  const [filters, setFilters] = useState<RiskFilters>({ mode: 'residual' })
+  // Filtres (et mode inhérent/résiduel) portés par l'URL : lien partageable, retour arrière.
+  const [filters, setFilters] = useFiltresUrl()
+  const mode: CartoMode = filters.mode === 'inherent' ? 'inherent' : 'residual'
+  const setMode = (m: CartoMode) => setFilters({ ...filters, mode: m })
   const [publishing, setPublishing] = useState<string | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
   // Appétit au risque (gouvernance) : seuil global + surcharges par catégorie.

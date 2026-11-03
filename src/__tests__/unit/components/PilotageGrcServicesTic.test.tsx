@@ -7,6 +7,10 @@ vi.mock('@/lib/i18n/context', async () => {
   const { fr } = await import('@/lib/i18n/fr')
   return { useTranslation: () => ({ t: fr, locale: 'fr' }) }
 })
+vi.mock('@/lib/use-filtres-url', async () => {
+  const { useState } = await import('react')
+  return { useFiltresUrl: () => useState<Record<string, unknown>>({}) }
+})
 vi.mock('next/link', () => ({ default: ({ children }: { children: React.ReactNode }) => <a>{children}</a> }))
 vi.mock('@/components/NouvelleAnalyseMenu', () => ({ default: () => null }))
 vi.mock('@/components/ProjetsSuivi', () => ({ default: () => null }))

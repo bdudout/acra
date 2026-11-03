@@ -134,6 +134,17 @@ export function filtersToQuery(f: RiskFilters): string {
   return p.toString()
 }
 
+/** Paramètres d'URL appartenant aux filtres (les seuls retirés lors d'une fusion). */
+export const FILTER_PARAM_KEYS = ['taxonomieCode', 'processusId', 'entite', 'entiteId', 'sousEntites', 'statut', 'niveau', 'familleTic', 'provenance', 'mode'] as const
+
+/** Fusionne les filtres dans une chaîne de paramètres d'URL : retire les anciens paramètres de filtre, conserve les autres. */
+export function fusionnerFiltresDansParams(courants: string, f: RiskFilters): string {
+  const p = new URLSearchParams(courants)
+  for (const k of FILTER_PARAM_KEYS) p.delete(k)
+  new URLSearchParams(filtersToQuery(f)).forEach((v, k) => p.set(k, v))
+  return p.toString()
+}
+
 /** Valeurs d'entité distinctes présentes dans le registre (pour le sélecteur). */
 export function distinctEntites(risks: FilterableRisk[]): string[] {
   return [...new Set(risks.map(r => r.entite).filter((e): e is string => !!e && e.trim() !== ''))].sort((a, b) => a.localeCompare(b))
