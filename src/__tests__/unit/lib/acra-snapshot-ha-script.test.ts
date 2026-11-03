@@ -6,6 +6,9 @@ import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { makeInstance, listDir, type Instance } from '../../helpers/update-fixture'
 
+// Hôte d'une URL PostgreSQL dans une ligne de commande (« @hote: »), sans recherche de sous-chaîne d'URL.
+const viseHote = (cmd: string, hote: string) => cmd.includes('@' + hote + ':')
+
 vi.setConfig({ testTimeout: 90_000 })
 let inst: Instance
 afterEach(() => inst?.cleanup())
@@ -64,7 +67,7 @@ describe('acra-snapshot — profil ha : sauvegarde logique de la base externe', 
     expect(r.status, r.stderr).toBe(0)
     const dumps = inst.calls().filter(x => x.includes('pg_dump'))
     expect(dumps.length).toBeGreaterThan(0)
-    expect(dumps.every(x => x.includes('pg-direct.example.org:5000/appdb') && !x.includes('pg.example.org'))).toBe(true)
+    expect(dumps.every(x => x.includes('pg-direct.example.org:5000/appdb') && !viseHote(x, 'pg.example.org'))).toBe(true)
   })
 
   it('une sauvegarde déjà en cours sur un autre hôte (bail en base) : code 41, aucun dump', () => {
@@ -129,9 +132,9 @@ describe('acra-snapshot — profil ha : sauvegarde logique de la base externe', 
     const r = snap(['create', '--reason', 'manual', '--from-version', '1.0.4', '--verify', 'full'], { ACRA_BACKUP_VERIFY_DATABASE_URL: 'postgresql://v:pw3@verify.example.org:5432/postgres' })
     expect(r.status, r.stderr).toBe(0)
     const c = inst.calls()
-    expect(c.some(x => x.includes('CREATE DATABASE') && x.includes('__verify_') && x.includes('verify.example.org'))).toBe(true)
-    expect(c.some(x => x.includes('pg_restore -d') && x.includes('verify.example.org'))).toBe(true)
-    expect(c.some(x => x.includes('__verify_') && x.includes('pg.example.org'))).toBe(false)
+    expect(c.some(x => x.includes('CREATE DATABASE') && x.includes('__verify_') && viseHote(x, 'verify.example.org'))).toBe(true)
+    expect(c.some(x => x.includes('pg_restore -d') && viseHote(x, 'verify.example.org'))).toBe(true)
+    expect(c.some(x => x.includes('__verify_') && viseHote(x, 'pg.example.org'))).toBe(false)
   })
 
   it('création de la base jetable refusée (droits de l’hébergeur) : point valide, vérification rapide, impossibilité consignée', () => {

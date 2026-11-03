@@ -5,6 +5,9 @@ import { writeFileSync, mkdirSync } from 'node:fs'
 import path from 'node:path'
 import { makeInstance, type Instance } from '../../helpers/update-fixture'
 
+// Hôte d'une URL PostgreSQL dans une ligne de commande (« @hote: »), sans recherche de sous-chaîne d'URL.
+const viseHote = (cmd: string, hote: string) => cmd.includes('@' + hote + ':')
+
 vi.setConfig({ testTimeout: 90_000 })
 let inst: Instance
 afterEach(() => inst?.cleanup())
@@ -25,7 +28,7 @@ describe('acra-restore-ha database', () => {
     expect(c.some(x => x.includes('--clean'))).toBe(false)
     expect(c.some(x => x.includes('count(*) FROM "User"') && x.includes('acra_restored'))).toBe(true)
     expect(c.some(x => x.includes('storageKey') && x.includes('acra_restored'))).toBe(true)
-    expect(c.some(x => x.includes('pg.example.org'))).toBe(false)
+    expect(c.some(x => viseHote(x, 'pg.example.org'))).toBe(false)
     expect(r.stdout).toMatch(/restaurée et contrôlée/); expect(r.stdout + r.stderr).not.toContain('secret-pw')
   })
 
