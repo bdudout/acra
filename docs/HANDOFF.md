@@ -25,8 +25,15 @@ puis `main` intégré ici (`44168252` : versions de main + Next 16.4.4 ; fast-ur
 - **Vérifications** : état intégré `9e6eb857` : tsc 0, vitest 743/743 fichiers (5 564 tests), i18n OK. Après L2+L3
   (`eaae56d0`) : tsc 0, vitest 746/746 (5 587 tests), i18n OK. Après L5
   (`b9f15061`) : tsc 0, vitest 746/746 (5 595 tests), i18n OK. **Non vérifié** : rendu navigateur des nouveaux écrans, migration sur base réelle.
-- **Reste** : L4 (risques proposés depuis le registre TIC et la résilience — question produit : création auto ou
-  propositions à valider, recommandé : propositions) ; L1 = recette locale du prompt `docs/prompts/agents-locaux-2026-11-03.md`
+- `4faf8b16` — **Risques TIC proposés** (L4, artisan opus + relecteur opus ; décision utilisateur : propositions à
+  valider, pas de création auto) : 5 déclencheurs (contrat critique sans stratégie de sortie, concentration, prestataire
+  non évalué / réévaluation échue, RTO > tolérance, reprise testée > RTO) ; valider → RiskItem `sourceType
+  'proposition-tic'` ; écarter → `PropositionRisqueEcartee` (migration `20261103220000`, + index unique PARTIEL
+  `RiskItem_proposition_tic_sourceId_key`, hors schema.prisma : surveiller qu'un `prisma migrate dev` ne le supprime
+  pas) ; droit `peutTraiterPropositionsRisquesTic` ; `dependances-critiques.server.ts` extrait. Terminologie DORA ES/IT
+  « esenciales / essenziali o importantes » corrigée aussi sur l'écran des dépendances. Vérif. : tsc 0, vitest 750/750
+  (5 630 tests), i18n OK, `next build` OK. Migrations NON appliquées sur base réelle (Docker arrêté).
+- **Reste** : L1 = recette locale du prompt `docs/prompts/agents-locaux-2026-11-03.md`
   (Docker, navigateur, profil ha, charge) ; CodeQL en échec sur PR 291 (3 s, configuration). Libellés « origine » du
   filtre rédigés par l'artisan, à valider. Classement du catalogue → famille à relire par le métier.
 
