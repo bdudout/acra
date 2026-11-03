@@ -14,6 +14,7 @@ export default function PropositionsRisquesTic({ onValidee }: { onValidee?: () =
   const { t } = useTranslation()
   const l = t.propositionsTic
   const [props, setProps] = useState<Proposition[] | null>(null)
+  const [peutTraiter, setPeutTraiter] = useState(false)
   const [enCours, setEnCours] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ ok: boolean; texte: string } | null>(null)
   const encart = useRef<HTMLElement | null>(null)
@@ -31,7 +32,11 @@ export default function PropositionsRisquesTic({ onValidee }: { onValidee?: () =
   useEffect(() => {
     let annule = false
     fetch(URL_API).then(r => (r.ok ? r.json() : null)).catch(() => null)
-      .then((j: { propositions?: unknown } | null) => { if (!annule) setProps(Array.isArray(j?.propositions) ? (j.propositions as Proposition[]) : []) })
+      .then((j: { propositions?: unknown; peutTraiter?: unknown } | null) => {
+        if (annule) return
+        setProps(Array.isArray(j?.propositions) ? (j.propositions as Proposition[]) : [])
+        setPeutTraiter(j?.peutTraiter !== false) // absent = ancien serveur : boutons affichés, la route reste juge
+      })
     return () => { annule = true }
   }, [])
 
@@ -68,10 +73,10 @@ export default function PropositionsRisquesTic({ onValidee }: { onValidee?: () =
               {l.origine.split(/(\{type\}|\{libelle\})/).map((s, i) => s === '{type}' ? <span key={i}>{(l.origines as Record<string, string>)[p.origine.type] ?? p.origine.type}</span>
                 : s === '{libelle}' ? <Link key={i} href={p.origine.lien} className="underline">{p.origine.libelle}</Link> : <span key={i}>{s}</span>)}
             </p>
-            <div className="mt-2 flex gap-2">
+            {peutTraiter && <div className="mt-2 flex gap-2">
               <button type="button" className="btn-primary text-xs" disabled={enCours === p.cle} aria-label={`${l.valider} — ${p.intitule}`} onClick={() => void traiter(p, 'VALIDER')}>{l.valider}</button>
               <button type="button" className="btn-secondary text-xs" disabled={enCours === p.cle} aria-label={`${l.ecarter} — ${p.intitule}`} onClick={() => void traiter(p, 'ECARTER')}>{l.ecarter}</button>
-            </div>
+            </div>}
           </li>
         ))}
       </ul>

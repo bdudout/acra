@@ -11,7 +11,7 @@ import { withAccess } from '@/lib/with-access.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { getClientIp } from '@/lib/logger'
 import { getServerT } from '@/lib/i18n'
-import { peutTraiterPropositionsRisquesTic } from '@/lib/permissions'
+import { peutTraiterPropositionsRisquesTic, peutVoirPropositionsRisquesTic } from '@/lib/permissions'
 import { estClePropositionTic, libellerProposition } from '@/lib/propositions-risques-tic'
 import { ecarterPropositionTic, propositionsOuvertesOrg, validerPropositionTic } from '@/lib/propositions-risques-tic.server'
 
@@ -29,10 +29,13 @@ async function modulesActifs(orgId: string): Promise<boolean> {
 const inactif = () => NextResponse.json({ error: 'module_inactive' }, { status: 403 })
 const echec = (status: 404 | 409) => NextResponse.json({ error: status === 409 ? 'conflict' : 'not_found' }, { status })
 
-export const GET = withAccess({ org: 'active', allow: peutTraiterPropositionsRisquesTic }, async (_req, { orgId }) => {
+export const GET = withAccess({ org: 'active', allow: peutVoirPropositionsRisquesTic }, async (_req, { orgId, role }) => {
   if (!(await modulesActifs(orgId))) return inactif()
   const [props, t] = await Promise.all([propositionsOuvertesOrg(orgId), getServerT()])
-  return NextResponse.json({ propositions: props.map(p => ({ ...p, ...libellerProposition(p, t) })) })
+  return NextResponse.json({
+    propositions: props.map(p => ({ ...p, ...libellerProposition(p, t) })),
+    peutTraiter: peutTraiterPropositionsRisquesTic(role),
+  })
 })
 
 export const POST = withAccess(

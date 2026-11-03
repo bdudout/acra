@@ -460,12 +460,19 @@ export function peutGererRegistreTic(role: UserRole): boolean {
 }
 
 /**
- * Peut consulter, valider (→ création d'un risque au registre) ou écarter les risques proposés depuis le registre TIC et
- * la résilience : même droit que la création au registre (tout rôle sauf LECTEUR), limité aux rôles qui lisent déjà
- * le registre TIC et la cartographie des fonctions critiques (gouvernance et lecture globale du dispositif).
+ * Peut consulter les risques proposés depuis le registre TIC et la résilience : rôles qui lisent déjà le registre TIC
+ * et la cartographie des fonctions critiques (gouvernance et lecture globale du dispositif), sauf LECTEUR.
+ */
+export function peutVoirPropositionsRisquesTic(role: UserRole): boolean {
+  return role !== 'LECTEUR' && (peutGererRegistreTic(role) || hasGlobalReadDispositif(role))
+}
+
+/**
+ * Peut valider (→ création d'un risque au registre) ou écarter un risque proposé : comme la consultation, sauf
+ * l'AUDITEUR, qui reste en lecture seule (3ᵉ ligne indépendante — décision utilisateur du 03/11/2026).
  */
 export function peutTraiterPropositionsRisquesTic(role: UserRole): boolean {
-  return role !== 'LECTEUR' && (peutGererRegistreTic(role) || hasGlobalReadDispositif(role))
+  return role !== 'AUDITEUR' && peutVoirPropositionsRisquesTic(role)
 }
 
 /** Peut définir les KRI (délègue à peutDefinir2eLigne : rôles de 2ᵉ ligne). */

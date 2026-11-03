@@ -5,7 +5,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import type { ZodType } from 'zod'
-import { peutTraiterPropositionsRisquesTic, type UserRole } from '@/lib/permissions'
+import { peutTraiterPropositionsRisquesTic, peutVoirPropositionsRisquesTic, type UserRole } from '@/lib/permissions'
 
 const m = vi.hoisted(() => ({
   role: 'RSSI' as string, config: { registreRisquesActive: true, reglementaireActive: true },
@@ -45,10 +45,16 @@ beforeEach(() => {
   m.ecarter.mockResolvedValue({ ok: true, value: { cle: P.cle } })
 })
 
-describe('peutTraiterPropositionsRisquesTic', () => {
-  it('gouvernance et lecture globale : oui ; LECTEUR, ANALYSTE, METIER : non', () => {
+describe('peutVoirPropositionsRisquesTic / peutTraiterPropositionsRisquesTic', () => {
+  it('voir : gouvernance et lecture globale (dont AUDITEUR) ; LECTEUR, ANALYSTE, METIER : non', () => {
     const oui: UserRole[] = ['ADMIN', 'SUPER_ADMIN', 'RSSI', 'RISK_MANAGER', 'CONFORMITE', 'DPO', 'DIRECTION_METIER', 'CONTROLEUR', 'AUDITEUR']
     const non: UserRole[] = ['LECTEUR', 'ANALYSTE', 'METIER']
+    for (const r of oui) expect(peutVoirPropositionsRisquesTic(r)).toBe(true)
+    for (const r of non) expect(peutVoirPropositionsRisquesTic(r)).toBe(false)
+  })
+  it('traiter : comme voir, sauf AUDITEUR (3ᵉ ligne indépendante, lecture seule)', () => {
+    const oui: UserRole[] = ['ADMIN', 'SUPER_ADMIN', 'RSSI', 'RISK_MANAGER', 'CONFORMITE', 'DPO', 'DIRECTION_METIER', 'CONTROLEUR']
+    const non: UserRole[] = ['LECTEUR', 'ANALYSTE', 'METIER', 'AUDITEUR']
     for (const r of oui) expect(peutTraiterPropositionsRisquesTic(r)).toBe(true)
     for (const r of non) expect(peutTraiterPropositionsRisquesTic(r)).toBe(false)
   })
@@ -67,6 +73,14 @@ describe('GET /api/risk-items/propositions-tic', () => {
   it('LECTEUR refusé (403)', async () => {
     m.role = 'LECTEUR'
     expect((await get()).status).toBe(403)
+  })
+  it('AUDITEUR : lecture autorisée, peutTraiter=false ; RSSI : peutTraiter=true', async () => {
+    m.role = 'AUDITEUR'
+    const r = await get()
+    expect(r.status).toBe(200)
+    expect((await r.json()).peutTraiter).toBe(false)
+    m.role = 'RSSI'
+    expect((await (await get()).json()).peutTraiter).toBe(true)
   })
   it('module réglementaire ou registre inactif : 403 module_inactive', async () => {
     m.config = { registreRisquesActive: true, reglementaireActive: false }
@@ -105,6 +119,13 @@ describe('POST /api/risk-items/propositions-tic', () => {
     expect((await post({ cle: 'INCONNU:x', action: 'VALIDER' })).status).toBe(400)
     expect((await post({ cle: P.cle, action: 'SUPPRIMER' })).status).toBe(400)
     expect(m.valider).not.toHaveBeenCalled()
+  })
+  it('AUDITEUR refusé (403) en écriture, rien n’est écrit', async () => {
+    m.role = 'AUDITEUR'
+    expect((await post({ cle: P.cle, action: 'VALIDER' })).status).toBe(403)
+    expect((await post({ cle: P.cle, action: 'ECARTER' })).status).toBe(403)
+    expect(m.valider).not.toHaveBeenCalled()
+    expect(m.ecarter).not.toHaveBeenCalled()
   })
   it('LECTEUR refusé (403), rien n’est écrit', async () => {
     m.role = 'LECTEUR'

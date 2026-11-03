@@ -19,6 +19,13 @@ const LISTE = { propositions: [prop('CONTRAT_SANS_SORTIE:a1', 'Absence de strat�
 afterEach(() => { vi.unstubAllGlobals() })
 
 describe('PropositionsRisquesTic', () => {
+  it('lecture seule (peutTraiter=false) : liste visible, sans boutons Valider / Écarter', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ ...JSON.parse(JSON.stringify(LISTE)), peutTraiter: false }) })))
+    render(<PropositionsRisquesTic />)
+    expect(await screen.findByText('2 risque(s) proposé(s)')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Valider/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Écarter/ })).toBeNull()
+  })
   it('compteur, origine liée, cotation ; Valider crée le risque et retire la proposition', async () => {
     const onValidee = vi.fn()
     const fetchMock = vi.fn(async (_u: string, init?: RequestInit) => ({ ok: true, status: init?.method === 'POST' ? 201 : 200, json: async () => (init?.method === 'POST' ? { id: 'r1' } : JSON.parse(JSON.stringify(LISTE))) }))
