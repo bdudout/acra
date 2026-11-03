@@ -4,7 +4,7 @@ import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { requireSession } from '@/lib/route-guard.server'
 import { withAccess } from '@/lib/with-access.server'
-import { indexPublishedRisks, mapAnalyseRisques } from '@/lib/risk-publication'
+import { donneesRepublication, indexPublishedRisks, mapAnalyseRisques } from '@/lib/risk-publication'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -64,7 +64,7 @@ export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'risk-items
   const analyse = await prisma.analyse.findFirst({
     where: { id: analyseId, organizationId: orgId, deletedAt: null },
     select: { id: true, nom: true, organisation: true, statut: true, risques: {
-      select: { id: true, nom: true, description: true, gravite: true, vraisemblance: true, graviteResiduelle: true, vraisemblanceResiduelle: true },
+      select: { id: true, nom: true, description: true, gravite: true, vraisemblance: true, graviteResiduelle: true, vraisemblanceResiduelle: true, domaine: true },
     } },
   })
   if (!analyse) return NextResponse.json({ error: 'analyse_introuvable' }, { status: 404 })
@@ -94,14 +94,10 @@ export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'risk-items
     if (aCreer.length) {
       await tx.riskItem.createMany({ data: aCreer.map(item => ({ ...item, organizationId: orgId })) })
     }
-    // Rafraîchir les cotations, en préservant le statut décidé dans le registre.
+    // Rafraîchir libellés et cotations, en préservant le statut et la famille TIC décidés dans le registre.
     await Promise.all(aMettreAJour.map(item => tx.riskItem.update({
       where: { id: idParSource.get(item.sourceId)! },
-      data: {
-        intitule: item.intitule, description: item.description, entite: item.entite,
-        graviteInherente: item.graviteInherente, vraisemblanceInherente: item.vraisemblanceInherente,
-        graviteResiduelle: item.graviteResiduelle, vraisemblanceResiduelle: item.vraisemblanceResiduelle,
-      },
+      data: donneesRepublication(item),
     })))
     return { conflict: false as const, crees: aCreer.length, maj: aMettreAJour.length }
   }, { timeout: 30_000 })

@@ -3,6 +3,8 @@
  * Validation d'entrée, normalisation, calcul du niveau (gravité × vraisemblance).
  */
 
+import { cleanFamilleRisqueTic, type FamilleRisqueTic } from './famille-risque-tic'
+
 export const RISK_STATUTS = ['IDENTIFIE', 'EVALUE', 'TRAITE', 'ACCEPTE', 'CLOTURE'] as const
 /** Statut d'un risque du registre : identifié → évalué → traité → accepté → clôturé. */
 export type RiskStatut = typeof RISK_STATUTS[number]
@@ -25,10 +27,12 @@ export interface RiskItemInput {
   vraisemblanceResiduelle?: number | null
   statut?: string | null
   provenance?: string | null
+  /** Famille de risque TIC (axe distinct de la taxonomie, cf. lib/famille-risque-tic). */
+  familleRisqueTic?: string | null
 }
 
 /** Code d'erreur de validation d'un risque du registre : intitulé requis ou cotation invalide. */
-export type RiskItemInputError = 'intitule_requis' | 'cotation_invalide'
+export type RiskItemInputError = 'intitule_requis' | 'cotation_invalide' | 'famille_tic_invalide'
 
 /** Borne des échelles (les échelles ACRA font 4 ou 5 niveaux) : 1..5, ou null. */
 function coteValide(v: number | null | undefined): boolean {
@@ -43,6 +47,8 @@ export function validateRiskItemInput(input: RiskItemInput): RiskItemInputError 
   for (const v of [input.graviteInherente, input.vraisemblanceInherente, input.graviteResiduelle, input.vraisemblanceResiduelle]) {
     if (!coteValide(v)) return 'cotation_invalide'
   }
+  const famille = input.familleRisqueTic
+  if (famille != null && String(famille).trim() !== '' && !cleanFamilleRisqueTic(famille)) return 'famille_tic_invalide'
   return null
 }
 
@@ -61,6 +67,7 @@ export function cleanRiskItem(input: RiskItemInput) {
     intitule: String(input.intitule ?? '').trim().slice(0, 255),
     description: input.description != null ? String(input.description).slice(0, 5000) : null,
     taxonomieCode: txt(input.taxonomieCode, 40),
+    familleRisqueTic: cleanFamilleRisqueTic(input.familleRisqueTic),
     processusId: input.processusId?.trim() ? input.processusId.trim() : null,
     entite: txt(input.entite, 200),
     proprietaire: txt(input.proprietaire, 200),
@@ -71,6 +78,18 @@ export function cleanRiskItem(input: RiskItemInput) {
     statut,
     provenance,
   }
+}
+
+/**
+ * Famille de risque TIC à appliquer lors d'une MODIFICATION (PATCH) : champ absent → inchangé (aucune donnée),
+ * null ou vide explicite → effacé, code valide → appliqué, autre valeur → erreur.
+ */
+export function champFamillePatch(body: unknown): { data: { familleRisqueTic?: FamilleRisqueTic | null } } | { error: 'famille_tic_invalide' } {
+  if (!body || typeof body !== 'object' || !('familleRisqueTic' in body)) return { data: {} }
+  const v = (body as { familleRisqueTic?: unknown }).familleRisqueTic
+  if (v == null || (typeof v === 'string' && v.trim() === '')) return { data: { familleRisqueTic: null } }
+  const famille = cleanFamilleRisqueTic(v)
+  return famille ? { data: { familleRisqueTic: famille } } : { error: 'famille_tic_invalide' }
 }
 
 /** Niveau de risque = gravité × vraisemblance (null si l'une des deux manque). */

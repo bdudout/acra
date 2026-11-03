@@ -1543,13 +1543,13 @@ export const de: Translations = {
     familleTic: {
       label: 'IKT-Risikofamilie',
       none: '— IKT-Familie (optional) —',
-      hint: 'Eigene Achse neben der Kategorie: Ein Risiko kann beides tragen. Begriffe der Verordnung (EU) 2022/2554 (DORA), Artikel 3: „IKT-Risiko“ (Nummer 5), „IKT-Drittdienstleister“ (Nummer 19), sowie Kapitel V; Richtlinie (EU) 2022/2555 (NIS2), Artikel 21 Absatz 2 Buchstabe d.',
+      hint: 'Eigene Achse neben der Kategorie: Ein Risiko kann beides tragen. Begriffe der Verordnung (EU) 2022/2554 (DORA), Artikel 3: „IKT-Risiko“ (Nummer 5), „IKT-Drittparteienrisiko“ (Nummer 18), „IKT-Drittdienstleister“ (Nummer 19), sowie Kapitel V; Richtlinie (EU) 2022/2555 (NIS2), Artikel 21 Absatz 2 Buchstabe d.',
       codes: {
         IT: 'Informationstechnik (IT)',
         CYBER: 'Cybersicherheit',
         CONTINUITE_METIER_TIC: 'IKT-bezogene Geschäftsfortführung (BIA, RTO/RPO, Auswirkungstoleranz)',
         CONTINUITE_IT: 'IT-Kontinuität (IT-Notfall- und Wiederherstellungspläne)',
-        TIERS_TIC: 'IKT-Risiko durch IKT-Drittdienstleister',
+        TIERS_TIC: 'IKT-Drittparteienrisiko',
       },
     },
     categoryNone: '— Kategorie —',

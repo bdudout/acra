@@ -1544,13 +1544,13 @@ export const en: Translations = {
     familleTic: {
       label: 'ICT risk family',
       none: '— ICT family (optional) —',
-      hint: 'Separate axis from the category: a risk can carry both. Terminology of Regulation (EU) 2022/2554 (DORA), Article 3: ‘ICT risk’ (point 5), ‘ICT third-party service provider’ (point 19), and Chapter V; Directive (EU) 2022/2555 (NIS2), Article 21(2), point (d).',
+      hint: 'Separate axis from the category: a risk can carry both. Terminology of Regulation (EU) 2022/2554 (DORA), Article 3: ‘ICT risk’ (point 5), ‘ICT third-party risk’ (point 18), ‘ICT third-party service provider’ (point 19), and Chapter V; Directive (EU) 2022/2555 (NIS2), Article 21(2), point (d).',
       codes: {
         IT: 'Information technology (IT)',
         CYBER: 'Cybersecurity',
         CONTINUITE_METIER_TIC: 'ICT-related business continuity (BIA, RTO/RPO, impact tolerance)',
         CONTINUITE_IT: 'IT continuity (IT continuity and disaster recovery plans)',
-        TIERS_TIC: 'ICT risk arising from ICT third-party service providers',
+        TIERS_TIC: 'ICT third-party risk',
       },
     },
     categoryNone: '— Category —',

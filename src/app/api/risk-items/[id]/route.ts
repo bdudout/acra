@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getAnalyseScope, roleSurRessource } from '@/lib/org-context.server'
 import { withAccess } from '@/lib/with-access.server'
 import { type SessionUser } from '@/lib/route-guard.server'
-import { validateRiskItemInput, cleanRiskItem } from '@/lib/risk-item'
+import { validateRiskItemInput, cleanRiskItem, champFamillePatch } from '@/lib/risk-item'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { entiteIdPourTexte } from '@/lib/entites.server'
 import { getOrgConfig } from '@/lib/org-config.server'
@@ -44,7 +44,11 @@ export const PATCH = withAccess(access, async (req, { user, params: { id } }) =>
     if (!p) return NextResponse.json({ error: 'processus_invalide' }, { status: 400 })
   }
   // La provenance (traçabilité) ne se modifie pas via l'édition manuelle.
-  const { ...rest } = data
+  const { familleRisqueTic: _famille, ...rest } = data
+  // Famille de risque TIC : modifiée seulement si le corps la transmet (un client antérieur ne l'efface pas).
+  const champFamille = champFamillePatch(body)
+  if ('error' in champFamille) return NextResponse.json({ error: champFamille.error }, { status: 400 })
+  const famille = champFamille.data
   // Double validation (option d'organisation) : passer un risque HORS APPÉTIT au statut ACCEPTE devient une demande ;
   // les autres modifications s'appliquent, le statut reste inchangé jusqu'à l'approbation (lib/double-validation).
   let demandeValidation: { id: string; existante: boolean } | null = null
@@ -58,7 +62,7 @@ export const PATCH = withAccess(access, async (req, { user, params: { id } }) =>
     }
   }
   // Lien au référentiel recalculé à partir du texte « entité » (identique) ou retiré (consolidation des entités).
-  const updated = await prisma.riskItem.update({ where: { id }, data: { ...rest, entiteId: await entiteIdPourTexte(ctx.orgId, rest.entite) } })
+  const updated = await prisma.riskItem.update({ where: { id }, data: { ...rest, ...famille, entiteId: await entiteIdPourTexte(ctx.orgId, rest.entite) } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: ctx.userId, userRole: ctx.userRole, ip: getClientIp(req), details: { scope: 'risk-item', action: 'update', id } })
   return demandeValidation
     ? NextResponse.json({ ...updated, doubleValidation: true, demandeId: demandeValidation.id, existante: demandeValidation.existante }, { status: 202 })

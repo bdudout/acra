@@ -20,7 +20,7 @@ import ExcelJS from 'exceljs'
 export const dynamic = 'force-dynamic'
 
 const HEADERS = [
-  'intitule', 'categorie', 'processus', 'entite', 'proprietaire', 'statut', 'provenance',
+  'intitule', 'categorie', 'familleRisqueTic', 'processus', 'entite', 'proprietaire', 'statut', 'provenance',
   'graviteInherente', 'vraisemblanceInherente', 'niveauInherent',
   'graviteResiduelle', 'vraisemblanceResiduelle', 'niveauResiduel',
   'actionsTotal', 'actionsFaites', 'actionsEnRetard', 'tauxAvancement', 'creeLe',
@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
     wsReg.columns = HEADERS.map(h => ({ header: h, key: h, width: h === 'intitule' ? 40 : 16 }))
     for (const r of filtered) {
       wsReg.addRow({
-        intitule: S(r.intitule), categorie: S(r.taxonomieCode ?? ''), processus: S(r.processusNom ?? ''),
+        intitule: S(r.intitule), categorie: S(r.taxonomieCode ?? ''), familleRisqueTic: r.familleRisqueTic ?? '', processus: S(r.processusNom ?? ''),
         entite: S(r.entite ?? ''), proprietaire: S(r.proprietaire ?? ''), statut: r.statut, provenance: r.provenance,
         graviteInherente: r.graviteInherente ?? '', vraisemblanceInherente: r.vraisemblanceInherente ?? '', niveauInherent: r.niveauInherent ?? '',
         graviteResiduelle: r.graviteResiduelle ?? '', vraisemblanceResiduelle: r.vraisemblanceResiduelle ?? '', niveauResiduel: r.niveauResiduel ?? '',
@@ -182,7 +182,7 @@ export async function GET(req: NextRequest) {
 
   // ── CSV (défaut) ──────────────────────────────────────────────────────────
   const lignes = filtered.map(r => [
-    r.intitule, r.taxonomieCode ?? '', r.processusNom ?? '', r.entite ?? '', r.proprietaire ?? '', r.statut, r.provenance,
+    r.intitule, r.taxonomieCode ?? '', r.familleRisqueTic ?? '', r.processusNom ?? '', r.entite ?? '', r.proprietaire ?? '', r.statut, r.provenance,
     r.graviteInherente ?? '', r.vraisemblanceInherente ?? '', r.niveauInherent ?? '',
     r.graviteResiduelle ?? '', r.vraisemblanceResiduelle ?? '', r.niveauResiduel ?? '',
     r.actionsSummary.total, r.actionsSummary.faits, r.actionsSummary.enRetard, r.actionsSummary.tauxAvancement,

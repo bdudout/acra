@@ -522,6 +522,9 @@ model RiskItem {
   description   String?    @db.Text
   // Maille : catégorie (code de la taxonomie résolue) × processus × entité.
   taxonomieCode String?
+  // Famille de risque TIC (axe distinct de la taxonomie, lib/famille-risque-tic) : IT | CYBER |
+  // CONTINUITE_METIER_TIC | CONTINUITE_IT | TIERS_TIC ; null = non renseignée.
+  familleRisqueTic String?
   processusId   String?
   processus     Processus? @relation(fields: [processusId], references: [id], onDelete: SetNull)
   entite        String? // entité concernée (texte libre pour l'instant)
@@ -558,6 +561,7 @@ model RiskItem {
   @@index([organizationId])
   @@index([processusId])
   @@index([taxonomieCode])
+  @@index([familleRisqueTic])
   @@index([entiteId])
 }
 

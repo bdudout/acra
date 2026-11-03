@@ -1568,13 +1568,13 @@ export const fr = {
     familleTic: {
       label: 'Famille de risque TIC',
       none: '— Famille TIC (facultatif) —',
-      hint: 'Axe distinct de la catégorie : un risque peut porter les deux. Terminologie du règlement (UE) 2022/2554 (DORA), art. 3 : « risque lié aux TIC » (point 5), « prestataire tiers de services TIC » (point 19), et chapitre V ; directive (UE) 2022/2555 (NIS2), art. 21, § 2, point d).',
+      hint: 'Axe distinct de la catégorie : un risque peut porter les deux. Terminologie du règlement (UE) 2022/2554 (DORA), art. 3 : « risque lié aux TIC » (point 5), « risque lié aux prestataires tiers de services TIC » (point 18), « prestataire tiers de services TIC » (point 19), et chapitre V ; directive (UE) 2022/2555 (NIS2), art. 21, § 2, point d).',
       codes: {
         IT: 'Informatique (IT)',
         CYBER: 'Cybersécurité',
         CONTINUITE_METIER_TIC: 'Continuité d\'activité liée aux TIC (BIA, RTO/RPO, tolérance d\'impact)',
         CONTINUITE_IT: 'Continuité informatique (PCA/PRA du SI)',
-        TIERS_TIC: 'Risque lié aux TIC induit par des prestataires tiers de services TIC',
+        TIERS_TIC: 'Risque lié aux prestataires tiers de services TIC',
       },
     },
     categoryNone: '— Catégorie —',

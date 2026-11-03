@@ -14,14 +14,14 @@ export async function GET(req: NextRequest) {
     where: { organizationId: auth.organizationId },
     orderBy: [{ createdAt: 'desc' }],
     select: {
-      id: true, intitule: true, description: true, taxonomieCode: true, proprietaire: true,
+      id: true, intitule: true, description: true, taxonomieCode: true, familleRisqueTic: true, proprietaire: true,
       graviteInherente: true, vraisemblanceInherente: true,
       graviteResiduelle: true, vraisemblanceResiduelle: true, statut: true, createdAt: true,
     },
   })
   const data = rows.map(r => ({
     id: r.id, intitule: r.intitule, description: r.description,
-    categorie: r.taxonomieCode, proprietaire: r.proprietaire, statut: r.statut,
+    categorie: r.taxonomieCode, familleRisqueTic: r.familleRisqueTic, proprietaire: r.proprietaire, statut: r.statut,
     niveauInherent: niveauRisque(r.graviteInherente, r.vraisemblanceInherente),
     niveauResiduel: niveauRisque(r.graviteResiduelle, r.vraisemblanceResiduelle),
     cotation: {

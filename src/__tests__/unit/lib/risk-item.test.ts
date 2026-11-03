@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  validateRiskItemInput, cleanRiskItem, niveauRisque, RISK_STATUTS, RISK_PROVENANCES,
+  validateRiskItemInput, cleanRiskItem, niveauRisque, RISK_STATUTS, RISK_PROVENANCES, champFamillePatch,
 } from '@/lib/risk-item'
 
 describe('validateRiskItemInput', () => {
@@ -43,5 +43,42 @@ describe('niveauRisque', () => {
     expect(niveauRisque(5, 5)).toBe(25)
     expect(niveauRisque(null, 3)).toBeNull()
     expect(niveauRisque(3, null)).toBeNull()
+  })
+})
+
+describe('cleanRiskItem — famille de risque TIC (axe distinct de la taxonomie)', () => {
+  it('conserve une famille connue, ignore une valeur inconnue ou absente', () => {
+    expect(cleanRiskItem({ intitule: 'X', familleRisqueTic: 'TIERS_TIC' }).familleRisqueTic).toBe('TIERS_TIC')
+    expect(cleanRiskItem({ intitule: 'X', familleRisqueTic: 'BALE_6' }).familleRisqueTic).toBeNull()
+    expect(cleanRiskItem({ intitule: 'X' }).familleRisqueTic).toBeNull()
+  })
+  it('un risque peut porter à la fois une catégorie de taxonomie et une famille TIC', () => {
+    const c = cleanRiskItem({ intitule: 'X', taxonomieCode: 'BALE_6', familleRisqueTic: 'CONTINUITE_IT' })
+    expect(c.taxonomieCode).toBe('BALE_6')
+    expect(c.familleRisqueTic).toBe('CONTINUITE_IT')
+  })
+  it('refuse une famille inconnue à la validation', () => {
+    expect(validateRiskItemInput({ intitule: 'X', familleRisqueTic: 'AUTRE' })).toBe('famille_tic_invalide')
+    expect(validateRiskItemInput({ intitule: 'X', familleRisqueTic: '' })).toBeNull()
+    expect(validateRiskItemInput({ intitule: 'X', familleRisqueTic: null })).toBeNull()
+    expect(validateRiskItemInput({ intitule: 'X', familleRisqueTic: 'CYBER' })).toBeNull()
+  })
+})
+
+describe('champFamillePatch — règle de la famille TIC à la modification (PATCH)', () => {
+  it('champ absent → inchangé (aucune donnée)', () => {
+    expect(champFamillePatch({ intitule: 'X' })).toEqual({ data: {} })
+    expect(champFamillePatch(null)).toEqual({ data: {} })
+  })
+  it('null ou vide explicite → effacé', () => {
+    expect(champFamillePatch({ familleRisqueTic: null })).toEqual({ data: { familleRisqueTic: null } })
+    expect(champFamillePatch({ familleRisqueTic: '' })).toEqual({ data: { familleRisqueTic: null } })
+  })
+  it('valeur valide → appliquée', () => {
+    expect(champFamillePatch({ familleRisqueTic: 'CONTINUITE_METIER_TIC' })).toEqual({ data: { familleRisqueTic: 'CONTINUITE_METIER_TIC' } })
+  })
+  it('valeur invalide → erreur', () => {
+    expect(champFamillePatch({ familleRisqueTic: 'BALE_6' })).toEqual({ error: 'famille_tic_invalide' })
+    expect(champFamillePatch({ familleRisqueTic: 42 })).toEqual({ error: 'famille_tic_invalide' })
   })
 })
