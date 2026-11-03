@@ -24,16 +24,35 @@ echec() { echo "ECHEC etape=$1 ${2:-}"; exit 1; }
 # démarré, ce qui laisse la session planifiée « en cours » et bloque les runs suivants (20/10/2026).
 borne() { local s="$1"; shift; perl -e 'alarm shift; exec @ARGV or exit 127' "$s" "$@"; }
 
-# 1. Docker Desktop
+# 0. Place disque : sous 3 Go libres, Docker et la compilation Next figent le Mac (HANDOFF 117)
+LIBRE_GO="$(df -g "$REPO" | awk 'NR==2 {print $4}')"
+[ "${LIBRE_GO:-0}" -ge 3 ] || echec espace "seulement ${LIBRE_GO:-?} Go libres (minimum 3)"
+echo "ETAT disque_libre=${LIBRE_GO}Go"
+rm -f "$RUN/docker-lance-par-recette" "$RUN/db-lancee-par-recette"
+
+# Greffon docker-ai : il figeait toutes les commandes docker (HANDOFF 117, désactivé depuis).
+# S'il réapparaît, l'arrêter et le signaler plutôt que de rester bloqué.
+if pgrep -f docker-ai >/dev/null 2>&1; then
+  pkill -f docker-ai 2>/dev/null; echo "ETAT docker_ai=arrete (à désactiver dans Docker Desktop)"
+fi
+
+# 1. Docker Desktop (noté s'il est lancé par la recette, pour l'arrêter en fin de run)
 if ! borne 15 docker info >/dev/null 2>&1; then
   echo "ETAT docker=demarrage"
+  touch "$RUN/docker-lance-par-recette"
   open -ga Docker 2>/dev/null || echec docker "Docker Desktop introuvable"
   for _ in $(seq 1 60); do borne 10 docker info >/dev/null 2>&1 && break; sleep 3; done
   borne 15 docker info >/dev/null 2>&1 || echec docker "pas prêt après 3 min"
 fi
-echo "ETAT docker=ok"
+# Mémoire de la VM : 2 Go sur ce Mac de 8 Go (au-delà, swap et sessions figées). Pas de
+# modification automatique des réglages Docker : un écart est signalé dans le rapport.
+MEM_VM="$(borne 15 docker info --format '{{.MemTotal}}' 2>/dev/null || echo 0)"
+MEM_MO=$(( ${MEM_VM:-0} / 1048576 ))
+if [ "$MEM_MO" -gt 2300 ]; then echo "ETAT docker=ok memoire=${MEM_MO}Mo ALERTE_au_dela_de_2Go"
+else echo "ETAT docker=ok memoire=${MEM_MO}Mo"; fi
 
 # 2. Base Postgres seule (jamais `docker compose up` complet : reconstruit toutes les images)
+[ "$(borne 10 docker inspect -f '{{.State.Running}}' ebios_db 2>/dev/null)" = "true" ] || touch "$RUN/db-lancee-par-recette"
 borne 60 docker start ebios_db >/dev/null 2>&1 || borne 120 docker compose up -d db >/dev/null 2>&1 || echec db "conteneur ebios_db"
 for _ in $(seq 1 40); do
   [ "$(borne 10 docker inspect -f '{{.State.Health.Status}}' ebios_db 2>/dev/null)" = "healthy" ] && break; sleep 2

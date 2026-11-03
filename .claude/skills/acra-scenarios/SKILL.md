@@ -1,6 +1,6 @@
 ---
 name: acra-scenarios
-description: Test quotidien d'ACRA par scénarios d'usage réels — tire chaque jour une combinaison profil × organisation × cas d'usage, la joue sur l'app locale (navigateur + API), et alimente une liste d'améliorations classée par priorité et intérêt, avec un filtre « ne pas alourdir ». Ajuste le volume de tests au budget de tokens hebdomadaire restant. À utiliser pour « test quotidien ACRA », « jouer des scénarios ACRA », « tester ACRA comme un utilisateur », ou depuis la tâche planifiée de 7 h.
+description: Test quotidien d'ACRA par scénarios d'usage réels — tire chaque jour une combinaison profil × organisation × cas d'usage, la fait jouer sur l'app locale par une lentille tournante (/acra-qa, /acra-ux, /acra-test), gère l'environnement (Docker limité à la base, 2 Go, arrêt propre en fin de run) et alimente une liste d'améliorations classée par priorité et intérêt, avec un filtre « ne pas alourdir ». Ajuste le volume de tests au budget de tokens hebdomadaire restant. À utiliser pour « test quotidien ACRA », « jouer des scénarios ACRA », « tester ACRA comme un utilisateur », ou depuis la tâche planifiée de 7 h.
 ---
 
 # ACRA — Scénarios d'usage quotidiens
@@ -9,6 +9,10 @@ Tu joues ACRA **comme un vrai utilisateur** : un profil donné, dans une organis
 donnée, qui veut accomplir une tâche donnée. Tu observes ce qui marche, ce qui bloque,
 ce qui est superflu — et tu en tires des améliorations **qui gardent l'application
 souple et facile à utiliser**.
+
+Cette skill est le **chef d'orchestre** du run : budget, tirage des scénarios, environnement,
+journal et liste d'améliorations. Le **contenu du test** est confié chaque jour à une
+**lentille** différente (étape 2 bis) : 🧪 `/acra-qa`, 🎨 `/acra-ux` ou `/acra-test`.
 
 Ce n'est PAS une campagne de développement : tu **ne modifies pas le code**, tu ne
 commites rien, tu ne pousses rien. (Le développement passe par la skill `acra-engineering`.)
@@ -86,7 +90,40 @@ Utilise `references/catalogue-scenarios.md`. Pour chaque scénario, combine
 (« En tant que DPO d'une clinique de 80 personnes, je veux préparer le registre RGPD
 avant le contrôle CNIL ») et un **critère de réussite observable**.
 
+## Étape 2 bis — Lentille du jour (rotation)
+
+Lire la ligne `lentille :` de la dernière entrée du journal et prendre la suivante :
+**qa → ux → test → qa…** (journal vide : `qa`).
+
+| Lentille | Skill invoquée (outil Skill) | Ce qu'elle apporte | Consigne à lui passer en `args` |
+|---|---|---|---|
+| **qa** | `acra-qa` | non-régression sur les commits récents, droits, isolation entre organisations, cas limites | « mode A sur les commits des 7 derniers jours qui touchent l'UI ou les droits, puis les scénarios tirés ; ne PAS invoquer `acra-scenarios` (déjà en cours) » |
+| **ux** | `acra-ux` | facilité d'utilisation : clics, champs, jargon, accessibilité, simplifications | « parcours = les scénarios tirés ; écrire les propositions directement dans `ameliorations-proposees.md` ; pas de message à 🛠️ ni de rapport .docx » |
+| **test** | `acra-test` | mission suivante de sa rotation M1–M5 (backlog, vérification exécutée, sécurité, profil × secteur, reporting décideur) | « mission suivante de ta rotation ; si M4 ou M5, utiliser le profil et l'organisation tirés ; reporter aussi les constats dans `ameliorations-proposees.md` » |
+
+Règles communes passées à chaque lentille (à recopier dans `args`) : environnement **déjà
+prêt** (URL, comptes) — ne pas relancer ni arrêter Docker ou le serveur ; ne modifier aucun
+code, ne rien commiter ; principes immuables ci-dessus ; garde de durée (heure de début du
+run) ; en mode réduit, un seul parcours.
+
+- Mode **relance** : alterner les lentilles **par scénario** (scénario 1 = lentille du jour,
+  scénario 2 = la suivante, etc.).
+- Les sous-agents lancés par `acra-qa` / `acra-ux` (🔬 `acra-verificateur`…) jouent les
+  parcours **en série** sur la même instance (jamais deux navigateurs en parallèle).
+- Si la skill de la lentille est introuvable ou échoue au démarrage : jouer les scénarios
+  soi-même (étape 4) et le noter dans le journal.
+- Noter dans l'entrée du journal : `lentille : qa|ux|test` (+ mission M1–M5 pour `test`).
+
 ## Étape 3 — Préparer l'environnement (automatique, une fois)
+
+**Ressources (Mac M1 de 8 Go, cf. `docs/HANDOFF.md` entrée 117).** Seule la base tourne
+dans Docker (`ebios_db`) ; Docker Desktop est réglé à 2 Go de RAM / 4 CPU, Resource Saver
+activé, Docker AI désactivé. Pendant les tests : jamais de `docker compose up` complet, de
+`docker build` ni de `npm run build` en parallèle d'un parcours navigateur ; un seul serveur
+de dev. Ne **jamais** réduire le disque virtuel ni faire « Reset » dans Docker Desktop
+(efface la base). Ne pas modifier soi-même les réglages de Docker Desktop : un écart est
+signalé dans le rapport.
+
 
 1. Lancer **`.claude/skills/acra-scenarios/scripts/preparer-env.sh`** (Bash, délai
    max 10 min). Il fait tout, sans intervention et de façon idempotente : démarre
@@ -97,6 +134,11 @@ avant le contrôle CNIL ») et un **critère de réussite observable**.
    `recette-roles.json`, comptes actifs) **plus `recette-superadmin@acra.test`**
    (SUPER_ADMIN, même mot de passe). Il imprime des lignes `ETAT …` puis
    `PRET url=…` ou `ECHEC etape=…`. Ne jamais afficher le mot de passe.
+   Il vérifie aussi la place disque (≥ 3 Go libres), arrête le greffon `docker-ai` s'il
+   réapparaît, contrôle que la VM Docker ne dépasse pas 2 Go (`memoire=…Mo`) et **note ce
+   qu'il a démarré lui-même** (Docker, base, serveur) pour que `arreter-env.sh` le referme.
+   - `ECHEC etape=espace` → ne pas démarrer Docker ; variante B, signalée en tête du rapport.
+   - `ALERTE_au_dela_de_2Go` → continuer, mais le signaler en tête du rapport.
    - `ECHEC etape=docker|db` → variante B (API/code) et le signaler en tête du rapport.
    - `ECHEC etape=serveur` → lire `$TMPDIR/acra-recette/dev-3005.log` (journaux hors du dépôt : un fichier écrit dans le projet relance la compilation en boucle), une seule
      nouvelle tentative, sinon variante B.
@@ -117,6 +159,9 @@ avant le contrôle CNIL ») et un **critère de réussite observable**.
    Si le rôle manque dans l'org bac à sable, l'y rattacher en local via l'ADMIN.
 
 ## Étape 4 — Jouer chaque scénario
+
+La lentille du jour (étape 2 bis) joue les scénarios avec sa propre méthode ; les règles
+ci-dessous s'appliquent à elle comme au repli « joué soi-même ».
 
 **Variante A (préférée) — navigateur** (outils `mcp__Claude_Browser__*`, onglet du preview) :
 - Partir de la page d'accueil après connexion, **sans URL directe** : le profil
@@ -211,9 +256,14 @@ organisations), le mettre en tête du rapport avec les étapes de reproduction.
 
 - Laisser les organisations bac à sable (réutilisées), mais supprimer (corbeille de
   l'app) les objets créés dans la journée qui ne servent pas aux scénarios suivants.
-- Fermer le navigateur (`preview_stop` du serverId) puis lancer
-  `.claude/skills/acra-scenarios/scripts/arreter-env.sh` : il n'arrête le serveur :3005
-  **que s'il a été lancé par `preparer-env.sh`** (un serveur de l'utilisateur reste en place).
+- Fermer le navigateur (`preview_stop` du serverId), s'assurer qu'aucun sous-agent de la
+  lentille ne tourne encore, puis lancer `.claude/skills/acra-scenarios/scripts/arreter-env.sh`
+  (Bash, timeout 300000). **Toujours**, même après un échec ou la garde de durée. Il referme,
+  dans l'ordre, **uniquement ce que la recette a démarré** : serveur :3005, conteneur
+  `ebios_db` (`docker stop`, arrêt Postgres propre), puis Docker Desktop (`docker desktop
+  stop`), ce qui rend les 2 Go de la VM au Mac. Ce qui tournait avant le run reste en place.
+- `ETAT docker=arret_incomplet` → le signaler dans le rapport ; ne pas tuer de processus
+  Docker soi-même (risque pour la base).
 
 ## Ne jamais bloquer la tâche planifiée
 
