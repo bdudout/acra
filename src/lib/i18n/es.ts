@@ -140,10 +140,11 @@ export const es: Translations = {
     echec: 'Verificación imposible.',
     integre: 'Cadena íntegra: {n} entrada(s) sellada(s) verificada(s).',
     rupture: 'Ruptura detectada en la entrada n.º {seq}: {raison}. El registro fue alterado a partir de este punto.',
-    raisons: { contenu_modifie: 'contenido modificado', maillon_manquant: 'entrada eliminada o insertada' },
+    raisons: { contenu_modifie: 'contenido modificado', maillon_manquant: 'entrada eliminada o insertada', mode_degrade: 'sellado sin clave tras entradas selladas con la clave (recálculo sospechoso)', cle_absente: 'entrada sellada con una clave, pero AUDIT_CHAIN_KEY no está en la configuración' },
     dernier: 'Última entrada sellada: n.º {seq} ({date}).',
     nonScellees: '{n} entrada(s) reciente(s) pendiente(s) de sellado.',
     horsOrdre: '{n} entrada(s) insertada(s) después, fuera de la cadena: a examinar.',
+    sansCleEntrees: '{n} entrada(s) sellada(s) sin clave, anteriores a la adopción de AUDIT_CHAIN_KEY: compare con el número esperado (un aumento inexplicable indica un recálculo de la cadena sin la clave).',
     sansCle: 'Ninguna clave de encadenamiento (AUDIT_CHAIN_KEY): la cadena detecta una alteración aislada, pero alguien con acceso de escritura a la base podría recalcularla por completo. Configure una clave secreta.',
   },
   auditRetention: {

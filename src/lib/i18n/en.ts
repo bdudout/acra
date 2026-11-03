@@ -140,10 +140,11 @@ export const en: Translations = {
     echec: 'Check failed.',
     integre: 'Chain intact: {n} sealed entr(y/ies) checked.',
     rupture: 'Break detected at entry #{seq}: {raison}. The log was altered from this point.',
-    raisons: { contenu_modifie: 'content modified', maillon_manquant: 'entry deleted or inserted' },
+    raisons: { contenu_modifie: 'content modified', maillon_manquant: 'entry deleted or inserted', mode_degrade: 'sealed without key after entries sealed with the key (suspicious recomputation)', cle_absente: 'entry sealed with a key, but AUDIT_CHAIN_KEY is missing from the configuration' },
     dernier: 'Last sealed entry: #{seq} ({date}).',
     nonScellees: '{n} recent entr(y/ies) awaiting sealing.',
     horsOrdre: '{n} entr(y/ies) inserted afterwards, outside the chain: to be examined.',
+    sansCleEntrees: '{n} entr(y/ies) sealed without key, prior to the adoption of AUDIT_CHAIN_KEY: compare with the expected number (an unexplained increase signals a recomputation of the chain without the key).',
     sansCle: 'No chaining key (AUDIT_CHAIN_KEY): the chain detects an isolated alteration, but someone with write access to the database could recompute it entirely. Configure a secret key.',
   },
   auditRetention: {

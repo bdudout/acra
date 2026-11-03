@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n/context'
 
-type Etat = { ok: boolean; verifiees: number; nonScellees: number; horsOrdre: number; rupture: { seq: string; raison: string } | null; dernier: { seq: string; createdAt: string } | null; cleConfiguree: boolean }
+type Etat = { ok: boolean; verifiees: number; sansCle?: number; nonScellees: number; horsOrdre: number; rupture: { seq: string; raison: string } | null; dernier: { seq: string; createdAt: string } | null; cleConfiguree: boolean }
 
 export default function IntegriteJournal() {
   const { t, locale } = useTranslation()
@@ -37,6 +37,7 @@ export default function IntegriteJournal() {
           {etat.dernier && <p className="text-gray-600 dark:text-gray-300">{l.dernier.replace('{seq}', etat.dernier.seq).replace('{date}', new Date(etat.dernier.createdAt).toLocaleString(locale))}</p>}
           {etat.nonScellees > 0 && <p className="text-gray-600 dark:text-gray-300">{l.nonScellees.replace('{n}', String(etat.nonScellees))}</p>}
           {etat.horsOrdre > 0 && <p className="text-amber-800 dark:text-amber-300">{l.horsOrdre.replace('{n}', String(etat.horsOrdre))}</p>}
+          {etat.cleConfiguree && (etat.sansCle ?? 0) > 0 && <p className="text-amber-800 dark:text-amber-300">{l.sansCleEntrees.replace('{n}', String(etat.sansCle))}</p>}
           {!etat.cleConfiguree && <p className="text-amber-800 dark:text-amber-300">{l.sansCle}</p>}
         </div>
       )}

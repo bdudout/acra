@@ -139,10 +139,11 @@ export const fr = {
     echec: 'Vérification impossible.',
     integre: 'Chaîne intègre : {n} entrée(s) scellée(s) vérifiée(s).',
     rupture: 'Rupture détectée à l’entrée n° {seq} : {raison}. Le journal a été altéré à partir de ce point.',
-    raisons: { contenu_modifie: 'contenu modifié', maillon_manquant: 'entrée supprimée ou insérée' },
+    raisons: { contenu_modifie: 'contenu modifié', maillon_manquant: 'entrée supprimée ou insérée', mode_degrade: 'scellement sans clé après des entrées scellées avec la clé (recalcul suspect)', cle_absente: 'entrée scellée avec une clé, mais AUDIT_CHAIN_KEY absente de la configuration' },
     dernier: 'Dernière entrée scellée : n° {seq} ({date}).',
     nonScellees: '{n} entrée(s) récente(s) en attente de scellement.',
     horsOrdre: '{n} entrée(s) insérée(s) après coup, hors de la chaîne : à examiner.',
+    sansCleEntrees: '{n} entrée(s) scellée(s) sans clé, antérieures à l’adoption de AUDIT_CHAIN_KEY : comparez ce nombre à celui attendu (une hausse inexpliquée signale un recalcul de la chaîne sans la clé).',
     sansCle: 'Aucune clé de chaînage (AUDIT_CHAIN_KEY) : la chaîne détecte une altération isolée, mais une personne ayant un accès en écriture à la base pourrait la recalculer entièrement. Configurez une clé secrète.',
   },
   auditRetention: {

@@ -18,22 +18,40 @@ function canonique(e: EntreeAudit, precedent: string): string {
   return JSON.stringify(['v1', e.seq.toString(), e.createdAt.toISOString(), e.action, e.userId, e.userEmail, e.userRole, e.targetId, e.targetType, e.ip, e.details, e.organizationId, precedent])
 }
 
+/**
+ * Empreinte d'une entrée. Le MODE est mémorisé dans la valeur : « k1:<hex> » = HMAC-SHA256 avec la clé ; hexadécimal nu =
+ * SHA-256 sans clé. Une installation peut ainsi ajouter AUDIT_CHAIN_KEY en cours de vie : les entrées déjà scellées sans
+ * clé restent vérifiables, les suivantes sont scellées avec la clé.
+ */
 export function empreinte(e: EntreeAudit, precedent: string, cle?: string | null): string {
   const data = canonique(e, precedent)
-  return cle ? createHmac('sha256', cle).update(data).digest('hex') : createHash('sha256').update(data).digest('hex')
+  return cle ? `k1:${createHmac('sha256', cle).update(data).digest('hex')}` : createHash('sha256').update(data).digest('hex')
 }
 
-export type RaisonRupture = 'maillon_manquant' | 'contenu_modifie'
-export type ResultatSegment = { ok: true; verifiees: number; dernierHash: string } | { ok: false; verifiees: number; rupture: { seq: string; raison: RaisonRupture } }
+export type RaisonRupture = 'maillon_manquant' | 'contenu_modifie' | 'mode_degrade' | 'cle_absente'
+export type ResultatSegment = { ok: true; verifiees: number; dernierHash: string; sansCle: number } | { ok: false; verifiees: number; rupture: { seq: string; raison: RaisonRupture } }
 
-/** Vérifie des entrées scellées consécutives (ordre `seq`) à partir de l'empreinte `precedent` ; s'arrête à la 1ʳᵉ rupture. */
+const avecCle = (h: string | null | undefined) => !!h && h.startsWith('k1:')
+
+/**
+ * Vérifie des entrées scellées consécutives (ordre `seq`) à partir de l'empreinte `precedent` ; s'arrête à la 1ʳᵉ rupture.
+ * Chaque entrée est vérifiée dans SON mode (avec ou sans clé). Une fois une entrée scellée avec la clé, une entrée
+ * suivante sans clé est une rétrogradation (falsification possible par recalcul sans la clé) : `mode_degrade`.
+ */
 export function verifierSegment(entrees: EntreeScellee[], precedent: string, cle?: string | null): ResultatSegment {
   let prev = precedent
   let n = 0
+  let cleVue = avecCle(precedent)
+  let sansCle = 0
   for (const e of entrees) {
-    if (e.hashPrecedent !== prev) return { ok: false, verifiees: n, rupture: { seq: e.seq.toString(), raison: 'maillon_manquant' } }
-    if (e.hash !== empreinte(e, prev, cle)) return { ok: false, verifiees: n, rupture: { seq: e.seq.toString(), raison: 'contenu_modifie' } }
-    prev = e.hash; n++
+    const seq = e.seq.toString()
+    if (e.hashPrecedent !== prev) return { ok: false, verifiees: n, rupture: { seq, raison: 'maillon_manquant' } }
+    const k = avecCle(e.hash)
+    if (cleVue && !k) return { ok: false, verifiees: n, rupture: { seq, raison: 'mode_degrade' } }
+    if (k && !cle) return { ok: false, verifiees: n, rupture: { seq, raison: 'cle_absente' } }
+    if (e.hash !== empreinte(e, prev, k ? cle : null)) return { ok: false, verifiees: n, rupture: { seq, raison: 'contenu_modifie' } }
+    if (k) cleVue = true; else sansCle++
+    prev = e.hash!; n++
   }
-  return { ok: true, verifiees: n, dernierHash: prev }
+  return { ok: true, verifiees: n, dernierHash: prev, sansCle }
 }

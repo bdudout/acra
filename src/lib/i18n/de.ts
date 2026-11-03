@@ -140,10 +140,11 @@ export const de: Translations = {
     echec: 'Prüfung fehlgeschlagen.',
     integre: 'Kette intakt: {n} versiegelte(r) Eintrag/Einträge geprüft.',
     rupture: 'Bruch bei Eintrag Nr. {seq} erkannt: {raison}. Das Protokoll wurde ab dieser Stelle verändert.',
-    raisons: { contenu_modifie: 'Inhalt geändert', maillon_manquant: 'Eintrag gelöscht oder eingefügt' },
+    raisons: { contenu_modifie: 'Inhalt geändert', maillon_manquant: 'Eintrag gelöscht oder eingefügt', mode_degrade: 'ohne Schlüssel versiegelt nach mit dem Schlüssel versiegelten Einträgen (verdächtige Neuberechnung)', cle_absente: 'mit einem Schlüssel versiegelter Eintrag, aber AUDIT_CHAIN_KEY fehlt in der Konfiguration' },
     dernier: 'Letzter versiegelter Eintrag: Nr. {seq} ({date}).',
     nonScellees: '{n} neue(r) Eintrag/Einträge warten auf Versiegelung.',
     horsOrdre: '{n} nachträglich eingefügte(r) Eintrag/Einträge außerhalb der Kette: zu prüfen.',
+    sansCleEntrees: '{n} ohne Schlüssel versiegelte(r) Eintrag/Einträge vor Einführung von AUDIT_CHAIN_KEY: mit der erwarteten Zahl vergleichen (ein unerklärter Anstieg deutet auf eine Neuberechnung der Kette ohne Schlüssel hin).',
     sansCle: 'Kein Verkettungsschlüssel (AUDIT_CHAIN_KEY): Die Kette erkennt eine einzelne Veränderung, aber eine Person mit Schreibzugriff auf die Datenbank könnte sie vollständig neu berechnen. Konfigurieren Sie einen geheimen Schlüssel.',
   },
   auditRetention: {

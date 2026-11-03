@@ -52,6 +52,8 @@ export interface EtatChaine {
   /** Entrées non scellées antérieures à la dernière scellée (insérées après coup) : ne peuvent plus entrer dans la chaîne. */
   horsOrdre: number
   rupture: { seq: string; raison: RaisonRupture } | null
+  /** Entrées scellées SANS clé (antérieures à l'adoption de AUDIT_CHAIN_KEY) : à signaler si une clé est configurée. */
+  sansCle: number
   dernier: { seq: string; createdAt: Date } | null
   cleConfiguree: boolean
 }
@@ -62,6 +64,7 @@ export async function verifierJournal(): Promise<EtatChaine> {
   const ancre = await prisma.auditPurge.findFirst({ orderBy: { jusquaSeq: 'desc' }, select: { jusquaSeq: true, dernierHash: true } })
   let prev = ancre?.dernierHash ?? GENESE
   let verifiees = 0
+  let sansCle = 0
   let curseur: bigint | null = ancre?.jusquaSeq ?? null
   let dernier: EtatChaine['dernier'] = null
   for (;;) {
@@ -71,12 +74,13 @@ export async function verifierJournal(): Promise<EtatChaine> {
     if (!lot.length) break
     const r = verifierSegment(lot, prev, cle())
     verifiees += r.verifiees
-    if (!r.ok) return { ...(await comptes(curseur)), ok: false, verifiees, rupture: r.rupture, dernier, cleConfiguree: !!cle() }
+    if (!r.ok) return { ...(await comptes(curseur)), ok: false, verifiees, sansCle, rupture: r.rupture, dernier, cleConfiguree: !!cle() }
+    sansCle += r.sansCle
     prev = r.dernierHash
     const fin = lot.at(-1)!
     curseur = fin.seq; dernier = { seq: fin.seq.toString(), createdAt: fin.createdAt }
   }
-  return { ...(await comptes(curseur)), ok: true, verifiees, rupture: null, dernier, cleConfiguree: !!cle() }
+  return { ...(await comptes(curseur)), ok: true, verifiees, sansCle, rupture: null, dernier, cleConfiguree: !!cle() }
 }
 
 async function comptes(dernierSeq: bigint | null) {

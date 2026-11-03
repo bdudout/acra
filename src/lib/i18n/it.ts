@@ -140,10 +140,11 @@ export const it: Translations = {
     echec: 'Verifica impossibile.',
     integre: 'Catena integra: {n} voce/i sigillata/e verificata/e.',
     rupture: 'Rottura rilevata alla voce n. {seq}: {raison}. Il registro è stato alterato da questo punto.',
-    raisons: { contenu_modifie: 'contenuto modificato', maillon_manquant: 'voce eliminata o inserita' },
+    raisons: { contenu_modifie: 'contenuto modificato', maillon_manquant: 'voce eliminata o inserita', mode_degrade: 'sigillatura senza chiave dopo voci sigillate con la chiave (ricalcolo sospetto)', cle_absente: 'voce sigillata con una chiave, ma AUDIT_CHAIN_KEY manca nella configurazione' },
     dernier: 'Ultima voce sigillata: n. {seq} ({date}).',
     nonScellees: '{n} voce/i recente/i in attesa di sigillatura.',
     horsOrdre: '{n} voce/i inserita/e successivamente, fuori dalla catena: da esaminare.',
+    sansCleEntrees: '{n} voce/i sigillata/e senza chiave, precedenti all’adozione di AUDIT_CHAIN_KEY: confrontare con il numero atteso (un aumento inspiegabile indica un ricalcolo della catena senza la chiave).',
     sansCle: 'Nessuna chiave di concatenamento (AUDIT_CHAIN_KEY): la catena rileva un’alterazione isolata, ma chi ha accesso in scrittura al database potrebbe ricalcolarla interamente. Configurare una chiave segreta.',
   },
   auditRetention: {

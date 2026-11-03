@@ -25,7 +25,7 @@ describe('empreinte', () => {
 describe('verifierSegment', () => {
   const chaine = chainer([e(1), e(2), e(3), e(4)])
   it('chaîne intacte', () => {
-    expect(verifierSegment(chaine, GENESE)).toEqual({ ok: true, verifiees: 4, dernierHash: chaine[3].hash })
+    expect(verifierSegment(chaine, GENESE)).toEqual({ ok: true, verifiees: 4, dernierHash: chaine[3].hash, sansCle: 4 })
   })
   it('contenu modifié : rupture localisée', () => {
     const k = chaine.map((x, i) => (i === 2 ? { ...x, details: '{"falsifie":true}' } : x))
@@ -35,13 +35,38 @@ describe('verifierSegment', () => {
     const k = [chaine[0], chaine[2], chaine[3]]
     expect(verifierSegment(k, GENESE)).toMatchObject({ ok: false, rupture: { seq: '3', raison: 'maillon_manquant' } })
   })
-  it('chaîne recalculée sans la clé : détectée si une clé est configurée', () => {
-    const avecCle = chainer([e(1), e(2)], 'cle-secrete')
-    expect(verifierSegment(avecCle, GENESE, 'cle-secrete').ok).toBe(true)
-    expect(verifierSegment(chainer([e(1), e(2)]), GENESE, 'cle-secrete')).toMatchObject({ ok: false, rupture: { seq: '1', raison: 'contenu_modifie' } })
+  it('avec clé : chaîne vérifiée ; contenu altéré puis recalculé AVEC une autre clé : détecté', () => {
+    expect(verifierSegment(chainer([e(1), e(2)], 'cle-secrete'), GENESE, 'cle-secrete')).toMatchObject({ ok: true, sansCle: 0 })
+    expect(verifierSegment(chainer([e(1), e(2)], 'autre-cle'), GENESE, 'cle-secrete')).toMatchObject({ ok: false, rupture: { seq: '1', raison: 'contenu_modifie' } })
+  })
+  it('chaîne entièrement sans clé alors qu’une clé est configurée : valide (antérieure à la clé) mais COMPTÉE pour être signalée', () => {
+    expect(verifierSegment(chainer([e(1), e(2)]), GENESE, 'cle-secrete')).toMatchObject({ ok: true, sansCle: 2 })
   })
   it('vérification par lots : reprise à partir de la dernière empreinte', () => {
     const r1 = verifierSegment(chaine.slice(0, 2), GENESE)
     expect(r1.ok && verifierSegment(chaine.slice(2), r1.dernierHash).ok).toBe(true)
+  })
+})
+
+describe('mode de scellement mémorisé par entrée (ajout de la clé en cours de vie)', () => {
+  function chainerMixte(entrees: EntreeAudit[], cles: (string | null)[]) {
+    let prev = GENESE
+    return entrees.map((x, i) => { const h = empreinte(x, prev, cles[i]); const r = { ...x, hashPrecedent: prev, hash: h }; prev = h; return r })
+  }
+  it('empreinte avec clé préfixée « k1: », sans clé hexadécimale nue', () => {
+    expect(empreinte(e(1), GENESE, 'cle')).toMatch(/^k1:[0-9a-f]{64}$/)
+    expect(empreinte(e(1), GENESE)).toMatch(/^[0-9a-f]{64}$/)
+  })
+  it('entrées anciennes sans clé puis scellées avec clé : chaîne intègre une fois la clé configurée', () => {
+    const c = chainerMixte([e(1), e(2), e(3)], [null, null, 'cle'])
+    expect(verifierSegment(c, GENESE, 'cle').ok).toBe(true)
+  })
+  it('retour au mode sans clé après une entrée avec clé : falsification (rétrogradation) détectée', () => {
+    const c = chainerMixte([e(1), e(2)], ['cle', null])
+    expect(verifierSegment(c, GENESE, 'cle')).toMatchObject({ ok: false, rupture: { seq: '2', raison: 'mode_degrade' } })
+  })
+  it('entrée scellée avec clé mais clé absente de la configuration : invérifiable, signalé', () => {
+    const c = chainerMixte([e(1)], ['cle'])
+    expect(verifierSegment(c, GENESE, null)).toMatchObject({ ok: false, rupture: { seq: '1', raison: 'cle_absente' } })
   })
 })
