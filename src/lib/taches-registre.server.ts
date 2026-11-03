@@ -13,6 +13,7 @@ const ROUTES = {
   'rapports-planifies': () => import('@/app/api/cron/rapports-planifies/route'),
   'webhooks-dispatch': () => import('@/app/api/cron/webhooks-dispatch/route'),
   'cleanup': () => import('@/app/api/cron/cleanup/route'),
+  'audit-scellement': () => import('@/app/api/cron/audit-scellement/route'),
   'demo-purge': () => import('@/app/api/cron/demo-purge/route'),
 } as const
 

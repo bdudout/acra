@@ -6,6 +6,31 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-11-03 (111) — Claude (session cloud) : Next.js 16.4.4, journal d'audit infalsifiable
+
+- **Next.js 16.4.4** (+ `eslint-config-next`) à la demande de l'utilisateur ; lockfile npm 11 (12 paquets Next seulement).
+  `npm audit` : plus aucun avis sur next (restent des avis modérés préexistants : exceljs, nodemailer, archiver…).
+  Vérifié : build OK (« Next.js 16.4.4 »), `npm test` 727 fichiers / 5 400 tests verts.
+- **Journal d'audit infalsifiable** (priorité « banque » n° 3, partie traçabilité) :
+  - migration `20261103120000_audit_log_chaine` : `AuditLog.seq` (BIGINT, séquence, rempli dans l'ordre chronologique,
+    unique), `hashPrecedent`, `hash` ; **déclencheur `AuditLog_immuable`** : suppression refusée (sauf
+    `SET LOCAL acra.audit_purge = 'on'`, réservé à la future purge de rétention), mise à jour refusée sauf le scellement
+    d'une entrée non scellée sans toucher au contenu ;
+  - `lib/audit-chaine` (pur) : empreinte HMAC-SHA256 (`AUDIT_CHAIN_KEY`, recommandée) ou SHA-256 sans clé, contenu
+    canonique versionné `v1`, vérification par segments (rupture localisée : contenu modifié / maillon manquant) ;
+  - `lib/audit-chaine.server` : scellement par lots sous verrou consultatif, marge de 2 min (insertions concurrentes),
+    **ancre** (dernier seq + empreinte) écrite dans les journaux techniques → SIEM ; vérification complète ;
+  - tâche planifiée `audit-scellement` (chaque heure, `scripts/scheduler.sh`, écran Tâches planifiées) ; vérification à
+    la demande `POST /api/admin/audit-log/integrite` (super-admin, journalisée) + encart « Intégrité du journal » ;
+  - export CSV du journal : colonnes `seq`, `hash`. Corrigé au passage : la liste du journal sérialisait le BigInt (500).
+  - **Reste (T14)** : rétention paramétrable + purge archivée (ancre de reprise de la chaîne), pagination par curseur.
+- **Vérifications** : tests purs 6/6, composant 2/2 ; base réelle `audit-chaine.db.test.ts` 3/3 (refus par la base,
+  scellement + vérification, falsification en contournant le déclencheur détectée au bon numéro) ; `npm run test:db`
+  25 fichiers / 111 tests verts ; tests unitaires audit / tâches / cron / SIEM 23 fichiers / 151 verts ; `tsc` 0 ;
+  `i18n:check` OK ; cliquet expand/contract 19/19 ; migration appliquée, `prisma migrate diff` sans dérive.
+
+---
+
 ## 2026-11-03 (110) — Claude (session cloud) : double validation (quatre yeux) activable par organisation
 
 Décision utilisateur : « pour l'acceptation d'un risque résiduel hors appétit ou la suppression d'un presta TIC critique il

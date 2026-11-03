@@ -2166,6 +2166,12 @@ model AuditLog {
   // d'instance (visible uniquement du SUPER_ADMIN).
   organizationId String?
   createdAt      DateTime @default(now())
+  // Journal infalsifiable (lib/audit-chaine) : numéro d'ordre, puis chaînage par empreintes posé par le scellement
+  // planifié (empreinte de l'entrée = HMAC-SHA256 de son contenu et de l'empreinte précédente). Un déclencheur
+  // PostgreSQL interdit toute modification (hors scellement d'une entrée non scellée) et toute suppression.
+  seq            BigInt   @unique @default(autoincrement())
+  hashPrecedent  String?
+  hash           String?
 
   @@index([action])
   @@index([userId])

@@ -49,9 +49,9 @@ hit() {
 }
 
 echo "[scheduler] demarre — tick ${TICK}s, cible ${APP_URL}"
-echo "[scheduler] planning : webhooks-dispatch chaque tick · alertes-dora chaque heure · snapshots 02:00 · relances 06:00 · tableau-bord-mensuel 1er 08:00 · appetence-snapshots 1er 03:00 · comite-snapshots 1er 03:00"
+echo "[scheduler] planning : webhooks-dispatch chaque tick · alertes-dora et audit-scellement chaque heure · snapshots 02:00 · relances 06:00 · tableau-bord-mensuel 1er 08:00 · appetence-snapshots 1er 03:00 · comite-snapshots 1er 03:00"
 
-last_snap=""; last_clean=""; last_rap=""; last_dig=""; last_rel=""; last_dora=""; last_app=""; last_com=""
+last_snap=""; last_clean=""; last_rap=""; last_dig=""; last_rel=""; last_dora=""; last_app=""; last_com=""; last_scel=""
 while true; do
   day="$(date +%Y%m%d)"; month="$(date +%Y%m)"; hour="$(date +%H)"; dom="$(date +%d)"
 
@@ -60,6 +60,8 @@ while true; do
 
   # Alertes DORA (délais en heures) : une fois par heure.
   [ "$last_dora" != "$day$hour" ] && { hit alertes-dora; last_dora="$day$hour"; }
+  # Scellement du journal d'audit (chaînage par empreintes) : une fois par heure.
+  [ "$last_scel" != "$day$hour" ] && { hit audit-scellement; last_scel="$day$hour"; }
   [ "$hour" = "02" ] && [ "$last_snap" != "$day" ]   && { hit conformite-snapshots; last_snap="$day"; }
   [ "$hour" = "03" ] && [ "$last_clean" != "$day" ]  && { hit cleanup;               last_clean="$day"; }
   [ "$hour" = "05" ] && [ "$last_rap"  != "$day" ]   && { hit rapports-planifies;   last_rap="$day"; }

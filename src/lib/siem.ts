@@ -47,6 +47,7 @@ const CATEGORY: Record<AuditAction, SiemCategory> = {
   // Gouvernance & GRC (piste d'audit décisionnelle)
   ANALYSE_APPROVED: 'GOUVERNANCE', ANALYSE_REJECTED: 'GOUVERNANCE', ANALYSE_SUBMITTED: 'GOUVERNANCE',
   ANALYSE_REVISED: 'GOUVERNANCE', RESIDUAL_RISKS_DECISION: 'GOUVERNANCE',
+  AUDIT_INTEGRITE_VERIFIEE: 'CONFIGURATION', // vérification de la chaîne du journal d'audit
   DOUBLE_VALIDATION_DEMANDEE: 'GOUVERNANCE', DOUBLE_VALIDATION_DECIDEE: 'GOUVERNANCE', // quatre yeux : demande / décision
   ANALYSE_REASSIGNED: 'GOUVERNANCE', // changement de propriétaire d'analyses (avant suppression d'un compte)
   MATURITY_UPDATED: 'GOUVERNANCE', // maturité (profil cible CMMI) modifiée ou écart promu en action

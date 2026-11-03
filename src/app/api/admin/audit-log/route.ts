@@ -77,7 +77,8 @@ export async function GET(req: NextRequest) {
       })
 
   return NextResponse.json({
-    logs,
+    // seq (BigInt, chaîne d'audit) sérialisé en texte.
+    logs: logs.map(l => ({ ...l, seq: l.seq.toString() })),
     total,
     page,
     limit,
