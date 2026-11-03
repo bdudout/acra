@@ -5,11 +5,12 @@ import { analyserDependances, type FonctionDep, type UsageDep } from '@/lib/depe
 
 const usage = (o: Partial<UsageDep> = {}): UsageDep => ({
   id: 'u1', useCase: 'Paiement', tiersId: 't1', tiersNom: 'PSP', offre: 'Passerelle', criticite: 'CRITIQUE', couvert: true, evalue: true,
-  exposeInternet: false, perimetrePci: true, avecSi: true, interconnexion: 'LIGNE_SPECIALISEE', hotes: ['api.psp.example'], ...o,
+  exposeInternet: false, perimetrePci: true, avecSi: true, interconnexion: 'LIGNE_SPECIALISEE', hotes: ['api.psp.example'], contratSansSortie: false, ...o,
 })
 const fonction = (o: Partial<FonctionDep> = {}): FonctionDep => ({
   id: 'p1', nom: 'Paiements', criticiteDora: 'CRITIQUE', proprietaire: 'Direction des paiements', rtoMinutes: 120, rpoMinutes: 15, toleranceImpactMinutes: 240,
-  nbControles: 2, nbRisques: 3, nbIncidents12m: 1, usages: [usage()], ...o,
+  nbControles: 2, nbRisques: 3, nbIncidents12m: 1, usages: [usage()],
+  dernierTest: { dureeRepriseMinutes: 90, date: '2026-09-01' }, scenarios: [{ id: 's1', intitule: 'Panne du PSP', dureeInterruptionMinutes: 180 }], ...o,
 })
 
 describe('analyserDependances', () => {
@@ -48,5 +49,25 @@ describe('analyserDependances', () => {
   it('synthèse : nombre de fonctions avec écarts et écarts par code', () => {
     const r = analyserDependances([fonction(), fonction({ id: 'p2', toleranceImpactMinutes: null, nbControles: 0 })])
     expect(r.synthese).toEqual({ fonctions: 2, avecEcarts: 1, ecartsEleves: 0, parCode: { TOLERANCE_NON_DEFINIE: 1, AUCUN_CONTROLE: 1 } })
+  })
+
+})
+
+describe('tests de continuité, scénarios sévères, stratégie de sortie', () => {
+  const codes = (f: Partial<FonctionDep>) => analyserDependances([fonction(f)]).fonctions[0].ecarts
+  it('aucun test réalisé dans les 12 mois', () => {
+    expect(codes({ dernierTest: null })).toEqual([{ code: 'AUCUN_TEST_12_MOIS', gravite: 'MOYENNE' }])
+  })
+  it('reprise constatée au-delà du RTO, puis au-delà de la tolérance', () => {
+    expect(codes({ dernierTest: { dureeRepriseMinutes: 200, date: '2026-09-01' } })).toEqual([{ code: 'REPRISE_TESTEE_AU_DELA_RTO', gravite: 'MOYENNE' }])
+    expect(codes({ dernierTest: { dureeRepriseMinutes: 300, date: '2026-09-01' } })).toEqual([{ code: 'REPRISE_TESTEE_AU_DELA_TOLERANCE', gravite: 'ELEVEE' }])
+    expect(codes({ dernierTest: { dureeRepriseMinutes: null, date: '2026-09-01' } })).toEqual([])
+  })
+  it('scénarios sévères mais plausibles : absents, ou impact au-delà de la tolérance', () => {
+    expect(codes({ scenarios: [] })).toEqual([{ code: 'AUCUN_SCENARIO_SEVERE', gravite: 'MOYENNE' }])
+    expect(codes({ scenarios: [{ id: 's2', intitule: 'Cyberattaque destructrice', dureeInterruptionMinutes: 720 }] })).toEqual([{ code: 'SCENARIO_HORS_TOLERANCE', gravite: 'ELEVEE', scenarioId: 's2' }])
+  })
+  it('contrat critique sans stratégie de sortie (DORA art. 28 § 8)', () => {
+    expect(codes({ usages: [usage({ contratSansSortie: true })] })).toEqual([{ code: 'SANS_STRATEGIE_SORTIE', gravite: 'MOYENNE', usageId: 'u1' }])
   })
 })

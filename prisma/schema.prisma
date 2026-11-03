@@ -245,6 +245,8 @@ model TestResilience {
   rappelLe         DateTime?
   resultat         String?      @db.Text
   constats         Json         @default("[]") // [{ description, severite 1-4, corrige }]
+  // Durée de reprise constatée (minutes) : comparée au RTO et à la tolérance d'impact du processus testé.
+  dureeRepriseMinutes Int?
   // Provenance d'un plan de test modèle du catalogue (idempotence de l'import, cf. sector-suggestions).
   catalogueKey     String?
   catalogueVersion String?
@@ -498,6 +500,7 @@ model Processus {
   controles     Controle[]
   kris          Kri[]
   serviceUsages TierServiceUsage[]
+  scenariosSeveres ScenarioSevere[]
 
   @@unique([organizationId, catalogueKey])
   @@index([organizationId])
@@ -999,6 +1002,10 @@ model ArrangementTic {
   rappelLe          DateTime?
   paysDonnees       String? // pays de stockage/traitement des données
   sousTraitance     Boolean   @default(false)
+  // Stratégie de sortie (DORA art. 28 § 8) : exigée pour une fonction critique ou importante (lib/registre-tic).
+  strategieSortie         String?   @db.Text
+  prestataireAlternatif   String?
+  strategieSortieTesteeLe DateTime? @db.Date
 
   // Questionnaire de qualification risque/sécurité (due diligence DORA art. 28) :
   // [{ id, reponse: OUI|NON|PARTIEL|NA, commentaire? }] — cf. lib/tic-questionnaire.ts.
@@ -3124,4 +3131,23 @@ model AuditPurge {
   createdAt     DateTime @default(now())
 
   @@index([jusquaSeq])
+}
+
+// Scénario « sévère mais plausible » d'une fonction critique ou importante (résilience opérationnelle) : durée
+// d'interruption estimée, comparée à la tolérance d'impact du processus (lib/dependances-critiques).
+model ScenarioSevere {
+  id                       String    @id @default(cuid())
+  organizationId           String
+  processusId              String
+  processus                Processus @relation(fields: [processusId], references: [id], onDelete: Cascade)
+  intitule                 String
+  description              String?   @db.Text
+  dureeInterruptionMinutes Int
+  mesures                  String?   @db.Text
+  dateEvaluation           DateTime? @db.Date
+  createdById              String?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  @@index([organizationId, processusId])
 }

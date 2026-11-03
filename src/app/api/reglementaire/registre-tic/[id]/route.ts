@@ -35,9 +35,20 @@ export const PATCH = withAccess(access, async (req, { user, role, orgId, params:
   const tierInput = await resolveTierIdInput(body, orgId)
   if (!tierInput.ok) return NextResponse.json({ error: 'tier_invalide' }, { status: 400 })
 
+  // Remplacement des champs de l'accord, SAUF ceux que la demande ne fournit pas : le questionnaire de qualification
+  // et la stratégie de sortie ne sont jamais effacés par un formulaire qui ne les envoie pas (le formulaire principal
+  // n'envoie pas le questionnaire ; l'enregistrement du questionnaire n'envoyait pas la stratégie de sortie).
+  const { questionnaire, strategieSortie, prestataireAlternatif, strategieSortieTesteeLe, ...champs } = data
+  const fourni = (k: string) => typeof body === 'object' && body !== null && k in body
   const updated = await prisma.arrangementTic.update({
     where: { id },
-    data: { ...data, ...(tierInput.provided ? { tierId: tierInput.tierId } : {}), questionnaire: (data.questionnaire ?? []) as unknown as Prisma.InputJsonValue },
+    data: {
+      ...champs, ...(tierInput.provided ? { tierId: tierInput.tierId } : {}),
+      ...(fourni('questionnaire') ? { questionnaire: (questionnaire ?? []) as unknown as Prisma.InputJsonValue } : {}),
+      ...(fourni('strategieSortie') ? { strategieSortie } : {}),
+      ...(fourni('prestataireAlternatif') ? { prestataireAlternatif } : {}),
+      ...(fourni('strategieSortieTesteeLe') ? { strategieSortieTesteeLe: strategieSortieTesteeLe ? new Date(strategieSortieTesteeLe) : null } : {}),
+    },
   })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {
     userId: user.id, userRole: role, organizationId: orgId, ip: getClientIp(req),

@@ -35,6 +35,8 @@ export interface TestResilienceInput {
   dateRealisation: Date | null
   resultat: string | null
   constats: Constat[]
+  /** Durée de reprise CONSTATÉE lors du test (minutes) : comparée au RTO et à la tolérance d'impact de la fonction. */
+  dureeRepriseMinutes: number | null
 }
 
 const has = <T extends string>(list: readonly T[], v: unknown): v is T => typeof v === 'string' && (list as readonly string[]).includes(v)
@@ -58,13 +60,16 @@ export function sanitizeConstats(v: unknown): Constat[] {
 }
 
 /** Valide et nettoie un test du programme. */
-export function sanitizeTestResilience(body: unknown): { ok: true; value: TestResilienceInput } | { ok: false; error: 'intitule_requis' | 'type_invalide' | 'annee_invalide' } {
+export function sanitizeTestResilience(body: unknown): { ok: true; value: TestResilienceInput } | { ok: false; error: 'intitule_requis' | 'type_invalide' | 'annee_invalide' | 'duree_reprise_invalide' } {
   const o = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>
   const intitule = text(o.intitule, 300)
   if (!intitule) return { ok: false, error: 'intitule_requis' }
   if (!has(TEST_RESILIENCE_TYPES, o.type)) return { ok: false, error: 'type_invalide' }
   const annee = Number(o.annee)
   if (!Number.isInteger(annee) || annee < 2020 || annee > 2100) return { ok: false, error: 'annee_invalide' }
+  const brut = o.dureeRepriseMinutes
+  const dureeRepriseMinutes = brut === undefined || brut === null || brut === '' ? null : Number(brut)
+  if (dureeRepriseMinutes !== null && (!Number.isInteger(dureeRepriseMinutes) || dureeRepriseMinutes < 0)) return { ok: false, error: 'duree_reprise_invalide' }
   const ids = Array.isArray(o.riskItemIds) ? o.riskItemIds.filter((x): x is string => typeof x === 'string' && !!x) : []
   return {
     ok: true,
@@ -81,6 +86,7 @@ export function sanitizeTestResilience(body: unknown): { ok: true; value: TestRe
       dateRealisation: date(o.dateRealisation),
       resultat: text(o.resultat, 5000),
       constats: sanitizeConstats(o.constats),
+      dureeRepriseMinutes,
     },
   }
 }

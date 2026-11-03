@@ -24,6 +24,7 @@ interface Arrangement {
   id: string; reference: string; prestataireNom: string; identifiant: string | null; pays: string | null
   typeService: string; fonctionSupportee: string | null; criticite: string
   dateDebut: string | null; dateFin: string | null; paysDonnees: string | null; sousTraitance: boolean
+  strategieSortie?: string | null; prestataireAlternatif?: string | null; strategieSortieTesteeLe?: string | null
   champsManquants: string[]
   tierId?: string | null
   ecosysteme?: EcoResume | null
@@ -49,6 +50,7 @@ const CRIT_BADGE: Record<string, string> = {
 const emptyForm = {
   reference: '', prestataireNom: '', identifiant: '', pays: '', typeService: 'CLOUD',
   fonctionSupportee: '', criticite: 'NON_CRITIQUE', dateDebut: '', dateFin: '', paysDonnees: '', sousTraitance: false, tierId: '',
+  strategieSortie: '', prestataireAlternatif: '', strategieSortieTesteeLe: '',
 }
 
 export default function RegistreTicManager({ canManage }: { canManage: boolean }) {
@@ -83,6 +85,7 @@ export default function RegistreTicManager({ canManage }: { canManage: boolean }
       typeService: a.typeService, fonctionSupportee: a.fonctionSupportee ?? '', criticite: a.criticite,
       dateDebut: a.dateDebut ? a.dateDebut.slice(0, 10) : '', dateFin: a.dateFin ? a.dateFin.slice(0, 10) : '',
       paysDonnees: a.paysDonnees ?? '', sousTraitance: a.sousTraitance, tierId: a.tierId ?? '',
+      strategieSortie: a.strategieSortie ?? '', prestataireAlternatif: a.prestataireAlternatif ?? '', strategieSortieTesteeLe: a.strategieSortieTesteeLe ? a.strategieSortieTesteeLe.slice(0, 10) : '',
     })
     setErr(null); setShowForm(true)
   }
@@ -242,6 +245,13 @@ export default function RegistreTicManager({ canManage }: { canManage: boolean }
               <input className={`mt-1 ${inputCls}`} value={form.paysDonnees} onChange={e => setForm({ ...form, paysDonnees: e.target.value })} placeholder="FR" maxLength={2} /></label>
             <label className="flex items-center gap-2 mt-6"><input type="checkbox" checked={form.sousTraitance} onChange={e => setForm({ ...form, sousTraitance: e.target.checked })} />
               <span className="text-sm text-gray-700 dark:text-gray-300">{r.champ.sousTraitance}</span></label>
+            {/* Stratégie de sortie (DORA art. 28 § 8) : exigée pour une fonction critique ou importante. */}
+            <label className="block sm:col-span-2"><span className="text-sm text-gray-700 dark:text-gray-300">{r.champ.strategieSortie}</span>
+              <textarea className={`mt-1 ${inputCls}`} rows={2} maxLength={4000} value={form.strategieSortie} onChange={e => setForm({ ...form, strategieSortie: e.target.value })} placeholder={r.champ.strategieSortieAide} /></label>
+            <label className="block"><span className="text-sm text-gray-700 dark:text-gray-300">{r.champ.prestataireAlternatif}</span>
+              <input className={`mt-1 ${inputCls}`} maxLength={200} value={form.prestataireAlternatif} onChange={e => setForm({ ...form, prestataireAlternatif: e.target.value })} /></label>
+            <label className="block"><span className="text-sm text-gray-700 dark:text-gray-300">{r.champ.strategieSortieTesteeLe}</span>
+              <input type="date" className={`mt-1 ${inputCls}`} value={form.strategieSortieTesteeLe} onChange={e => setForm({ ...form, strategieSortieTesteeLe: e.target.value })} /></label>
           </div>
           <div className="flex gap-2">
             <button type="submit" className="bg-ebios-600 hover:bg-ebios-700 text-white text-sm font-medium py-2 px-4 rounded-lg">{t.save}</button>

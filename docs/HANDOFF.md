@@ -39,6 +39,33 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-11-03 (113) — Claude (session cloud) : compléments DORA (sortie, tests de continuité, scénarios sévères)
+
+Demande utilisateur : « on avance d'abord sur les points 2 3 4 » (2 = compléments DORA ; 3 = installation et sauvegarde
+multi-instance ; 4 = clé AUDIT_CHAIN_KEY — 3 et 4 confiés à un agent, entrée séparée). Réponses données : MCP pour
+l'assistance à la qualification, pas pour l'import de masse ; applications : couche légère seulement si besoin (DORA
+art. 8), pas de copie de CMDB — non lancé.
+- **Stratégie de sortie** (DORA art. 28 § 8) : `ArrangementTic.strategieSortie`, `prestataireAlternatif`,
+  `strategieSortieTesteeLe` (migration `20261103180000`) ; exigée par `validerArrangement` pour une fonction critique ou
+  importante (complétude du registre) ; export CSV ; formulaire du registre TIC.
+- **Défaut corrigé** : le PATCH d'un contrat TIC remplaçait tout — modifier un contrat via le formulaire principal
+  **effaçait les réponses au questionnaire de qualification DORA** (le formulaire ne l'envoie pas). Questionnaire et
+  stratégie de sortie ne sont plus écrasés quand la demande ne les fournit pas (test base réelle).
+- **Tests de continuité** : `TestResilience.dureeRepriseMinutes` (migration `20261103190000`, `duree_reprise_invalide`) ;
+  le formulaire des tests permet enfin de choisir le **processus testé** (le champ existait sans saisie possible) et la
+  durée de reprise constatée (heures).
+- **Scénarios sévères mais plausibles** : modèle `ScenarioSevere` (migration `20261103200000`), `lib/scenarios-severes`,
+  `POST /api/resilience/scenarios`, `PUT/DELETE /api/resilience/scenarios/[id]` (gestionnaires du registre TIC, org active,
+  journalisé) ; saisie et liste dans la vue des dépendances.
+- Nouveaux écarts (`lib/dependances-critiques`) : SANS_STRATEGIE_SORTIE, AUCUN_TEST_12_MOIS (dernier test RÉALISÉ sur la
+  fonction), REPRISE_TESTEE_AU_DELA_RTO, REPRISE_TESTEE_AU_DELA_TOLERANCE (élevé), AUCUN_SCENARIO_SEVERE,
+  SCENARIO_HORS_TOLERANCE (élevé).
+- **Vérifications** : purs dependances 10/10, registre-tic 17/17, tests-resilience 11/11, scénarios 2/2 ; écrans et routes
+  liés 23 fichiers / 220 tests verts ; base réelle 5/5 (`dependances-critiques`, `registre-tic-sortie`) ; `tsc` 0 hors
+  fichiers en cours de l'agent ; `i18n:check` OK ; migrations appliquées, `prisma migrate diff` sans dérive.
+
+---
+
 ## 2026-11-03 (112) — Claude (session cloud) : dépendances des fonctions critiques ou importantes, tolérance d'impact
 
 Priorité « banque » n° 2 (chaîne de dépendance des fonctions critiques ou importantes, DORA art. 8 et 28).

@@ -14,6 +14,7 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('next/headers', () => ({ cookies: async () => ({ get: () => (session.activeOrg ? { value: session.activeOrg } : undefined) }), headers: async () => new Headers() }))
 
 import { GET } from '@/app/api/resilience/dependances/route'
+import { POST as creerScenario } from '@/app/api/resilience/scenarios/route'
 
 afterAll(async () => { await prisma.$disconnect() })
 const appel = () => GET(new NextRequest('http://test.local/api/resilience/dependances') as never, { params: Promise.resolve({}) } as never)
@@ -50,5 +51,25 @@ describe('dépendances des fonctions critiques (base réelle)', () => {
   it('LECTEUR refusé', async () => {
     session.user = { id: lecteur.id, role: 'ANALYSTE' }; session.activeOrg = orgId
     expect((await appel()).status).toBe(403)
+  })
+  it('scénario créé par la route, test réalisé, contrat sans stratégie de sortie : écarts correspondants ; autre organisation refusée', async () => {
+    session.user = { id: rssi.id, role: 'ANALYSTE' }; session.activeOrg = orgId
+    const paiements = await prisma.processus.findFirstOrThrow({ where: { organizationId: orgId, nom: 'Paiements' } })
+    const post = (body: unknown) => creerScenario(new Request('http://test.local/api', { method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': '10.5.0.1' }, body: JSON.stringify(body) }) as never, { params: Promise.resolve({}) } as never)
+    expect((await post({ processusId: paiements.id, intitule: 'Rançongiciel', dureeInterruptionMinutes: 2880 })).status).toBe(201)
+    const autre = await makeOrg('Autre')
+    const pAutre = await prisma.processus.create({ data: { organizationId: autre.id, nom: 'Autre', criticiteDora: 'CRITIQUE' } })
+    expect((await post({ processusId: pAutre.id, intitule: 'x', dureeInterruptionMinutes: 10 })).status).toBe(404)
+    await prisma.testResilience.create({ data: { organizationId: orgId, annee: 2026, intitule: 'Bascule PSP', type: 'SCENARIO', statut: 'REALISE', dateRealisation: new Date(), processusId: paiements.id, dureeRepriseMinutes: 300 } })
+    const usage = await prisma.tierServiceUsage.findFirstOrThrow({ where: { organizationId: orgId, processusId: paiements.id } })
+    const contrat = await prisma.arrangementTic.create({ data: { organizationId: orgId, reference: 'C-PSP', prestataireNom: 'PSP', criticite: 'CRITIQUE' } })
+    const offre = await prisma.tierContractService.create({ data: { arrangementId: contrat.id, tierServiceId: usage.tierServiceId } })
+    await prisma.tierServiceUsage.update({ where: { id: usage.id }, data: { contractServiceId: offre.id } })
+    const j = await (await appel()).json()
+    const codes = j.fonctions.find((f: { nom: string }) => f.nom === 'Paiements').ecarts.map((e: { code: string }) => e.code)
+    expect(codes).toEqual(expect.arrayContaining(['SCENARIO_HORS_TOLERANCE', 'REPRISE_TESTEE_AU_DELA_TOLERANCE', 'SANS_STRATEGIE_SORTIE']))
+    expect(codes).not.toContain('AUCUN_TEST_12_MOIS')
+    expect(codes).not.toContain('USAGE_SANS_CONTRAT')
+    expect(j.peutModifier).toBe(true)
   })
 })
