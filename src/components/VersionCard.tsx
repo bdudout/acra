@@ -173,8 +173,9 @@ export default function VersionCard() {
         </p>
       )}
       {message && <p className="mt-2 text-sm text-ebios-700">{message}</p>}
-      {info && !info.deployConfigured && !ha && (info.agentAvailable || (info.snapshots?.length ?? 0) > 0 || info.updateStatus) && (
-        <UpdateRestorePanel status={(info.updateStatus as FullUpdateStatus | null) ?? null} run={info.run ?? null} snapshots={info.snapshots ?? []} impacts={info.impacts} retentionDays={info.failedDbRetentionDays} offsite={info.offsite ?? null} offsiteMaxAgeHours={info.offsiteMaxAgeHours} agentAvailable={info.agentAvailable} onChanged={load} />
+      {/* Profil « ha » : sauvegardes logiques de la base externe listées, sans restauration d'un clic (procédure affichée). */}
+      {info && !info.deployConfigured && (info.agentAvailable || (info.snapshots?.length ?? 0) > 0 || info.updateStatus) && (
+        <UpdateRestorePanel status={ha ? null : (info.updateStatus as FullUpdateStatus | null) ?? null} run={ha ? null : info.run ?? null} snapshots={info.snapshots ?? []} impacts={info.impacts} retentionDays={info.failedDbRetentionDays} offsite={info.offsite ?? null} offsiteMaxAgeHours={info.offsiteMaxAgeHours} agentAvailable={info.agentAvailable} haProfile={ha} onChanged={load} />
       )}
 
       <details className="mt-3 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">

@@ -373,7 +373,9 @@ docker compose up -d
 > **Windows (Docker Desktop + WSL)** : clonez le dépôt *depuis WSL* (ou faites `git config --global core.autocrlf input` avant de cloner). Si vous voyez `$'\r': command not found`, le script a été converti en fins de ligne Windows : `sed -i 's/\r$//' scripts/setup.sh` puis relancez-le.
 
 `setup.sh` génère pour vous des secrets forts (`NEXTAUTH_SECRET`, mot de passe
-PostgreSQL, `SECRETS_ENCRYPTION_KEY`) et **ne régénère que les valeurs manquantes**
+PostgreSQL, `SECRETS_ENCRYPTION_KEY`, clé des Server Functions
+`NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`, clé de chaînage du journal d'audit `AUDIT_CHAIN_KEY`)
+et **ne régénère que les valeurs manquantes**
 s'il est relancé (détails en section « Installation détaillée » ci-dessous).
 
 **L'application est disponible sur http://localhost:3000.** En production, créer
@@ -458,6 +460,8 @@ Le script renseigne automatiquement :
 | `NEXTAUTH_SECRET` | Signature des sessions JWT | ✅ aléatoire (48 o) |
 | `POSTGRES_PASSWORD` | Mot de passe PostgreSQL | ✅ aléatoire (32 car.) |
 | `SECRETS_ENCRYPTION_KEY` | Chiffrement AES-256-GCM des secrets en base (OIDC, SMS, SMTP) | ✅ aléatoire (48 o) |
+| `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | Clé des Server Functions de Next.js, lue à la construction de l'image : stable d'une construction à l'autre (précaution en mono-instance, obligatoire en multi-instance) | ✅ base64 de 32 octets, **jamais régénérée** (même avec `--force`) |
+| `AUDIT_CHAIN_KEY` | Clé de chaînage du journal d'audit (HMAC-SHA256) : à conserver dans un coffre et à sauvegarder avec les secrets ; **ne jamais la changer** (les entrées déjà scellées deviendraient invérifiables). Absente en production : avertissement au démarrage | ✅ base64 de 32 octets, **jamais régénérée** (même avec `--force`) |
 | `DATABASE_URL` | Connexion Prisma | ✅ dérivée des variables PostgreSQL |
 | `POSTGRES_USER` / `POSTGRES_DB` | Identité de la base | `acra_user` / `acra_rm` |
 | `NEXTAUTH_URL` | URL publique | demandée (défaut `http://localhost:3000`) |
@@ -468,6 +472,14 @@ Le script renseigne automatiquement :
 > ⚠️ **Production** : `NEXTAUTH_URL` doit être en **HTTPS**. Ne committez jamais `.env`
 > (déjà dans `.gitignore`). Si `SECRETS_ENCRYPTION_KEY` change, les secrets déjà
 > chiffrés en base devront être ressaisis dans l'interface d'administration.
+>
+> Le `.env` est écrit en permissions `600` ; l'ancien est sauvegardé (`.env.backup.<date>`)
+> et les variables que le script ne gère pas (SMTP, démo…) sont conservées.
+>
+> **Multi-instance (haute disponibilité)** : `./scripts/setup.sh --profil ha` (ou `--profil ha --auto`
+> avec les paramètres dans l'environnement) génère la clé des Server Functions et le mot de passe
+> Redis, demande la base externe, le stockage S3 et Redis, **valide avant d'écrire**, puis vérifie
+> par `docker compose … config`. Procédure complète : [docs/deploiement-haute-disponibilite.md § 6](docs/deploiement-haute-disponibilite.md#6-procédure-de-déploiement).
 
 ---
 

@@ -9,6 +9,8 @@
  * En cas de blocage, le message indique comment corriger via le script de setup.
  */
 
+import { isHaProfile } from '@/lib/update-request'
+
 const IS_PROD = process.env.NODE_ENV === 'production'
 
 // Valeurs par défaut connues qui ne doivent jamais être utilisées en production
@@ -50,6 +52,52 @@ function printSetupHelp() {
   console.error('\x1b[36m  │  Le script crée un .env avec des secrets aléatoires sécurisés. │\x1b[0m')
   console.error('\x1b[36m  └─────────────────────────────────────────────────────────────────┘\x1b[0m')
   console.error('')
+}
+
+/**
+ * Clé des Server Functions de Next.js : base64 (alphabet standard, avec remplissage) d'une clé AES de 16, 24 ou
+ * 32 octets — node_modules/next/dist/docs/01-app/02-guides/self-hosting.md (« Server Functions encryption key »).
+ */
+export function isValidServerActionsKey(key: string | undefined): boolean {
+  const k = (key ?? '').trim()
+  if (k.length === 0 || k.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(k)) return false
+  const bytes = (k.length / 4) * 3 - (k.endsWith('==') ? 2 : k.endsWith('=') ? 1 : 0)
+  return bytes === 16 || bytes === 24 || bytes === 32
+}
+
+/**
+ * Profil « ha » (ACRA_DEPLOY_PROFILE=ha, posé par docker-compose.ha.yml) : exigences propres au multi-instance.
+ * Rend la liste des problèmes (vide = conforme ; jamais de valeur secrète dans les messages). Ne vérifie que la
+ * PRÉSENCE du stockage S3 et d'un store Redis : leur configuration détaillée est validée au démarrage par
+ * document-storage (S3_*) et shared-store.server (REDIS_*, joignabilité) depuis instrumentation.ts.
+ */
+export function haProfileProblems(env: Record<string, string | undefined>): string[] {
+  if (!isHaProfile(env)) return []
+  const set = (k: string) => (env[k] ?? '').trim() !== ''
+  const problems: string[] = []
+  if (!set('NEXT_SERVER_ACTIONS_ENCRYPTION_KEY')) {
+    problems.push('Profil « ha » : NEXT_SERVER_ACTIONS_ENCRYPTION_KEY manquant (clé commune à tous les réplicas et stable d\'une version à l\'autre ; ./scripts/setup.sh --profil ha la génère).')
+  } else if (!isValidServerActionsKey(env.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY)) {
+    problems.push('Profil « ha » : NEXT_SERVER_ACTIONS_ENCRYPTION_KEY invalide (attendu : base64 d\'une clé AES de 16, 24 ou 32 octets, ex. openssl rand -base64 32).')
+  }
+  if ((env.DOCUMENT_STORAGE ?? '').trim().toLowerCase() !== 's3') {
+    problems.push('Profil « ha » : DOCUMENT_STORAGE=s3 requis (un stockage local par réplica disperserait les documents).')
+  }
+  if (!set('REDIS_URL') && !set('REDIS_SENTINELS')) {
+    problems.push('Profil « ha » : store Redis requis (REDIS_URL ou REDIS_SENTINELS) — sinon limites de débit et verrouillage de compte non partagés entre réplicas.')
+  }
+  return problems
+}
+
+/**
+ * Clé de chaînage du journal d'audit (AUDIT_CHAIN_KEY, lib/audit-chaine) : en production, son absence est signalée
+ * (avertissement, JAMAIS bloquant). Sans clé, la chaîne reste vérifiable (SHA-256) mais une personne ayant un accès en
+ * écriture à la base pourrait la recalculer entièrement. Rend le message, ou null (jamais la valeur de la clé).
+ */
+export function auditChainKeyWarning(env: Record<string, string | undefined>): string | null {
+  if (env.NODE_ENV !== 'production') return null
+  if ((env.AUDIT_CHAIN_KEY ?? '').trim() !== '') return null
+  return 'AUDIT_CHAIN_KEY non défini — journal d\'audit chaîné sans clé secrète (SHA-256 seul) : une personne ayant un accès en écriture à la base pourrait recalculer la chaîne. ./scripts/setup.sh la génère (à conserver dans un coffre, à ne jamais changer).'
 }
 
 /** Vérifie les variables d'environnement critiques au démarrage (secrets absents = bloquant ; valeurs par défaut = bloquant en prod). */
@@ -101,6 +149,16 @@ export function runStartupChecks() {
   if (IS_PROD && !(process.env.SIEM_ALLOWED_HOSTS ?? '').trim()) {
     warn('SIEM_ALLOWED_HOSTS non défini — destinations SIEM non restreintes (voir runbook § SIEM).')
   }
+
+  // ── AUDIT_CHAIN_KEY (journal d'audit infalsifiable) : avertissement en production, non bloquant ──
+  const auditKeyWarning = auditChainKeyWarning(process.env)
+  if (auditKeyWarning) warn(auditKeyWarning)
+
+  // ── Profil « ha » (multi-instance) : bloquant, en production comme ailleurs ──
+  const haProblems = haProfileProblems(process.env)
+  for (const p of haProblems) error(p)
+  if (haProblems.length > 0) hasMissing = true
+  else if (isHaProfile(process.env)) ok('Profil « ha » : clé des Server Functions, stockage S3 et store Redis déclarés')
 
   // ── Décision finale ────────────────────────────────────────────────────────
   const shouldBlock = hasMissing || (hasDefault && IS_PROD)

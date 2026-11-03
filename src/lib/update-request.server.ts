@@ -5,7 +5,8 @@
 
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { agentAlive, parseUpdateStatus, type UpdateRequest, type UpdateStatus } from '@/lib/update-request'
+import { randomUUID } from 'node:crypto'
+import { agentAlive, buildBackupNowRequest, parseUpdateStatus, type UpdateRequest, type UpdateStatus } from '@/lib/update-request'
 import { parseSnapshotIndex, type SnapshotEntry, type SnapshotIndex } from '@/lib/snapshot'
 import { parseRunJournal, type RunJournal } from '@/lib/update-run'
 import { parseOffsiteState, type OffsiteState } from '@/lib/offsite-status'
@@ -60,4 +61,18 @@ export async function writeUpdateRequest(req: UpdateRequest): Promise<void> {
 /** Une demande attend déjà l'agent (la boîte de dépôt n'a qu'un emplacement). */
 export async function requestPending(): Promise<boolean> {
   return fs.stat(path.join(updateDir(), 'inbox', 'request.json')).then(() => true).catch(() => false)
+}
+
+/**
+ * Dépose une demande de sauvegarde immédiate (point `manual`) pour l'agent hôte — bouton « Sauvegarder maintenant » et relance de
+ * la tâche « sauvegarde-base ». Refus : mise à jour en cours, agent absent, demande déjà en attente.
+ */
+export async function deposerSauvegardeImmediate(userId: string): Promise<{ ok: true; id: string } | { ok: false; error: 'update_in_progress' | 'agent_unavailable' | 'request_pending' }> {
+  const agent = await readUpdateAgent()
+  if (agent.run) return { ok: false, error: 'update_in_progress' }
+  if (!agent.agentAvailable) return { ok: false, error: 'agent_unavailable' }
+  if (await requestPending()) return { ok: false, error: 'request_pending' }
+  const request = buildBackupNowRequest({ userId, now: new Date(), id: randomUUID() })
+  try { await writeUpdateRequest(request) } catch { return { ok: false, error: 'agent_unavailable' } }
+  return { ok: true, id: request.id }
 }

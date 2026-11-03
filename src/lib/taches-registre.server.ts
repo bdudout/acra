@@ -14,6 +14,10 @@ const ROUTES = {
   'webhooks-dispatch': () => import('@/app/api/cron/webhooks-dispatch/route'),
   'cleanup': () => import('@/app/api/cron/cleanup/route'),
   'audit-scellement': () => import('@/app/api/cron/audit-scellement/route'),
+  // Sauvegardes (agent hôte) : compte rendu de chaque sauvegarde ; relance = demande de sauvegarde immédiate à l'agent.
+  'sauvegarde-base': () => import('@/app/api/cron/sauvegarde-base/route'),
+  // Tous les documents référencés par la base existent dans le stockage (HEAD S3 en profil ha).
+  'coherence-documents': () => import('@/app/api/cron/coherence-documents/route'),
   'demo-purge': () => import('@/app/api/cron/demo-purge/route'),
 } as const
 

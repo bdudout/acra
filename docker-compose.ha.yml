@@ -13,7 +13,11 @@
 #   - documents en stockage objet S3 compatible (DOCUMENT_STORAGE=s3, variables S3_* OBLIGATOIRES) ;
 #   - base EXTERNE (DATABASE_URL obligatoire) : base managée ou point d'entrée Patroni (HAProxy/pgbouncer).
 #     Le service « db » local et la sauvegarde pg_dump locale sont désactivés (profil « base-locale ») :
-#     la sauvegarde continue est assurée par l'hébergeur ou par pgBackRest (cf. guide).
+#     la sauvegarde continue (PITR) est assurée par l'hébergeur ou par pgBackRest ; en complément, l'agent hôte
+#     (scripts/update-agent.sh → acra-schedule.sh → acra-snapshot.sh, profil détecté par cette surcouche) fait une
+#     sauvegarde LOGIQUE de la base externe (pg_dump dans un conteneur postgres:<majeure>, BACKUP_DATABASE_URL ou
+#     DATABASE_URL), chiffrée, vérifiée, conservée et copiée hors site comme en mono-instance, avec un bail en base
+#     (une seule sauvegarde tous hôtes confondus) et l'inventaire des documents S3 (cf. guide § 3.4).
 #   - tâches planifiées : un SEUL planificateur (service « scheduler ») ; chaque appel arrive sur un réplica
 #     quelconque et le bail en base « CronVerrou » (lib/cron-verrou.server.ts) garantit une seule exécution
 #     simultanée par tâche, toutes instances confondues.
@@ -52,6 +56,7 @@ services:
   db:
     profiles: ["base-locale"]
 
+  # Sauvegarde pg_dump du conteneur db local : remplacée par la sauvegarde logique de l'agent hôte (guide § 3.4).
   backup:
     profiles: ["base-locale"]
 
@@ -81,7 +86,25 @@ services:
       # Partagé : toutes les instances doivent avoir le même NEXTAUTH_SECRET (sessions JWT).
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?NEXTAUTH_SECRET obligatoire}
       SECRETS_ENCRYPTION_KEY: ${SECRETS_ENCRYPTION_KEY:-}
-      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD obligatoire}@redis:6379/0
+      # Clé de chaînage du journal d'audit : IDENTIQUE sur tous les réplicas et tous les hôtes (une seule chaîne).
+      AUDIT_CHAIN_KEY: ${AUDIT_CHAIN_KEY:-}
+      # Aussi à l'exécution (même valeur que l'argument de construction) : le contrôle de démarrage du profil
+      # « ha » (lib/startup-checks.ts) refuse de démarrer sans clé valide.
+      NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY:?NEXT_SERVER_ACTIONS_ENCRYPTION_KEY obligatoire en multi-instance (openssl rand -base64 32)}
+      # Redis (guide § 5) — trois modes, écrits par scripts/setup.sh --profil ha :
+      #  - REDIS_URL ABSENTE de .env : conteneur « redis » ci-dessous (essai, un seul hôte) ;
+      #  - REDIS_URL=rediss://… : Redis managé (le conteneur local démarre mais n'est pas utilisé) ;
+      #  - REDIS_URL= (VIDE, explicitement) + REDIS_SENTINELS / REDIS_SENTINEL_MASTER : Redis Sentinel.
+      # REDIS_PASSWORD : mot de passe du conteneur local ET, en modes managé/Sentinel, du primaire externe
+      # (identique au mot de passe éventuellement présent dans REDIS_URL, sinon refus de démarrer).
+      REDIS_URL: ${REDIS_URL-redis://:${REDIS_PASSWORD:?REDIS_PASSWORD obligatoire}@redis:6379/0}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD obligatoire}
+      REDIS_USERNAME: ${REDIS_USERNAME:-}
+      REDIS_SENTINELS: ${REDIS_SENTINELS:-}
+      REDIS_SENTINEL_MASTER: ${REDIS_SENTINEL_MASTER:-}
+      REDIS_SENTINEL_PASSWORD: ${REDIS_SENTINEL_PASSWORD:-}
+      REDIS_TLS: ${REDIS_TLS:-}
+      REDIS_TIMEOUT_MS: ${REDIS_TIMEOUT_MS:-}
       REDIS_OPTIONNEL: "0"
       DOCUMENT_STORAGE: s3
       S3_ENDPOINT: ${S3_ENDPOINT:?S3_ENDPOINT obligatoire en multi-instance}

@@ -13,10 +13,17 @@
 #
 # Codes de sortie : 0 succès · 2 usage · 10 prérequis · 11 espace insuffisant · 20 dump en échec ·
 #   21 vérification en échec · 22 clone en échec (non bloquant) · 30 restauration en échec ·
-#   31 identifiant inconnu · 32 empreinte de clé différente · 40 verrou détenu.
+#   31 identifiant inconnu · 32 empreinte de clé différente · 33 restauration automatique refusée (profil ha) ·
+#   40 verrou détenu · 41 sauvegarde de la base partagée déjà en cours ou déjà faite (profil ha, autre hôte).
 # Variables : ACRA_BACKUP_DIR (./backups) · ACRA_COMPOSE_FILES · ACRA_SNAPSHOT_VERIFY · ACRA_SNAPSHOT_FULL_MAX_MB (2048)
 #   · ACRA_SNAPSHOT_KEEP (3) · ACRA_FAILED_DB_RETENTION_DAYS (14) · ACRA_BACKUP_AGE_RECIPIENT / ACRA_BACKUP_AGE_IDENTITY
 #   · ACRA_DB_MODE (compose|url ; lot 6) · ACRA_PG_CLIENT (auto|docker|host : où tournent pg_dump/pg_restore/psql en mode url) · ACRA_DOCUMENTS_DIR (documents sur disque, installation sans Docker) · ACRA_SNAPSHOT_HOOK (commande appelée avec l'identifiant) · ACRA_SNAPSHOT_OFFSITE_CMD.
+# Profil multi-instance « ha » (docker-compose.ha.yml ; ACRA_DEPLOY_PROFILE=ha ou surcouche dans ACRA_COMPOSE_FILES) —
+#   docs/deploiement-haute-disponibilite.md § 3.4 : base EXTERNE (mode url par défaut ; BACKUP_DATABASE_URL, connexion directe
+#   hors pgbouncer en mode transaction, préférée à DATABASE_URL), documents en S3 (pas d'archive : inventaire des clés
+#   référencées + empreinte au manifeste, contrôle de présence dans le bucket par l'application), pas de clone, bail en base
+#   (CronVerrou « script:sauvegarde-base ») pour qu'une seule sauvegarde tourne tous hôtes confondus, restauration de contrôle
+#   sur ACRA_BACKUP_VERIFY_DATABASE_URL si défini, et AUCUNE restauration automatique (code 33 : scripts/acra-restore-ha.sh).
 # Jamais de secret dans un journal, un manifeste ou un nom de fichier.
 set -Eeuo pipefail
 umask 077
@@ -30,7 +37,18 @@ UPDATE_DIR=".acra-update"
 KEEP="${ACRA_SNAPSHOT_KEEP:-3}"
 FAILED_RETENTION_DAYS="${ACRA_FAILED_DB_RETENTION_DAYS:-14}"
 FULL_MAX_MB="${ACRA_SNAPSHOT_FULL_MAX_MB:-2048}"
-DB_MODE="${ACRA_DB_MODE:-compose}"
+# Profil de déploiement : « ha » (multi-instance) ou « single » (défaut).
+# Ordre : variable ACRA_DEPLOY_PROFILE, surcouche docker-compose.ha.yml de l'agent, puis ACRA_DEPLOY_PROFILE du .env (écrit par
+# scripts/setup.sh --profil ha) : un lancement à la main sans variable ne doit jamais traiter une base partagée en mono-instance.
+PROFILE="${ACRA_DEPLOY_PROFILE:-}"
+if [ -z "$PROFILE" ]; then case " ${ACRA_COMPOSE_FILES:-} " in *docker-compose.ha.yml*) PROFILE=ha ;; esac; fi
+if [ -z "$PROFILE" ] && [ -f .env ]; then PROFILE="$(sed -n 's/^ACRA_DEPLOY_PROFILE=//p' .env 2>/dev/null | tail -1 | tr -d '"'"'"'\r[:space:]' || true)"; fi
+[ "$PROFILE" = "ha" ] || PROFILE=single
+DB_MODE="${ACRA_DB_MODE:-}"
+if [ -z "$DB_MODE" ]; then if [ "$PROFILE" = "ha" ]; then DB_MODE=url; else DB_MODE=compose; fi; fi
+# Documents : volume local (archive tar) ou stockage objet S3 (inventaire des clés référencées, pas de copie du bucket).
+DOCS_STORAGE=local
+if [ "$PROFILE" = "ha" ] || [ "${DOCUMENT_STORAGE:-}" = "s3" ]; then DOCS_STORAGE=s3; fi
 # shellcheck disable=SC2206
 COMPOSE=(docker compose ${ACRA_COMPOSE_FILES:-})
 git() { command git -c safe.directory="$PWD" "$@"; }
@@ -52,7 +70,13 @@ json_escape() { printf '%s' "$1" | tr -d '\000-\037' | sed 's/\\/\\\\/g; s/"/\\"
 # Mode url (base externe ou managée, lot 6) : DATABASE_URL (environnement ou .env, jamais affichée) ; les outils clients
 # tournent dans un conteneur éphémère postgres:<majeure du serveur>-alpine si Docker est présent, sinon sur l'hôte à condition
 # que leur version majeure soit ≥ celle du serveur (sinon code 10).
-db_url() { local u="${DATABASE_URL:-}"; [ -n "$u" ] || u="$(sed -n 's/^DATABASE_URL=//p' .env 2>/dev/null | head -1 | tr -d '"'"'"'\r')"; printf '%s' "$u"; }
+env_or_dotenv() { local v="${!1:-}"; if [ -z "$v" ] && [ -f .env ]; then v="$(sed -n "s/^$1=//p" .env 2>/dev/null | head -1 | tr -d '"'"'"'\r' || true)"; fi; printf '%s' "$v"; }
+# URL_OVERRIDE (locale à verify_full) : serveur de la restauration de contrôle. BACKUP_DATABASE_URL : connexion dédiée à la
+# sauvegarde (directe, idéalement en lecture), préférée à DATABASE_URL.
+db_url() {
+  if [ -n "${URL_OVERRIDE:-}" ]; then printf '%s' "$URL_OVERRIDE"; return 0; fi
+  local u; u="$(env_or_dotenv BACKUP_DATABASE_URL)"; [ -n "$u" ] || u="$(env_or_dotenv DATABASE_URL)"; printf '%s' "$u"
+}
 url_for() { local u base q; u="$(db_url)"; base="${u%%\?*}"; q="${u#"$base"}"; printf '%s/%s%s' "${base%/*}" "$1" "$q"; }
 PG_PREFIX=()
 pgx() { if [ "${#PG_PREFIX[@]}" -gt 0 ]; then "${PG_PREFIX[@]}" "$@"; else "$@"; fi; }
@@ -118,7 +142,58 @@ take_lock() {
   fi
   echo "$$" > "$LOCK/pid"
 }
-release_lock() { [ -z "$LOCK" ] || rm -rf "$LOCK"; LOCK=""; }
+release_lock() { lease_release; [ -z "$LOCK" ] || rm -rf "$LOCK"; LOCK=""; }
+
+# ── Profil ha : bail en base (une seule sauvegarde de la base partagée, tous hôtes confondus) ─────
+# Même table et même sémantique que les tâches planifiées HTTP (lib/cron-verrou.server.ts) : acquisition atomique
+# (INSERT … ON CONFLICT … WHERE échu), libération par jeton, expiration automatique (ACRA_BACKUP_LEASE_MINUTES, 360) si
+# l'hôte s'arrête en cours de route. Un point planifié fait le jour J est marqué (« script:sauvegarde-planifiee ») : un
+# second hôte où l'agent serait aussi installé s'abstient (code 41) au lieu de refaire la sauvegarde.
+LEASE_TOKEN=""; LEASE_DB=""
+lease_take() { # base
+  [ "$PROFILE" = "ha" ] || return 0
+  local mins="${ACRA_BACKUP_LEASE_MINUTES:-360}" tok out
+  case "$mins" in ''|*[!0-9]*) mins=360 ;; esac
+  tok="run-$(hostname 2>/dev/null | tr -cd 'A-Za-z0-9.-' | cut -c1-40)-$$-$(date +%s)"
+  out="$(dbq "$1" "INSERT INTO \"CronVerrou\" (\"tache\", \"jusqua\", \"jeton\") VALUES ('script:sauvegarde-base', (now() AT TIME ZONE 'UTC') + make_interval(mins => $mins), '$tok') ON CONFLICT (\"tache\") DO UPDATE SET \"jusqua\" = EXCLUDED.\"jusqua\", \"jeton\" = EXCLUDED.\"jeton\" WHERE \"CronVerrou\".\"jusqua\" < (now() AT TIME ZONE 'UTC') RETURNING \"tache\"" 2>/dev/null)" \
+    || die 10 "Bail de sauvegarde impossible (table CronVerrou inaccessible : migrations appliquées ?)."
+  printf '%s\n' "$out" | grep -qx 'script:sauvegarde-base' || die 41 "Une sauvegarde de la base partagée est déjà en cours (autre hôte ou autre processus) : rien n'est fait."
+  LEASE_TOKEN="$tok"; LEASE_DB="$1"
+}
+lease_release() {
+  [ -n "${LEASE_TOKEN:-}" ] || return 0
+  dbq "$LEASE_DB" "UPDATE \"CronVerrou\" SET \"jusqua\" = '1970-01-01' WHERE \"tache\" = 'script:sauvegarde-base' AND \"jeton\" = '$LEASE_TOKEN'" >/dev/null 2>&1 || true
+  LEASE_TOKEN=""
+}
+scheduled_done_check() { # date base — 41 si un autre hôte a déjà fait la sauvegarde planifiée de ce jour
+  [ "$PROFILE" = "ha" ] && [ -n "$1" ] || return 0
+  local v; v="$(dbq "$2" "SELECT \"jeton\" FROM \"CronVerrou\" WHERE \"tache\" = 'script:sauvegarde-planifiee'" 2>/dev/null | tr -d '[:space:]' || true)"
+  [ "$v" != "fait:$1" ] || die 41 "La sauvegarde planifiée du $1 a déjà été faite (autre hôte) : rien n'est fait."
+}
+scheduled_done_mark() { # date base
+  [ "$PROFILE" = "ha" ] && [ -n "$1" ] || return 0
+  dbq "$2" "INSERT INTO \"CronVerrou\" (\"tache\", \"jusqua\", \"jeton\") VALUES ('script:sauvegarde-planifiee', (now() AT TIME ZONE 'UTC'), 'fait:$1') ON CONFLICT (\"tache\") DO UPDATE SET \"jusqua\" = EXCLUDED.\"jusqua\", \"jeton\" = EXCLUDED.\"jeton\"" >/dev/null 2>&1 \
+    || note "Marqueur de sauvegarde planifiée non écrit (non bloquant) : un autre hôte pourrait refaire la sauvegarde du jour."
+}
+
+# ── Documents en S3 : inventaire des clés référencées par la base et contrôle de présence ────────
+# Clés de stockage de tous les fichiers : Document.storageKey et pièces jointes des campagnes de contrôle et des missions
+# d'audit (`rapports[].storageKey`). Triées en ordre d'octets (COLLATE "C"), sans doublon : l'empreinte SHA-256 de la liste
+# (une clé par ligne, saut de ligne final) est la même que celle calculée par l'application (lib/documents-coherence).
+doc_keys() { # base
+  dbq "$1" "SELECT k FROM (SELECT \"storageKey\" AS k FROM \"Document\" UNION SELECT r->>'storageKey' FROM \"CampagneControle\" c, jsonb_array_elements(CASE WHEN jsonb_typeof(c.\"rapports\") = 'array' THEN c.\"rapports\" ELSE '[]'::jsonb END) r UNION SELECT r->>'storageKey' FROM \"AuditMission\" m, jsonb_array_elements(CASE WHEN jsonb_typeof(m.\"rapports\") = 'array' THEN m.\"rapports\" ELSE '[]'::jsonb END) r) s WHERE k IS NOT NULL AND k <> '' ORDER BY k COLLATE \"C\""
+}
+# Contrôle « tous les documents référencés existent dans le bucket » : exécuté PAR L'APPLICATION (adaptateur S3, HEAD de chaque
+# clé ; tâche planifiée « coherence-documents », tracée, signalée au journal d'audit et relançable). Le secret CRON_SECRET reste
+# dans le conteneur. Rend ok | ecart | non_execute.
+bucket_check() {
+  local err; err="$(mktemp "${TMPDIR:-/tmp}/acra-bucket-check.XXXXXX")"
+  # shellcheck disable=SC2016
+  if "${COMPOSE[@]}" exec -T app sh -c 'wget -qO- -T 900 --header "Authorization: Bearer $CRON_SECRET" --post-data "" http://127.0.0.1:3000/api/cron/coherence-documents' >/dev/null 2>"$err"; then echo ok
+  elif grep -q ' 409' "$err"; then echo ecart
+  else echo non_execute; fi
+  rm -f "$err"
+}
 
 # ── Lecture d'un manifeste (un champ par ligne, cf. write_manifest) ───────────────────────────────
 mget() { sed -n "s/^[[:space:]]*\"$2\":[[:space:]]*\"\{0,1\}\([^\",]*\)\"\{0,1\},\{0,1\}[[:space:]]*\$/\1/p" "$1" | head -1; }
@@ -129,7 +204,7 @@ snapshot_dir() { printf '%s/%s' "$BACKUP_DIR" "$1"; }
 # ── Empreintes ────────────────────────────────────────────────────────────────────────────────────
 write_sums() { # dossier
   ( cd "$1" && : > SHA256SUMS.tmp
-    for f in database.dump database.dump.age documents.tar.gz documents.tar.gz.age; do
+    for f in database.dump database.dump.age documents.tar.gz documents.tar.gz.age documents-keys.txt documents-keys.txt.age; do
       [ -f "$f" ] && printf '%s  %s\n' "$(sha256_file "$f")" "$f" >> SHA256SUMS.tmp
     done
     mv SHA256SUMS.tmp SHA256SUMS )
@@ -176,15 +251,22 @@ verify_quick() { # dossier
   if [ -f "$d/documents.tar.gz" ]; then gzip -t "$d/documents.tar.gz" 2>/dev/null || return 1; fi
   return 0
 }
-verify_full() { # dossier db before after → 0 si les comptes restaurés correspondent
+verify_full() { # dossier db before after → 0 si les comptes restaurés correspondent ; 2 si la base jetable n'a pas pu être créée
   local d="$1" db="$2" before="$3" after="$4" vdb="" ok=0 t got b a
+  # Profil ha : restauration de contrôle sur un serveur dédié si ACRA_BACKUP_VERIFY_DATABASE_URL est défini (pas de charge ni
+  # de base temporaire sur le primaire de production) ; sinon sur le serveur de la sauvegarde.
+  local URL_OVERRIDE=""
+  if [ "$PROFILE" = "ha" ] && [ -n "${ACRA_BACKUP_VERIFY_DATABASE_URL:-}" ]; then URL_OVERRIDE="$ACRA_BACKUP_VERIFY_DATABASE_URL"; fi
   vdb="$(printf '%.40s__verify_%s' "$db" "$(now_stamp)")"
   # shellcheck disable=SC2064
-  trap "dbq postgres \"DROP DATABASE IF EXISTS \\\"$vdb\\\"\" >/dev/null 2>&1 || true" RETURN
-  dbq postgres "CREATE DATABASE \"$vdb\"" >/dev/null || return 1
+  # Le piège RETURN se désarme lui-même : sinon il se redéclenche au retour de l'appelant (hors du serveur de contrôle).
+  trap "dbq postgres \"DROP DATABASE IF EXISTS \\\"$vdb\\\"\" >/dev/null 2>&1 || true; trap - RETURN" RETURN
+  dbq postgres "CREATE DATABASE \"$vdb\"" >/dev/null || return 2
   pg_restore_cmd "$vdb" < "$d/database.dump" >/dev/null 2>&1 || return 1
   local restored; restored="$(row_counts "$vdb")"
   RESTORED_COUNTS="$restored"
+  # Documents en S3 : clés référencées par le dump LUI-MÊME (lues dans la base restaurée) — inventaire exact du point.
+  if [ "$DOCS_STORAGE" = "s3" ]; then RESTORED_KEYS="$(doc_keys "$vdb" 2>/dev/null)" && RESTORED_KEYS_OK=1 || RESTORED_KEYS_OK=0; fi
   for t in $COUNTED_TABLES; do
     got="$(count_of "$restored" "$t")"; b="$(count_of "$before" "$t")"; a="$(count_of "$after" "$t")"
     [ -n "$b$a" ] || continue
@@ -197,7 +279,7 @@ verify_full() { # dossier db before after → 0 si les comptes restaurés corres
 write_manifest() { # dossier + variables M_*
   local d="$1" t first=1 line
   {
-    printf '{\n  "schema": 1,\n  "id": "%s",\n  "reason": "%s",\n  "createdAt": "%s",\n  "tiers": "%s",\n  "scheduledFor": "%s",\n' "$M_ID" "$M_REASON" "$M_CREATED" "${M_TIERS:-}" "${M_SFOR:-}"
+    printf '{\n  "schema": 1,\n  "id": "%s",\n  "reason": "%s",\n  "profile": "%s",\n  "createdAt": "%s",\n  "tiers": "%s",\n  "scheduledFor": "%s",\n' "$M_ID" "$M_REASON" "$PROFILE" "$M_CREATED" "${M_TIERS:-}" "${M_SFOR:-}"
     printf '  "acra": {\n    "version": "%s",\n    "revision": "%s",\n    "image": %s,\n    "channel": %s,\n    "toVersion": %s\n  },\n' "$M_VERSION" "$M_REVISION" "$M_IMAGE" "$M_CHANNEL" "$M_TOVERSION"
     printf '  "database": {\n    "mode": "%s",\n    "serverVersion": "%s",\n    "name": "%s",\n    "sizeBytes": %s,\n    "dumpFile": "%s",\n    "dumpBytes": %s,\n    "encrypted": %s,\n    "clone": %s,\n' "$DB_MODE" "$M_SERVER" "$M_DB" "$M_DBBYTES" "$M_DUMPFILE" "$M_DUMPBYTES" "$M_ENCRYPTED" "$M_CLONE"
     printf '    "migrationsCount": %s,\n    "migrationsLast": "%s",\n    "migrationsHash": "%s",\n' "${M_MIGCOUNT:-0}" "${M_MIGLAST:-}" "${M_MIGHASH:-}"
@@ -208,9 +290,20 @@ write_manifest() { # dossier + variables M_*
       printf '      "%s": %s' "$t" "${line:-null}"
     done
     printf '\n    }\n  },\n'
-    printf '  "documents": {\n    "storage": "local",\n    "included": %s,\n    "files": %s,\n    "bytes": %s,\n    "archive": "%s"\n  },\n' "$M_DOCS_INCLUDED" "${M_DOCS_FILES:-0}" "${M_DOCS_BYTES:-0}" "${M_DOCS_ARCHIVE:-}"
+    if [ "$DOCS_STORAGE" = "s3" ]; then
+      # Documents en S3 : rien n'est copié ; inventaire des clés référencées (fichier chiffré comme le dump), horodatage, empreinte
+      # et résultat du contrôle de présence dans le bucket — cohérence vérifiable à la restauration (versioning S3, § 3.4).
+      printf '  "documents": {\n    "storage": "s3",\n    "included": false,\n    "files": %s,\n    "bytes": 0,\n    "archive": "",\n    "referencedKeys": %s,\n    "keysFile": "%s",\n    "keysSha256": "%s",\n    "keysCapturedAt": "%s",\n    "keysSource": "%s",\n    "bucketCheck": "%s"\n  },\n' \
+        "$M_KEYS_COUNT" "$M_KEYS_COUNT" "$M_KEYS_FILE" "$M_KEYS_SHA" "$M_KEYS_AT" "$M_KEYS_SOURCE" "$M_BUCKET_CHECK"
+    else
+      printf '  "documents": {\n    "storage": "local",\n    "included": %s,\n    "files": %s,\n    "bytes": %s,\n    "archive": "%s"\n  },\n' "$M_DOCS_INCLUDED" "${M_DOCS_FILES:-0}" "${M_DOCS_BYTES:-0}" "${M_DOCS_ARCHIVE:-}"
+    fi
     printf '  "secretsKeyFingerprint": %s,\n' "$M_FINGERPRINT"
-    printf '  "verification": {\n    "level": "%s",\n    "at": "%s",\n    "ok": true\n  },\n' "$M_LEVEL" "$(now_iso)"
+    if [ "${M_FULL_IMPOSSIBLE:-0}" = "1" ]; then
+      printf '  "verification": {\n    "level": "%s",\n    "at": "%s",\n    "ok": true,\n    "fullImpossible": true\n  },\n' "$M_LEVEL" "$(now_iso)"
+    else
+      printf '  "verification": {\n    "level": "%s",\n    "at": "%s",\n    "ok": true\n  },\n' "$M_LEVEL" "$(now_iso)"
+    fi
     printf '  "host": {\n    "composeFiles": "%s"\n  }\n}\n' "$(json_escape "${ACRA_COMPOSE_FILES:-}")"
   } > "$d/manifest.json.tmp"
   chmod 600 "$d/manifest.json.tmp"; mv "$d/manifest.json.tmp" "$d/manifest.json"
@@ -226,12 +319,13 @@ cmd_index() {
       [ -f "${d}manifest.json" ] || continue
       id="$(basename "$d")"; is_id "$id" || continue
       [ "$first" -eq 1 ] || printf ','; first=0
-      printf '\n  { "id": "%s", "reason": "%s", "tiers": [%s], "createdAt": "%s", "version": "%s", "toVersion": "%s", "verified": "%s", "clone": %s, "documents": %s, "encrypted": %s, "sizeBytes": %s }' \
+      printf '\n  { "id": "%s", "reason": "%s", "tiers": [%s], "createdAt": "%s", "version": "%s", "toVersion": "%s", "verified": "%s", "clone": %s, "documents": %s, "encrypted": %s, "sizeBytes": %s, "documentsStorage": "%s", "referencedKeys": %s, "bucketCheck": "%s" }' \
         "$id" "$(mget "${d}manifest.json" reason)" "$(tl=$(mget_list "${d}manifest.json" tiers); printf '%s' "$tl" | sed 's/\([a-z]*\)/"\1"/g')" "$(mget "${d}manifest.json" createdAt)" "$(mget "${d}manifest.json" version)" \
         "$(m=$(mget "${d}manifest.json" toVersion); [ "$m" = "null" ] && m=""; printf '%s' "$m")" \
         "$(mget "${d}manifest.json" level)" \
         "$(c=$(mget "${d}manifest.json" clone); if [ -n "$c" ] && [ "$c" != "null" ]; then echo true; else echo false; fi)" \
-        "$(mget "${d}manifest.json" included)" "$(mget "${d}manifest.json" encrypted | head -1)" "$(mget "${d}manifest.json" dumpBytes)"
+        "$(mget "${d}manifest.json" included)" "$(mget "${d}manifest.json" encrypted | head -1)" "$(mget "${d}manifest.json" dumpBytes)" \
+        "$(s=$(mget "${d}manifest.json" storage); printf '%s' "${s:-local}")" "$(k=$(mget "${d}manifest.json" referencedKeys); printf '%s' "${k:-null}")" "$(mget "${d}manifest.json" bucketCheck)"
     done
     printf '\n] }\n'
   } > "$out.tmp"
@@ -281,6 +375,9 @@ cmd_create() {
 
   local db; db="$(db_name)" || die 10 "Nom de la base introuvable."
   [ -n "$db" ] || die 10 "Nom de la base introuvable."
+  # Profil ha : une seule sauvegarde de la base partagée à la fois, et une seule sauvegarde planifiée par jour, tous hôtes confondus.
+  scheduled_done_check "$sfor" "$db"
+  lease_take "$db"
   if [ -z "$from" ]; then from="$(sed -n 's/^[[:space:]]*"version":[[:space:]]*"\([^"]*\)".*/\1/p' package.json | head -1)"; from="${from:-unknown}"; fi
   local stamp id dir; stamp="$(now_stamp)"; id="${stamp}-${reason}-${from}"
   # Deux points dans la même seconde auraient le même identifiant : on attend la seconde suivante plutôt que d'écraser.
@@ -290,12 +387,15 @@ cmd_create() {
   # Mesures et espace disque (avant tout fichier).
   local dbbytes docskb dbkb need free pgfree
   dbbytes="$(dbq "$db" 'SELECT pg_database_size(current_database())' | tr -d '[:space:]')"; dbbytes="${dbbytes:-0}"; dbkb=$(( dbbytes / 1024 ))
-  if [ -n "${ACRA_DOCUMENTS_DIR:-}" ]; then docskb="$(du -sk "$ACRA_DOCUMENTS_DIR" 2>/dev/null | cut -f1 | tr -d '[:space:]' || true)"
+  if [ "$DOCS_STORAGE" = "s3" ]; then docskb=0   # documents dans le bucket : rien n'est copié localement
+  elif [ -n "${ACRA_DOCUMENTS_DIR:-}" ]; then docskb="$(du -sk "$ACRA_DOCUMENTS_DIR" 2>/dev/null | cut -f1 | tr -d '[:space:]' || true)"
   else docskb="$("${COMPOSE[@]}" run --rm --no-deps -T --entrypoint sh app -c 'du -sk /app/.data/documents 2>/dev/null | cut -f1' 2>/dev/null | tr -d '[:space:]' || true)"; fi
   docskb="${docskb:-0}"
   need=$(( (dbkb * 6 / 10 + docskb) * 12 / 10 + 200 * 1024 ))
   free="$(free_kb "$BACKUP_DIR")"; free="${free:-0}"
   [ "$free" -ge "$need" ] || die 11 "Espace insuffisant dans $BACKUP_DIR : ${free} Ko libres, ${need} Ko nécessaires."
+  # Base partagée (profil ha) : jamais de clone (CREATE DATABASE … TEMPLATE exige une base sans connexion ; restauration manuelle).
+  [ "$PROFILE" != "ha" ] || clone=0
   if [ "$clone" -eq 1 ] && [ "$DB_MODE" = "compose" ]; then
     pgfree="$("${COMPOSE[@]}" exec -T db df -Pk /var/lib/postgresql/data 2>/dev/null | awk 'NR==2{print $4}')"; pgfree="${pgfree:-0}"
     if [ "$pgfree" -lt $(( dbkb * 13 / 10 + 500 * 1024 )) ]; then clone=0; note "Clone sauté : espace insuffisant sur le volume PostgreSQL."; fi
@@ -305,7 +405,7 @@ cmd_create() {
   # Connexions applicatives : refus pour une mise à jour (l'application doit être arrêtée), avertissement sinon.
   local conns; conns="$(dbq "$db" 'SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid()' | tr -d '[:space:]')"
   if [ "${conns:-0}" -gt 0 ]; then
-    if [ "$reason" = "pre-update" ]; then die 10 "$conns connexion(s) active(s) sur la base : arrêter l'application avant un point pre-update."
+    if [ "$reason" = "pre-update" ] && [ "$PROFILE" != "ha" ]; then die 10 "$conns connexion(s) active(s) sur la base : arrêter l'application avant un point pre-update."
     else note "Avertissement : $conns connexion(s) active(s) ; le dump reste cohérent (transactionnel)."; fi
   fi
 
@@ -317,6 +417,13 @@ cmd_create() {
   trap 'cleanup_create' ERR
   local before after counts
   before="$(row_counts "$db")"
+  # Documents en S3 : clés référencées AVANT et APRÈS le dump (l'union couvre ce que le dump référence ; remplacée par la liste
+  # exacte relue dans la base restaurée lors d'une vérification complète).
+  local keys_before="" keys_after="" keys_at=""
+  if [ "$DOCS_STORAGE" = "s3" ]; then
+    keys_at="$(now_iso)"
+    keys_before="$(doc_keys "$db" 2>>"$dir/create.log")" || { rm -rf "$dir"; trap - ERR; die 20 "Inventaire des documents référencés impossible (requête en échec)."; }
+  fi
 
   # Dump (format custom), écrit sous un nom provisoire.
   note "Dump de la base ${db}…"
@@ -326,6 +433,10 @@ cmd_create() {
   [ -s "$dir/database.dump.partial" ] || { rm -rf "$dir"; trap - ERR; die 20 "Dump de la base vide."; }
   mv "$dir/database.dump.partial" "$dir/database.dump"
   after="$(row_counts "$db")"
+  if [ "$DOCS_STORAGE" = "s3" ]; then
+    keys_after="$(doc_keys "$db" 2>>"$dir/create.log")" || { rm -rf "$dir"; trap - ERR; die 20 "Inventaire des documents référencés impossible (requête en échec)."; }
+    printf '%s\n%s\n' "$keys_before" "$keys_after" | sed '/^$/d' | LC_ALL=C sort -u > "$dir/documents-keys.txt"
+  fi
 
   # Clone (non bloquant).
   if [ "$clone" -eq 1 ]; then
@@ -338,11 +449,13 @@ cmd_create() {
   # Documents.
   local docsIncluded=false docsArchive="" docsBytes=0
   local docsOk=0
-  if [ -n "${ACRA_DOCUMENTS_DIR:-}" ]; then
+  if [ "$DOCS_STORAGE" = "s3" ]; then :   # documents dans le bucket versionné : aucune archive (§ 3.4)
+  elif [ -n "${ACRA_DOCUMENTS_DIR:-}" ]; then
     # Installation sans Docker : documents sur le disque de l'hôte.
     [ -d "$ACRA_DOCUMENTS_DIR" ] && tar -czf "$dir/documents.tar.gz" -C "$(dirname "$ACRA_DOCUMENTS_DIR")" "$(basename "$ACRA_DOCUMENTS_DIR")" 2>>"$dir/create.log" && docsOk=1
   elif "${COMPOSE[@]}" run --rm --no-deps -T --entrypoint tar app -C /app/.data -czf - documents > "$dir/documents.tar.gz" 2>>"$dir/create.log"; then docsOk=1; fi
-  if [ "$docsOk" -eq 1 ] && gzip -t "$dir/documents.tar.gz" 2>/dev/null; then
+  if [ "$DOCS_STORAGE" = "s3" ]; then :
+  elif [ "$docsOk" -eq 1 ] && gzip -t "$dir/documents.tar.gz" 2>/dev/null; then
     docsIncluded=true; docsArchive="documents.tar.gz"; docsBytes="$(file_size "$dir/documents.tar.gz")"
   else rm -f "$dir/documents.tar.gz"; fi
 
@@ -352,15 +465,27 @@ cmd_create() {
     command -v age >/dev/null 2>&1 || { rm -rf "$dir"; trap - ERR; die 10 "ACRA_BACKUP_AGE_RECIPIENT défini mais « age » est introuvable."; }
     age -r "$ACRA_BACKUP_AGE_RECIPIENT" -o "$dir/database.dump.age" "$dir/database.dump" && rm -f "$dir/database.dump"
     if [ -f "$dir/documents.tar.gz" ]; then age -r "$ACRA_BACKUP_AGE_RECIPIENT" -o "$dir/documents.tar.gz.age" "$dir/documents.tar.gz" && rm -f "$dir/documents.tar.gz"; docsArchive="documents.tar.gz.age"; fi
+    if [ -f "$dir/documents-keys.txt" ]; then age -r "$ACRA_BACKUP_AGE_RECIPIENT" -o "$dir/documents-keys.txt.age" "$dir/documents-keys.txt" && rm -f "$dir/documents-keys.txt"; fi
     encrypted=true; dumpfile="database.dump.age"
   fi
   write_sums "$dir"
 
   # Vérification (jamais sur un fichier chiffré : l'empreinte suffit, le test complet se fait avec `verify --full`).
-  RESTORED_COUNTS=""
+  RESTORED_COUNTS=""; RESTORED_KEYS=""; RESTORED_KEYS_OK=0; M_FULL_IMPOSSIBLE=0
   if [ "$encrypted" = "false" ]; then
     if ! verify_quick "$dir"; then mv "$dir" "$dir.invalid"; trap - ERR; release_lock; die 21 "Vérification rapide en échec : point marqué invalide."; fi
-    if [ "$level" = "full" ] && ! verify_full "$dir" "$db" "$before" "$after"; then mv "$dir" "$dir.invalid"; trap - ERR; release_lock; die 21 "Vérification complète en échec : point marqué invalide."; fi
+    if [ "$level" = "full" ]; then
+      local vr=0; verify_full "$dir" "$db" "$before" "$after" || vr=$?
+      if [ "$vr" -eq 2 ] && [ "$PROFILE" = "ha" ]; then
+        # Base partagée : la base jetable n'a pas pu être créée (droits de l'hébergeur). Le point reste valide (vérification
+        # rapide réussie), l'impossibilité est consignée au manifeste et signalée.
+        level=quick; M_FULL_IMPOSSIBLE=1
+        note "Vérification complète impossible : le serveur refuse de créer une base jetable. Définir ACRA_BACKUP_VERIFY_DATABASE_URL (serveur de contrôle dédié) ; point conservé avec une vérification rapide."
+      elif [ "$vr" -ne 0 ]; then mv "$dir" "$dir.invalid"; trap - ERR; release_lock; die 21 "Vérification complète en échec : point marqué invalide."
+      elif [ "$DOCS_STORAGE" = "s3" ] && [ "$RESTORED_KEYS_OK" = "1" ]; then
+        printf '%s\n' "$RESTORED_KEYS" | sed '/^$/d' | LC_ALL=C sort -u > "$dir/documents-keys.txt"; write_sums "$dir"
+      fi
+    fi
   else
     check_sums "$dir" || { mv "$dir" "$dir.invalid"; trap - ERR; release_lock; die 21 "Empreintes invalides."; }
   fi
@@ -386,9 +511,26 @@ cmd_create() {
   local key=""; [ -f .env ] && key="$(sed -n 's/^SECRETS_ENCRYPTION_KEY=//p' .env | head -1 | tr -d '"'"'"'\r')"
   if [ -n "$key" ]; then M_FINGERPRINT="\"$(sha256_str "$key" | cut -c1-12)\""; else M_FINGERPRINT=null; fi
   M_LEVEL="$level"
+  if [ "$DOCS_STORAGE" = "s3" ]; then
+    if [ -f "$dir/documents-keys.txt.age" ]; then M_KEYS_FILE="documents-keys.txt.age"; else M_KEYS_FILE="documents-keys.txt"; fi
+    # Nombre et empreinte calculés sur la liste en clair (avant chiffrement, ou relue).
+    local klist; if [ "$RESTORED_KEYS_OK" = "1" ]; then klist="$(cat "$dir/documents-keys.txt")"; M_KEYS_SOURCE=dump
+    else klist="$(printf '%s\n%s\n' "$keys_before" "$keys_after" | sed '/^$/d' | LC_ALL=C sort -u)"; M_KEYS_SOURCE=live; fi
+    if [ -n "$klist" ]; then M_KEYS_COUNT="$(printf '%s\n' "$klist" | wc -l | tr -d '[:space:]')"; M_KEYS_SHA="$(sha256_str "$klist
+")"
+    else M_KEYS_COUNT=0; M_KEYS_SHA="$(sha256_str "")"; fi
+    M_KEYS_AT="$keys_at"
+    M_BUCKET_CHECK="$(bucket_check)"
+    case "$M_BUCKET_CHECK" in
+      ok) ;;
+      ecart) note "⚠ Écart base ↔ bucket : des documents référencés par la base sont absents du stockage S3. Voir Administration → Tâches planifiées (« coherence-documents ») ; restaurer les versions d'objets (docs/deploiement-haute-disponibilite.md § 3.4)." ;;
+      *) note "Contrôle de présence des documents dans le bucket non exécuté (application injoignable ou CRON_SECRET absent) : le relancer depuis Administration → Tâches planifiées." ;;
+    esac
+  fi
   write_manifest "$dir"
   trap - ERR
   cmd_index
+  [ "$reason" != "scheduled" ] || scheduled_done_mark "$sfor" "$db"
 
   [ -z "${ACRA_SNAPSHOT_HOOK:-}" ] || "$ACRA_SNAPSHOT_HOOK" "$id" >>"$dir/create.log" 2>&1 || note "Crochet ACRA_SNAPSHOT_HOOK en échec (non bloquant)."
   if [ -n "${ACRA_OFFSITE_DRIVER:-}" ]; then
@@ -440,6 +582,9 @@ cmd_restore() {
   is_id "$id" || die 31 "Identifiant invalide."
   dir="$(snapshot_dir "$id")"
   [ -f "$dir/manifest.json" ] || die 31 "Point de restauration inconnu : $id"
+  # Base partagée (profil ha) : jamais de restauration automatique. L'intégrité exige une procédure (arrêt des écritures,
+  # restauration dans une base NEUVE, contrôle, bascule de DATABASE_URL) : scripts/acra-restore-ha.sh et guide HA § 3.4.
+  [ "$PROFILE" != "ha" ] || die 33 "Profil ha : restauration automatique refusée sur la base partagée. Procédure : scripts/acra-restore-ha.sh database $id --target-url <base neuve> (docs/deploiement-haute-disponibilite.md § 3.4)."
   init_db
   take_lock; trap 'release_lock' EXIT
   check_sums "$dir" || die 21 "Empreintes SHA-256 invalides : point corrompu."

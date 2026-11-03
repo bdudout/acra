@@ -16,6 +16,19 @@ describe('points planifiés', () => {
   })
 })
 
+describe('points du profil ha (documents en S3)', () => {
+  const base = { id: '20261004T020000Z-scheduled-1.0.4', reason: 'scheduled', createdAt: '2026-10-04T02:00:00Z', version: '1.0.4', verified: 'full', clone: false, documents: false, encrypted: true, sizeBytes: 9 }
+  it('inventaire des documents et contrôle du bucket conservés ; valeurs inconnues écartées', () => {
+    expect(parseSnapshotIndex({ schema: 1, snapshots: [{ ...base, documentsStorage: 's3', referencedKeys: 42, bucketCheck: 'ecart' }] }).snapshots[0])
+      .toMatchObject({ documentsStorage: 's3', referencedKeys: 42, bucketCheck: 'ecart' })
+    const x = parseSnapshotIndex({ schema: 1, snapshots: [{ ...base, documentsStorage: 's3', referencedKeys: -3, bucketCheck: '<b>' }] }).snapshots[0]
+    expect(x.documentsStorage).toBe('s3'); expect(x.referencedKeys).toBeUndefined(); expect(x.bucketCheck).toBeUndefined()
+  })
+  it('mono-instance : champs « local » / null / vides ignorés (entrée inchangée)', () => {
+    expect(parseSnapshotIndex({ schema: 1, snapshots: [{ ...base, documentsStorage: 'local', referencedKeys: null, bucketCheck: '' }] }).snapshots[0]).toEqual(base)
+  })
+})
+
 describe('parseSnapshotIndex', () => {
   const ok = { id: '20261003T101500Z-pre-update-1.0.4', reason: 'pre-update', createdAt: '2026-10-03T10:15:00Z', version: '1.0.4', toVersion: '1.0.5', verified: 'full', clone: true, documents: true, encrypted: false, sizeBytes: 123 }
   it('assainit : champs connus seulement, identifiant invalide écarté, textes bornés', () => {

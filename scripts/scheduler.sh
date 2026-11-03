@@ -15,6 +15,8 @@
 #                             en attente (remplace controles-echeances, audit-rappels, derogations-expiry,
 #                             dont les routes restent des alias idempotents)
 #   • cleanup               : quotidien à 03:00 — nettoyage du cache sans impact (jetons/sessions/défis expirés…)
+#   • coherence-documents   : quotidien à 04:00 — chaque document référencé par la base existe dans le stockage
+#                             (HEAD S3 en profil « ha », fichier local sinon) ; écart ⇒ tâche en échec, alerte d'audit
 #   • rapports-planifies    : quotidien à 05:00 (brouillons de rapports planifiés, les 1er–3 du mois)
 #   • tableau-bord-mensuel  : mensuel, le 1er à 08:00 — tableau de bord du mois écoulé aux RSSI et
 #                             gestionnaires des risques (inclut la synthèse des dérogations ;
@@ -49,9 +51,9 @@ hit() {
 }
 
 echo "[scheduler] demarre — tick ${TICK}s, cible ${APP_URL}"
-echo "[scheduler] planning : webhooks-dispatch chaque tick · alertes-dora et audit-scellement chaque heure · snapshots 02:00 · relances 06:00 · tableau-bord-mensuel 1er 08:00 · appetence-snapshots 1er 03:00 · comite-snapshots 1er 03:00"
+echo "[scheduler] planning : webhooks-dispatch chaque tick · alertes-dora et audit-scellement chaque heure · snapshots 02:00 · coherence-documents 04:00 · relances 06:00 · tableau-bord-mensuel 1er 08:00 · appetence-snapshots 1er 03:00 · comite-snapshots 1er 03:00"
 
-last_snap=""; last_clean=""; last_rap=""; last_dig=""; last_rel=""; last_dora=""; last_app=""; last_com=""; last_scel=""
+last_snap=""; last_clean=""; last_rap=""; last_dig=""; last_rel=""; last_dora=""; last_app=""; last_com=""; last_scel=""; last_coh=""
 while true; do
   day="$(date +%Y%m%d)"; month="$(date +%Y%m)"; hour="$(date +%H)"; dom="$(date +%d)"
 
@@ -64,6 +66,7 @@ while true; do
   [ "$last_scel" != "$day$hour" ] && { hit audit-scellement; last_scel="$day$hour"; }
   [ "$hour" = "02" ] && [ "$last_snap" != "$day" ]   && { hit conformite-snapshots; last_snap="$day"; }
   [ "$hour" = "03" ] && [ "$last_clean" != "$day" ]  && { hit cleanup;               last_clean="$day"; }
+  [ "$hour" = "04" ] && [ "$last_coh"  != "$day" ]   && { hit coherence-documents;  last_coh="$day"; }
   [ "$hour" = "05" ] && [ "$last_rap"  != "$day" ]   && { hit rapports-planifies;   last_rap="$day"; }
   [ "$hour" = "06" ] && [ "$last_rel"  != "$day" ]   && { hit relances;             last_rel="$day"; }
   [ "$hour" = "08" ] && [ "$dom" = "01" ] && [ "$last_dig" != "$month" ] && { hit tableau-bord-mensuel; last_dig="$month"; }

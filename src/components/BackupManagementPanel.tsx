@@ -12,6 +12,7 @@ const AGENT_INSTALL = 'scripts/update-agent.sh --install'
 
 interface BackupInfo {
   agentAvailable: boolean
+  haProfile?: boolean
   offsite?: unknown
   backup?: { policy: BackupPolicy; stats: BackupStats | null } | null
 }
@@ -62,6 +63,12 @@ export default function BackupManagementPanel() {
         <button type="button" className="btn-primary text-sm disabled:opacity-50" disabled={busy || !info.agentAvailable} title={info.agentAvailable ? undefined : t.version.backup.agentRequired} onClick={() => void backupNow()}>{t.version.backup.now}</button>
         {message && <span className="text-sm text-ebios-700">{message}</span>}
       </div>
+      {info.haProfile && (
+        <div className="space-y-1 rounded-md border border-ebios-200 bg-ebios-50 p-3 text-sm dark:border-gray-700 dark:bg-gray-800">
+          <p className="font-medium">{t.version.backup.haTitle}</p>
+          <p className="text-xs text-gray-700 dark:text-gray-300">{t.version.backup.haIntro}</p>
+        </div>
+      )}
       {!info.agentAvailable && (
         <div className="space-y-2 rounded-md bg-gray-50 p-3 text-sm dark:bg-gray-800">
           <p className="font-medium">{t.version.backup.agentInstallTitle}</p>

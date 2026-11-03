@@ -41,6 +41,11 @@ case "$a" in
       *"migration_name||checksum"*) printf 'm1abc\nm2def\n' ;;
       *"migration_name FROM"*) echo 20261003110000_x ;;
       *"FROM \"AuditLog\" WHERE"*) cat "$FAKE_DIR/later" 2>/dev/null || echo 2 ;;
+      *pg_tables*) cat "$FAKE_DIR/target_tables" 2>/dev/null || echo 0 ;;
+      *storageKey*) if [ -e "$FAKE_DIR/verify_keys" ] && [[ "$*" == *__verify_* ]]; then cat "$FAKE_DIR/verify_keys"; else cat "$FAKE_DIR/keys" 2>/dev/null || printf 'org1/doc1/a.pdf\\norg1/doc2/b.pdf\\n'; fi ;;
+      *CronVerrou*RETURNING*) f lease_held || echo 'script:sauvegarde-base'; echo 'INSERT 0 1' ;;
+      *SELECT*jeton*FROM*CronVerrou*) cat "$FAKE_DIR/lease_marker" 2>/dev/null ;;
+      *"CREATE DATABASE"*__verify_*) f verify_create_fail && exit 1 ;;
       *"count(*) FROM"*) t="$(printf '%s' "$sql" | sed 's/.*FROM "\\(.*\\)".*/\\1/')"
         if [ -e "$FAKE_DIR/renamed" ] && [ -e "$FAKE_DIR/rows2_$t" ]; then cat "$FAKE_DIR/rows2_$t"; elif [ -e "$FAKE_DIR/rows_$t" ]; then cat "$FAKE_DIR/rows_$t"; else echo 5; fi ;;
       *"CREATE DATABASE"*__snap_*) [ -e "$FAKE_DIR/clone_fail" ] && exit 1 ;;
@@ -54,6 +59,8 @@ case "$a" in
   *"pg_dump"*) if f dump_fail; then printf 'PARTIAL'; exit 1; fi; if f dump; then cat "$FAKE_DIR/dump"; else printf 'PGDMP-FAKE'; fi ;;
   *"pg_restore --list"*) cat > /dev/null; if f list_fail; then exit 1; fi; if f restore_list_many; then exec awk 'BEGIN { print "; Archive"; print "123; 0 0 TABLE DATA public User x"; for (n = 1; n <= 100000; n++) print "999; 0 0 COMMENT public filler-" n }'; elif f restore_list; then cat "$FAKE_DIR/restore_list"; else printf '; Archive\\n123; 0 0 TABLE DATA public User x\\n'; fi ;;
   *"run --rm"*"tar"*) f tar_fail && exit 1; printf 'docs' | gzip ;;
+  *coherence-documents*) f no_app && exit 1; if f bucket_gap; then echo 'wget: server returned error: HTTP/1.1 409 Conflict' >&2; exit 1; fi; echo '{"ok":true,"references":2,"manquants":0}' ;;
+  *api/cron/sauvegarde-base*) f no_app && exit 1; echo '{"ok":true}' ;;
   *wget*) case "$a" in *" -S "*) if f kill_launcher_on_smoke; then kill "-$(cat "$FAKE_DIR/kill_signal" 2>/dev/null || echo TERM)" "$(cat "$FAKE_DIR/kill_launcher_on_smoke")"; rm "$FAKE_DIR/kill_launcher_on_smoke"; fi; if f smoke_fail; then echo 'CI_SMOKE_FAILURE_DETAIL' >&2; else echo "  HTTP/1.1 200 OK" >&2; fi ;; *) if f health_json; then cat "$FAKE_DIR/health_json"; else rev="$(cat "$FAKE_DIR/health_stuck" 2>/dev/null || cat "$FAKE_DIR/served_rev" 2>/dev/null || cat "$FAKE_DIR/health_rev" 2>/dev/null || echo unknown)"; printf '{"status":"ok","db":"connected","version":"x","revision":"%s"}' "$rev"; fi ;; esac ;;
   *"run --rm --no-deps migrator"*) echo "ENV MIGRATOR RESOLVE=\${ACRA_MIGRATE_AUTO_RESOLVE-unset}" >> "$AUDIT_LOG"; if f migrate_fail; then echo 'CI_MIGRATOR_FAILURE_DETAIL' >&2; exit 1; fi ;;
   *"up -d"*) echo "ENV ACRA_VERSION=$ACRA_VERSION ACRA_REVISION=$ACRA_REVISION RESOLVE=\${ACRA_MIGRATE_AUTO_RESOLVE-unset}" >> "$AUDIT_LOG"; f up_fail && exit 1; if [ -n "$ACRA_REVISION" ] && ! f no_serve; then printf '%s' "$ACRA_REVISION" > "$FAKE_DIR/served_rev"; fi ;;

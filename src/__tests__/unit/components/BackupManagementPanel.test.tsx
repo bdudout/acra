@@ -43,6 +43,14 @@ describe('gestion des sauvegardes', () => {
     expect(await screen.findByText('Commande copiée')).toBeInTheDocument()
   })
 
+  it('profil « ha » : explique la sauvegarde logique de la base externe, complément de la restauration à un instant donné', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ agentAvailable: true, haProfile: true, offsite: null, backup: { policy: {}, stats: null } }) })
+    render(<BackupManagementPanel />)
+    expect(await screen.findByText(/sauvegarde logique \+ restauration à un instant donné/)).toBeInTheDocument()
+    expect(screen.getByText(/perte maximale = intervalle de planification/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Sauvegarder maintenant' })).toBeEnabled()
+  })
+
   it('avec agent : pas de bloc d’installation', async () => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => ({ agentAvailable: true, offsite: null, backup: { policy: {}, stats: null } }) })
     render(<BackupManagementPanel />)

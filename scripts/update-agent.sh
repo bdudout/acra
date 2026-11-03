@@ -178,8 +178,16 @@ case "$ACTION" in
     CUR_VER="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([0-9A-Za-z.+-]*\)".*/\1/p' package.json | head -1)"
     CUR_VER="${CUR_VER:-unknown}"
     echo "[$(now)] sauvegarde manuelle demandée (version $CUR_VER)"
-    ACRA_COMPOSE_FILES="${ACRA_COMPOSE_FILES:-}" scripts/acra-snapshot.sh create --reason manual --from-version "$CUR_VER" >> "$DIR/backup-now.log" 2>&1 || echo "[$(now)] sauvegarde manuelle en échec (voir backup-now.log)" >&2
-    scripts/acra-schedule.sh stats >> "$DIR/schedule.log" 2>&1 || true ;;
+    # Profil ha (ACRA_COMPOSE_FILES avec docker-compose.ha.yml) : acra-snapshot.sh sauvegarde la base EXTERNE (sauvegarde logique).
+    BK_RC=0
+    BK_ID="$(ACRA_COMPOSE_FILES="${ACRA_COMPOSE_FILES:-}" scripts/acra-snapshot.sh create --reason manual --from-version "$CUR_VER" 2>> "$DIR/backup-now.log")" || BK_RC=$?
+    BK_ID="$(printf '%s' "$BK_ID" | tail -1)"
+    [ -z "$BK_ID" ] || printf '%s\n' "$BK_ID" >> "$DIR/backup-now.log"
+    [ "$BK_RC" -eq 0 ] || echo "[$(now)] sauvegarde manuelle en échec, code $BK_RC (voir backup-now.log)" >&2
+    scripts/acra-schedule.sh stats >> "$DIR/schedule.log" 2>&1 || true
+    # Compte rendu à l'application : journal des tâches planifiées (« sauvegarde-base »), échec signalé et relançable.
+    if [ -n "$BK_ID" ]; then scripts/acra-schedule.sh report "$BK_RC" manual "$BK_ID" >> "$DIR/schedule.log" 2>&1 || true
+    else scripts/acra-schedule.sh report "$BK_RC" manual >> "$DIR/schedule.log" 2>&1 || true; fi ;;
   backup-prune)
     # Liste exacte d'identifiants : chacun validé (format) ET présent dans l'index de l'AGENT ; la rétention n'est pas recalculée ici.
     ID_RE='^[0-9]{8}T[0-9]{6}Z-(pre-update|manual|scheduled)-[0-9A-Za-z.+-]{1,40}$'

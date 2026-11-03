@@ -64,4 +64,14 @@ describe('VersionCard (#185)', () => {
     expect(screen.getByText('scripts/update-ha.sh stable --pitr-confirmed')).toBeTruthy()
     expect(screen.queryByText('scripts/update.sh stable')).toBeNull()
   })
+
+  it('profil « ha » : les sauvegardes logiques sont listées, sans bouton de restauration (procédure manuelle affichée)', async () => {
+    const snap = { id: '20261004T020000Z-scheduled-1.0.4', reason: 'scheduled', createdAt: '2026-10-04T02:00:00Z', version: '1.0.4', verified: 'full', clone: false, documents: false, encrypted: true, sizeBytes: 5, documentsStorage: 's3', referencedKeys: 3, bucketCheck: 'ok' }
+    fetchMock.mockReturnValueOnce(ok({ ...base, current: '1.0.4', channel: 'stable', base: null, latest: 'v1.0.4', updateAvailable: false, agentAvailable: true, haProfile: true, snapshots: [snap] }))
+    render(<VersionCard />)
+    expect(await screen.findByText('Points de restauration')).toBeTruthy()
+    expect(screen.getByText(/S3 · 3 réf\./)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Revenir à ce point' })).toBeNull()
+    expect(screen.getByText(/Restauration en multi-instance/)).toBeTruthy()
+  })
 })
