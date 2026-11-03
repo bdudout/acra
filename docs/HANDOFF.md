@@ -61,6 +61,19 @@ Branche `claude/dazzling-edison-qzmwlg` (PR 291), poussée jusqu'à `02848918`.
   `useFiltresUrl` (router.replace, autres paramètres conservés, `fusionnerFiltresDansParams` pure) sur /cartographie et
   /pilotage (+ mode inhérent/résiduel), pages sous Suspense. Vérif. : tsc 0, vitest 752/752 (5 652 tests), i18n OK,
   `next build` OK. Non vérifié au navigateur.
+- **Recette au navigateur interne (même jour, Claude, comptes `nav-*@acra.test`)** : comptes de test LOCAUX clonés des
+  comptes de recette (rôles + appartenances), mot de passe généré dans `.acra-test-memory/recette-navigateur.json`
+  (gitignoré, + `cronSecret` pour lancer `audit-scellement`). Connexion par fetch `/api/auth/callback/credentials`
+  (volet masqué : viewport à fixer avec `resize_window`). Résultats : KO-2 OK (`?familleTic=IT` conservé après
+  rechargement, repris par le pilotage et `/api/grc/rollup`) ; KO-5 OK (scrollWidth 375 sur /cartographie et /pilotage) ;
+  KO-4 OK desktop, en mobile titre sous la navbar → `scroll-mt-24` ; KO-3 OK (AUDITEUR : GET 200 `peutTraiter:false`,
+  POST VALIDER/ECARTER 403) ; KO-1 non rejoué (tests unitaires seulement). 2.1 OK (202 + demande, auto-approbation
+  403, RSSI voit la demande, rejet sans motif 400 `motif_requis`, rejet motivé → statut inchangé, approbation →
+  ACCEPTE) ; double validation remise à false. 2.2 partiel OK (/ecosysteme 200, point d'accès `user:pw@` → 400
+  `identifiants_interdits`, URL normale 201 puis supprimée). 2.4 OK (scellement 2 350 entrées, intégrité ok sans
+  rupture, `cleConfiguree:false` en local ; rétention 6 et 300 → 400, 24 → 200, remise à null ; export CSV avec
+  seq, hash). 2.5 : pages listes 200 (état URL non rejoué en détail). 2.6 : sombre + 375 px sur l'encart OK.
+  Données de test laissées : risques « RECETTE-NAV DV hors appétit » (ACCEPTE) et « RECETTE-NAV DV rejet ».
 - **Reprise** : session ADMIN ouverte par l'utilisateur dans le volet navigateur (+ comptes AUDITEUR, RISK_MANAGER,
   super-admin) ; libérer du disque ; relancer KO-1/3/4/5 puis 2.1–2.6, puis §1 (setup.sh), §3 (profil ha), §4 (charge).
 
