@@ -6,6 +6,32 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-11-03 (115) — Claude (🛠️ acra-dev, local) : intégration main, couverture des risques TIC (famille, continuité IT, filtres)
+
+Branche `claude/dazzling-edison-qzmwlg` (PR 291). **PR 286 fusionnée** dans `main` (squash `c4958fb4`, accord utilisateur),
+puis `main` intégré ici (`44168252` : versions de main + Next 16.4.4 ; fast-uri 3.1.9 / undici 8.12.3 = Dependabot
+289/290) ; équipe d'agents reprise (`9e6eb857`). PR Dependabot 283/287/288 fermées (remplacées). `npm audit` prod propre.
+
+- `306f3877` — **Projet 360 : continuité informatique** (L3, artisan sonnet) : 4 questions/règles IT (absence de PRA,
+  sauvegardes non testées, RTO/RPO non définis, RTO > tolérance d'impact) ; `synthetiserContinuite360` (pure) alimente
+  le pré-remplissage depuis RTO/RPO/tolérance des processus critiques et le dernier test de résilience (< 12 mois).
+- `eaae56d0` — **Famille de risque TIC** (L2, artisan opus + relecteur opus) : `RiskItem.familleRisqueTic` (IT, CYBER,
+  CONTINUITE_METIER_TIC, CONTINUITE_IT, TIERS_TIC), axe distinct de la taxonomie ; migration `20261103210000` (colonne
+  nullable + index) ; posée à la création depuis `Risque.domaine` et à l'import catalogue, jamais réécrite à la
+  republication ; `champFamillePatch` (pure) ; API v1 ; export. Libellés vérifiés sur le texte officiel DORA
+  (CELEX 32022R2554, art. 3 points 5/18/19, ch. V) ×5.
+- `b9f15061` — **Filtres carto** (L5, artisan sonnet) : `familleTic` (dont « non renseignée ») et `provenance` dans
+  `risk-filters` / `RiskFiltersBar` (partagée avec le pilotage : `grc/rollup` sélectionne les champs) ; export aligné.
+- **Vérifications** : état intégré `9e6eb857` : tsc 0, vitest 743/743 fichiers (5 564 tests), i18n OK. Après L2+L3
+  (`eaae56d0`) : tsc 0, vitest 746/746 (5 587 tests), i18n OK. Après L5
+  (`b9f15061`) : tsc 0, vitest 746/746 (5 595 tests), i18n OK. **Non vérifié** : rendu navigateur des nouveaux écrans, migration sur base réelle.
+- **Reste** : L4 (risques proposés depuis le registre TIC et la résilience — question produit : création auto ou
+  propositions à valider, recommandé : propositions) ; L1 = recette locale du prompt `docs/prompts/agents-locaux-2026-11-03.md`
+  (Docker, navigateur, profil ha, charge) ; CodeQL en échec sur PR 291 (3 s, configuration). Libellés « origine » du
+  filtre rédigés par l'artisan, à valider. Classement du catalogue → famille à relire par le métier.
+
+---
+
 ## 2026-11-03 (111) — Claude (session cloud) : Next.js 16.4.4, journal d'audit infalsifiable
 
 - **Next.js 16.4.4** (+ `eslint-config-next`) à la demande de l'utilisateur ; lockfile npm 11 (12 paquets Next seulement).
