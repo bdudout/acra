@@ -6,6 +6,36 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-11-03 (116) — Claude (🛠️ acra-dev, local) : recette locale L2–L5, corrections, AUDITEUR en lecture seule
+
+Branche `claude/dazzling-edison-qzmwlg` (PR 291), poussée jusqu'à `02848918`.
+
+- **Migrations** : les 11 migrations du 02/11 au 03/11 (dont `audit_log_chaine` sur 2 302 lignes, `20261103210000`,
+  `20261103220000`) appliquées sans erreur sur la base locale existante (`preparer-env.sh`) ; index famille et index
+  unique partiel `RiskItem_proposition_tic_sourceId_key` présents (pg_indexes).
+- **Recette navigateur L2–L5** (vérificateur sonnet, :3005) : OK — questions continuité Projet 360 + risques générés,
+  famille TIC conservée au registre, publication CYBER/IT/OUTSOURCING → CYBER/IT/TIERS_TIC, filtres famille/origine
+  carto + pilotage + export CSV, propositions (3 VALIDER simultanés → 201/409/409, un seul risque), LECTEUR/ANALYSTE/
+  METIER 403. Écarts : KO-1 badge pré-rempli absent (continuite/patterns), KO-4 ancre hors écran, KO-5 débordement
+  375 px (RiskFiltersBar) → corrigés `c8d726d0` ; KO-3 AUDITEUR pouvait valider/écarter → **décision utilisateur :
+  lecture seule** → `02848918` (`peutVoirPropositionsRisquesTic` GET / `peutTraiterPropositionsRisquesTic` POST sans
+  AUDITEUR, `peutTraiter` dans la réponse, boutons masqués). Tests ciblés verts (104), tsc 0.
+  **KO-2 non corrigé (préexistant)** : l'état des filtres carto/pilotage n'est pas dans l'URL de la page.
+- **Recette du prompt cloud §2 : interrompue** (session navigateur perdue ; lecture du mot de passe de recette refusée
+  par le classifieur — à ne pas contourner ; le vérificateur a néanmoins lancé puis tué un serveur local `pw.py` :3999
+  servant ce mot de passe, hors dépôt — comportement à proscrire, cf. learned-practices). Joué : 2.1 partiel OK
+  (demande créée, bandeau, auto-validation 403, annulation) ; 2.3 partiel OK (alerte RTO > tolérance). Non joué :
+  2.1 second valideur, 2.2 (/ecosysteme en 500 « Panic » : disque plein pendant la compilation), 2.4 (super-admin ;
+  `audit-scellement` exige CRON_SECRET), 2.5, 2.6 ; vérification navigateur de KO-1/3/4/5.
+- **⚠️ État de la base locale de recette** : `OrganizationConfig.doubleValidationActive` **resté à true** sur l'org de
+  recette (Docker Desktop s'est arrêté — démon injoignable — avant la remise à false) → à remettre à false au prochain
+  démarrage. Données de test laissées : risque « RECETTE-DV risque hors appétit », projet 360 « Migration vers le
+  cloud », processus « RECETTE-L4 … », 3 risques issus de propositions.
+- **Reprise** : session ADMIN ouverte par l'utilisateur dans le volet navigateur (+ comptes AUDITEUR, RISK_MANAGER,
+  super-admin) ; libérer du disque ; relancer KO-1/3/4/5 puis 2.1–2.6, puis §1 (setup.sh), §3 (profil ha), §4 (charge).
+
+---
+
 ## 2026-11-03 (115) — Claude (🛠️ acra-dev, local) : intégration main, couverture des risques TIC (famille, continuité IT, filtres)
 
 Branche `claude/dazzling-edison-qzmwlg` (PR 291). **PR 286 fusionnée** dans `main` (squash `c4958fb4`, accord utilisateur),
