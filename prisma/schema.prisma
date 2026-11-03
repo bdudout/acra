@@ -180,6 +180,7 @@ model Organization {
   homologations          Homologation[]
   processus              Processus[]
   riskItems              RiskItem[]
+  propositionsRisquesEcartees PropositionRisqueEcartee[]
   incidents              Incident[]
   controles              Controle[]
   campagnes              Campagne[]
@@ -545,6 +546,8 @@ model RiskItem {
   provenance String  @default("MANUEL")
   sourceType String? // ex. 'analyse'
   sourceId   String? // id de l'origine (analyse ACRA, incident, contrôle…)
+  // Index unique PARTIEL (SQL seul, non exprimable ici) : (organizationId, sourceId) WHERE sourceType = 'proposition-tic'
+  // — un seul risque par proposition validée (migration 20261103220000, lib/propositions-risques-tic).
 
   // Plan d'action : PlanAction porteur d'un lien RISQUE (targetId = id de ce risque).
   incidents     Incident[]
@@ -563,6 +566,21 @@ model RiskItem {
   @@index([taxonomieCode])
   @@index([familleRisqueTic])
   @@index([entiteId])
+}
+
+// ─── Risques proposés écartés (lot L4, lib/propositions-risques-tic) ──────────
+// Les propositions de risques (registre TIC, résilience) sont CALCULÉES à la volée ; seule la décision « écarter »
+// est mémorisée, par clé stable `TYPE:idOrigine`. Une proposition validée devient un RiskItem
+// (sourceType 'proposition-tic', sourceId = clé ; index unique partiel en SQL) : aucune ligne ici.
+model PropositionRisqueEcartee {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  cle            String
+  ecartePar      String? // id de l'utilisateur ayant écarté (traçabilité, sans relation)
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, cle])
 }
 
 // ─── M1 v2 — Campagnes d'évaluation RCSA ─────────────────────────────────────

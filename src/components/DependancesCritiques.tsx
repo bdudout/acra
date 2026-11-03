@@ -48,6 +48,7 @@ export default function DependancesCritiques() {
         {l.synthese.replace('{n}', String(d.synthese.fonctions)).replace('{e}', String(d.synthese.avecEcarts)).replace('{h}', String(d.synthese.ecartsEleves))}
       </p>
       {msg && <p role="alert" className="mt-2 text-red-700 dark:text-red-300">{msg}</p>}
+      {d.fonctions.length > 0 && <p className="mt-1"><Link href="/registre#propositions-tic" className="underline">{t.propositionsTic.voirProposes}</Link></p>}
       {d.fonctions.length === 0 && <p className="mt-2 text-gray-600 dark:text-gray-300">{l.aucune} <Link href="/processus" className="underline">{l.versProcessus}</Link></p>}
 
       {(d.concentration.tiers.length > 0 || d.concentration.hotes.length > 0) && (

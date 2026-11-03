@@ -19,6 +19,7 @@ import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
 import { RISK_STATUTS } from '@/lib/risk-item'
 import RiskActionsPanel, { type ActionsSummary } from '@/components/RiskActionsPanel'
 import RiskTiersPanel from '@/components/RiskTiersPanel'
+import PropositionsRisquesTic from '@/components/PropositionsRisquesTic'
 import AutocompleteInput from '@/components/AutocompleteInput'
 import { resolveScaleConfig, getRiskLevelFromSeuils, type ScaleConfig, type EchelleNiveau, type Seuil } from '@/lib/risk-scale'
 import { readableTextColor } from '@/lib/contrast-color'
@@ -210,6 +211,7 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{r.subtitle}</p>
       {canEdit && <SectorSuggestionsPanel canCreateProcesses={canCreateProcesses} kinds={['RISK']} associer onImported={() => { void reload() }} />}
+      {canEdit && <PropositionsRisquesTic onValidee={() => { void reload() }} />}
 
       {info && <p role="status" className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">{info} <a href="/validations" className="underline">{t.doubleValidation.menu}</a></p>}
       {canEdit && showForm && (

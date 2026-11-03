@@ -11,6 +11,8 @@ export interface UsageDep {
   hotes: string[]
   /** Couvert par un contrat critique ou important SANS stratégie de sortie (DORA art. 28 § 8). */
   contratSansSortie: boolean
+  /** Détail de l'évaluation de l'usage (statut, date de validation) — facultatif ; `evalue` reste l'indicateur simple. */
+  evaluation?: { statut: string; valideLe: string | null } | null
 }
 export interface ScenarioDep { id: string; intitule: string; dureeInterruptionMinutes: number }
 export interface FonctionDep {
