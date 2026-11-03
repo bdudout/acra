@@ -2458,6 +2458,8 @@ model SiemConfig {
   categories     Json      @default("[]")
   // Émettre aussi en JSON structuré sur stdout (pour un log-shipper Filebeat/Fluentd).
   includeStdout  Boolean   @default(true)
+  // Rétention du journal d'audit en mois (null = conservation illimitée) ; purge archivée (lib/audit-purge.server).
+  auditRetentionMois Int?
   lastDeliveryOk Boolean   @default(false)
   lastDeliveryAt DateTime?
   lastError      String?
@@ -3104,4 +3106,20 @@ model DemandeValidation {
 
   @@index([organizationId, statut])
   @@index([type, cibleId, statut])
+}
+
+// Purge de rétention du journal d'audit : entrées scellées seq ≤ jusquaSeq archivées (JSON Lines gzip dans le stockage
+// des documents, empreinte SHA-256 de l'archive) puis supprimées. `dernierHash` = empreinte de la dernière entrée purgée :
+// ancre de reprise de la vérification de la chaîne (lib/audit-chaine.server).
+model AuditPurge {
+  id            String   @id @default(cuid())
+  jusquaSeq     BigInt
+  dernierHash   String
+  nb            Int
+  avant         DateTime // date limite appliquée (entrées antérieures)
+  archiveCle    String
+  archiveSha256 String
+  createdAt     DateTime @default(now())
+
+  @@index([jusquaSeq])
 }

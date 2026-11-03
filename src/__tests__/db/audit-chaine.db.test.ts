@@ -44,3 +44,33 @@ describe('journal d’audit infalsifiable (base réelle)', () => {
     expect((await verifierJournal()).ok).toBe(true)
   })
 })
+
+import { purgerJournal } from '@/lib/audit-purge.server'
+import { gunzipSync } from 'node:zlib'
+import { createHash } from 'node:crypto'
+import { getDocumentStorage } from '@/lib/document-storage'
+
+describe('rétention : purge archivée (base réelle)', () => {
+  it('sans rétention : rien n’est purgé', async () => {
+    await prisma.siemConfig.upsert({ where: { id: 'global' }, create: { id: 'global', auditRetentionMois: null }, update: { auditRetentionMois: null } })
+    expect(await purgerJournal()).toEqual({ purgees: 0, raison: 'retention_non_definie' })
+  })
+  it('purge des entrées scellées anciennes : archive vérifiable, ancre, chaîne toujours intègre, scellement qui reprend', async () => {
+    await scellerJournal(futur())
+    await prisma.siemConfig.update({ where: { id: 'global' }, data: { auditRetentionMois: 12 } })
+    const dansDeuxAns = new Date(Date.now() + 2 * 365 * 86_400_000) // tout le journal actuel devient « ancien »
+    const avant = await prisma.auditLog.count()
+    const r = await purgerJournal(dansDeuxAns)
+    expect(r.purgees).toBe(avant)
+    if (!('archiveCle' in r)) throw new Error('pas d’archive')
+    const archive = await (await getDocumentStorage()).get(r.archiveCle)
+    expect(createHash('sha256').update(archive).digest('hex')).toBe(r.archiveSha256)
+    expect(gunzipSync(archive).toString('utf8').trim().split('\n')).toHaveLength(avant)
+    expect(await prisma.auditLog.count()).toBe(0)
+    // Nouvelles entrées : elles se chaînent à l'ancre de la purge, la vérification reste intègre.
+    await prisma.auditLog.create({ data: { action: 'TEST_APRES_PURGE' } })
+    await scellerJournal(futur())
+    expect(await verifierJournal()).toMatchObject({ ok: true, verifiees: 1 })
+    await prisma.siemConfig.update({ where: { id: 'global' }, data: { auditRetentionMois: null } })
+  })
+})

@@ -22,7 +22,10 @@ export async function scellerJournal(now = new Date()): Promise<{ scellees: numb
   while (total < MAX_PAR_EXECUTION) {
     const lot = await prisma.$transaction(async tx => {
       await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext('acra-audit-chaine'))::text`)
-      const dernier = await tx.auditLog.findFirst({ where: { hash: { not: null } }, orderBy: { seq: 'desc' }, select: { seq: true, hash: true } })
+      // Dernière entrée scellée ; à défaut (tout a été purgé), l'ancre de la dernière purge de rétention.
+      const scellee = await tx.auditLog.findFirst({ where: { hash: { not: null } }, orderBy: { seq: 'desc' }, select: { seq: true, hash: true } })
+      const purge = scellee ? null : await tx.auditPurge.findFirst({ orderBy: { jusquaSeq: 'desc' }, select: { jusquaSeq: true, dernierHash: true } })
+      const dernier = scellee ?? (purge ? { seq: purge.jusquaSeq, hash: purge.dernierHash } : null)
       const aSceller = await tx.auditLog.findMany({
         where: { hash: null, createdAt: { lt: limite }, ...(dernier ? { seq: { gt: dernier.seq } } : {}) },
         orderBy: { seq: 'asc' }, take: LOT, select: CHAMPS,
@@ -55,9 +58,11 @@ export interface EtatChaine {
 
 /** Vérifie toute la chaîne (par lots, ordre seq) et compte les entrées non scellées. */
 export async function verifierJournal(): Promise<EtatChaine> {
-  let prev = GENESE
+  // Après une purge de rétention, la chaîne repart de l'ancre (empreinte de la dernière entrée purgée et archivée).
+  const ancre = await prisma.auditPurge.findFirst({ orderBy: { jusquaSeq: 'desc' }, select: { jusquaSeq: true, dernierHash: true } })
+  let prev = ancre?.dernierHash ?? GENESE
   let verifiees = 0
-  let curseur: bigint | null = null
+  let curseur: bigint | null = ancre?.jusquaSeq ?? null
   let dernier: EtatChaine['dernier'] = null
   for (;;) {
     const lot: EntreeScellee[] = await prisma.auditLog.findMany({

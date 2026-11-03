@@ -23,7 +23,15 @@ vérifié l'est avec la commande et son résultat.
   - tâche planifiée `audit-scellement` (chaque heure, `scripts/scheduler.sh`, écran Tâches planifiées) ; vérification à
     la demande `POST /api/admin/audit-log/integrite` (super-admin, journalisée) + encart « Intégrité du journal » ;
   - export CSV du journal : colonnes `seq`, `hash`. Corrigé au passage : la liste du journal sérialisait le BigInt (500).
-  - **Reste (T14)** : rétention paramétrable + purge archivée (ancre de reprise de la chaîne), pagination par curseur.
+  - **Rétention + purge archivée (fait le même jour)** : `SiemConfig.auditRetentionMois` (12 à 240 mois, null =
+    illimitée ; `lib/audit-retention`), table `AuditPurge` (migration `20261103140000`) ; `lib/audit-purge.server` :
+    préfixe contigu d'entrées SCELLÉES antérieures à la limite → archive JSON Lines gzip dans le stockage des documents
+    (`audit-archives/…`, SHA-256) **avant** suppression ; suppression + ancre dans une transaction sous le verrou de la
+    chaîne (`set_config('acra.audit_purge','on', true)`) ; échec d'archivage → rien supprimé. Vérification et scellement
+    repartent de la dernière ancre. Lancée par la tâche horaire `audit-scellement` (audit `AUDIT_PURGE`) ; réglage
+    `GET/PUT /api/admin/audit-log/retention` (super-admin, `AUDIT_RETENTION_MODIFIEE`) + encart « Rétention du journal ».
+    Vérifié sur base réelle (archive relue, empreinte, chaîne intègre après purge, scellement repris) ; `test:db` 25 / 113.
+  - **Reste (T14)** : pagination par curseur, partitionnement au-delà de ~10 M lignes.
 - **Vérifications** : tests purs 6/6, composant 2/2 ; base réelle `audit-chaine.db.test.ts` 3/3 (refus par la base,
   scellement + vérification, falsification en contournant le déclencheur détectée au bon numéro) ; `npm run test:db`
   25 fichiers / 111 tests verts ; tests unitaires audit / tâches / cron / SIEM 23 fichiers / 151 verts ; `tsc` 0 ;
