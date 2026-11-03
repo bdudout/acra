@@ -6,6 +6,32 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-11-03 (117) — Claude (local) : Docker Desktop redimensionné, place disque libérée (aucun code modifié)
+
+Contexte : Mac M1 **8 Go de RAM** ; avec Docker lancé, les sessions Claude se figeaient (swap 5,2/6 Go, disque à 97 %).
+
+- **Docker Desktop** (`~/Library/Group Containers/group.com.docker/settings-store.json`, ancien fichier gardé en
+  `settings-store.json.bak-2026-11-03`) : mémoire **4 Go → 2 Go**, CPU **8 → 4**, swap 1 Go, **Resource Saver activé**
+  (pause après 300 s d'inactivité), **Docker AI désactivé**. Vérifié : VM relancée avec `--cpus 4 --memoryMiB 2048`,
+  `docker info` → 4 CPU / 2 Go ; `ebios_db` healthy, `pg_isready` OK (45 Mo utilisés) ; swap redescendu à 4 Go.
+- **Cause des blocages** : chaque commande `docker` (info, ps, exec…) lançait le greffon `docker-ai` qui ne rendait
+  jamais la main → commandes figées indéfiniment. Désactivé, elles répondent de nouveau. Si une commande `docker`
+  se bloque encore, vérifier `pgrep -fl docker-ai` avant de chercher ailleurs.
+- **Disque virtuel non réduit** (`Docker.raw`, 228 Go déclarés / ~5 Go réels) : le réduire oblige Docker à le recréer
+  → **effacerait les volumes, dont la base Postgres**. Ne pas toucher ce réglage.
+- **Démarrage en dev** : seule la base tourne dans Docker → `docker compose up -d db` (depuis `ebios-rm/`), puis
+  `npm run dev`. Pour un `docker build` de l'image de production, remonter temporairement la mémoire à 4 Go
+  (Docker Desktop → Settings → Resources), puis revenir à 2 Go.
+- **Arrêt forcé** pendant l'opération : VM arrêtée proprement, puis `com.docker.backend` bloqué tué (`kill -9`) —
+  pas de perte sur la base. Une commande `docker exec ebios_db …` d'une autre session a pu échouer à ce moment : la
+  relancer. ⚠️ Rappel (116) : `doubleValidationActive` toujours à remettre à false sur l'org de recette.
+- **Place disque** (hors dépôt) : `.next` supprimé (se reconstruit au prochain `npm run dev`, 1er démarrage plus long),
+  caches npm / `~/Library/Caches` vidés ; transcripts Claude de 7–14 j archivés sur le disque externe **SPOF_2**
+  (`/Volumes/SPOF_2/Archives-Claude-transcripts/`, LISEZMOI inclus). Le Mac reste juste (~12 Go libres) : éviter
+  les gros téléchargements et builds simultanés.
+
+---
+
 ## 2026-11-03 (116) — Claude (🛠️ acra-dev, local) : recette locale L2–L5, corrections, AUDITEUR en lecture seule
 
 Branche `claude/dazzling-edison-qzmwlg` (PR 291), poussée jusqu'à `02848918`.
