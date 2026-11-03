@@ -483,6 +483,8 @@ model Processus {
   // Objectifs de continuité optionnels (minutes) : RTO (=DIMA) et RPO (=PDMA).
   rtoMinutes    Int?
   rpoMinutes    Int?
+  // Tolérance d'impact : durée maximale d'interruption tolérable (minutes). Le RTO doit lui être inférieur ou égal.
+  toleranceImpactMinutes Int?
   ordre         Int       @default(0)
   actif         Boolean   @default(true)
   // Revue périodique (lib/revues : prochaine revue 12 mois après) ; anti-doublon de la relance (cron relances).

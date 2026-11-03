@@ -16,6 +16,7 @@ export interface ProcessusInput {
   criticiteDora?: string | null
   rtoMinutes?: number | null
   rpoMinutes?: number | null
+  toleranceImpactMinutes?: number | null
   parentId?: string | null
   ordre?: number | null
   actif?: boolean
@@ -23,7 +24,7 @@ export interface ProcessusInput {
 
 /** Code d'erreur de validation d'un processus (nom requis, criticité/RTO/RPO invalides…). */
 export type ProcessusInputError =
-  | 'nom_requis' | 'criticite_invalide' | 'criticite_dora_invalide' | 'rto_invalide' | 'rpo_invalide'
+  | 'nom_requis' | 'criticite_invalide' | 'criticite_dora_invalide' | 'rto_invalide' | 'rpo_invalide' | 'tolerance_invalide'
 
 /** Valide un processus AVANT écriture. Renvoie une clé d'erreur ou null. */
 export function validateProcessusInput(input: ProcessusInput): ProcessusInputError | null {
@@ -41,6 +42,9 @@ export function validateProcessusInput(input: ProcessusInput): ProcessusInputErr
   if (input.rpoMinutes != null && input.rpoMinutes !== ('' as unknown) && (!Number.isFinite(Number(input.rpoMinutes)) || Number(input.rpoMinutes) < 0)) {
     return 'rpo_invalide'
   }
+  if (input.toleranceImpactMinutes != null && input.toleranceImpactMinutes !== ('' as unknown) && (!Number.isFinite(Number(input.toleranceImpactMinutes)) || Number(input.toleranceImpactMinutes) < 0)) {
+    return 'tolerance_invalide'
+  }
   return null
 }
 
@@ -48,7 +52,7 @@ export function validateProcessusInput(input: ProcessusInput): ProcessusInputErr
 export function cleanProcessus(input: ProcessusInput): {
   nom: string; description: string | null; proprietaire: string | null
   criticite: number | null; criticiteDora: CriticiteDora | null
-  rtoMinutes: number | null; rpoMinutes: number | null
+  rtoMinutes: number | null; rpoMinutes: number | null; toleranceImpactMinutes: number | null
   parentId: string | null; ordre: number; actif: boolean
 } {
   const c = input.criticite != null ? Math.round(Number(input.criticite)) : null
@@ -60,6 +64,7 @@ export function cleanProcessus(input: ProcessusInput): {
     criticiteDora: cleanCriticiteDora(input.criticiteDora),
     rtoMinutes: cleanDureeMinutes(input.rtoMinutes),
     rpoMinutes: cleanDureeMinutes(input.rpoMinutes),
+    toleranceImpactMinutes: cleanDureeMinutes(input.toleranceImpactMinutes),
     parentId: input.parentId?.trim() ? input.parentId.trim() : null,
     ordre: typeof input.ordre === 'number' && Number.isFinite(input.ordre) ? input.ordre : 0,
     actif: input.actif === false ? false : true,

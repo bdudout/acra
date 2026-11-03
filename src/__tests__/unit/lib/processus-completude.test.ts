@@ -8,7 +8,11 @@ describe('complétude d’un processus', () => {
   it('RTO / RPO exigés seulement pour un processus critique ou important', () => {
     expect(champsManquantsProcessus({ proprietaire: 'DSI', criticite: 2 })).toEqual([])
     expect(champsManquantsProcessus({ proprietaire: 'DSI', criticite: 4 })).toEqual(['rto', 'rpo'])
-    expect(champsManquantsProcessus({ proprietaire: 'DSI', criticite: 1, criticiteDora: 'CRITIQUE', rtoMinutes: 60 })).toEqual(['rpo'])
+    expect(champsManquantsProcessus({ proprietaire: 'DSI', criticite: 1, criticiteDora: 'CRITIQUE', rtoMinutes: 60 })).toEqual(['rpo', 'tolerance'])
+  })
+  it('tolérance d’impact exigée pour une fonction critique ou importante (DORA), pas pour la seule criticité interne', () => {
+    expect(champsManquantsProcessus({ proprietaire: 'DSI', criticite: 4, rtoMinutes: 60, rpoMinutes: 15 })).toEqual([])
+    expect(champsManquantsProcessus({ proprietaire: 'DSI', criticite: 2, criticiteDora: 'IMPORTANTE', rtoMinutes: 60, rpoMinutes: 15, toleranceImpactMinutes: 240 })).toEqual([])
   })
   it('un propriétaire vide (espaces) compte comme manquant', () => {
     expect(champsManquantsProcessus({ proprietaire: '  ', criticite: 1 })).toEqual(['proprietaire'])

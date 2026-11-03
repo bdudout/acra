@@ -39,6 +39,27 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-11-03 (112) — Claude (session cloud) : dépendances des fonctions critiques ou importantes, tolérance d'impact
+
+Priorité « banque » n° 2 (chaîne de dépendance des fonctions critiques ou importantes, DORA art. 8 et 28).
+- **Tolérance d'impact** : `Processus.toleranceImpactMinutes` (migration `20261103160000`), validée (`tolerance_invalide`),
+  saisie dans `ProcessusManager` avec alerte si RTO > tolérance ; complétude : exigée pour une fonction DORA critique ou
+  importante. **Libellés corrigés** : « RTO (DIMA) » → « RTO (objectif de reprise) » ; la DIMA est la tolérance
+  (ISO 22301 : RTO ≤ durée d'interruption maximale tolérable). EN/DE/ES/IT : « RTO (recovery objective) », MTPD.
+- `lib/dependances-critiques` (pur) : par fonction critique / importante, écarts SANS_PROPRIETAIRE, TOLERANCE / RTO / RPO
+  non définis, RTO_AU_DELA_TOLERANCE (élevé), AUCUNE_DEPENDANCE_TIC (info), USAGE_SANS_CONTRAT (élevé),
+  USAGE_SOUS_QUALIFIE, USAGE_NON_EVALUE, USAGE_EXPOSE_VIA_INTERNET, AUCUN_CONTROLE ; concentration (même tiers / même hôte
+  derrière plusieurs fonctions) ; synthèse.
+- `GET /api/resilience/dependances` (org active, module réglementaire, gouvernance ou lecture globale du dispositif) ;
+  vue `DependancesCritiques` sur la page Réglementaire.
+- Non modélisé (à décider) : stratégie de sortie des contrats TIC, tests de continuité par fonction, scénarios « sévères
+  mais plausibles » rattachés à la tolérance.
+- **Vérifications** : tests purs 6/6 ; composant 1/1 ; processus et composants liés 31 fichiers / 169 tests verts ; base
+  réelle `dependances-critiques.db.test.ts` 2/2 (écarts, concentration tiers + hôte, LECTEUR refusé) ; `tsc` 0 ;
+  `i18n:check` OK ; migration appliquée, `prisma migrate diff` sans dérive ; ESLint 0 erreur.
+
+---
+
 ## 2026-11-03 (110) — Claude (session cloud) : double validation (quatre yeux) activable par organisation
 
 Décision utilisateur : « pour l'acceptation d'un risque résiduel hors appétit ou la suppression d'un presta TIC critique il

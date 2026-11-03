@@ -22,7 +22,7 @@ export async function GET() {
     ? await prisma.processus.findMany({
         where: { organizationId: orgId },
         orderBy: [{ ordre: 'asc' }, { nom: 'asc' }],
-        select: { id: true, parentId: true, nom: true, description: true, proprietaire: true, criticite: true, criticiteDora: true, rtoMinutes: true, rpoMinutes: true, ordre: true, actif: true, derniereRevue: true, createdAt: true },
+        select: { id: true, parentId: true, nom: true, description: true, proprietaire: true, criticite: true, criticiteDora: true, rtoMinutes: true, rpoMinutes: true, toleranceImpactMinutes: true, ordre: true, actif: true, derniereRevue: true, createdAt: true },
       })
     : []
   return NextResponse.json({ processus, active: orgConfig.registreRisquesActive })
