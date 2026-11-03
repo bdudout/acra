@@ -29,7 +29,15 @@ faut une double validation activable par orga » ; mise à jour de Next.js « da
   (Navbar), bandeau « demande transmise » dans le registre des risques, le registre TIC et le panneau d'acceptation.
 - **Vérifications** : `tsc` 0 ; `i18n:check` OK ; vitest 18 fichiers liés / 107 tests verts ; base réelle
   `double-validation.db.test.ts` 5/5 (analyse, registre PATCH et création, contrat TIC rejet puis approbation, option
-  désactivée) ; ESLint 0 erreur. Mise à jour Next.js : agent en worktree isolé (voir entrée suivante si intégrée).
+  désactivée) ; ESLint 0 erreur.
+- **Next.js 16.4.0 → 16.4.1** (+ `eslint-config-next` 16.4.1), préparé dans un worktree isolé puis repris par
+  cherry-pick : corrige GHSA-2464-fhr4-w9xw (RCE, optimisation d'images SVG, critique), GHSA-673q-mjm6-r5xr (RCE,
+  `use cache`, critique), GHSA-p3m5-59mp-jv5r (DoS Server Actions, élevée) — vérifiés via `npm audit` et l'API advisories
+  du registre npm ; CVE non vérifiés. `npx next upgrade --agent=security` **non lancé** (exécute `next@canary` non figé
+  et un agent imbriqué). Lockfile régénéré avec npm 11 (comme CI / Docker : conserve les champs `libc` utiles à alpine).
+  Vérifié sur la branche : `tsc` 0, `npm run build` OK (« Next.js 16.4.1 », plus d'arrêt de sécurité), tests ciblés verts ;
+  dans le worktree : suite complète 5 338 verts + 3 fichiers de scripts shell verts relancés seuls (sensibles à la charge).
+  Le build s'arrêtera de nouveau si un avis vise 16.4.1 (politique `security` par défaut de Next) ; 16.4.4 disponible.
 
 ---
 
