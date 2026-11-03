@@ -16,7 +16,7 @@ import { verifierRattachements } from '@/lib/controle-rattachements.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { withAccess } from '@/lib/with-access.server'
 import { lirePagination, paginer, trier } from '@/lib/pagination'
-import { filtrerControles } from '@/lib/controle'
+import { filtrerControles, efficaciteDepuisComptes } from '@/lib/controle'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,13 +41,24 @@ export const GET = withAccess({ org: 'none' }, async (req, { user }) => {
   const acces = await accesResultats(userId, roleLecture as UserRole)
   const visible = <T extends { responsable: string | null }>(l: T[]) => (acces.tout ? l : l.filter(c => acces.concerne(c.responsable)))
   const sp = req.nextUrl.searchParams
+  // Agrégats d'exécutions calculés PAR LA BASE (une ligne par contrôle) : dernière réalisation, exécutions évaluées et
+  // conformes. Évite de charger toutes les exécutions de tous les contrôles (120 000 lignes pour 10 000 contrôles).
+  const agregats = async () => new Map((await prisma.$queryRaw<{ controleId: string; derniere: Date | null; evaluees: bigint; conformes: bigint }[]>(Prisma.sql`
+    SELECT "controleId", max("dateRealisation") AS derniere,
+           count(*) FILTER (WHERE resultat IN ('CONFORME', 'ANOMALIE')) AS evaluees,
+           count(*) FILTER (WHERE resultat = 'CONFORME') AS conformes
+    FROM "ControleExecution" WHERE "organizationId" = ${orgId} GROUP BY "controleId"`))
+    .map(r => [r.controleId, { derniere: r.derniere, evaluees: Number(r.evaluees), conformes: Number(r.conformes) }]))
 
   // Menus de sélection (supervision, audit, questionnaires, suggestions) : identifiants et libellés seulement.
   if (sp.get('vue') === 'options') {
-    const opts = await prisma.controle.findMany({ where: { organizationId: orgId }, orderBy: { intitule: 'asc' }, select: { id: true, intitule: true, responsable: true, niveau: true, actif: true, executions: { select: { resultat: true } } } })
-    // Efficacité légère (résultats seuls) : utile au choix des contrôles N1 supervisés.
-    return NextResponse.json({ controles: visible(opts).map(({ executions, ...o }) => {
-      const eff = evaluerEfficacite(executions as { resultat: string; dateRealisation: Date }[])
+    const [opts, agg] = await Promise.all([
+      prisma.controle.findMany({ where: { organizationId: orgId }, orderBy: { intitule: 'asc' }, select: { id: true, intitule: true, responsable: true, niveau: true, actif: true } }),
+      agregats(),
+    ])
+    // Efficacité légère (comptes agrégés) : utile au choix des contrôles N1 supervisés.
+    return NextResponse.json({ controles: visible(opts).map(o => {
+      const eff = efficaciteDepuisComptes(agg.get(o.id) ?? { evaluees: 0, conformes: 0 })
       return { ...o, efficacite: { ...eff, etablie: efficaciteEtablie(eff) } }
     }), active: true })
   }
@@ -59,14 +70,19 @@ export const GET = withAccess({ org: 'none' }, async (req, { user }) => {
   if (pg) {
     // Lot V1 : requête LÉGÈRE sur toute la bibliothèque (filtres, compteurs, tri sur l'ensemble), détail de la seule page.
     const now0 = new Date()
-    const legers = visible(await prisma.controle.findMany({
-      where: { organizationId: orgId },
-      orderBy: [{ actif: 'desc' }, { createdAt: 'desc' }],
-      select: { id: true, intitule: true, responsable: true, niveau: true, referentielCode: true, actif: true, periodicite: true, createdAt: true, executions: { orderBy: { dateRealisation: 'desc' }, select: { resultat: true, dateRealisation: true } } },
-    })).map(c => {
-      const derniere = c.executions[0]?.dateRealisation ?? null
+    const [bruts, agg] = await Promise.all([
+      prisma.controle.findMany({
+        where: { organizationId: orgId },
+        orderBy: [{ actif: 'desc' }, { createdAt: 'desc' }],
+        select: { id: true, intitule: true, responsable: true, niveau: true, referentielCode: true, actif: true, periodicite: true, createdAt: true },
+      }),
+      agregats(),
+    ])
+    const legers = visible(bruts).map(c => {
+      const a = agg.get(c.id)
+      const derniere = a?.derniere ?? null
       const echeance = prochaineEcheance(c.periodicite as Periodicite, derniere, c.createdAt)
-      return { ...c, derniere, echeance, etatEcheance: c.actif ? etatEcheance(echeance, now0) : null, anomalies: evaluerEfficacite(c.executions).anomalies }
+      return { ...c, derniere, echeance, etatEcheance: c.actif ? etatEcheance(echeance, now0) : null, anomalies: a ? a.evaluees - a.conformes : 0 }
     })
     synthese = {
       total: legers.length, actifs: legers.filter(c => c.actif).length,

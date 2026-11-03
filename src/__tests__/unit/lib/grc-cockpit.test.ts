@@ -125,3 +125,29 @@ describe('synthetiserQuatreNiveaux', () => {
     expect(r[3]).toMatchObject({ niveau: 'N4', activite: 2, attention: 2, enRetard: 1 })
   })
 })
+
+import { rollupControles as rc, rollupControlesParNiveau as rcn, controlesByOrg as cbo, rollupControlesComptes, rollupControlesParNiveauComptes, controlesByOrgComptes } from '@/lib/grc-cockpit'
+describe('rollups du contrôle permanent : comptes agrégés ≡ exécutions chargées', () => {
+  const d = new Date('2026-01-01')
+  const controles = [{ organizationId: 'a', niveau: 'N1' }, { organizationId: 'a', niveau: 'N2' }, { organizationId: 'b' }]
+  const execs: { organizationId: string; resultat: string; dateRealisation: Date; niveau?: string }[] = [
+    ...Array.from({ length: 7 }, () => ({ organizationId: 'a', resultat: 'CONFORME', dateRealisation: d, niveau: 'N1' })),
+    { organizationId: 'a', resultat: 'ANOMALIE', dateRealisation: d, niveau: 'N2' },
+    { organizationId: 'a', resultat: 'NON_APPLICABLE', dateRealisation: d, niveau: 'N1' },
+    { organizationId: 'b', resultat: 'ANOMALIE', dateRealisation: d },
+    { organizationId: 'c', resultat: 'CONFORME', dateRealisation: d, niveau: 'N1' },
+  ]
+  // Ce que renvoie la requête SQL de comptage (organisation × niveau).
+  const comptes = Object.values(execs.reduce<Record<string, { organizationId: string; niveau?: string; evaluees: number; conformes: number }>>((m, e) => {
+    const k = `${e.organizationId}|${e.niveau ?? ''}`
+    const c = m[k] ?? { organizationId: e.organizationId, niveau: e.niveau, evaluees: 0, conformes: 0 }
+    if (e.resultat === 'CONFORME' || e.resultat === 'ANOMALIE') c.evaluees++
+    if (e.resultat === 'CONFORME') c.conformes++
+    m[k] = c; return m
+  }, {}))
+  it('global, par niveau, par organisation', () => {
+    expect(rollupControlesComptes(controles, comptes)).toEqual(rc(controles, execs))
+    expect(rollupControlesParNiveauComptes(controles, comptes)).toEqual(rcn(controles, execs))
+    expect([...controlesByOrgComptes(controles, comptes)].sort()).toEqual([...cbo(controles, execs)].sort())
+  })
+})

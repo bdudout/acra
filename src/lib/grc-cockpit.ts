@@ -8,7 +8,7 @@
 // (controle) et synthetiserConstats (audit). Aucune règle métier dupliquée.
 
 import { perteNette, estTerminal, type IncidentStatut } from './incident'
-import { evaluerEfficacite } from './controle'
+import { efficaciteDepuisComptes, evaluerEfficacite } from './controle'
 import { synthetiserConstats, niveauControle, type ConstatLite } from './audit'
 
 function groupByOrg<T extends { organizationId: string }>(rows: T[]): Map<string, T[]> {
@@ -113,6 +113,31 @@ export function controlesByOrg(controles: CockpitControle[], execs: CockpitExecu
   for (const org of new Set([...cg.keys(), ...eg.keys()])) {
     out.set(org, rollupControles(cg.get(org) ?? [], eg.get(org) ?? []))
   }
+  return out
+}
+
+// ─── Variantes sur COMPTES agrégés par la base (mesures de charge du 03/11) ─────────────────────────────────────────
+// Les exécutions ne servent qu'à compter (évaluées, conformes) par organisation et par niveau : la base renvoie ces comptes
+// au lieu de toutes les exécutions (120 000 lignes pour 10 000 contrôles). Résultats identiques (grc-cockpit.test.ts).
+export interface ComptesExecutions { organizationId: string; niveau?: string; evaluees: number; conformes: number }
+
+function totaux(controles: number, comptes: ComptesExecutions[]): ControleTotals {
+  const evaluees = comptes.reduce((n, c) => n + c.evaluees, 0)
+  const eff = efficaciteDepuisComptes({ evaluees, conformes: comptes.reduce((n, c) => n + c.conformes, 0) })
+  return { controles, evaluees: eff.evaluees, conformes: eff.conformes, anomalies: eff.anomalies, tauxConformite: eff.tauxConformite }
+}
+export function rollupControlesComptes(controles: CockpitControle[], comptes: ComptesExecutions[]): ControleTotals {
+  return totaux(controles.length, comptes)
+}
+export function rollupControlesParNiveauComptes(controles: CockpitControle[], comptes: ComptesExecutions[]): Record<'N1' | 'N2', ControleTotals> {
+  const f = (n: 'N1' | 'N2') => totaux(controles.filter(x => (x.niveau ?? 'N1') === n).length, comptes.filter(x => (x.niveau ?? 'N1') === n))
+  return { N1: f('N1'), N2: f('N2') }
+}
+export function controlesByOrgComptes(controles: CockpitControle[], comptes: ComptesExecutions[]): Map<string, ControleTotals> {
+  const cg = groupByOrg(controles)
+  const eg = groupByOrg(comptes)
+  const out = new Map<string, ControleTotals>()
+  for (const org of new Set([...cg.keys(), ...eg.keys()])) out.set(org, totaux((cg.get(org) ?? []).length, eg.get(org) ?? []))
   return out
 }
 

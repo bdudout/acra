@@ -39,6 +39,29 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-11-03 (114) — Claude (session cloud) : profil ha repris, clé du journal, mesures de charge
+
+- **Points 3 et 4 (agent)** : installation `setup.sh --profil ha`, sauvegarde logique de la base externe
+  (`acra-snapshot.sh` profil ha, `acra-restore-ha.sh` avec garde-fous), cohérence base ↔ stockage des documents
+  (tâches `sauvegarde-base`, `coherence-documents`), `AUDIT_CHAIN_KEY` générée par `setup.sh` (jamais régénérée) et
+  transmise par les fichiers compose, avertissement au démarrage en production. Repris de l'étiquette
+  `wip/installation-sauvegarde-ha`. Essai réel de sauvegarde + restauration sur bases jetables (rapport dans le commit).
+- **Correction (moi)** : mode de scellement mémorisé par entrée (`k1:` = HMAC) — ajouter la clé à un journal déjà scellé
+  ne crée plus de fausse rupture ; rétrogradation détectée (`mode_degrade`), clé absente signalée, nombre d'entrées sans
+  clé affiché.
+- **Mesures de charge** (spec § 5 ter) : pages < 120 Ko et 0,01 à 0,15 s en séquentiel ; vue consolidée p95 0,80 s sous
+  10 simultanées (cible 2 s ✓) ; listes p95 0,69 à 3,1 s sous 20 simultanées (cible 0,3 s ✗). **Optimisé** : exécutions
+  des contrôles et du cockpit agrégées par la base (contrôles p95 8,2 → 1,75 s ; cockpit 6,3 → 0,80 s ; réponse du cockpit
+  identique à l'octet près sur le jeu « grand groupe »). Reste : lot V1-bis (pagination entièrement en SQL), recherche à
+  la saisie pour les menus, multi-instance.
+- **Défauts signalés par l'agent, non traités** : `SECRETS_ENCRYPTION_KEY` non transmise en mono-instance (l'application
+  dérive la clé de `NEXTAUTH_SECRET` ; corriger exige une migration des secrets chiffrés) ; mot de passe de la base visible
+  dans `ps` pendant `pg_dump`/`psql` (URL en argument) ; `coherence-documents` alerte aussi en mono-instance.
+- **Vérifications** : `npm test` 742 fichiers / 5 550 verts (avant optimisations) ; tests ciblés après optimisations
+  (contrôles 49, cockpit 11, routes 34) ; base réelle `controles-agregats.db.test.ts` 2/2 ; build OK ; `tsc` 0.
+
+---
+
 ## 2026-11-03 (113) — Claude (session cloud) : compléments DORA (sortie, tests de continuité, scénarios sévères)
 
 Demande utilisateur : « on avance d'abord sur les points 2 3 4 » (2 = compléments DORA ; 3 = installation et sauvegarde

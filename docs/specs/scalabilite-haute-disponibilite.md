@@ -148,6 +148,48 @@ Technique : pagination par **décalage** (`skip/take`) avec tri indexé dans l'i
 centaines de milliers de lignes par organisation ; pagination par **curseur** pour l'API publique et les exports
 (stable même si des lignes sont ajoutées pendant le parcours).
 
+## 5 ter. Mesures après pagination (03/11/2026)
+
+Même serveur de production local (4 cœurs, une seule instance Node, PostgreSQL 16), même jeu « grand groupe », tout le
+volume concentré dans une filiale (10 000 contrôles × 12 exécutions, 20 000 risques, 5 000 incidents, 20 000 plans
+d'action, 5 000 analyses). Next.js 16.4.4. Outils : `curl` séquentiel (5 appels, médiane) et concurrent (`xargs -P`).
+
+**Séquentiel, 1ʳᵉ page de 50 lignes** (filiale volumineuse) :
+
+| Route | 16/10 (liste complète) | 03/11 (page) | Réponse |
+|---|---|---|---|
+| contrôles | 1,63 s · 22,8 Mo | **0,08 s** (0,44 s avant agrégation SQL) | 114 Ko |
+| registre des risques | 0,51 s · 15,8 Mo | 0,09 s | 39 Ko |
+| analyses | 0,14 s · 2,0 Mo | 0,04 s | 20 Ko |
+| incidents (module activé) | — | 0,07 s | 93 Ko |
+| plans d'action unifiés | — | 0,15 s | 16 Ko |
+| plans d'action (organisation) | 0,29 s · 6,1 Mo | 0,07 s | 15 Ko |
+| documents, missions, dérogations, préconisations | — | 0,01 à 0,02 s | < 8 Ko |
+| vue consolidée (groupe) | 0,96 s | **0,09 s** (0,71 s avant agrégation SQL) | 1,8 Ko |
+
+**Sous charge** (requêtes simultanées, 100 appels ; 30 pour la vue consolidée) :
+
+| Route | Simultanées | 16/10 p95 | 03/11 p95 | Débit 03/11 | Cible |
+|---|---|---|---|---|---|
+| contrôles (page) | 20 | 32,0 s | **1,75 s** (8,2 s avant agrégation) | 12,9 req/s | 0,3 s ✗ |
+| registre des risques (page) | 20 | — | 1,58 s | 14,2 req/s | 0,3 s ✗ |
+| analyses (page) | 20 | 2,6 s | 0,69 s | 34,0 req/s | 0,3 s ✗ |
+| incidents (page) | 20 | — | 1,24 s | 17,6 req/s | 0,3 s ✗ |
+| plans d'action unifiés (page) | 20 | — | 3,09 s | 6,8 req/s | 0,3 s ✗ |
+| plans d'action organisation (page) | 20 | — | 1,36 s | 16,0 req/s | 0,3 s ✗ |
+| vue consolidée | 10 | 9,8 s | **0,80 s** | 12,9 req/s | 2 s ✓ |
+
+Aucune erreur. **Lecture** : réponses désormais petites (< 120 Ko, cible 500 Ko ✓) et latences séquentielles basses ;
+mais sous 20 requêtes simultanées, la cible de 300 ms n'est pas atteinte sur l'entité la plus volumineuse, car chaque
+requête lit encore tout le périmètre en version allégée (10 000 à 20 000 lignes) pour filtrer, trier et compter en
+mémoire, sur une seule boucle d'événements. Corrigé le 03/11 : exécutions des contrôles et du cockpit **agrégées par la
+base** (`efficaciteDepuisComptes`, `rollupControles*Comptes`, réponses identiques vérifiées) — 120 000 lignes évitées.
+
+**Reste (lot V1-bis)** : filtrage, tri, recherche et comptages exécutés en SQL (`skip/take` + `count`/`groupBy`) pour les
+trois listes les plus lourdes (registre des risques, contrôles, plans d'action unifiés) ; listes des menus
+(`?vue=options` : 2,2 Mo pour 10 000 contrôles, 1 Mo pour 20 000 risques) à remplacer par une recherche à la saisie ;
+et répartition sur plusieurs instances (profil « ha ») : le débit croît avec le nombre de réplicas.
+
 ## 6. Mesures restant à faire
 
 Charge mixte longue (200 utilisateurs, 30 min), exports simultanés, tâches planifiées à volume

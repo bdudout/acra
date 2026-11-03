@@ -3,6 +3,7 @@ import { voitTousLesResultats } from '@/lib/acces-resultats'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import { type UserRole } from '@/lib/permissions'
@@ -16,9 +17,9 @@ import { analyseWhereClause } from '@/lib/permissions'
 import type { CartoRisk } from '@/lib/cartographie'
 import {
   rollupIncidents, incidentsByOrg,
-  rollupControles, controlesByOrg, rollupControlesParNiveau, synthetiserQuatreNiveaux,
+  rollupControlesComptes, controlesByOrgComptes, rollupControlesParNiveauComptes, synthetiserQuatreNiveaux, type ComptesExecutions,
   rollupAudit, auditByOrg,
-  type CockpitIncident, type CockpitExecution, type CockpitConstat,
+  type CockpitIncident, type CockpitConstat,
 } from '@/lib/grc-cockpit'
 import { applyFilters, parseFilters } from '@/lib/risk-filters'
 import { filtrerParEntite } from '@/lib/entites-filtre'
@@ -87,8 +88,15 @@ export async function GET(req: NextRequest) {
     withControles
       ? prisma.controle.findMany({ where: { ...orgFilter, actif: true }, select: { organizationId: true, niveau: true } })
       : Promise.resolve([]),
+    // Exécutions : seulement COMPTÉES par organisation et niveau (évaluées, conformes) — calcul fait par la base.
     withControles
-      ? prisma.controleExecution.findMany({ where: orgFilter, select: { organizationId: true, resultat: true, dateRealisation: true, controle: { select: { niveau: true } } } })
+      ? prisma.$queryRaw<{ organizationId: string; niveau: string | null; evaluees: bigint; conformes: bigint }[]>(Prisma.sql`
+          SELECT e."organizationId", c.niveau,
+                 count(*) FILTER (WHERE e.resultat IN ('CONFORME', 'ANOMALIE')) AS evaluees,
+                 count(*) FILTER (WHERE e.resultat = 'CONFORME') AS conformes
+          FROM "ControleExecution" e JOIN "Controle" c ON c.id = e."controleId"
+          ${spansAll ? Prisma.empty : Prisma.sql`WHERE e."organizationId" IN (${orgIds.length ? Prisma.join(orgIds) : Prisma.sql`NULL`})`}
+          GROUP BY e."organizationId", c.niveau`)
       : Promise.resolve([]),
     withAudit
       ? prisma.auditMission.findMany({ where: orgFilter, select: { organizationId: true } })
@@ -148,9 +156,8 @@ export async function GET(req: NextRequest) {
     montantBrut: i.montantBrut == null ? null : Number(i.montantBrut),
     recuperations: i.recuperations == null ? null : Number(i.recuperations),
   }))
-  const executions: CockpitExecution[] = executionRows.map(e => ({
-    organizationId: e.organizationId, resultat: e.resultat, dateRealisation: e.dateRealisation,
-    niveau: (e as { controle?: { niveau?: string } }).controle?.niveau,
+  const executions: ComptesExecutions[] = executionRows.map(e => ({
+    organizationId: e.organizationId, niveau: e.niveau ?? undefined, evaluees: Number(e.evaluees), conformes: Number(e.conformes),
   }))
   const constats: CockpitConstat[] = constatRows.map(c => ({
     organizationId: c.organizationId, criticite: c.criticite, statut: c.statut, echeance: c.echeance,
@@ -206,7 +213,7 @@ export async function GET(req: NextRequest) {
 
   // Cartes par organisation, fusionnées ensuite sur les lignes du registre.
   const incMap = withIncidents ? incidentsByOrg(incidents) : null
-  const ctrlMap = withControles ? controlesByOrg(controleRows, executions) : null
+  const ctrlMap = withControles ? controlesByOrgComptes(controleRows, executions) : null
   const audMap = withAudit ? auditByOrg(missionRows, constats, now) : null
 
   const parOrg = rollupByOrg(orgs, risks, actions, now).map(o => ({
@@ -252,11 +259,11 @@ export async function GET(req: NextRequest) {
       }) } : {}),
       ...(projets ? { projets } : {}),
       ...(withIncidents ? { incidents: rollupIncidents(incidents) } : {}),
-      ...(withControles ? { controles: rollupControles(controleRows, executions) } : {}),
+      ...(withControles ? { controles: rollupControlesComptes(controleRows, executions) } : {}),
       ...(withAudit ? { audit: rollupAudit(missionRows, constats, now) } : {}),
       // Suivi consolidé des 4 niveaux de contrôle (N1/N2 permanent, N3 audit, N4 externe).
       ...((withControles || withAudit) ? { quatreNiveaux: (() => {
-        const parNiv = rollupControlesParNiveau(controlesNiv, executions)
+        const parNiv = rollupControlesParNiveauComptes(controlesNiv, executions)
         const constatsSrc = constatRows.map(c => ({ criticite: c.criticite, statut: c.statut, echeance: c.echeance, source: (c as { source?: string }).source ?? 'AUDIT_INTERNE' }))
         return synthetiserQuatreNiveaux({ n1: parNiv.N1, n2: parNiv.N2, constats: constatsSrc }, now)
       })() } : {}),
