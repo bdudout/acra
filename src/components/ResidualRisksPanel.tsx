@@ -64,6 +64,8 @@ export default function ResidualRisksPanel({
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) { setError(apiErrorMessage(data.error, t, 'Erreur')); return }
+      // Double validation : l'acceptation hors appétit attend l'approbation d'une seconde personne habilitée.
+      if (res.status === 202 && data.doubleValidation) { setError(data.existante ? t.doubleValidation.dejaTransmise : t.doubleValidation.transmise); return }
       // La nouvelle version a remis le statut à « en attente » et déverrouillé l'analyse.
       if (typeof window !== 'undefined') window.location.reload()
     } finally { setBusy(false) }

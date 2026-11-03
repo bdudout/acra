@@ -64,6 +64,7 @@ export const GET = withAccess({ org: 'none', rateLimit: { bucket: 'org-config', 
     acceptationRisquesActive: cfg.acceptationRisquesActive,
     gelApresAcceptationActive: cfg.gelApresAcceptationActive,
     interdireAutoApprobation: cfg.interdireAutoApprobation,
+    doubleValidationActive: cfg.doubleValidationActive,
     petiteStructure: cfg.petiteStructure,
     derogationsActive: cfg.derogationsActive,
     derogationDureeDefautJours: cfg.derogationDureeDefautJours,
@@ -206,6 +207,7 @@ export const PUT = withAccess({ org: 'none', rateLimit: { bucket: 'org-config-wr
   if (typeof body.acceptationRisquesActive === 'boolean') data.acceptationRisquesActive = body.acceptationRisquesActive
   if (typeof body.gelApresAcceptationActive === 'boolean') data.gelApresAcceptationActive = body.gelApresAcceptationActive
   if (typeof body.interdireAutoApprobation === 'boolean') data.interdireAutoApprobation = body.interdireAutoApprobation
+  if (typeof body.doubleValidationActive === 'boolean') data.doubleValidationActive = body.doubleValidationActive
   if (typeof body.petiteStructure === 'boolean') data.petiteStructure = body.petiteStructure
   if (typeof body.derogationsActive === 'boolean') data.derogationsActive = body.derogationsActive
   // Durée par défaut (1 jour à 10 ans) et fenêtre d'alerte (1 à 365 jours), bornées.

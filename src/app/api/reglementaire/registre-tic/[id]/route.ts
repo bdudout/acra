@@ -5,6 +5,8 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { cleanArrangementInput, validateArrangementInput } from '@/lib/registre-tic'
 import { peutGererRegistreTic } from '@/lib/permissions'
 import { withAccess } from '@/lib/with-access.server'
+import { contratTicCritique } from '@/lib/double-validation'
+import { creerDemande } from '@/lib/double-validation.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { resolveTierIdInput } from '@/lib/tier-registry.server'
 
@@ -48,6 +50,14 @@ export const PATCH = withAccess(access, async (req, { user, role, orgId, params:
 export const DELETE = withAccess(access, async (req, { user, role, orgId, params: { id } }) => {
   const refus = await checkArrangement(orgId, id)
   if (refus) return refus
+
+  // Double validation (option d'organisation) : supprimer un contrat critique ou important (fonction critique ou
+  // importante, DORA) devient une demande qu'un second gestionnaire du registre TIC approuve (lib/double-validation).
+  const contrat = await prisma.arrangementTic.findUnique({ where: { id }, select: { criticite: true, reference: true, prestataireNom: true } })
+  if (contrat && contratTicCritique(contrat.criticite) && (await getOrgConfig(orgId)).doubleValidationActive) {
+    const { demande, existante } = await creerDemande({ organizationId: orgId, type: 'SUPPRESSION_CONTRAT_TIC', cibleId: id, libelle: `${contrat.reference} — ${contrat.prestataireNom}`, payload: { criticite: contrat.criticite }, demandeurId: user.id, demandeurRole: role, ip: getClientIp(req) })
+    return NextResponse.json({ doubleValidation: true, demandeId: demande.id, existante }, { status: 202 })
+  }
 
   await prisma.arrangementTic.delete({ where: { id } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', {

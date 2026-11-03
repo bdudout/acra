@@ -30,6 +30,7 @@ export const CONFIG_SELECT = {
   acceptationRisquesActive: true,
   gelApresAcceptationActive: true,
   interdireAutoApprobation: true,
+  doubleValidationActive: true,
   petiteStructure: true,
   derogationsActive: true,
   derogationDureeDefautJours: true,

@@ -76,6 +76,7 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
   const [showForm, setShowForm] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
   // Valeur par défaut de l'entité : la plus fréquemment saisie dans le registre.
   const defaultEntite = synthese?.entiteFrequente ?? ''
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -121,6 +122,8 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
     setBusy(false)
     if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
     setForm(EMPTY); setEditId(null); setShowForm(false); reload()
+    // Double validation : l'acceptation d'un risque hors appétit attend une seconde personne habilitée.
+    setInfo(data.doubleValidation ? (data.existante ? t.doubleValidation.dejaTransmise : t.doubleValidation.transmise) : null)
   }
 
   function startEdit(x: Risk) {
@@ -207,6 +210,7 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{r.subtitle}</p>
       {canEdit && <SectorSuggestionsPanel canCreateProcesses={canCreateProcesses} kinds={['RISK']} associer onImported={() => { void reload() }} />}
 
+      {info && <p role="status" className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">{info} <a href="/validations" className="underline">{t.doubleValidation.menu}</a></p>}
       {canEdit && showForm && (
         <div className="card p-4 mb-5 space-y-3">
           <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{editId ? r.editTitle : r.addTitle}</p>

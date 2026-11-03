@@ -5,6 +5,9 @@ import { canAcceptResidualRisks } from '@/lib/permissions'
 import { withAccess } from '@/lib/with-access.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { motifBlocageAcceptation, resumeRisquesResiduels } from '@/lib/acceptation-residuels'
+import { cleanAppetitConfig } from '@/lib/appetit'
+import { risquesHorsAppetit } from '@/lib/double-validation'
+import { creerDemande } from '@/lib/double-validation.server'
 
 /**
  * POST /api/analyses/[id]/accept-residual-risks
@@ -59,6 +62,18 @@ export const POST = withAccess(
     // risques résiduels (décision distincte de l'auteur).
     if (action === 'ACCEPTER' && analyse.userId === userId && orgConfig.interdireAutoApprobation) {
       return NextResponse.json({ error: 'Séparation des tâches : vous ne pouvez pas accepter les risques résiduels de votre propre analyse.' }, { status: 403 })
+    }
+
+    // Double validation (option d'organisation) : accepter des risques HORS APPÉTIT devient une demande qu'une seconde
+    // personne habilitée approuve (l'acceptation n'est enregistrée qu'à ce moment) — lib/double-validation.
+    if (action === 'ACCEPTER' && orgConfig.doubleValidationActive) {
+      const risques = await prisma.risque.findMany({ where: { analyseId: id }, select: { niveauResiduel: true, taxonomieCode: true } })
+      const hors = risquesHorsAppetit(risques, cleanAppetitConfig(orgConfig.appetitRisque))
+      if (hors > 0) {
+        const nomAnalyse = (await prisma.analyse.findFirst({ where: { id }, select: { nom: true } }))?.nom ?? id
+        const { demande, existante } = await creerDemande({ organizationId: analyse.organizationId, type: 'ACCEPTATION_RISQUES_ANALYSE', cibleId: id, libelle: nomAnalyse, payload: { commentaire: commentaire?.trim() || null, horsAppetit: hors }, demandeurId: userId, demandeurRole: role, ip: getClientIp(req) })
+        return NextResponse.json({ doubleValidation: true, demandeId: demande.id, existante, horsAppetit: hors }, { status: 202 })
+      }
     }
 
     // Un refus doit être motivé (traçabilité de la non-acceptation du risque).

@@ -98,7 +98,16 @@ export default function RegistreTicManager({ canManage }: { canManage: boolean }
     }
     setShowForm(false); reload()
   }
-  async function del(id: string) { await fetch(`/api/reglementaire/registre-tic/${id}`, { method: 'DELETE' }); setConfirmDel(null); reload() }
+  const [info, setInfo] = useState<string | null>(null)
+  async function del(id: string) {
+    setInfo(null)
+    const res = await fetch(`/api/reglementaire/registre-tic/${id}`, { method: 'DELETE' })
+    const d = await res.json().catch(() => ({}))
+    setConfirmDel(null); reload()
+    // Double validation : la suppression d'un contrat critique ou important attend une seconde personne habilitée.
+    if (res.status === 202 && d.doubleValidation) setInfo(d.existante ? t.doubleValidation.dejaTransmise : t.doubleValidation.transmise)
+    else if (!res.ok) setInfo(apiErrorMessage(d.error, t, 'Erreur'))
+  }
 
   // Questionnaire de qualification (due diligence DORA art. 28) : dépliage + édition inline.
   const [openQ, setOpenQ] = useState<string | null>(null)
@@ -192,6 +201,7 @@ export default function RegistreTicManager({ canManage }: { canManage: boolean }
         </p>
       )}
 
+      {info && <p role="status" className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">{info} <a href="/validations" className="underline">{t.doubleValidation.menu}</a></p>}
       {/* Formulaire */}
       {showForm && canManage && (
         <form onSubmit={save} className="card p-5 space-y-4">

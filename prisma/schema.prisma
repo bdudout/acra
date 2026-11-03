@@ -2233,6 +2233,9 @@ model OrganizationConfig {
   // Four-eyes : interdit à l'auteur d'approuver sa propre analyse / d'accepter ses
   // propres risques résiduels (séparation des tâches). Activé par défaut.
   interdireAutoApprobation    Boolean       @default(true)
+  // Double validation (quatre yeux) : acceptation d'un risque résiduel hors appétit et suppression d'un contrat TIC
+  // critique ou important soumises à une seconde personne habilitée (lib/double-validation). Désactivée par défaut.
+  doubleValidationActive      Boolean       @default(false)
   // Petite structure : un RSSI ou gestionnaire des risques cumule les rôles RSSI, gestionnaire des
   // risques et analyste (création, approbation de ses propres analyses, avis sur dérogation), tracé.
   petiteStructure             Boolean       @default(false)
@@ -3074,4 +3077,25 @@ model ExecutionTache {
 
   @@index([tache, debut])
   @@index([statut, debut])
+}
+
+// Demande de double validation (quatre yeux) : l'action n'est exécutée qu'à l'approbation d'une SECONDE personne
+// habilitée (jamais le demandeur). `libelle` = nom de la cible au moment de la demande (la cible peut disparaître).
+// Types : ACCEPTATION_RISQUES_ANALYSE | ACCEPTATION_RISQUE_REGISTRE | SUPPRESSION_CONTRAT_TIC. cf. lib/double-validation.
+model DemandeValidation {
+  id             String    @id @default(cuid())
+  organizationId String
+  type           String
+  cibleId        String
+  libelle        String
+  payload        Json      @default("{}")
+  statut         String    @default("EN_ATTENTE") // EN_ATTENTE | APPROUVEE | REJETEE | ANNULEE
+  demandeurId    String
+  valideurId     String?
+  motifDecision  String?   @db.Text
+  createdAt      DateTime  @default(now())
+  decideLe       DateTime?
+
+  @@index([organizationId, statut])
+  @@index([type, cibleId, statut])
 }
