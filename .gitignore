@@ -66,3 +66,6 @@ Thumbs.db
 # Mise à jour auto-hébergée (#185) : échanges avec l'agent hôte et sauvegardes pré-mise à jour
 .acra-update/
 backups/
+
+# Worktrees git temporaires créés par Claude Code (agents isolés)
+.claude/worktrees/
