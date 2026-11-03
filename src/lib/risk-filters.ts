@@ -6,6 +6,11 @@
 import { niveauBucket } from './cartographie'
 import { perimetreEntite, resoudreEntite } from './entites-filtre'
 import type { EntiteRef } from './entites'
+import { isFamilleRisqueTic } from './famille-risque-tic'
+import { RISK_PROVENANCES } from './risk-item'
+
+/** Valeur du filtre « famille TIC » pour les risques sans famille renseignée. */
+export const FAMILLE_TIC_NON_RENSEIGNEE = 'NONE'
 
 /** Forme minimale d'un risque exposant les champs filtrables (taxonomie, entité, cotation…). */
 export interface FilterableRisk {
@@ -17,6 +22,10 @@ export interface FilterableRisk {
   statut: string
   niveauInherent: number | null
   niveauResiduel: number | null
+  /** Famille de risque TIC (RiskItem.familleRisqueTic) ; absente/null = non renseignée. */
+  familleRisqueTic?: string | null
+  /** Origine du risque (RiskItem.provenance : MANUEL, ACRA, INCIDENT, CONTROLE, AUDIT). */
+  provenance?: string | null
 }
 
 /** Critères de filtre partagés des risques (taxonomie, entité, palier…) pour carto/pilotage/export. */
@@ -30,6 +39,10 @@ export interface RiskFilters {
   statut?: string | null
   /** Palier de niveau : 'eleve' | 'moyen' | 'faible' | 'nonCote' */
   niveau?: string | null
+  /** Famille de risque TIC : code, ou 'NONE' pour « non renseignée ». */
+  familleTic?: string | null
+  /** Origine du risque (RISK_PROVENANCES). */
+  provenance?: string | null
   /** Mode d'évaluation du palier (par défaut 'residual', repli inhérent). */
   mode?: 'inherent' | 'residual'
 }
@@ -62,6 +75,11 @@ export function matchesFilters(r: FilterableRisk, f: RiskFilters, ctx?: FilterCo
   if (f.processusId) { if ((r.processusId ?? '') !== f.processusId) return false }
   if (f.entite) { if ((r.entite ?? '') !== f.entite) return false }
   if (f.statut) { if (r.statut !== f.statut) return false }
+  if (f.familleTic) {
+    if (f.familleTic === FAMILLE_TIC_NON_RENSEIGNEE) { if (r.familleRisqueTic) return false }
+    else if ((r.familleRisqueTic ?? '') !== f.familleTic) return false
+  }
+  if (f.provenance) { if ((r.provenance ?? '') !== f.provenance) return false }
   if (f.niveau) { if (riskNiveauBucket(r, f.mode ?? 'residual') !== f.niveau) return false }
   return true
 }
@@ -75,7 +93,7 @@ export function applyFilters<T extends FilterableRisk>(risks: T[], f: RiskFilter
 
 /** Nombre de critères actifs (pour afficher un badge « n filtres »). */
 export function activeFilterCount(f: RiskFilters): number {
-  return [f.taxonomieCode, f.processusId, f.entite, f.entiteId, f.statut, f.niveau].filter(Boolean).length
+  return [f.taxonomieCode, f.processusId, f.entite, f.entiteId, f.statut, f.niveau, f.familleTic, f.provenance].filter(Boolean).length
 }
 
 /** Normalise des paramètres d'URL en filtres (ignore les valeurs vides). */
@@ -85,6 +103,8 @@ export function parseFilters(params: { get(k: string): string | null }): RiskFil
     return v && v.trim() ? v.trim() : null
   }
   const mode = val('mode')
+  const famille = val('familleTic')
+  const provenance = val('provenance')
   return {
     taxonomieCode: val('taxonomieCode'),
     processusId: val('processusId'),
@@ -93,6 +113,8 @@ export function parseFilters(params: { get(k: string): string | null }): RiskFil
     sousEntites: val('sousEntites') !== '0',
     statut: val('statut'),
     niveau: val('niveau'),
+    familleTic: famille === FAMILLE_TIC_NON_RENSEIGNEE || isFamilleRisqueTic(famille) ? famille : null,
+    provenance: (RISK_PROVENANCES as readonly string[]).includes(provenance ?? '') ? provenance : null,
     mode: mode === 'inherent' ? 'inherent' : 'residual',
   }
 }
@@ -106,6 +128,8 @@ export function filtersToQuery(f: RiskFilters): string {
   if (f.entiteId) { p.set('entiteId', f.entiteId); if (f.sousEntites === false) p.set('sousEntites', '0') }
   if (f.statut) p.set('statut', f.statut)
   if (f.niveau) p.set('niveau', f.niveau)
+  if (f.familleTic) p.set('familleTic', f.familleTic)
+  if (f.provenance) p.set('provenance', f.provenance)
   if (f.mode === 'inherent') p.set('mode', 'inherent')
   return p.toString()
 }

@@ -37,6 +37,8 @@ type FilterableCartoRisk = CartoRisk & {
   statut: string
   niveauInherent: number | null
   niveauResiduel: number | null
+  familleRisqueTic?: string | null
+  provenance?: string | null
 }
 
 const BUCKET_BG: Record<NiveauBucket, string> = {

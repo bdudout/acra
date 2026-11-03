@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
     prisma.riskItem.findMany({
       where: orgFilter,
       select: {
-        id: true, organizationId: true, taxonomieCode: true, processusId: true, entite: true, entiteId: true, statut: true,
+        id: true, organizationId: true, taxonomieCode: true, processusId: true, entite: true, entiteId: true, statut: true, familleRisqueTic: true, provenance: true,
         graviteInherente: true, vraisemblanceInherente: true, graviteResiduelle: true, vraisemblanceResiduelle: true,
       },
     }),

@@ -48,9 +48,9 @@ export const GET = withAccess({ org: 'none' }, async (req, { user }) => {
     const legers: RisqueLeger[] = (await prisma.riskItem.findMany({
       where: { organizationId: orgId },
       orderBy: [{ createdAt: 'desc' }],
-      select: { id: true, intitule: true, taxonomieCode: true, entite: true, proprietaire: true, statut: true, graviteInherente: true, vraisemblanceInherente: true, graviteResiduelle: true, vraisemblanceResiduelle: true, processus: { select: { nom: true } } },
+      select: { id: true, intitule: true, taxonomieCode: true, entite: true, proprietaire: true, statut: true, familleRisqueTic: true, provenance: true, graviteInherente: true, vraisemblanceInherente: true, graviteResiduelle: true, vraisemblanceResiduelle: true, processus: { select: { nom: true } } },
     })).map(r => ({
-      id: r.id, intitule: r.intitule, taxonomieCode: r.taxonomieCode, entite: r.entite, proprietaire: r.proprietaire, statut: r.statut,
+      id: r.id, intitule: r.intitule, taxonomieCode: r.taxonomieCode, entite: r.entite, proprietaire: r.proprietaire, statut: r.statut, familleRisqueTic: r.familleRisqueTic, provenance: r.provenance,
       processusNom: r.processus?.nom ?? null,
       niveauInherent: niveauRisque(r.graviteInherente, r.vraisemblanceInherente),
       niveauResiduel: niveauRisque(r.graviteResiduelle, r.vraisemblanceResiduelle),

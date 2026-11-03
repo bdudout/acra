@@ -27,3 +27,25 @@ describe('RiskFiltersBar — entité', () => {
     expect(onChange).toHaveBeenCalledWith({ entite: 'Achats' })
   })
 })
+
+describe('RiskFiltersBar — famille TIC et origine (L5)', () => {
+  it('famille : valeurs traduites + « non renseignée », émet le code', () => {
+    const onChange = vi.fn()
+    render(<RiskFiltersBar {...base} filters={{}} onChange={onChange} entites={[]} />)
+    const sel = screen.getByLabelText('Famille de risque TIC')
+    expect(screen.getByRole('option', { name: 'Cybersécurité' })).toBeTruthy()
+    expect(screen.getByRole('option', { name: 'Non renseignée' })).toBeTruthy()
+    fireEvent.change(sel, { target: { value: 'CYBER' } })
+    expect(onChange).toHaveBeenCalledWith({ familleTic: 'CYBER' })
+    fireEvent.change(sel, { target: { value: 'NONE' } })
+    expect(onChange).toHaveBeenLastCalledWith({ familleTic: 'NONE' })
+  })
+  it('origine : émet la provenance, vide = null', () => {
+    const onChange = vi.fn()
+    render(<RiskFiltersBar {...base} filters={{ provenance: 'ACRA' }} onChange={onChange} entites={[]} />)
+    const sel = screen.getByLabelText('Origine du risque')
+    expect(screen.getByRole('option', { name: 'Publié depuis une analyse ACRA' })).toBeTruthy()
+    fireEvent.change(sel, { target: { value: '' } })
+    expect(onChange).toHaveBeenCalledWith({ provenance: null })
+  })
+})
