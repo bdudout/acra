@@ -49,3 +49,12 @@ describe('RiskFiltersBar — famille TIC et origine (L5)', () => {
     expect(onChange).toHaveBeenCalledWith({ provenance: null })
   })
 })
+
+describe('RiskFiltersBar — mobile', () => {
+  it('les listes sont bornées à la largeur de la barre (pas de défilement horizontal à 375 px)', () => {
+    render(<RiskFiltersBar {...base} filters={{}} onChange={vi.fn()} entites={[]} />)
+    const selects = screen.getAllByRole('combobox')
+    expect(selects.length).toBeGreaterThan(0)
+    for (const s of selects) expect(s.className).toContain('max-w-full')
+  })
+})

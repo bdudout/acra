@@ -160,6 +160,9 @@ describe('sanitizeSources360', () => {
     expect(sanitizeSources360({ 'p360._sources': { 'p360.ext.cloud': 'cloud', 'p360.x': 'cloud', 'p360.cyber.analyseCyber': 'pirate' } })).toEqual({ 'p360.ext.cloud': 'cloud' })
     expect(sanitizeSources360(null)).toEqual({})
   })
+  it('conserve les sources continuite et patterns', () => {
+    expect(sanitizeSources360({ 'p360._sources': { 'p360.it.pcaPra': 'continuite', 'p360.it.rtoRpoDefinis': 'patterns' } })).toEqual({ 'p360.it.pcaPra': 'continuite', 'p360.it.rtoRpoDefinis': 'patterns' })
+  })
 })
 
 import { prefillFromPatterns, mergePrefill } from '@/lib/projet360'

@@ -250,7 +250,8 @@ export interface Faits360 {
   continuite?: ContinuiteFaits360 // objectifs de continuité (RTO/RPO/tolérance) des processus critiques + test de résilience récent
   patterns?: readonly string[] // patterns d'architecture de SI cochés dans l'analyse (vision technique)
 }
-export type SourcePrefill = 'analyseCyber' | 'tic' | 'cloud' | 'processus' | 'ropa' | 'dora' | 'continuite' | 'patterns'
+export const SOURCES_PREFILL = ['analyseCyber', 'tic', 'cloud', 'processus', 'ropa', 'dora', 'continuite', 'patterns'] as const
+export type SourcePrefill = typeof SOURCES_PREFILL[number]
 
 /** Synthèse de continuité des processus critiques (dérivée de Processus.rto/rpo/tolérance et des tests de résilience). */
 export interface ContinuiteFaits360 {
@@ -376,7 +377,6 @@ export function planPopulation360(args: {
     })
 }
 
-const SOURCES_PREFILL: readonly SourcePrefill[] = ['analyseCyber', 'tic', 'cloud', 'processus', 'ropa', 'dora']
 /** Sources du pré-remplissage stockées dans la qualification (`p360._sources`), assainies. */
 export function sanitizeSources360(qualification: unknown): Record<string, SourcePrefill> {
   const raw = qualification && typeof qualification === 'object' ? (qualification as Record<string, unknown>)['p360._sources'] : null

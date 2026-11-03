@@ -64,3 +64,27 @@ describe('PropositionsRisquesTic', () => {
     }
   })
 })
+
+describe('PropositionsRisquesTic — lien profond', () => {
+  it('avec #propositions-tic, ramène l’encart à l’écran une seule fois après chargement', async () => {
+    const scroll = vi.fn()
+    Element.prototype.scrollIntoView = scroll
+    window.location.hash = '#propositions-tic'
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(LISTE)) })))
+    render(<PropositionsRisquesTic />)
+    await screen.findByText('2 risque(s) proposé(s)')
+    await waitFor(() => expect(scroll).toHaveBeenCalledTimes(1))
+    fireEvent.click(screen.getByRole('button', { name: 'Écarter — Absence de stratégie de sortie — CT-01' }))
+    expect(scroll).toHaveBeenCalledTimes(1)
+    window.location.hash = ''
+  })
+  it('sans ancre, ne défile pas', async () => {
+    const scroll = vi.fn()
+    Element.prototype.scrollIntoView = scroll
+    window.location.hash = ''
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(LISTE)) })))
+    render(<PropositionsRisquesTic />)
+    await screen.findByText('2 risque(s) proposé(s)')
+    expect(scroll).not.toHaveBeenCalled()
+  })
+})
