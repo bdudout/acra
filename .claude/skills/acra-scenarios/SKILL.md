@@ -305,15 +305,21 @@ de l'outil Bash), aucune attente d'une réponse de l'utilisateur, pas de command
 en arrière-plan laissée en suspens en fin de run, et **toujours** terminer par le
 rapport de l'étape 7 — même partiel (« run interrompu à l'étape N : raison »).
 
-**Garde de durée (2 h max).** Au tout début du run, noter l'heure :
-`date +%s > "${TMPDIR:-/tmp}/acra-recette/debut-run"`. Avant chaque scénario et avant
-chaque étape longue, calculer le temps écoulé
-(`echo $(( ($(date +%s) - $(cat "${TMPDIR:-/tmp}/acra-recette/debut-run")) / 60 ))` min) :
+**Garde de durée (2 h max).** Au tout début du run :
+`.claude/skills/acra-scenarios/scripts/garde-duree.sh debut`. Avant chaque scénario et
+avant chaque étape longue : `.claude/skills/acra-scenarios/scripts/garde-duree.sh verif`
+(rend `ECOULE=<min> DECISION=continuer|finir|arreter`) :
 - **≥ 90 min** : ne pas commencer de nouveau scénario ; finir le scénario en cours au
   plus court.
 - **≥ 110 min** : arrêter tout, écrire le journal et la liste d'améliorations avec ce
   qui est acquis, nettoyer (étape 8), puis le rapport (« run écourté par la garde de
   durée à l'étape N »).
+- **Commandes autorisées à l'avance** (`.claude/settings.local.json`) : les trois scripts de
+  la skill, `git` en lecture, `npx vitest run`, `npx tsc --noEmit`, `npm test`, `npm run
+  i18n:check`, `curl` vers localhost:3005, `docker ps`/`inspect`, la lecture du quota, le
+  navigateur intégré, l'écriture dans `.acra-test-memory/` et `.acra-messages/`. Préférer
+  ces formes exactes (une commande par appel, chemins relatifs à `ebios-rm/`, sans `cd … &&`
+  ni redirection) : une autre forme peut déclencher une demande d'autorisation et figer le run.
 - Chaque appel Bash porte un `timeout` explicite (≤ 600000) ; une commande qui
   peut attendre un service (docker, prisma, curl, node) est bornée (`--max-time`
   pour curl, fonction `borne` de `preparer-env.sh` sinon). Un outil du navigateur qui
