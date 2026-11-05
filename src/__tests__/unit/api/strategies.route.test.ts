@@ -6,7 +6,7 @@ import { NextRequest } from 'next/server'
 
 type Row = Record<string, unknown>
 const db = vi.hoisted(() => ({
-  strategies: [] as Row[], axes: [] as Row[], objectifs: [] as Row[], rattachements: [] as Row[], evolutions: [] as Row[], kris: [] as Row[],
+  strategies: [] as Row[], axes: [] as Row[], objectifs: [] as Row[], rattachements: [] as Row[], evolutions: [] as Row[], kris: [] as Row[], users: [] as Row[],
 }))
 // Écriture concurrente simulée entre la lecture hors transaction et la transaction (course décision ↔ écriture).
 const course = vi.hoisted(() => ({ avant: null as null | (() => void) }))
@@ -20,6 +20,7 @@ const match = (r: Row, where: Row = {}): boolean => Object.entries(where).every(
     const axe = db.axes.find(a => a.id === r.axeId)
     return !!axe && match(axe, v as Row)
   }
+  if (v && typeof v === 'object' && Array.isArray((v as { in?: unknown }).in)) return ((v as { in: unknown[] }).in).includes(r[k])
   return r[k] === v
 })
 let seq = 0
@@ -42,6 +43,7 @@ vi.mock('@/lib/prisma', () => {
     rattachementStrategique: model(() => db.rattachements, 'r'),
     strategieEvolution: model(() => db.evolutions, 'e'),
     kri: model(() => db.kris, 'k'),
+    user: model(() => db.users, 'u'),
   }
   prisma.$transaction = vi.fn(async (fn: (tx: unknown) => unknown) => { course.avant?.(); course.avant = null; return fn(prisma) })
   // Verrou de ligne : SELECT id, statut FROM "Strategie" WHERE id = $1 AND "organizationId" = $2 FOR UPDATE.
@@ -60,7 +62,7 @@ vi.mock('@/lib/rate-limit', () => ({ rateLimit: vi.fn(async () => ({ allowed: tr
 vi.mock('@/lib/logger', () => ({ auditLog: audit, getClientIp: () => '127.0.0.1' }))
 
 import { GET as LIST, POST as CREATE } from '@/app/api/strategies/route'
-import { PATCH as PATCH_STRAT, DELETE as DELETE_STRAT } from '@/app/api/strategies/[id]/route'
+import { GET as DETAIL, PATCH as PATCH_STRAT, DELETE as DELETE_STRAT } from '@/app/api/strategies/[id]/route'
 import { POST as VALIDER } from '@/app/api/strategies/[id]/valider/route'
 import { POST as NOUVELLE_VERSION } from '@/app/api/strategies/[id]/nouvelle-version/route'
 import { POST as ADD_AXE } from '@/app/api/strategies/[id]/axes/route'
@@ -89,7 +91,7 @@ function seed(statut = 'BROUILLON') {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  db.strategies.length = 0; db.axes.length = 0; db.objectifs.length = 0; db.rattachements.length = 0; db.evolutions.length = 0; db.kris.length = 0
+  db.strategies.length = 0; db.axes.length = 0; db.objectifs.length = 0; db.rattachements.length = 0; db.evolutions.length = 0; db.kris.length = 0; db.users.length = 0
   course.avant = null
   session.role = 'RSSI'; cfg.strategieActive = true; cfg.strategieCadreFige = true
   gather.mockResolvedValue([{ source: 'AUDIT', sourceId: 'c1' }])
@@ -433,5 +435,85 @@ describe('lot S1a-fix : KRI d’un objectif vérifié dans l’organisation', ()
     expect((await PATCH_OBJ(req('PATCH', { kriId: 'k1' }), ctx({ id: 's1', objectifId: 'ob1' }))).status).toBe(200)
     expect(db.objectifs[0].kriId).toBe('k1')
     expect((await PATCH_OBJ(req('PATCH', { kriId: null }), ctx({ id: 's1', objectifId: 'ob1' }))).status).toBe(200)
+  })
+})
+
+describe('lot S1b : report des rattachements à la validation d’une nouvelle version', () => {
+  // v1 VALIDEE (s1, axes a1 « Protéger » et a2 « Détecter ») ; brouillon v2 (s2) ouvert le 2027-02-01, axes copiés.
+  function seedVersions() {
+    seed('VALIDEE')
+    db.axes.push({ id: 'a2', strategieId: 's1', ordre: 1, titre: 'Détecter', description: null, referenceRef: null })
+    // Axe homonyme de a1 dans la v1 : sa source c1 est un vrai doublon de celle de a1 une fois reportée sur b1.
+    db.axes.push({ id: 'a3', strategieId: 's1', ordre: 2, titre: 'PROTÉGER', description: null, referenceRef: null })
+    db.strategies.push({ id: 's2', organizationId: 'o1', titre: 'Stratégie 2027', type: 'CYBER', statut: 'BROUILLON', version: 2, versionPrecedenteId: 's1', createdAt: new Date('2027-02-01'), cadreValide: null })
+    db.axes.push({ id: 'b1', strategieId: 's2', ordre: 0, titre: ' protéger ', description: null, referenceRef: null })
+    const r = (id: string, axeId: string, sourceId: string, createdAt: string) =>
+      ({ id, organizationId: 'o1', axeId, sourceType: 'AUDIT', sourceId, provenance: 'MANUEL', ajoutePar: 'u0', createdAt: new Date(createdAt) })
+    db.rattachements.push(
+      r('r0', 'a1', 'c0', '2027-01-15'), // avant l'ouverture du brouillon : déjà copié
+      r('rc', 'b1', 'c0', '2027-02-01'), // copie de r0
+      r('r1', 'a1', 'c1', '2027-02-10'), // ajouté à la v1 après l'ouverture : à reporter
+      r('r2', 'a3', 'c1', '2027-02-11'), // même source sur l'axe homonyme (vrai doublon) : ignoré
+      r('r3', 'a2', 'c3', '2027-02-12'), // axe absent de la v2 : non reporté, signalé
+    )
+  }
+  it('rattachements ajoutés à la vN après l’ouverture recopiés sur l’axe de même titre ; doublon ignoré ; axe absent signalé', async () => {
+    seedVersions()
+    const res = await VALIDER(req('POST'), ctx({ id: 's2' }))
+    expect(res.status).toBe(200)
+    const j = await res.json()
+    const surB1 = db.rattachements.filter(r => r.axeId === 'b1').map(r => r.sourceId).sort()
+    expect(surB1).toEqual(['c0', 'c1'])
+    expect(db.rattachements.find(r => r.axeId === 'b1' && r.sourceId === 'c1')).toMatchObject({ organizationId: 'o1', sourceType: 'AUDIT', provenance: 'MANUEL', ajoutePar: 'u0' })
+    expect(j.rattachementsNonReportes).toEqual([{ axeTitre: 'Détecter', sourceType: 'AUDIT', sourceId: 'c3' }])
+    expect(db.strategies.find(s => s.id === 's1')!.statut).toBe('ARCHIVEE')
+    // Copies antérieures à la validation : l'historique n'annonce aucun ajout « depuis la validation ».
+    const v2 = db.strategies.find(s => s.id === 's2')!
+    const copie = db.rattachements.find(x => x.axeId === 'b1' && x.sourceId === 'c1')!
+    expect((copie.createdAt as Date).getTime()).toBeLessThanOrEqual((v2.valideeLe as Date).getTime())
+  })
+  it('verrouille la v N+1 puis la v N (org filtrée) avant de charger les cadres', async () => {
+    seedVersions()
+    await VALIDER(req('POST'), ctx({ id: 's2' }))
+    const q = vi.mocked(prismaMock.$queryRaw as unknown as (...a: unknown[]) => unknown)
+    expect(q.mock.calls.map(c => [c[1], c[2]])).toEqual([['s2', 'o1'], ['s1', 'o1']])
+    expect(String((q.mock.calls[1][0] as TemplateStringsArray).join('?'))).toMatch(/FOR UPDATE/)
+    const findAxes = vi.mocked((prismaMock as unknown as { axeStrategique: { findMany: (...a: unknown[]) => unknown } }).axeStrategique.findMany)
+    expect(q.mock.invocationCallOrder[1]).toBeLessThan(Math.min(...findAxes.mock.invocationCallOrder))
+  })
+  it('retraits faits sur la vN après l’ouverture : copie retirée de la vN+1 et historisée ; copie rajoutée depuis signalée', async () => {
+    seedVersions()
+    db.rattachements.push(
+      { id: 'rc5', organizationId: 'o1', axeId: 'b1', sourceType: 'AUDIT', sourceId: 'c5', provenance: 'MANUEL', ajoutePar: 'u0', createdAt: new Date('2027-02-01') },
+      { id: 'rc7', organizationId: 'o1', axeId: 'b1', sourceType: 'AUDIT', sourceId: 'c7', provenance: 'MANUEL', ajoutePar: 'u0', createdAt: new Date('2027-02-20') },
+    )
+    const retrait = (sourceId: string, createdAt: string) => ({ id: `e-${sourceId}`, strategieId: 's1', organizationId: 'o1', type: 'RETRAIT_RATTACHEMENT', cibleId: 'x', avant: { axeId: 'a1', sourceType: 'AUDIT', sourceId, provenance: 'MANUEL' }, justification: 'Action close', auteurId: 'u0', createdAt: new Date(createdAt) })
+    db.evolutions.push(retrait('c5', '2027-02-15'), retrait('c7', '2027-02-16'), retrait('c9', '2027-01-20'))
+    const j = await (await VALIDER(req('POST'), ctx({ id: 's2' }))).json()
+    expect(db.rattachements.find(r => r.id === 'rc5')).toBeUndefined()
+    expect(db.rattachements.find(r => r.id === 'rc7')).toBeTruthy()
+    expect(db.evolutions.filter(e => e.strategieId === 's2')).toEqual([expect.objectContaining({ type: 'RETRAIT_RATTACHEMENT', cibleId: 'rc5', justification: 'Action close', organizationId: 'o1' })])
+    expect(j.retraitsNonReportes).toEqual([{ axeTitre: 'Protéger', sourceType: 'AUDIT', sourceId: 'c7' }])
+  })
+  it('première version (sans version précédente) : rien à reporter, liste vide', async () => {
+    seed()
+    const j = await (await VALIDER(req('POST'), ctx({ id: 's1' }))).json()
+    expect(j.rattachementsNonReportes).toEqual([])
+    expect(j.retraitsNonReportes).toEqual([])
+  })
+})
+
+describe('lot S1b : noms affichés (validation, auteurs des évolutions)', () => {
+  it('détail : valideeParNom ; historique : auteurNom de chaque évolution', async () => {
+    seed()
+    db.users.push({ id: 'u1', name: 'Alice Martin', email: 'alice@example.test' })
+    await VALIDER(req('POST'), ctx({ id: 's1' }))
+    cfg.strategieCadreFige = false
+    await ADD_AXE(req('POST', { titre: 'Répondre', justification: 'Retour d’incident' }), ctx({ id: 's1' }))
+    const d = await (await DETAIL(req('GET'), ctx({ id: 's1' }))).json()
+    expect(d.strategie.valideeParNom).toBe('Alice Martin')
+    const h = await (await HISTORIQUE(req('GET'), ctx({ id: 's1' }))).json()
+    expect(h.valideeParNom).toBe('Alice Martin')
+    expect(h.evolutions[0].auteurNom).toBe('Alice Martin')
   })
 })

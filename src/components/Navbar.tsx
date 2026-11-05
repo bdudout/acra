@@ -25,7 +25,7 @@ import {
   User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked,
   Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp, Landmark,
   LayoutGrid, Radar, ScrollText, FileText, ListChecks, Bot, CalendarRange, Menu, X, Gauge, Briefcase, type LucideIcon,
-  BadgeCheck, UserCheck, BrainCircuit,
+  BadgeCheck, UserCheck, BrainCircuit, Target,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -105,6 +105,7 @@ export default function Navbar() {
           campagnesRcsa: Boolean(d.campagnesRcsaActive),
           appetence: Boolean(d.appetenceActive),
           rapportsGrc: Boolean(d.rapportsGrcActive),
+          strategie: Boolean(d.strategieActive),
         }
         setModules(next)
         setCachedNavModules(next)
@@ -204,6 +205,7 @@ export default function Navbar() {
     profilsOperationnels: { href: '/maturite', Icon: ShieldCheck, label: t.nav.profilsOperationnels },
     projets:       { href: '/projets',       Icon: Briefcase,       label: t.nav.projets },
     appetence:     { href: '/appetence',     Icon: Gauge,           label: t.nav.appetence },
+    strategie:     { href: '/strategie',     Icon: Target,          label: t.nav.strategie },
     rapports:      { href: '/rapports',      Icon: FileText,        label: t.nav.rapports },
     testsResilience: { href: '/reglementaire/tests-resilience', Icon: ClipboardCheck, label: t.nav.testsResilience },
     homologations: { href: '/homologations', Icon: BadgeCheck, label: t.nav.homologations },

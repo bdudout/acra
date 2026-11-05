@@ -6,7 +6,7 @@ import {
   strategieCreateSchema, axeSchema, objectifSchema, rattachementSchema,
   transitionAutorisee, decisionModifCadre, decisionRattachement, decisionModifStrategie,
   instantaneCadre, ecartCadre, rattachementsDepuisValidation, planNouvelleVersion, lireJustification,
-  normaliserIdentifiants, decisionModifIdentifiants, extraireIdentifiants, changementIdentifiants,
+  normaliserIdentifiants, decisionModifIdentifiants, extraireIdentifiants, changementIdentifiants, planReportRattachements,
 } from '@/lib/strategie'
 import { ACTION_SOURCES } from '@/lib/action-items'
 
@@ -240,5 +240,45 @@ describe('libellés i18n du bloc stratégie (5 langues)', () => {
 describe('journal : archivage', () => {
   it('STRATEGIE_ARCHIVED relève de la gouvernance', () => {
     expect(categoryForAction('STRATEGIE_ARCHIVED')).toBe('GOUVERNANCE')
+  })
+})
+
+describe('planReportRattachements (lot S1b)', () => {
+  const ra = (sourceId: string, createdAt: string, sourceType = 'AUDIT') => ({ sourceType, sourceId, provenance: 'MANUEL', ajoutePar: 'u0', createdAt: new Date(createdAt) })
+  it('reporte les ajouts postérieurs à l’ouverture sur l’axe de même titre (casse et espaces ignorés), sans doublon', () => {
+    const p = planReportRattachements(
+      [{ id: 'a1', titre: 'Protéger', rattachements: [ra('c0', '2027-01-01'), ra('c1', '2027-03-01'), ra('c1', '2027-03-02', 'CONTROLE'), ra('c2', '2027-03-03')] },
+       { id: 'a2', titre: 'Détecter', rattachements: [ra('c3', '2027-03-01')] }],
+      [{ id: 'b1', titre: 'protéger ', rattachements: [{ sourceType: 'AUDIT', sourceId: 'c2' }] }],
+      new Date('2027-02-01'),
+    )
+    expect(p.aCreer).toEqual([
+      { axeId: 'b1', sourceType: 'AUDIT', sourceId: 'c1', provenance: 'MANUEL', ajoutePar: 'u0' },
+      { axeId: 'b1', sourceType: 'CONTROLE', sourceId: 'c1', provenance: 'MANUEL', ajoutePar: 'u0' },
+    ])
+    expect(p.nonReportes).toEqual([{ axeTitre: 'Détecter', sourceType: 'AUDIT', sourceId: 'c3' }])
+  })
+  it('axes homonymes de la vN portant la même source : une seule copie', () => {
+    const p = planReportRattachements(
+      [{ id: 'a1', titre: 'Protéger', rattachements: [ra('c1', '2027-03-01')] }, { id: 'a3', titre: 'PROTÉGER', rattachements: [ra('c1', '2027-03-02')] }],
+      [{ id: 'b1', titre: 'Protéger', rattachements: [] }],
+      new Date('2027-02-01'),
+    )
+    expect(p.aCreer).toHaveLength(1)
+  })
+  it('retraits : copie antérieure à l’ouverture retirée ; copie rajoutée depuis ou axe absent signalés ; source rajoutée dans la vN ignorée ; retrait antérieur ignoré', () => {
+    const copie = (id: string, sourceId: string, createdAt: string) => ({ id, sourceType: 'AUDIT', sourceId, createdAt: new Date(createdAt) })
+    const ret = (axeTitre: string | null, sourceId: string, createdAt: string) => ({ axeTitre, sourceType: 'AUDIT', sourceId, justification: 'Clos', createdAt: new Date(createdAt) })
+    const p = planReportRattachements(
+      [{ id: 'a1', titre: 'Protéger', rattachements: [ra('c8', '2027-03-05')] }],
+      [{ id: 'b1', titre: 'Protéger', rattachements: [copie('x5', 'c5', '2027-02-01'), copie('x7', 'c7', '2027-03-01'), copie('x8', 'c8', '2027-02-01')] }],
+      new Date('2027-02-01'),
+      [ret('Protéger', 'c5', '2027-02-10'), ret('Protéger', 'c7', '2027-02-11'), ret('Détecter', 'c6', '2027-02-12'), ret('Protéger', 'c8', '2027-02-13'), ret('Protéger', 'c9', '2027-01-10')],
+    )
+    expect(p.aSupprimer).toEqual([{ id: 'x5', axeId: 'b1', sourceType: 'AUDIT', sourceId: 'c5', justification: 'Clos' }])
+    expect(p.retraitsNonReportes).toEqual([
+      { axeTitre: 'Protéger', sourceType: 'AUDIT', sourceId: 'c7' },
+      { axeTitre: 'Détecter', sourceType: 'AUDIT', sourceId: 'c6' },
+    ])
   })
 })

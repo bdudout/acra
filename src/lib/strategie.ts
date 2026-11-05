@@ -339,3 +339,72 @@ export function planNouvelleVersion(s: StrategieSource, userId: string): PlanNou
     })),
   }
 }
+
+// ─── Report des rattachements à la validation d'une nouvelle version (lot S1b) ──
+interface RattachementReportable { sourceType: string; sourceId: string; provenance: string; ajoutePar: string | null; createdAt: Date | string }
+interface CopieRattachement { id?: string; sourceType: string; sourceId: string; createdAt?: Date | string }
+/** Retrait fait sur la version N (évolution RETRAIT_RATTACHEMENT) ; `axeTitre` résolu par l'appelant (null : axe inconnu). */
+export interface RetraitReportable { axeTitre: string | null; sourceType: string; sourceId: string; justification: string; createdAt: Date | string }
+type Signalement = { axeTitre: string; sourceType: string; sourceId: string }
+export interface PlanReport {
+  aCreer: { axeId: string; sourceType: string; sourceId: string; provenance: string; ajoutePar: string | null }[]
+  nonReportes: Signalement[]
+  aSupprimer: { id: string; axeId: string; sourceType: string; sourceId: string; justification: string }[]
+  retraitsNonReportes: Signalement[]
+}
+
+const cleTitre = (t: string) => t.trim().toLocaleLowerCase()
+const cleSource = (r: { sourceType: string; sourceId: string }) => `${r.sourceType}:${r.sourceId}`
+
+/**
+ * Évolutions de la version N APRÈS l'ouverture du brouillon N+1 (`ouvertureLe`), reportées sur l'axe de la N+1 de même
+ * titre (espaces et casse ignorés) :
+ *  - ajouts : recopiés ; axe absent → `nonReportes` ; doublon (déjà sur l'axe cible, ou axes homonymes de N) → ignoré ;
+ *  - retraits : la copie faite à l'ouverture est retirée ; copie rajoutée depuis dans la N+1 (choix délibéré) ou axe
+ *    absent → `retraitsNonReportes` ; source rattachée de nouveau dans N ou déjà absente de la N+1 → rien à faire.
+ */
+export function planReportRattachements(
+  precedents: { id: string; titre: string; rattachements: RattachementReportable[] }[],
+  suivants: { id: string; titre: string; rattachements: CopieRattachement[] }[],
+  ouvertureLe: DateLike,
+  retraits: RetraitReportable[] = [],
+): PlanReport {
+  const plan: PlanReport = { aCreer: [], nonReportes: [], aSupprimer: [], retraitsNonReportes: [] }
+  if (!ouvertureLe) return plan
+  const seuil = new Date(ouvertureLe).getTime()
+  const apres = (d: Date | string | undefined) => d != null && new Date(d).getTime() > seuil
+  const cible = new Map<string, { id: string; deja: Set<string>; copies: CopieRattachement[] }>()
+  for (const a of suivants) {
+    const k = cleTitre(a.titre)
+    if (!cible.has(k)) cible.set(k, { id: a.id, deja: new Set(a.rattachements.map(cleSource)), copies: a.rattachements })
+  }
+  for (const a of precedents) {
+    for (const r of a.rattachements) {
+      if (!apres(r.createdAt)) continue
+      const c = cible.get(cleTitre(a.titre))
+      if (!c) { plan.nonReportes.push({ axeTitre: a.titre, sourceType: r.sourceType, sourceId: r.sourceId }); continue }
+      const k = cleSource(r)
+      if (c.deja.has(k)) continue
+      c.deja.add(k)
+      plan.aCreer.push({ axeId: c.id, sourceType: r.sourceType, sourceId: r.sourceId, provenance: r.provenance, ajoutePar: r.ajoutePar })
+    }
+  }
+  // Présent aujourd'hui dans N (rattaché de nouveau après le retrait) : le retrait n'a plus d'effet.
+  const presentsN = new Set(precedents.flatMap(a => a.rattachements.map(r => `${cleTitre(a.titre)}|${cleSource(r)}`)))
+  const traites = new Set<string>()
+  for (const rt of [...retraits].sort((x, y) => new Date(x.createdAt).getTime() - new Date(y.createdAt).getTime())) {
+    if (!apres(rt.createdAt)) continue
+    const titre = rt.axeTitre ?? ''
+    const k = `${cleTitre(titre)}|${cleSource(rt)}`
+    if (presentsN.has(k) || traites.has(k)) continue
+    traites.add(k)
+    const signal = { axeTitre: rt.axeTitre ?? '—', sourceType: rt.sourceType, sourceId: rt.sourceId }
+    const c = rt.axeTitre ? cible.get(cleTitre(rt.axeTitre)) : undefined
+    if (!c) { plan.retraitsNonReportes.push(signal); continue }
+    const copie = c.copies.find(x => cleSource(x) === cleSource(rt))
+    if (!copie) continue
+    if (apres(copie.createdAt) || !copie.id) { plan.retraitsNonReportes.push(signal); continue }
+    plan.aSupprimer.push({ id: copie.id, axeId: c.id, sourceType: rt.sourceType, sourceId: rt.sourceId, justification: rt.justification })
+  }
+  return plan
+}

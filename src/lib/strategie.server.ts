@@ -178,3 +178,11 @@ export async function appliquerModification<T>(p: {
     return { valeur, historise: historiserReste || (historiserIds && !!changement) }
   })
 }
+
+/** Noms affichables (nom, sinon e-mail) des utilisateurs cités par la stratégie (validation, auteurs d'évolutions). */
+export async function nomsUtilisateurs(ids: (string | null | undefined)[]): Promise<Record<string, string>> {
+  const uniques = [...new Set(ids.filter((v): v is string => !!v))]
+  if (!uniques.length) return {}
+  const users = await prisma.user.findMany({ where: { id: { in: uniques } }, select: { id: true, name: true, email: true } })
+  return Object.fromEntries(users.map(u => [u.id, u.name || u.email]))
+}

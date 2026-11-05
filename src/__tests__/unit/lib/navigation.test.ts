@@ -312,3 +312,18 @@ describe('buildNav — programme d’audit et de contrôle', () => {
     expect(groupe('METIER', { ...base, controles: true })).not.toContain('programme')
   })
 })
+
+describe('buildNav — stratégie cyber / IT / résilience (lot S1b)', () => {
+  const keys = (role: Parameters<typeof buildNav>[0], mods: NavModules) => allKeys(buildNav(role, mods))
+  it('module actif : dans « Pilotage » (mode GRC) ou les entrées secondaires (mode cyber), rôles à lecture globale', () => {
+    const g = buildNav('RSSI', { ...ALL_ON, strategie: true }).entries[0]
+    expect(g.kind === 'group' && g.items).toContain('strategie')
+    expect(keys('AUDITEUR', { ...ALL_ON, strategie: true })).toContain('strategie')
+    expect(keys('RSSI', { ...ALL_OFF, strategie: true })).toContain('strategie')
+  })
+  it('module inactif ou rôle sans lecture globale : absente', () => {
+    expect(keys('RSSI', ALL_ON)).not.toContain('strategie')
+    expect(keys('LECTEUR', { ...ALL_ON, strategie: true })).not.toContain('strategie')
+    expect(keys('METIER', { ...ALL_OFF, strategie: true })).not.toContain('strategie')
+  })
+})

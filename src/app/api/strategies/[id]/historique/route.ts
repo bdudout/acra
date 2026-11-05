@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { withAccess } from '@/lib/with-access.server'
 import { peutVoirStrategie } from '@/lib/permissions'
 import { ecartCadre, lireInstantane, rattachementsDepuisValidation } from '@/lib/strategie'
-import { chargerCadre, contexteStrategie } from '@/lib/strategie.server'
+import { chargerCadre, contexteStrategie, nomsUtilisateurs } from '@/lib/strategie.server'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,14 +16,16 @@ export const GET = withAccess({ org: 'active', allow: peutVoirStrategie }, async
     prisma.strategieEvolution.findMany({ where: { strategieId: id, organizationId: orgId }, orderBy: { createdAt: 'asc' } }),
   ])
   const valide = lireInstantane(c.strategie.cadreValide)
+  const noms = await nomsUtilisateurs([c.strategie.valideePar, ...evolutions.map(e => e.auteurId)])
   return NextResponse.json({
     statut: c.strategie.statut,
     version: c.strategie.version,
     valideePar: c.strategie.valideePar,
+    valideeParNom: c.strategie.valideePar ? noms[c.strategie.valideePar] ?? null : null,
     valideeLe: c.strategie.valideeLe,
     cadreValide: valide,
     ecart: ecartCadre(valide, cadre),
     rattachementsDepuisValidation: rattachementsDepuisValidation(cadre.flatMap(a => a.rattachements), c.strategie.valideeLe),
-    evolutions,
+    evolutions: evolutions.map(e => ({ ...e, auteurNom: e.auteurId ? noms[e.auteurId] ?? null : null })),
   })
 })

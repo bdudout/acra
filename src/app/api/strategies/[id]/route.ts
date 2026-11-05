@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { withAccess } from '@/lib/with-access.server'
 import { peutRedigerStrategie, peutVoirStrategie } from '@/lib/permissions'
 import { decisionModifStrategie, extraireIdentifiants, strategieUpdateSchema } from '@/lib/strategie'
-import { appliquerModification, chargerCadre, contexteStrategie, echec, estRefus, sousVerrouStrategie } from '@/lib/strategie.server'
+import { appliquerModification, chargerCadre, contexteStrategie, echec, estRefus, nomsUtilisateurs, sousVerrouStrategie } from '@/lib/strategie.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -11,7 +11,9 @@ export const dynamic = 'force-dynamic'
 export const GET = withAccess({ org: 'active', allow: peutVoirStrategie }, async (_req, { orgId, params: { id } }) => {
   const c = await contexteStrategie(orgId, id)
   if ('erreur' in c) return c.erreur
-  return NextResponse.json({ strategie: { ...c.strategie, axes: await chargerCadre(id) }, cadreFige: c.cfg.strategieCadreFige })
+  const [axes, noms] = await Promise.all([chargerCadre(id), nomsUtilisateurs([c.strategie.valideePar])])
+  const valideeParNom = c.strategie.valideePar ? noms[c.strategie.valideePar] ?? null : null
+  return NextResponse.json({ strategie: { ...c.strategie, axes, valideeParNom }, cadreFige: c.cfg.strategieCadreFige })
 })
 
 export const PATCH = withAccess(

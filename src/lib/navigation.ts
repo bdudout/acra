@@ -40,6 +40,8 @@ export interface NavModules {
   appetence?: boolean
   /** Rapports GRC (éditions figées). */
   rapportsGrc?: boolean
+  /** Stratégie cyber / IT / résilience. */
+  strategie?: boolean
 }
 
 /** Clé d'un lien de navigation (dashboard, analyses, risques, actions…). */
@@ -48,7 +50,7 @@ export type NavKey =
   | 'conformite' | 'referentiels' | 'documents' | 'derogations'
   | 'registre' | 'campagnes' | 'cartographie' | 'pilotage' | 'processus'
   | 'incidents' | 'controles' | 'campagnesControle' | 'questionnaires' | 'audit' | 'kri'
-  | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels' | 'appetence' | 'testsResilience' | 'projets' | 'rapports' | 'programme'
+  | 'reglementaire' | 'registreTic' | 'suiviRegulateur' | 'ropa' | 'profilsOperationnels' | 'appetence' | 'testsResilience' | 'projets' | 'rapports' | 'programme' | 'strategie'
   | 'homologations' | 'recertification' | 'registreIa'
 
 /** Identifiant d'un groupe déroulant (→ libellé i18n résolu par le composant). */
@@ -124,6 +126,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
     if (modules.incidents) secondary.push('incidents')
     // Sans mode GRC, les rapports d'incidents/pertes restent accessibles (module incidents actif).
     if (modules.incidents && canPilotage && modules.rapportsGrc) secondary.push('rapports')
+    // Stratégie : même lecture que le cockpit de pilotage (peutVoirStrategie).
+    if (modules.strategie && canPilotage) secondary.push('strategie')
     const entries: NavEntry[] = [link('dashboard'), ...core(modules).map(link)]
     if (secondary.length > 0) {
       if (secondary.length <= SECONDARY_INLINE_MAX) entries.push(...secondary.map(link))
@@ -143,6 +147,8 @@ export function buildNav(role: UserRole, modules: NavModules): NavModel {
   const pilotage: NavKey[] = ['dashboard']
   // Le plan d'action unifié est un lien cœur (« actions ») → plus de doublon ici.
   if (canPilotage) pilotage.push('pilotage')
+  // Stratégie cyber / IT / résilience : même lecture que le cockpit (peutVoirStrategie = lecture globale du dispositif).
+  if (canPilotage && modules.strategie) pilotage.push('strategie')
   // Appétence (RAS / RAD) : dès qu'une de ses sources existe (registre, KRI, maturité).
   if (canPilotage && modules.appetence && (modules.registre || modules.kri || modules.profilsOperationnels)) pilotage.push('appetence')
   // Même parcours métier : les KRI alimentent le RAD. Le droit reste identique
