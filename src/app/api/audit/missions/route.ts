@@ -20,6 +20,7 @@ export const dynamic = 'force-dynamic'
  * aussi, pour l'administration). Tous les autres rôles consultent uniquement.
  */
 import { peutEcrireAudit } from '@/lib/permissions'
+import { chargerMissionsLegeres } from '@/lib/audit-missions.server'
 
 // GET /api/audit/missions — plan d'audit de l'organisation active + synthèse des constats.
 // Sans organisation active : { missions: [], active: false } (pas de 400) — d'où `org: 'none'`.
@@ -78,11 +79,7 @@ export const GET = withAccess({ org: 'none' }, async (req, { user }) => {
   }
 
   // Requête LÉGÈRE sur tout le plan (visibilité, filtres, compteurs, tri), détail de la seule page.
-  const legers = (await prisma.auditMission.findMany({
-    where: { organizationId: orgId },
-    orderBy: [{ createdAt: 'desc' }],
-    select: { id: true, intitule: true, responsable: true, statut: true, type: true, dateDebut: true, dateFin: true, archiveLe: true, constats: CONSTATS_LITE },
-  })).flatMap(r => { const v = vueConstats(r); return v ? [{ ...v.m, synthese: v.synthese }] : [] })
+  const legers = (await chargerMissionsLegeres(orgId)).flatMap(r => { const v = vueConstats(r); return v ? [{ ...v.m, synthese: v.synthese }] : [] })
   const synthese = {
     total: legers.length,
     enCours: legers.filter(m => m.statut === 'EN_COURS').length,

@@ -18,7 +18,8 @@ import { entiteIdPourTexte } from '@/lib/entites.server'
 import type { EntiteRef } from '@/lib/entites'
 import { lirePagination, paginer, trier } from '@/lib/pagination'
 import { lireFiltresColonnes } from '@/lib/liste-colonnes'
-import { TRIS_INCIDENTS, COLONNES_INCIDENTS, baseIncidents, filtrerIncidents, lireStatut, syntheseIncidents, texteRisques, valeurTriIncident, type IncidentLeger } from '@/lib/incidents-liste'
+import { TRIS_INCIDENTS, COLONNES_INCIDENTS, baseIncidents, filtrerIncidents, lireStatut, syntheseIncidents, valeurTriIncident, type IncidentLeger } from '@/lib/incidents-liste'
+import { chargerIncidentsLegers } from '@/lib/incidents-liste.server'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,21 +64,7 @@ export const GET = withAccess({ org: 'none' }, async (req, { user }) => {
   let doublonsParId
   if (pg) {
     // Lot V1 : requête LÉGÈRE sur tous les incidents (filtres, tri, tuiles, doublons), détail de la seule page.
-    const legers: IncidentLeger[] = (await prisma.incident.findMany({
-      where: { organizationId: orgId },
-      orderBy: [{ createdAt: 'desc' }],
-      select: {
-        id: true, intitule: true, statut: true, taxonomieCode: true, processusId: true, entite: true, entiteId: true,
-        dateSurvenance: true, dateDetection: true, montantBrut: true, recuperations: true, riskItemId: true,
-        processus: { select: { nom: true } }, riskItem: { select: { intitule: true } },
-        risquesLies: { select: { riskItem: { select: { intitule: true } } }, orderBy: { createdAt: 'asc' } },
-      },
-    })).map(({ processus, riskItem, risquesLies, montantBrut, recuperations, riskItemId, ...i }) => ({
-      ...i,
-      processusNom: processus?.nom ?? null,
-      perteNette: perteNette(num(montantBrut), num(recuperations)),
-      risquesTexte: texteRisques(risquesLies.length ? risquesLies.map(l => l.riskItem) : (riskItemId && riskItem ? [riskItem] : [])),
-    }))
+    const legers: IncidentLeger[] = await chargerIncidentsLegers(orgId)
     const entite = sp.get('entite') ?? ''
     const entites = entite ? await referentielEntites(orgId) : []
     const base = baseIncidents(legers, { statut: lireStatut(sp.get('statut')), entite, sousEntites: sp.get('sousEntites') !== '0', entites })

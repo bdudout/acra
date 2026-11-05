@@ -14,6 +14,7 @@ import { emitWebhookEvent } from '@/lib/webhook.server'
 import { entiteIdPourTexte } from '@/lib/entites.server'
 import { lirePagination, paginer, trier } from '@/lib/pagination'
 import { lireFiltresColonnes } from '@/lib/liste-colonnes'
+import { chargerRisquesLegers } from '@/lib/risk-items-liste.server'
 import { TRIS_RISQUES, COLONNES_RISQUES, baseRisques, filtrerRisques, lireNiveau, syntheseRisques, valeurTriRisque, type RisqueLeger } from '@/lib/risk-items-liste'
 import { cleanAppetitConfig } from '@/lib/appetit'
 import { statutCreationRegistre } from '@/lib/double-validation'
@@ -45,16 +46,7 @@ export const GET = withAccess({ org: 'none' }, async (req, { user }) => {
   let restreint: string[] | null = null
   if (pg) {
     // Lot V1 : requête LÉGÈRE sur tout le registre (filtres, tri, compteurs), détail de la seule page.
-    const legers: RisqueLeger[] = (await prisma.riskItem.findMany({
-      where: { organizationId: orgId },
-      orderBy: [{ createdAt: 'desc' }],
-      select: { id: true, intitule: true, taxonomieCode: true, entite: true, proprietaire: true, statut: true, familleRisqueTic: true, provenance: true, graviteInherente: true, vraisemblanceInherente: true, graviteResiduelle: true, vraisemblanceResiduelle: true, processus: { select: { nom: true } } },
-    })).map(r => ({
-      id: r.id, intitule: r.intitule, taxonomieCode: r.taxonomieCode, entite: r.entite, proprietaire: r.proprietaire, statut: r.statut, familleRisqueTic: r.familleRisqueTic, provenance: r.provenance,
-      processusNom: r.processus?.nom ?? null,
-      niveauInherent: niveauRisque(r.graviteInherente, r.vraisemblanceInherente),
-      niveauResiduel: niveauRisque(r.graviteResiduelle, r.vraisemblanceResiduelle),
-    }))
+    const legers: RisqueLeger[] = await chargerRisquesLegers(orgId)
     const base = baseRisques(legers, lireNiveau(sp.get('niveau')))
     synthese = syntheseRisques(legers, base)
     const filtres = filtrerRisques(base, { q: pg.q, colonnes: lireFiltresColonnes(sp, COLONNES_RISQUES) })

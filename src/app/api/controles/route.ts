@@ -17,6 +17,7 @@ import { auditLog, getClientIp } from '@/lib/logger'
 import { withAccess } from '@/lib/with-access.server'
 import { lirePagination, paginer, trier } from '@/lib/pagination'
 import { filtrerControles, efficaciteDepuisComptes } from '@/lib/controle'
+import { agregatsExecutions, chargerControlesLegers } from '@/lib/controles-liste.server'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,12 +44,7 @@ export const GET = withAccess({ org: 'none' }, async (req, { user }) => {
   const sp = req.nextUrl.searchParams
   // Agrégats d'exécutions calculés PAR LA BASE (une ligne par contrôle) : dernière réalisation, exécutions évaluées et
   // conformes. Évite de charger toutes les exécutions de tous les contrôles (120 000 lignes pour 10 000 contrôles).
-  const agregats = async () => new Map((await prisma.$queryRaw<{ controleId: string; derniere: Date | null; evaluees: bigint; conformes: bigint }[]>(Prisma.sql`
-    SELECT "controleId", max("dateRealisation") AS derniere,
-           count(*) FILTER (WHERE resultat IN ('CONFORME', 'ANOMALIE')) AS evaluees,
-           count(*) FILTER (WHERE resultat = 'CONFORME') AS conformes
-    FROM "ControleExecution" WHERE "organizationId" = ${orgId} GROUP BY "controleId"`))
-    .map(r => [r.controleId, { derniere: r.derniere, evaluees: Number(r.evaluees), conformes: Number(r.conformes) }]))
+  const agregats = () => agregatsExecutions(orgId)
 
   // Menus de sélection (supervision, audit, questionnaires, suggestions) : identifiants et libellés seulement.
   if (sp.get('vue') === 'options') {
@@ -69,21 +65,7 @@ export const GET = withAccess({ org: 'none' }, async (req, { user }) => {
   let tousLesControles
   if (pg) {
     // Lot V1 : requête LÉGÈRE sur toute la bibliothèque (filtres, compteurs, tri sur l'ensemble), détail de la seule page.
-    const now0 = new Date()
-    const [bruts, agg] = await Promise.all([
-      prisma.controle.findMany({
-        where: { organizationId: orgId },
-        orderBy: [{ actif: 'desc' }, { createdAt: 'desc' }],
-        select: { id: true, intitule: true, responsable: true, niveau: true, referentielCode: true, actif: true, periodicite: true, createdAt: true },
-      }),
-      agregats(),
-    ])
-    const legers = visible(bruts).map(c => {
-      const a = agg.get(c.id)
-      const derniere = a?.derniere ?? null
-      const echeance = prochaineEcheance(c.periodicite as Periodicite, derniere, c.createdAt)
-      return { ...c, derniere, echeance, etatEcheance: c.actif ? etatEcheance(echeance, now0) : null, anomalies: a ? a.evaluees - a.conformes : 0 }
-    })
+    const legers = await chargerControlesLegers(orgId, new Date(), visible)
     synthese = {
       total: legers.length, actifs: legers.filter(c => c.actif).length,
       enRetard: legers.filter(c => c.etatEcheance === 'EN_RETARD').length, dus: legers.filter(c => c.etatEcheance === 'DU').length,

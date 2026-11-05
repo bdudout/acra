@@ -18,7 +18,7 @@ const LOCALES = ['fr', 'en', 'de', 'es', 'it'] as const
 const loc = (v: unknown) => ((LOCALES as readonly string[]).includes(String(v)) ? String(v) : 'fr') as InfoLocale
 const lim = (v: unknown, def: number, max: number) => { const n = typeof v === 'number' ? Math.floor(v) : NaN; return Number.isFinite(n) ? Math.min(max, Math.max(1, n)) : def }
 /** Refuse un argument inconnu (message explicite avec les noms valides) au lieu de l'ignorer en silence ; `aliases` : synonymes acceptés. */
-function guardArgs(tool: McpTool<McpContext>, aliases: Record<string, string> = {}): McpTool<McpContext> {
+export function guardArgs(tool: McpTool<McpContext>, aliases: Record<string, string> = {}): McpTool<McpContext> {
   const valid = Object.keys((tool.inputSchema as { properties?: Record<string, unknown> }).properties ?? {})
   return {
     ...tool,

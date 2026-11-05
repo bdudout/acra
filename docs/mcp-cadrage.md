@@ -169,6 +169,19 @@ outils org-scopés à venir (`propose_plan_action`, `propose_conformite_treatmen
   désactivé) en plus de l'interrupteur d'instance : `403 mcp_org_disabled` sinon (`lib/mcp/auth.server.ts`).
 - ✅ **(Phase 5)** Matrice d'isolation (cliquet) `mcp-isolation-matrix.test.ts` : tout outil exposé est déclaré
   avec son test de preuve ; aucun outil n'accepte d'`organizationId`.
+- ✅ **(Lot S5a, 2026-11)** Lectures des domaines GRC (`lib/mcp/tools-domaines.server.ts`) : `read_plans_actions`
+  (store unifié `gatherActionItems` : origine, statut, priorité, retard, famille TIC), `read_risk_register` (RiskItem :
+  famille TIC, statut, palier, provenance), `read_conformite` (référentiels activés, taux par suivi, écarts libellés),
+  `read_controles` (bibliothèque, campagnes, anomalies), `read_audits` (missions, constats ouverts), `read_incidents`
+  (statut, perte nette, classe DORA et échéances de déclaration), `read_tic_register` (registre d'informations DORA,
+  usages de services TIC des fonctions critiques ou importantes, **sans points d'accès**), `read_resilience` (RTO/RPO/
+  tolérance, écarts, tests de l'année, scénarios sévères, risques TIC proposés). Gardes : module actif (`getOrgConfig`)
+  et **RBAC du rôle porté par la clé** = rôle effectif de son créateur dans l'organisation (`lib/mcp/acteur.server.ts`,
+  `getEffectiveRoleForOrg` ; clé sans membre actif → refus), visibilité 1re ligne des résultats (`accesResultats`).
+  Pagination bornée (100). Requêtes légères extraites des routes et partagées : `risk-items-liste.server`,
+  `incidents-liste.server`, `controles-liste.server`, `audit-missions.server`. Preuve d'isolation :
+  `mcp-tools-domaines.test.ts` (faux prisma vérifiant `organizationId` sur chaque requête).
+- ⬜ Lecture de la stratégie (S5b) et propositions `propose_strategie` / `propose_axe` / `propose_rattachement` (S6).
 - ⬜ Intake assisté depuis un document (PSSI, présentation de projet) : à arbitrer (cf. spec § B.2.3).
 
 ## 10. Phasage proposé

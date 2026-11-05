@@ -21,7 +21,8 @@ import {
   type ActionItem,
 } from './action-items'
 import { uid } from './uid'
-import { analyseWhereClause, type OrgScopeContext, type UserRole } from './permissions'
+import { analyseWhereClause, peutLireConformite, type OrgScopeContext, type UserRole } from './permissions'
+import { accesResultats } from './acces-resultats.server'
 
 interface ModulesLike {
   incidentsActive: boolean
@@ -50,6 +51,12 @@ export async function gatherActionItems(
     select: { id: true },
   })
   const analyseIds = accessibleAnalyses.map(a => a.id)
+  // Résultats d'audit et de contrôle : même visibilité que les écrans /audit et /controles (lib/acces-resultats) — la
+  // 1re ligne et la lecture seule ne voient que les constats de leurs missions ou dont l'action leur revient, et les
+  // anomalies des contrôles dont elles sont responsables. Les rôles à lecture globale du dispositif voient tout.
+  const acces = mod.auditInterneActive || mod.controlePermanentActive
+    ? await accesResultats(access.userId, access.role)
+    : { tout: true, concerne: () => true }
 
   const [mesureRows, ecoAnalyses, riskActionRows, analyseRiskPlanRows, conformiteData, constatRows, execRows, incidentRows, orphanRows, linkedRows] = await Promise.all([
     // Mesures rattachées aux analyses de l'organisation active.
@@ -88,8 +95,8 @@ export async function gatherActionItems(
     }),
     // Facette « conformité » = traitements « plan d'action » (ConformiteTraitement)
     // + actions réelles rattachées à un contrôle (PlanAction porteur d'un lien
-    // CONFORMITE). Dérogations/acceptations exclues : ce ne sont pas des actions.
-    mod.conformiteActive
+    // CONFORMITE). Dérogations/acceptations exclues : ce ne sont pas des actions. Même droit de lecture que /conformite.
+    mod.conformiteActive && peutLireConformite(access.role)
       ? Promise.all([
           prisma.conformiteTraitement.findMany({
             where: { ...orgFilter, type: 'PLAN_ACTION' },
@@ -113,6 +120,7 @@ export async function gatherActionItems(
           select: {
             id: true, intitule: true, recommandation: true, criticite: true,
             statut: true, responsableAction: true, echeance: true, riskItemId: true, missionId: true, source: true,
+            mission: { select: { responsable: true } },
           },
         })
       : Promise.resolve([]),
@@ -205,10 +213,13 @@ export async function gatherActionItems(
       { lien },
     ))
   }
-  for (const c of constatRows) {
+  for (const { mission, ...c } of constatRows) {
+    // Règle de visibiliteMission (mission dont on est responsable, sinon ses seuls constats), appliquée constat par constat.
+    if (!acces.tout && !acces.concerne(mission?.responsable) && !acces.concerne(c.responsableAction)) continue
     items.push(normalizeAuditConstat(c, { lien: `/audit?mission=${c.missionId}` }))
   }
   for (const e of execRows) {
+    if (!acces.tout && !acces.concerne(e.controle?.responsable)) continue
     items.push(
       normalizeControleAnomalie(
         { id: e.id, controleNom: e.controle?.intitule ?? '', constat: e.constat, dateRealisation: e.dateRealisation, responsable: e.controle?.responsable },
