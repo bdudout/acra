@@ -181,7 +181,14 @@ outils org-scopés à venir (`propose_plan_action`, `propose_conformite_treatmen
   Pagination bornée (100). Requêtes légères extraites des routes et partagées : `risk-items-liste.server`,
   `incidents-liste.server`, `controles-liste.server`, `audit-missions.server`. Preuve d'isolation :
   `mcp-tools-domaines.test.ts` (faux prisma vérifiant `organizationId` sur chaque requête).
-- ⬜ Lecture de la stratégie (S5b) et propositions `propose_strategie` / `propose_axe` / `propose_rattachement` (S6).
+- ✅ **(Lot S5b, 2026-11)** Lecture de la stratégie (`lib/mcp/tools-strategie.server.ts`) : `read_strategies` (liste de l'org :
+  type, période, statut, version, référence interne, identifiants externes, validation, nombre d'axes ; archivées exclues
+  sauf `inclureArchivees` ; 50 au plus, `tronque`) et `read_strategie` (cadre complet : axes, objectifs avec KRI de l'org,
+  rattachements avec titre de la source, écart avec le cadre validé, 20 dernières évolutions sans auteur : le MCP n'expose
+  aucun nom d'utilisateur). Gardes : module `strategieActive` + `peutVoirStrategie` sur le rôle porté par la clé ; titres
+  des sources via `gatherActionItems` (visibilité 1re ligne : source invisible = sans titre) ; autre org = `strategie_introuvable`.
+  Preuve d'isolation : `mcp-tools-strategie.test.ts`.
+- ⬜ Propositions `propose_strategie` / `propose_axe` / `propose_rattachement` (S6).
 - ⬜ Intake assisté depuis un document (PSSI, présentation de projet) : à arbitrer (cf. spec § B.2.3).
 
 ## 10. Phasage proposé

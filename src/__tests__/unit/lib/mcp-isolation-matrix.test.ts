@@ -28,6 +28,8 @@ const MATRICE: Record<string, { kind: Kind; preuve: string }> = {
   read_incidents: { kind: 'LECTURE_ORG', preuve: 'mcp-tools-domaines.test.ts' },
   read_tic_register: { kind: 'LECTURE_ORG', preuve: 'mcp-tools-domaines.test.ts' },
   read_resilience: { kind: 'LECTURE_ORG', preuve: 'mcp-tools-domaines.test.ts' },
+  read_strategies: { kind: 'LECTURE_ORG', preuve: 'mcp-tools-strategie.test.ts' },
+  read_strategie: { kind: 'LECTURE_ORG', preuve: 'mcp-tools-strategie.test.ts' },
   propose_projet360: { kind: 'PROPOSITION_ORGANISATION', preuve: 'mcp-tools-propose.test.ts' },
   propose_nouvelle_analyse: { kind: 'PROPOSITION_ORGANISATION', preuve: 'mcp-tools-propose.test.ts' },
   propose_pssi: { kind: 'PROPOSITION_ORGANISATION', preuve: 'mcp-tools-propose.test.ts' },

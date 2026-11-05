@@ -44,7 +44,7 @@ import { guardArgs } from './tools-knowledge.server'
 import type { McpContext } from './tools.server'
 
 type OrgCfg = Awaited<ReturnType<typeof getOrgConfig>>
-type Module = 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'conformiteActive' | 'reglementaireActive'
+type Module = 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'conformiteActive' | 'reglementaireActive' | 'strategieActive'
 
 const TAILLE_MAX = 100
 const erreur = (texte: string): McpToolResult => ({ content: [{ type: 'text', text: texte }], isError: true })
@@ -82,7 +82,7 @@ async function preparer(ctx: McpContext, g: { modules?: Module[]; lecture?: (rol
 }
 
 /** Outil de lecture : arguments inconnus refusés (guardArgs), gardes appliquées avant le corps. */
-function outil(def: Omit<McpTool<McpContext>, 'handler'> & {
+export function outil(def: Omit<McpTool<McpContext>, 'handler'> & {
   garde: { modules?: Module[]; lecture?: (role: UserRole) => boolean }
   lire: (args: Record<string, unknown>, ctx: McpContext, p: { cfg: OrgCfg; acteur: ActeurMcp }) => Promise<McpToolResult>
 }): McpTool<McpContext> {
