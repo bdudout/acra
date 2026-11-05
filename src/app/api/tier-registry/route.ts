@@ -47,7 +47,7 @@ export const GET = withAccess({ org: 'none' }, async (_req, { user }) => {
   const echelles = resolveEchelles(cfg.echellesEcosysteme as Partial<EchellesEcosysteme> | null)
   const usagesGroupe = ids.length && orgsGroupe.length ? await prisma.tierServiceUsage.findMany({
     where: { tierService: { tierId: { in: ids } }, organizationId: { in: orgsGroupe.map(o => o.id) } },
-    select: { organizationId: true, criticite: true, exposeInternet: true, processus: { select: { id: true, criticite: true, criticiteDora: true } }, evaluation: { select: { actuelle: true } }, tierService: { select: { tierId: true } } },
+    select: { organizationId: true, criticite: true, exposeInternet: true, perimetrePci: true, processus: { select: { id: true, criticite: true, criticiteDora: true } }, evaluation: { select: { actuelle: true } }, tierService: { select: { tierId: true } } },
   }) : []
   const usageGroupe = (u: (typeof usagesGroupe)[number]): UsageGroupe => {
     const n = u.evaluation ? coterEvaluation(sanitizeEvaluationTiers({ actuelle: u.evaluation.actuelle }, echelles), echelles).actuelle : null
@@ -63,7 +63,7 @@ export const GET = withAccess({ org: 'none' }, async (_req, { user }) => {
   const rows = tiers.map(t => {
     const own = arrangements.filter(a => a.tierId === t.id)
     const analysesCount = analysesByTier.get(t.id)?.size ?? 0
-    return { id: t.id, nom: t.nom, lei: t.lei, pays: t.pays, aliases: t.aliases, analysesCount, evaluation: evaluationDe(t.id), exposeInternet: usagesGroupe.some(u => u.tierService.tierId === t.id && u.organizationId === orgId && u.exposeInternet === true), arrangements: own.map(a => ({ id: a.id, reference: a.reference })), coverage: classifyTierCoverage({ cyber: analysesCount > 0, tic: own.length > 0 }) }
+    return { id: t.id, nom: t.nom, lei: t.lei, pays: t.pays, aliases: t.aliases, analysesCount, evaluation: evaluationDe(t.id), exposeInternet: usagesGroupe.some(u => u.tierService.tierId === t.id && u.organizationId === orgId && u.exposeInternet === true), perimetrePci: usagesGroupe.some(u => u.tierService.tierId === t.id && u.organizationId === orgId && u.perimetrePci === true), arrangements: own.map(a => ({ id: a.id, reference: a.reference })), coverage: classifyTierCoverage({ cyber: analysesCount > 0, tic: own.length > 0 }) }
   })
   const nomOf = new Map(tiers.map(t => [t.id, t.nom]))
   const unlinkedArrangements = arrangements.filter(a => !a.tierId).map(a => ({

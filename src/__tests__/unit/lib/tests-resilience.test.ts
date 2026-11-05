@@ -128,3 +128,18 @@ describe('synchronisation constat ↔ plan d’action', () => {
     expect(constatsAClore(constats, {})).toEqual([])                                  // aucune action : rien à proposer
   })
 })
+
+import { sanitizeTestResilience as sanitizeDuree } from '@/lib/tests-resilience'
+describe('durée de reprise constatée (test de continuité d’une fonction)', () => {
+  const base = { intitule: 'Bascule du cœur de paiement', type: 'SCENARIO', annee: 2026 }
+  it('minutes entières positives ou nulles ; vide = non mesurée', () => {
+    const ok = sanitizeDuree({ ...base, dureeRepriseMinutes: 95 })
+    expect(ok.ok && ok.value.dureeRepriseMinutes).toBe(95)
+    const vide = sanitizeDuree({ ...base, dureeRepriseMinutes: '' })
+    expect(vide.ok && vide.value.dureeRepriseMinutes).toBeNull()
+  })
+  it('valeur invalide : refusée, jamais corrigée en silence', () => {
+    expect(sanitizeDuree({ ...base, dureeRepriseMinutes: -5 })).toEqual({ ok: false, error: 'duree_reprise_invalide' })
+    expect(sanitizeDuree({ ...base, dureeRepriseMinutes: 'vite' })).toEqual({ ok: false, error: 'duree_reprise_invalide' })
+  })
+})

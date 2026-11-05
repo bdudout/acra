@@ -149,4 +149,18 @@ describe('update-agent.sh — demande backup-now', () => {
     expect(inst.calls()).toContain('SCHEDULE stats')
     expect(updateCalls()).toEqual([])
   })
+
+  it('rapporte le résultat à l’application (journal des tâches planifiées) : identifiant du point ou code d’échec', () => {
+    setup()
+    writeFileSync(path.join(inst.work, 'scripts/acra-schedule.sh'), '#!/usr/bin/env bash\necho "SCHEDULE $*" >> "$AUDIT_LOG"\n', { mode: 0o755 })
+    writeFileSync(path.join(inst.work, 'scripts/acra-snapshot.sh'), '#!/usr/bin/env bash\necho "Dump…" >&2\necho 20261005T000000Z-manual-1.0.4\n', { mode: 0o755 })
+    request({ id: 'r', action: 'backup-now', requestedBy: 'u', requestedAt: '2026-10-05T00:00:00.000Z' })
+    agent()
+    expect(inst.calls()).toContain('SCHEDULE report 0 manual 20261005T000000Z-manual-1.0.4')
+    writeFileSync(path.join(inst.work, 'scripts/acra-snapshot.sh'), '#!/usr/bin/env bash\nexit 20\n', { mode: 0o755 })
+    request({ id: 'r2', action: 'backup-now', requestedBy: 'u', requestedAt: '2026-10-05T00:00:00.000Z' })
+    agent()
+    expect(inst.calls()).toContain('SCHEDULE report 20 manual')
+    expect(readFileSync(path.join(inst.work, '.acra-update/backup-now.log'), 'utf8')).toMatch(/20261005T000000Z-manual-1\.0\.4/)
+  })
 })

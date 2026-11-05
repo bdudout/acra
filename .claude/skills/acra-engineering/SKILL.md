@@ -163,6 +163,10 @@ Relire `git diff --cached` contre cette liste (constats réels des audits ACRA) 
 
 ## 8. Autonomie (modèles récents)
 
+Équipe d'agents Claude Code (🛠️ `acra-dev`, 🧪 `acra-qa`, 🚀 `acra-release`, 🎨 `acra-ux`) et
+ouvriers sonnet/opus au contexte minimal : skill `acra-dev` et `../acra-dev/references/equipe.md`.
+Ces règles-ci s'appliquent à chacun d'eux.
+
 Agir directement sur ce qui est réversible et dans le périmètre ; demander à
 l'utilisateur pour une décision produit (sémantique métier, ex. risques proposés
 en EBIOS RM), une action destructive ou sortante (push, merge, suppression).

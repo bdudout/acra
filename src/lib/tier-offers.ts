@@ -54,6 +54,44 @@ export function cleanExpositionInternet(raw: unknown): { ok: true; value: boolea
   return typeof raw === 'boolean' ? { ok: true, value: raw } : { ok: false, error: 'exposition_invalide' }
 }
 
+// ─── Qualification technique d'un usage : PCI, raccordement au SI, interconnexion ───────────────────────────────────────
+export const INTERCONNEXIONS = ['LIGNE_SPECIALISEE', 'INTERNET'] as const
+export type Interconnexion = typeof INTERCONNEXIONS[number]
+export type QualificationUsage = { perimetrePci?: boolean | null; avecSi?: boolean | null; interconnexion?: Interconnexion | null }
+type ErreurQualification = 'pci_invalide' | 'si_invalide' | 'interconnexion_invalide' | 'interconnexion_sans_si'
+
+const booleenFacultatif = (raw: unknown): boolean | null | undefined =>
+  raw === null || raw === '' ? null : typeof raw === 'boolean' ? raw : undefined
+
+/**
+ * Lit les champs PRÉSENTS (mise à jour partielle) ; vide = non renseigné ; valeur inconnue refusée.
+ * Cohérence : une interconnexion (LS ou Internet) implique « avec SI » ; « sans SI » efface l'interconnexion ;
+ * les deux contradictoires dans la même demande sont refusés.
+ */
+export function lireQualificationUsage(body: Record<string, unknown>): { ok: true; data: QualificationUsage } | { ok: false; error: ErreurQualification } {
+  const data: QualificationUsage = {}
+  if ('perimetrePci' in body) {
+    const v = booleenFacultatif(body.perimetrePci); if (v === undefined) return { ok: false, error: 'pci_invalide' }
+    data.perimetrePci = v
+  }
+  if ('avecSi' in body) {
+    const v = booleenFacultatif(body.avecSi); if (v === undefined) return { ok: false, error: 'si_invalide' }
+    data.avecSi = v
+  }
+  if ('interconnexion' in body) {
+    const raw = body.interconnexion
+    if (raw === null || raw === '') data.interconnexion = null
+    else if ((INTERCONNEXIONS as readonly unknown[]).includes(raw)) data.interconnexion = raw as Interconnexion
+    else return { ok: false, error: 'interconnexion_invalide' }
+  }
+  if (data.interconnexion) {
+    if (data.avecSi === false) return { ok: false, error: 'interconnexion_sans_si' }
+    data.avecSi = true
+  }
+  if (data.avecSi === false) data.interconnexion = null
+  return { ok: true, data }
+}
+
 /** Vrai si l'usage est plus critique que le contrat qui le couvre : le contrat est sous-qualifié (à revoir), sans jamais le modifier seul. */
 export function usageCriticalityGap(usage: NiveauCriticite | null, contract: NiveauCriticite | null): boolean {
   if (!usage || !contract) return false
@@ -87,4 +125,29 @@ export function cleanCoverageDetails(raw: unknown, coveredServiceIds: readonly s
     out[id] = { perimetre: perimetre || null, dateDebut, dateFin }
   }
   return { ok: true, value: out }
+}
+
+// ─── Synthèse des usages de services TIC (tableau de bord de pilotage) ───────────────────────────────────────────────────
+export type UsageQualifie = { criticite: string | null; exposeInternet: boolean | null; perimetrePci: boolean | null; avecSi: boolean | null; interconnexion: string | null }
+export interface SyntheseUsagesTic {
+  total: number; pci: number; exposesInternet: number; avecSi: number; viaInternet: number; viaLs: number
+  /** Combinaisons à risque : PCI exposé sur Internet ; usage critique ou important interconnecté via Internet. */
+  pciExposes: number; critiquesViaInternet: number
+  /** Usages dont au moins un des quatre axes (PCI, SI, exposition, interconnexion si avec SI) n'est pas renseigné. */
+  nonQualifies: number
+}
+const critiqueOuImportant = (c: string | null) => c === 'CRITIQUE' || c === 'IMPORTANTE'
+export function synthetiserUsagesTic(usages: UsageQualifie[]): SyntheseUsagesTic {
+  const n = (f: (u: UsageQualifie) => boolean) => usages.filter(f).length
+  return {
+    total: usages.length,
+    pci: n(u => u.perimetrePci === true),
+    exposesInternet: n(u => u.exposeInternet === true),
+    avecSi: n(u => u.avecSi === true),
+    viaInternet: n(u => u.interconnexion === 'INTERNET'),
+    viaLs: n(u => u.interconnexion === 'LIGNE_SPECIALISEE'),
+    pciExposes: n(u => u.perimetrePci === true && u.exposeInternet === true),
+    critiquesViaInternet: n(u => critiqueOuImportant(u.criticite) && u.interconnexion === 'INTERNET'),
+    nonQualifies: n(u => u.perimetrePci == null || u.avecSi == null || u.exposeInternet == null || (u.avecSi === true && !u.interconnexion)),
+  }
 }

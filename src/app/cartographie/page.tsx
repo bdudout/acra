@@ -1,5 +1,6 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import { type UserRole } from '@/lib/permissions'
@@ -37,7 +38,7 @@ export default async function CartographiePage() {
             <Workflow size={15} aria-hidden="true" />{t.processusCarto.linkLabel}
           </Link>
         </div>
-        <Cartographie canPublish={userRole !== 'LECTEUR'} scaleConfig={scaleConfig} />
+        <Suspense fallback={null}><Cartographie canPublish={userRole !== 'LECTEUR'} scaleConfig={scaleConfig} /></Suspense>
       </main>
     </div>
   )

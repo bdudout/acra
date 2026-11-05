@@ -41,6 +41,16 @@ describe('UpdateRestorePanel', () => {
     expect(screen.getByRole('button', { name: 'Revenir à ce point' })).toBeTruthy()
   })
 
+  it('profil ha : points listés (documents S3 + contrôle du bucket), aucun bouton de restauration, procédure affichée', () => {
+    const s3 = { ...snap, id: '20261004T020000Z-scheduled-1.0.4', reason: 'scheduled' as const, clone: false, documents: false, documentsStorage: 's3' as const, referencedKeys: 42, bucketCheck: 'ecart' as const }
+    render(<UpdateRestorePanel {...base} snapshots={[s3]} haProfile />)
+    const row = screen.getByText('1.0.4').closest('tr')!
+    expect(row.textContent).toContain('S3 · 42 réf.'); expect(row.textContent).toContain('écart')
+    expect(screen.queryByRole('button', { name: 'Revenir à ce point' })).toBeNull()
+    expect(screen.getByText(/pas de restauration d’un clic/)).toBeTruthy()
+    expect(screen.getByText(/Basculer DATABASE_URL/)).toBeTruthy()
+  })
+
   it('sans point : message explicatif ; sans agent : pas de bouton', () => {
     const { rerender } = render(<UpdateRestorePanel {...base} snapshots={[]} />)
     expect(screen.getByText(/Aucun point de restauration pour le moment/)).toBeTruthy()

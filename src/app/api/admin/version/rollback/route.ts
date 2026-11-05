@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireInstanceAdmin } from '@/lib/route-guard.server'
 import { isSnapshotId } from '@/lib/snapshot'
-import { buildRollbackRequest } from '@/lib/update-request'
+import { buildRollbackRequest, isHaProfile } from '@/lib/update-request'
 import { readSnapshotIndex, readUpdateAgent, writeUpdateRequest } from '@/lib/update-request.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { releaseInfo } from '@/lib/release-info'
@@ -20,6 +20,9 @@ const Body = z.object({ snapshotId: z.string().refine(isSnapshotId), confirmVers
 export async function POST(req: NextRequest) {
   const g = await requireInstanceAdmin(req)
   if (g.error) return g.error
+  // Profil ha : base PARTAGÉE — jamais de restauration d'un clic (intégrité : arrêt des écritures, restauration dans une base
+  // neuve, contrôle, bascule). Procédure : scripts/acra-restore-ha.sh, docs/deploiement-haute-disponibilite.md § 3.4.
+  if (isHaProfile(process.env)) return NextResponse.json({ error: 'ha_profile' }, { status: 409 })
   const parsed = Body.safeParse(await req.json().catch(() => ({})))
   if (!parsed.success) return NextResponse.json({ error: 'invalid_request' }, { status: 400 })
 

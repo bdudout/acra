@@ -180,6 +180,7 @@ model Organization {
   homologations          Homologation[]
   processus              Processus[]
   riskItems              RiskItem[]
+  propositionsRisquesEcartees PropositionRisqueEcartee[]
   incidents              Incident[]
   controles              Controle[]
   campagnes              Campagne[]
@@ -215,6 +216,9 @@ model Organization {
   preconisations         Preconisation[]
   appetenceSnapshots     AppetenceSnapshot[]
   plansProgramme         PlanProgramme[]
+  strategies             Strategie[]
+  rattachementsStrategiques RattachementStrategique[]
+  evolutionsStrategiques StrategieEvolution[]
 
   @@index([parentId])
   @@index([path])
@@ -245,6 +249,8 @@ model TestResilience {
   rappelLe         DateTime?
   resultat         String?      @db.Text
   constats         Json         @default("[]") // [{ description, severite 1-4, corrige }]
+  // Durée de reprise constatée (minutes) : comparée au RTO et à la tolérance d'impact du processus testé.
+  dureeRepriseMinutes Int?
   // Provenance d'un plan de test modèle du catalogue (idempotence de l'import, cf. sector-suggestions).
   catalogueKey     String?
   catalogueVersion String?
@@ -483,6 +489,8 @@ model Processus {
   // Objectifs de continuité optionnels (minutes) : RTO (=DIMA) et RPO (=PDMA).
   rtoMinutes    Int?
   rpoMinutes    Int?
+  // Tolérance d'impact : durée maximale d'interruption tolérable (minutes). Le RTO doit lui être inférieur ou égal.
+  toleranceImpactMinutes Int?
   ordre         Int       @default(0)
   actif         Boolean   @default(true)
   // Revue périodique (lib/revues : prochaine revue 12 mois après) ; anti-doublon de la relance (cron relances).
@@ -496,6 +504,7 @@ model Processus {
   controles     Controle[]
   kris          Kri[]
   serviceUsages TierServiceUsage[]
+  scenariosSeveres ScenarioSevere[]
 
   @@unique([organizationId, catalogueKey])
   @@index([organizationId])
@@ -517,6 +526,9 @@ model RiskItem {
   description   String?    @db.Text
   // Maille : catégorie (code de la taxonomie résolue) × processus × entité.
   taxonomieCode String?
+  // Famille de risque TIC (axe distinct de la taxonomie, lib/famille-risque-tic) : IT | CYBER |
+  // CONTINUITE_METIER_TIC | CONTINUITE_IT | TIERS_TIC ; null = non renseignée.
+  familleRisqueTic String?
   processusId   String?
   processus     Processus? @relation(fields: [processusId], references: [id], onDelete: SetNull)
   entite        String? // entité concernée (texte libre pour l'instant)
@@ -537,6 +549,8 @@ model RiskItem {
   provenance String  @default("MANUEL")
   sourceType String? // ex. 'analyse'
   sourceId   String? // id de l'origine (analyse ACRA, incident, contrôle…)
+  // Index unique PARTIEL (SQL seul, non exprimable ici) : (organizationId, sourceId) WHERE sourceType = 'proposition-tic'
+  // — un seul risque par proposition validée (migration 20261103220000, lib/propositions-risques-tic).
 
   // Plan d'action : PlanAction porteur d'un lien RISQUE (targetId = id de ce risque).
   incidents     Incident[]
@@ -553,7 +567,23 @@ model RiskItem {
   @@index([organizationId])
   @@index([processusId])
   @@index([taxonomieCode])
+  @@index([familleRisqueTic])
   @@index([entiteId])
+}
+
+// ─── Risques proposés écartés (lot L4, lib/propositions-risques-tic) ──────────
+// Les propositions de risques (registre TIC, résilience) sont CALCULÉES à la volée ; seule la décision « écarter »
+// est mémorisée, par clé stable `TYPE:idOrigine`. Une proposition validée devient un RiskItem
+// (sourceType 'proposition-tic', sourceId = clé ; index unique partiel en SQL) : aucune ligne ici.
+model PropositionRisqueEcartee {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  cle            String
+  ecartePar      String? // id de l'utilisateur ayant écarté (traçabilité, sans relation)
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, cle])
 }
 
 // ─── M1 v2 — Campagnes d'évaluation RCSA ─────────────────────────────────────
@@ -997,6 +1027,10 @@ model ArrangementTic {
   rappelLe          DateTime?
   paysDonnees       String? // pays de stockage/traitement des données
   sousTraitance     Boolean   @default(false)
+  // Stratégie de sortie (DORA art. 28 § 8) : exigée pour une fonction critique ou importante (lib/registre-tic).
+  strategieSortie         String?   @db.Text
+  prestataireAlternatif   String?
+  strategieSortieTesteeLe DateTime? @db.Date
 
   // Questionnaire de qualification risque/sécurité (due diligence DORA art. 28) :
   // [{ id, reponse: OUI|NON|PARTIEL|NA, commentaire? }] — cf. lib/tic-questionnaire.ts.
@@ -1118,8 +1152,15 @@ model TierServiceUsage {
   useCase           String
   description       String?               @db.Text
   criticite         String? // CRITIQUE | IMPORTANTE | NON_CRITIQUE — facultative (cf. lib/tier-offers.ts)
-  // Exposition à Internet de l'usage : true / false / null (non renseignée).
+  // Exposition de l'usage : true = exposé sur Internet, false = intranet (non exposé), null = non renseignée.
   exposeInternet    Boolean?
+  // Périmètre PCI DSS (données de cartes de paiement) : true = PCI, false = non PCI, null = non renseigné.
+  perimetrePci      Boolean?
+  // Raccordement au SI de l'entité : true = avec SI (échanges de données ou raccordement), false = sans SI, null = non renseigné.
+  avecSi            Boolean?
+  // Mode d'interconnexion au SI (si avec SI) : LIGNE_SPECIALISEE | INTERNET ; null = non renseigné (cf. lib/tier-offers.ts).
+  interconnexion    String?
+  pointsAcces       TierUsageEndpoint[]
   evaluation        EvaluationUsageTiers?
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
@@ -1127,6 +1168,26 @@ model TierServiceUsage {
   @@index([organizationId, tierServiceId])
   @@index([processusId])
   @@index([contractServiceId])
+}
+
+// Point d'accès d'un usage de service TIC (URL, hôte, type, environnement, authentification) — cartographie
+// déclarative : ACRA ne contacte jamais ces adresses. `organizationId` = celle de l'usage (isolation). cf. lib/tier-endpoints.ts
+model TierUsageEndpoint {
+  id               String           @id @default(cuid())
+  usageId          String
+  usage            TierServiceUsage @relation(fields: [usageId], references: [id], onDelete: Cascade)
+  organizationId   String
+  adresse          String
+  hote             String
+  type             String // WEB | API | SFTP | TENANT_SAAS | VPN | AUTRE
+  environnement    String? // PRODUCTION | RECETTE | AUTRE
+  authentification String? // SSO | MFA | LOCALE | CERTIFICAT | CLE_API | AUCUNE
+  commentaire      String?          @db.Text
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([usageId])
+  @@index([organizationId, hote])
 }
 
 // ─── Socle GRC — M2 : plan d'action / traitement d'un RiskItem ───────────────
@@ -2139,6 +2200,12 @@ model AuditLog {
   // d'instance (visible uniquement du SUPER_ADMIN).
   organizationId String?
   createdAt      DateTime @default(now())
+  // Journal infalsifiable (lib/audit-chaine) : numéro d'ordre, puis chaînage par empreintes posé par le scellement
+  // planifié (empreinte de l'entrée = HMAC-SHA256 de son contenu et de l'empreinte précédente). Un déclencheur
+  // PostgreSQL interdit toute modification (hors scellement d'une entrée non scellée) et toute suppression.
+  seq            BigInt   @unique @default(autoincrement())
+  hashPrecedent  String?
+  hash           String?
 
   @@index([action])
   @@index([userId])
@@ -2206,6 +2273,9 @@ model OrganizationConfig {
   // Four-eyes : interdit à l'auteur d'approuver sa propre analyse / d'accepter ses
   // propres risques résiduels (séparation des tâches). Activé par défaut.
   interdireAutoApprobation    Boolean       @default(true)
+  // Double validation (quatre yeux) : acceptation d'un risque résiduel hors appétit et suppression d'un contrat TIC
+  // critique ou important soumises à une seconde personne habilitée (lib/double-validation). Désactivée par défaut.
+  doubleValidationActive      Boolean       @default(false)
   // Petite structure : un RSSI ou gestionnaire des risques cumule les rôles RSSI, gestionnaire des
   // risques et analyste (création, approbation de ses propres analyses, avis sur dérogation), tracé.
   petiteStructure             Boolean       @default(false)
@@ -2273,6 +2343,10 @@ model OrganizationConfig {
   rapportsGrcActive           Boolean       @default(false)
   // Registre du sous-traitant (RGPD art. 30 §2) : module activable (3 niveaux), désactivé par défaut.
   ropaSousTraitantActive      Boolean       @default(false)
+  // Stratégie cyber / IT / résilience (axes, objectifs, rattachements) : module à 3 niveaux, activé par défaut.
+  strategieActive             Boolean       @default(true)
+  // Cadre (axes, objectifs) figé après validation (défaut) ; sinon modifiable avec justification historisée.
+  strategieCadreFige          Boolean       @default(true)
   // Serveur MCP (agents/LLM) pour cette organisation : désactivé par défaut ; exige aussi l'interrupteur d'instance `mcpEnabled`.
   mcpActive                   Boolean       @default(false)
   // Personnalisation de l'échelle de maturité CMMI (niveaux 0–5) :
@@ -2422,6 +2496,8 @@ model SiemConfig {
   categories     Json      @default("[]")
   // Émettre aussi en JSON structuré sur stdout (pour un log-shipper Filebeat/Fluentd).
   includeStdout  Boolean   @default(true)
+  // Rétention du journal d'audit en mois (null = conservation illimitée) ; purge archivée (lib/audit-purge.server).
+  auditRetentionMois Int?
   lastDeliveryOk Boolean   @default(false)
   lastDeliveryAt DateTime?
   lastError      String?
@@ -3047,4 +3123,177 @@ model ExecutionTache {
 
   @@index([tache, debut])
   @@index([statut, debut])
+}
+
+// Demande de double validation (quatre yeux) : l'action n'est exécutée qu'à l'approbation d'une SECONDE personne
+// habilitée (jamais le demandeur). `libelle` = nom de la cible au moment de la demande (la cible peut disparaître).
+// Types : ACCEPTATION_RISQUES_ANALYSE | ACCEPTATION_RISQUE_REGISTRE | SUPPRESSION_CONTRAT_TIC. cf. lib/double-validation.
+model DemandeValidation {
+  id             String    @id @default(cuid())
+  organizationId String
+  type           String
+  cibleId        String
+  libelle        String
+  payload        Json      @default("{}")
+  statut         String    @default("EN_ATTENTE") // EN_ATTENTE | APPROUVEE | REJETEE | ANNULEE
+  demandeurId    String
+  valideurId     String?
+  motifDecision  String?   @db.Text
+  createdAt      DateTime  @default(now())
+  decideLe       DateTime?
+
+  @@index([organizationId, statut])
+  @@index([type, cibleId, statut])
+}
+
+// Purge de rétention du journal d'audit : entrées scellées seq ≤ jusquaSeq archivées (JSON Lines gzip dans le stockage
+// des documents, empreinte SHA-256 de l'archive) puis supprimées. `dernierHash` = empreinte de la dernière entrée purgée :
+// ancre de reprise de la vérification de la chaîne (lib/audit-chaine.server).
+model AuditPurge {
+  id            String   @id @default(cuid())
+  jusquaSeq     BigInt
+  dernierHash   String
+  nb            Int
+  avant         DateTime // date limite appliquée (entrées antérieures)
+  archiveCle    String
+  archiveSha256 String
+  createdAt     DateTime @default(now())
+
+  @@index([jusquaSeq])
+}
+
+// Scénario « sévère mais plausible » d'une fonction critique ou importante (résilience opérationnelle) : durée
+// d'interruption estimée, comparée à la tolérance d'impact du processus (lib/dependances-critiques).
+model ScenarioSevere {
+  id                       String    @id @default(cuid())
+  organizationId           String
+  processusId              String
+  processus                Processus @relation(fields: [processusId], references: [id], onDelete: Cascade)
+  intitule                 String
+  description              String?   @db.Text
+  dureeInterruptionMinutes Int
+  mesures                  String?   @db.Text
+  dateEvaluation           DateTime? @db.Date
+  createdById              String?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  @@index([organizationId, processusId])
+}
+
+// ─── Stratégie cyber / IT / résilience (lot S1a) ─────────────────────────────
+// Cadre (axes, objectifs) validé puis figé ; rattachements d'éléments (actions du store unifié) au fil de l'eau.
+// Modifier le cadre d'une stratégie validée = nouvelle version (l'ancienne passe ARCHIVEE). Cf. lib/strategie.ts,
+// docs/specs/strategie-cyber-it-resilience.md.
+model Strategie {
+  id                  String       @id @default(cuid())
+  organizationId      String
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  titre               String
+  description         String?      @db.Text
+  // CYBER | IT | RESILIENCE | INTEGREE
+  type                String       @default("CYBER")
+  periodeDebut        DateTime?
+  periodeFin          DateTime?
+  // BROUILLON | VALIDEE | ARCHIVEE
+  statut              String       @default("BROUILLON")
+  version             Int          @default(1)
+  versionPrecedenteId String?
+  versionPrecedente   Strategie?   @relation("StrategieVersions", fields: [versionPrecedenteId], references: [id], onDelete: SetNull)
+  versionsSuivantes   Strategie[]  @relation("StrategieVersions")
+  valideePar          String?
+  valideeLe           DateTime?
+  // Instantané immuable du cadre validé ({ axes: [{ id, ordre, titre, description, referenceRef, objectifs: [...] }] }).
+  cadreValide         Json?
+  // Identifiants internes facultatifs (lien comptable / budgétaire) : référence ≤ 100 car. ; [{ systeme ≤ 50, valeur ≤ 100 }] ≤ 10.
+  referenceInterne     String?
+  identifiantsExternes Json?
+  createdById         String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  axes       AxeStrategique[]
+  evolutions StrategieEvolution[]
+
+  @@index([organizationId])
+  @@index([organizationId, statut])
+  @@index([versionPrecedenteId])
+}
+
+model AxeStrategique {
+  id           String    @id @default(cuid())
+  strategieId  String
+  strategie    Strategie @relation(fields: [strategieId], references: [id], onDelete: Cascade)
+  ordre        Int       @default(0)
+  titre        String
+  description  String?   @db.Text
+  // Référence facultative (ex. fonction d'un référentiel : « NIST CSF 2.0 — PR »).
+  referenceRef String?
+  // Identifiants internes facultatifs (lien comptable / budgétaire) : référence ≤ 100 car. ; [{ systeme ≤ 50, valeur ≤ 100 }] ≤ 10.
+  referenceInterne     String?
+  identifiantsExternes Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  objectifs     ObjectifStrategique[]
+  rattachements RattachementStrategique[]
+
+  @@index([strategieId])
+}
+
+model ObjectifStrategique {
+  id         String         @id @default(cuid())
+  axeId      String
+  axe        AxeStrategique @relation(fields: [axeId], references: [id], onDelete: Cascade)
+  titre      String
+  indicateur String?        @db.Text
+  cible      String?
+  echeance   DateTime?
+  kriId      String?
+  // Identifiants internes facultatifs (lien comptable / budgétaire) : référence ≤ 100 car. ; [{ systeme ≤ 50, valeur ≤ 100 }] ≤ 10.
+  referenceInterne     String?
+  identifiantsExternes Json?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([axeId])
+}
+
+model RattachementStrategique {
+  id             String         @id @default(cuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  axeId          String
+  axe            AxeStrategique @relation(fields: [axeId], references: [id], onDelete: Cascade)
+  // Source du store d'actions unifié (ACTION_SOURCES) : MESURE | RISK_ACTION | CONFORMITE | AUDIT | CONTROLE | INCIDENT | PLAN_ACTION
+  sourceType     String
+  sourceId       String
+  // MANUEL | ASSISTANT | MCP
+  provenance     String         @default("MANUEL")
+  ajoutePar      String?
+  createdAt      DateTime       @default(now())
+
+  @@unique([axeId, sourceType, sourceId])
+  @@index([organizationId])
+  @@index([organizationId, sourceType, sourceId])
+}
+
+// Historique des évolutions d'une stratégie APRÈS validation (ajouts, retraits, modifications du cadre) avec justification.
+model StrategieEvolution {
+  id             String       @id @default(cuid())
+  strategieId    String
+  strategie      Strategie    @relation(fields: [strategieId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // AJOUT_RATTACHEMENT | RETRAIT_RATTACHEMENT | AJOUT_AXE | MODIF_AXE | SUPPR_AXE | AJOUT_OBJECTIF | MODIF_OBJECTIF | SUPPR_OBJECTIF
+  type           String
+  cibleId        String?
+  avant          Json?
+  apres          Json?
+  justification  String       @db.Text
+  auteurId       String?
+  createdAt      DateTime     @default(now())
+
+  @@index([strategieId, createdAt])
+  @@index([organizationId])
 }

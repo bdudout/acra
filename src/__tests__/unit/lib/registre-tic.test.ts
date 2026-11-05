@@ -38,13 +38,18 @@ describe('validerArrangement — champs requis', () => {
 
   it('une fonction CRITIQUE exige identifiant, pays, fonction et date de début', () => {
     const manquants = validerArrangement(base({ criticite: 'CRITIQUE' }))
-    expect(manquants).toEqual(expect.arrayContaining(['identifiant', 'pays', 'fonctionSupportee', 'dateDebut']))
+    expect(manquants).toEqual(expect.arrayContaining(['identifiant', 'pays', 'fonctionSupportee', 'dateDebut', 'strategieSortie']))
+  })
+
+  it('DORA art. 28 § 8 : une stratégie de sortie est exigée pour une fonction critique ou importante, pas au-delà', () => {
+    expect(validerArrangement(base({ criticite: 'NON_CRITIQUE' }))).not.toContain('strategieSortie')
+    expect(validerArrangement(base({ criticite: 'IMPORTANTE', strategieSortie: 'Réinternalisation sous 6 mois' }))).not.toContain('strategieSortie')
   })
 
   it('une fonction IMPORTANTE complète est valide', () => {
     const ok = base({
       criticite: 'IMPORTANTE', identifiant: '969500XXXXXXX', pays: 'FR',
-      fonctionSupportee: 'Paiements', dateDebut: '2025-01-01',
+      fonctionSupportee: 'Paiements', dateDebut: '2025-01-01', strategieSortie: 'Bascule vers le prestataire B',
     })
     expect(validerArrangement(ok)).toEqual([])
   })
@@ -132,11 +137,13 @@ describe('arrangementToCsvRow — export registre', () => {
       reference: 'CT-1', prestataireNom: 'Acme', identifiant: 'LEI123', pays: 'FR',
       typeService: 'CLOUD', fonctionSupportee: 'Paiements', criticite: 'CRITIQUE',
       dateDebut: '2025-01-01', dateFin: '2027-01-01', paysDonnees: 'FR', sousTraitance: true,
+      strategieSortie: 'Bascule vers B', prestataireAlternatif: 'B Cloud', strategieSortieTesteeLe: '2026-06-30',
     }
     const row = arrangementToCsvRow(a)
     expect(row.length).toBe(REGISTRE_CSV_HEADER.length)
     expect(row[0]).toBe('CT-1')
     expect(row).toContain('2025-01-01')     // date de début en ISO court
+    expect(row).toEqual(expect.arrayContaining(['Bascule vers B', 'B Cloud', '2026-06-30']))
     expect(row[REGISTRE_CSV_HEADER.length - 2]).toBe('oui') // sous-traitance
     expect(row[REGISTRE_CSV_HEADER.length - 1]).toBe('oui') // complet (CRITIQUE renseignée)
   })
@@ -144,5 +151,13 @@ describe('arrangementToCsvRow — export registre', () => {
   it('marque « non » un arrangement incomplet', () => {
     const a = cleanArrangementInput({ reference: 'CT-2', prestataireNom: 'X', criticite: 'CRITIQUE' })
     expect(arrangementToCsvRow(a)[REGISTRE_CSV_HEADER.length - 1]).toBe('non')
+  })
+})
+
+describe('cleanArrangementInput — stratégie de sortie', () => {
+  it('normalise les champs de sortie (texte, alternative, date du dernier test)', () => {
+    const a = cleanArrangementInput({ reference: 'R', prestataireNom: 'P', strategieSortie: '  Réversibilité  ', prestataireAlternatif: ' B ', strategieSortieTesteeLe: '2026-05-01' })
+    expect(a).toMatchObject({ strategieSortie: 'Réversibilité', prestataireAlternatif: 'B' })
+    expect(a.strategieSortieTesteeLe).toBeInstanceOf(Date)
   })
 })

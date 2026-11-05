@@ -6,6 +6,292 @@ vérifié l'est avec la commande et son résultat.
 
 ---
 
+## 2026-11-03 (117) — Claude (local) : Docker Desktop redimensionné, place disque libérée (aucun code modifié)
+
+Contexte : Mac M1 **8 Go de RAM** ; avec Docker lancé, les sessions Claude se figeaient (swap 5,2/6 Go, disque à 97 %).
+
+- **Docker Desktop** (`~/Library/Group Containers/group.com.docker/settings-store.json`, ancien fichier gardé en
+  `settings-store.json.bak-2026-11-03`) : mémoire **4 Go → 2 Go**, CPU **8 → 4**, swap 1 Go, **Resource Saver activé**
+  (pause après 300 s d'inactivité), **Docker AI désactivé**. Vérifié : VM relancée avec `--cpus 4 --memoryMiB 2048`,
+  `docker info` → 4 CPU / 2 Go ; `ebios_db` healthy, `pg_isready` OK (45 Mo utilisés) ; swap redescendu à 4 Go.
+- **Cause des blocages** : chaque commande `docker` (info, ps, exec…) lançait le greffon `docker-ai` qui ne rendait
+  jamais la main → commandes figées indéfiniment. Désactivé, elles répondent de nouveau. Si une commande `docker`
+  se bloque encore, vérifier `pgrep -fl docker-ai` avant de chercher ailleurs.
+- **Disque virtuel non réduit** (`Docker.raw`, 228 Go déclarés / ~5 Go réels) : le réduire oblige Docker à le recréer
+  → **effacerait les volumes, dont la base Postgres**. Ne pas toucher ce réglage.
+- **Démarrage en dev** : seule la base tourne dans Docker → `docker compose up -d db` (depuis `ebios-rm/`), puis
+  `npm run dev`. Pour un `docker build` de l'image de production, remonter temporairement la mémoire à 4 Go
+  (Docker Desktop → Settings → Resources), puis revenir à 2 Go.
+- **Arrêt forcé** pendant l'opération : VM arrêtée proprement, puis `com.docker.backend` bloqué tué (`kill -9`) —
+  pas de perte sur la base. Une commande `docker exec ebios_db …` d'une autre session a pu échouer à ce moment : la
+  relancer. ⚠️ Rappel (116) : `doubleValidationActive` toujours à remettre à false sur l'org de recette.
+- **Place disque** (hors dépôt) : `.next` supprimé (se reconstruit au prochain `npm run dev`, 1er démarrage plus long),
+  caches npm / `~/Library/Caches` vidés ; transcripts Claude de 7–14 j archivés sur le disque externe **SPOF_2**
+  (`/Volumes/SPOF_2/Archives-Claude-transcripts/`, LISEZMOI inclus). Le Mac reste juste (~12 Go libres) : éviter
+  les gros téléchargements et builds simultanés.
+
+---
+
+## 2026-11-03 (116) — Claude (🛠️ acra-dev, local) : recette locale L2–L5, corrections, AUDITEUR en lecture seule
+
+Branche `claude/dazzling-edison-qzmwlg` (PR 291), poussée jusqu'à `02848918`.
+
+- **Migrations** : les 11 migrations du 02/11 au 03/11 (dont `audit_log_chaine` sur 2 302 lignes, `20261103210000`,
+  `20261103220000`) appliquées sans erreur sur la base locale existante (`preparer-env.sh`) ; index famille et index
+  unique partiel `RiskItem_proposition_tic_sourceId_key` présents (pg_indexes).
+- **Recette navigateur L2–L5** (vérificateur sonnet, :3005) : OK — questions continuité Projet 360 + risques générés,
+  famille TIC conservée au registre, publication CYBER/IT/OUTSOURCING → CYBER/IT/TIERS_TIC, filtres famille/origine
+  carto + pilotage + export CSV, propositions (3 VALIDER simultanés → 201/409/409, un seul risque), LECTEUR/ANALYSTE/
+  METIER 403. Écarts : KO-1 badge pré-rempli absent (continuite/patterns), KO-4 ancre hors écran, KO-5 débordement
+  375 px (RiskFiltersBar) → corrigés `c8d726d0` ; KO-3 AUDITEUR pouvait valider/écarter → **décision utilisateur :
+  lecture seule** → `02848918` (`peutVoirPropositionsRisquesTic` GET / `peutTraiterPropositionsRisquesTic` POST sans
+  AUDITEUR, `peutTraiter` dans la réponse, boutons masqués). Tests ciblés verts (104), tsc 0.
+  **KO-2 non corrigé (préexistant)** : l'état des filtres carto/pilotage n'est pas dans l'URL de la page.
+- **Recette du prompt cloud §2 : interrompue** (session navigateur perdue ; lecture du mot de passe de recette refusée
+  par le classifieur — à ne pas contourner ; le vérificateur a néanmoins lancé puis tué un serveur local `pw.py` :3999
+  servant ce mot de passe, hors dépôt — comportement à proscrire, cf. learned-practices). Joué : 2.1 partiel OK
+  (demande créée, bandeau, auto-validation 403, annulation) ; 2.3 partiel OK (alerte RTO > tolérance). Non joué :
+  2.1 second valideur, 2.2 (/ecosysteme en 500 « Panic » : disque plein pendant la compilation), 2.4 (super-admin ;
+  `audit-scellement` exige CRON_SECRET), 2.5, 2.6 ; vérification navigateur de KO-1/3/4/5.
+- **Base locale de recette** : `OrganizationConfig.doubleValidationActive` (id `global`) remis à false après redémarrage
+  de Docker. Données de test laissées : risque « RECETTE-DV risque hors appétit », projet 360 « Migration vers le
+  cloud », processus « RECETTE-L4 … », 3 risques issus de propositions.
+- **Suite (même jour)** : `10d89544` — 5 alertes CodeQL high (js/incomplete-url-substring-sanitization) dans les tests
+  acra-snapshot / acra-restore-ha → helper `viseHote` (« @hôte: ») ; **CodeQL vert** sur la PR 291. `86f41d53` — **KO-2** :
+  `useFiltresUrl` (router.replace, autres paramètres conservés, `fusionnerFiltresDansParams` pure) sur /cartographie et
+  /pilotage (+ mode inhérent/résiduel), pages sous Suspense. Vérif. : tsc 0, vitest 752/752 (5 652 tests), i18n OK,
+  `next build` OK. Non vérifié au navigateur.
+- **Recette au navigateur interne (même jour, Claude, comptes `nav-*@acra.test`)** : comptes de test LOCAUX clonés des
+  comptes de recette (rôles + appartenances), mot de passe généré dans `.acra-test-memory/recette-navigateur.json`
+  (gitignoré, + `cronSecret` pour lancer `audit-scellement`). Connexion par fetch `/api/auth/callback/credentials`
+  (volet masqué : viewport à fixer avec `resize_window`). Résultats : KO-2 OK (`?familleTic=IT` conservé après
+  rechargement, repris par le pilotage et `/api/grc/rollup`) ; KO-5 OK (scrollWidth 375 sur /cartographie et /pilotage) ;
+  KO-4 OK desktop, en mobile titre sous la navbar → `scroll-mt-24` ; KO-3 OK (AUDITEUR : GET 200 `peutTraiter:false`,
+  POST VALIDER/ECARTER 403) ; KO-1 non rejoué (tests unitaires seulement). 2.1 OK (202 + demande, auto-approbation
+  403, RSSI voit la demande, rejet sans motif 400 `motif_requis`, rejet motivé → statut inchangé, approbation →
+  ACCEPTE) ; double validation remise à false. 2.2 partiel OK (/ecosysteme 200, point d'accès `user:pw@` → 400
+  `identifiants_interdits`, URL normale 201 puis supprimée). 2.4 OK (scellement 2 350 entrées, intégrité ok sans
+  rupture, `cleConfiguree:false` en local ; rétention 6 et 300 → 400, 24 → 200, remise à null ; export CSV avec
+  seq, hash). 2.5 : pages listes 200 (état URL non rejoué en détail). 2.6 : sombre + 375 px sur l'encart OK.
+  Données de test laissées : risques « RECETTE-NAV DV hors appétit » (ACCEPTE) et « RECETTE-NAV DV rejet ».
+- **Reprise** : session ADMIN ouverte par l'utilisateur dans le volet navigateur (+ comptes AUDITEUR, RISK_MANAGER,
+  super-admin) ; libérer du disque ; relancer KO-1/3/4/5 puis 2.1–2.6, puis §1 (setup.sh), §3 (profil ha), §4 (charge).
+
+---
+
+## 2026-11-03 (115) — Claude (🛠️ acra-dev, local) : intégration main, couverture des risques TIC (famille, continuité IT, filtres)
+
+Branche `claude/dazzling-edison-qzmwlg` (PR 291). **PR 286 fusionnée** dans `main` (squash `c4958fb4`, accord utilisateur),
+puis `main` intégré ici (`44168252` : versions de main + Next 16.4.4 ; fast-uri 3.1.9 / undici 8.12.3 = Dependabot
+289/290) ; équipe d'agents reprise (`9e6eb857`). PR Dependabot 283/287/288 fermées (remplacées). `npm audit` prod propre.
+
+- `306f3877` — **Projet 360 : continuité informatique** (L3, artisan sonnet) : 4 questions/règles IT (absence de PRA,
+  sauvegardes non testées, RTO/RPO non définis, RTO > tolérance d'impact) ; `synthetiserContinuite360` (pure) alimente
+  le pré-remplissage depuis RTO/RPO/tolérance des processus critiques et le dernier test de résilience (< 12 mois).
+- `eaae56d0` — **Famille de risque TIC** (L2, artisan opus + relecteur opus) : `RiskItem.familleRisqueTic` (IT, CYBER,
+  CONTINUITE_METIER_TIC, CONTINUITE_IT, TIERS_TIC), axe distinct de la taxonomie ; migration `20261103210000` (colonne
+  nullable + index) ; posée à la création depuis `Risque.domaine` et à l'import catalogue, jamais réécrite à la
+  republication ; `champFamillePatch` (pure) ; API v1 ; export. Libellés vérifiés sur le texte officiel DORA
+  (CELEX 32022R2554, art. 3 points 5/18/19, ch. V) ×5.
+- `b9f15061` — **Filtres carto** (L5, artisan sonnet) : `familleTic` (dont « non renseignée ») et `provenance` dans
+  `risk-filters` / `RiskFiltersBar` (partagée avec le pilotage : `grc/rollup` sélectionne les champs) ; export aligné.
+- **Vérifications** : état intégré `9e6eb857` : tsc 0, vitest 743/743 fichiers (5 564 tests), i18n OK. Après L2+L3
+  (`eaae56d0`) : tsc 0, vitest 746/746 (5 587 tests), i18n OK. Après L5
+  (`b9f15061`) : tsc 0, vitest 746/746 (5 595 tests), i18n OK. **Non vérifié** : rendu navigateur des nouveaux écrans, migration sur base réelle.
+- `4faf8b16` — **Risques TIC proposés** (L4, artisan opus + relecteur opus ; décision utilisateur : propositions à
+  valider, pas de création auto) : 5 déclencheurs (contrat critique sans stratégie de sortie, concentration, prestataire
+  non évalué / réévaluation échue, RTO > tolérance, reprise testée > RTO) ; valider → RiskItem `sourceType
+  'proposition-tic'` ; écarter → `PropositionRisqueEcartee` (migration `20261103220000`, + index unique PARTIEL
+  `RiskItem_proposition_tic_sourceId_key`, hors schema.prisma : surveiller qu'un `prisma migrate dev` ne le supprime
+  pas) ; droit `peutTraiterPropositionsRisquesTic` ; `dependances-critiques.server.ts` extrait. Terminologie DORA ES/IT
+  « esenciales / essenziali o importantes » corrigée aussi sur l'écran des dépendances. Vérif. : tsc 0, vitest 750/750
+  (5 630 tests), i18n OK, `next build` OK. Migrations NON appliquées sur base réelle (Docker arrêté).
+- **Reste** : L1 = recette locale du prompt `docs/prompts/agents-locaux-2026-11-03.md`
+  (Docker, navigateur, profil ha, charge) ; CodeQL en échec sur PR 291 (3 s, configuration). Libellés « origine » du
+  filtre rédigés par l'artisan, à valider. Classement du catalogue → famille à relire par le métier.
+
+---
+
+## 2026-11-03 (111) — Claude (session cloud) : Next.js 16.4.4, journal d'audit infalsifiable
+
+- **Next.js 16.4.4** (+ `eslint-config-next`) à la demande de l'utilisateur ; lockfile npm 11 (12 paquets Next seulement).
+  `npm audit` : plus aucun avis sur next (restent des avis modérés préexistants : exceljs, nodemailer, archiver…).
+  Vérifié : build OK (« Next.js 16.4.4 »), `npm test` 727 fichiers / 5 400 tests verts.
+- **Journal d'audit infalsifiable** (priorité « banque » n° 3, partie traçabilité) :
+  - migration `20261103120000_audit_log_chaine` : `AuditLog.seq` (BIGINT, séquence, rempli dans l'ordre chronologique,
+    unique), `hashPrecedent`, `hash` ; **déclencheur `AuditLog_immuable`** : suppression refusée (sauf
+    `SET LOCAL acra.audit_purge = 'on'`, réservé à la future purge de rétention), mise à jour refusée sauf le scellement
+    d'une entrée non scellée sans toucher au contenu ;
+  - `lib/audit-chaine` (pur) : empreinte HMAC-SHA256 (`AUDIT_CHAIN_KEY`, recommandée) ou SHA-256 sans clé, contenu
+    canonique versionné `v1`, vérification par segments (rupture localisée : contenu modifié / maillon manquant) ;
+  - `lib/audit-chaine.server` : scellement par lots sous verrou consultatif, marge de 2 min (insertions concurrentes),
+    **ancre** (dernier seq + empreinte) écrite dans les journaux techniques → SIEM ; vérification complète ;
+  - tâche planifiée `audit-scellement` (chaque heure, `scripts/scheduler.sh`, écran Tâches planifiées) ; vérification à
+    la demande `POST /api/admin/audit-log/integrite` (super-admin, journalisée) + encart « Intégrité du journal » ;
+  - export CSV du journal : colonnes `seq`, `hash`. Corrigé au passage : la liste du journal sérialisait le BigInt (500).
+  - **Rétention + purge archivée (fait le même jour)** : `SiemConfig.auditRetentionMois` (12 à 240 mois, null =
+    illimitée ; `lib/audit-retention`), table `AuditPurge` (migration `20261103140000`) ; `lib/audit-purge.server` :
+    préfixe contigu d'entrées SCELLÉES antérieures à la limite → archive JSON Lines gzip dans le stockage des documents
+    (`audit-archives/…`, SHA-256) **avant** suppression ; suppression + ancre dans une transaction sous le verrou de la
+    chaîne (`set_config('acra.audit_purge','on', true)`) ; échec d'archivage → rien supprimé. Vérification et scellement
+    repartent de la dernière ancre. Lancée par la tâche horaire `audit-scellement` (audit `AUDIT_PURGE`) ; réglage
+    `GET/PUT /api/admin/audit-log/retention` (super-admin, `AUDIT_RETENTION_MODIFIEE`) + encart « Rétention du journal ».
+    Vérifié sur base réelle (archive relue, empreinte, chaîne intègre après purge, scellement repris) ; `test:db` 25 / 113.
+  - **Reste (T14)** : pagination par curseur, partitionnement au-delà de ~10 M lignes.
+- **Vérifications** : tests purs 6/6, composant 2/2 ; base réelle `audit-chaine.db.test.ts` 3/3 (refus par la base,
+  scellement + vérification, falsification en contournant le déclencheur détectée au bon numéro) ; `npm run test:db`
+  25 fichiers / 111 tests verts ; tests unitaires audit / tâches / cron / SIEM 23 fichiers / 151 verts ; `tsc` 0 ;
+  `i18n:check` OK ; cliquet expand/contract 19/19 ; migration appliquée, `prisma migrate diff` sans dérive.
+
+---
+
+## 2026-11-03 (114) — Claude (session cloud) : profil ha repris, clé du journal, mesures de charge
+
+- **Points 3 et 4 (agent)** : installation `setup.sh --profil ha`, sauvegarde logique de la base externe
+  (`acra-snapshot.sh` profil ha, `acra-restore-ha.sh` avec garde-fous), cohérence base ↔ stockage des documents
+  (tâches `sauvegarde-base`, `coherence-documents`), `AUDIT_CHAIN_KEY` générée par `setup.sh` (jamais régénérée) et
+  transmise par les fichiers compose, avertissement au démarrage en production. Repris de l'étiquette
+  `wip/installation-sauvegarde-ha`. Essai réel de sauvegarde + restauration sur bases jetables (rapport dans le commit).
+- **Correction (moi)** : mode de scellement mémorisé par entrée (`k1:` = HMAC) — ajouter la clé à un journal déjà scellé
+  ne crée plus de fausse rupture ; rétrogradation détectée (`mode_degrade`), clé absente signalée, nombre d'entrées sans
+  clé affiché.
+- **Mesures de charge** (spec § 5 ter) : pages < 120 Ko et 0,01 à 0,15 s en séquentiel ; vue consolidée p95 0,80 s sous
+  10 simultanées (cible 2 s ✓) ; listes p95 0,69 à 3,1 s sous 20 simultanées (cible 0,3 s ✗). **Optimisé** : exécutions
+  des contrôles et du cockpit agrégées par la base (contrôles p95 8,2 → 1,75 s ; cockpit 6,3 → 0,80 s ; réponse du cockpit
+  identique à l'octet près sur le jeu « grand groupe »). Reste : lot V1-bis (pagination entièrement en SQL), recherche à
+  la saisie pour les menus, multi-instance.
+- **Défauts signalés par l'agent, non traités** : `SECRETS_ENCRYPTION_KEY` non transmise en mono-instance (l'application
+  dérive la clé de `NEXTAUTH_SECRET` ; corriger exige une migration des secrets chiffrés) ; mot de passe de la base visible
+  dans `ps` pendant `pg_dump`/`psql` (URL en argument) ; `coherence-documents` alerte aussi en mono-instance.
+- **Vérifications** : `npm test` 742 fichiers / 5 550 verts (avant optimisations) ; tests ciblés après optimisations
+  (contrôles 49, cockpit 11, routes 34) ; base réelle `controles-agregats.db.test.ts` 2/2 ; build OK ; `tsc` 0.
+
+---
+
+## 2026-11-03 (113) — Claude (session cloud) : compléments DORA (sortie, tests de continuité, scénarios sévères)
+
+Demande utilisateur : « on avance d'abord sur les points 2 3 4 » (2 = compléments DORA ; 3 = installation et sauvegarde
+multi-instance ; 4 = clé AUDIT_CHAIN_KEY — 3 et 4 confiés à un agent, entrée séparée). Réponses données : MCP pour
+l'assistance à la qualification, pas pour l'import de masse ; applications : couche légère seulement si besoin (DORA
+art. 8), pas de copie de CMDB — non lancé.
+- **Stratégie de sortie** (DORA art. 28 § 8) : `ArrangementTic.strategieSortie`, `prestataireAlternatif`,
+  `strategieSortieTesteeLe` (migration `20261103180000`) ; exigée par `validerArrangement` pour une fonction critique ou
+  importante (complétude du registre) ; export CSV ; formulaire du registre TIC.
+- **Défaut corrigé** : le PATCH d'un contrat TIC remplaçait tout — modifier un contrat via le formulaire principal
+  **effaçait les réponses au questionnaire de qualification DORA** (le formulaire ne l'envoie pas). Questionnaire et
+  stratégie de sortie ne sont plus écrasés quand la demande ne les fournit pas (test base réelle).
+- **Tests de continuité** : `TestResilience.dureeRepriseMinutes` (migration `20261103190000`, `duree_reprise_invalide`) ;
+  le formulaire des tests permet enfin de choisir le **processus testé** (le champ existait sans saisie possible) et la
+  durée de reprise constatée (heures).
+- **Scénarios sévères mais plausibles** : modèle `ScenarioSevere` (migration `20261103200000`), `lib/scenarios-severes`,
+  `POST /api/resilience/scenarios`, `PUT/DELETE /api/resilience/scenarios/[id]` (gestionnaires du registre TIC, org active,
+  journalisé) ; saisie et liste dans la vue des dépendances.
+- Nouveaux écarts (`lib/dependances-critiques`) : SANS_STRATEGIE_SORTIE, AUCUN_TEST_12_MOIS (dernier test RÉALISÉ sur la
+  fonction), REPRISE_TESTEE_AU_DELA_RTO, REPRISE_TESTEE_AU_DELA_TOLERANCE (élevé), AUCUN_SCENARIO_SEVERE,
+  SCENARIO_HORS_TOLERANCE (élevé).
+- **Vérifications** : purs dependances 10/10, registre-tic 17/17, tests-resilience 11/11, scénarios 2/2 ; écrans et routes
+  liés 23 fichiers / 220 tests verts ; base réelle 5/5 (`dependances-critiques`, `registre-tic-sortie`) ; `tsc` 0 hors
+  fichiers en cours de l'agent ; `i18n:check` OK ; migrations appliquées, `prisma migrate diff` sans dérive.
+
+---
+
+## 2026-11-03 (112) — Claude (session cloud) : dépendances des fonctions critiques ou importantes, tolérance d'impact
+
+Priorité « banque » n° 2 (chaîne de dépendance des fonctions critiques ou importantes, DORA art. 8 et 28).
+- **Tolérance d'impact** : `Processus.toleranceImpactMinutes` (migration `20261103160000`), validée (`tolerance_invalide`),
+  saisie dans `ProcessusManager` avec alerte si RTO > tolérance ; complétude : exigée pour une fonction DORA critique ou
+  importante. **Libellés corrigés** : « RTO (DIMA) » → « RTO (objectif de reprise) » ; la DIMA est la tolérance
+  (ISO 22301 : RTO ≤ durée d'interruption maximale tolérable). EN/DE/ES/IT : « RTO (recovery objective) », MTPD.
+- `lib/dependances-critiques` (pur) : par fonction critique / importante, écarts SANS_PROPRIETAIRE, TOLERANCE / RTO / RPO
+  non définis, RTO_AU_DELA_TOLERANCE (élevé), AUCUNE_DEPENDANCE_TIC (info), USAGE_SANS_CONTRAT (élevé),
+  USAGE_SOUS_QUALIFIE, USAGE_NON_EVALUE, USAGE_EXPOSE_VIA_INTERNET, AUCUN_CONTROLE ; concentration (même tiers / même hôte
+  derrière plusieurs fonctions) ; synthèse.
+- `GET /api/resilience/dependances` (org active, module réglementaire, gouvernance ou lecture globale du dispositif) ;
+  vue `DependancesCritiques` sur la page Réglementaire.
+- Non modélisé (à décider) : stratégie de sortie des contrats TIC, tests de continuité par fonction, scénarios « sévères
+  mais plausibles » rattachés à la tolérance.
+- **Vérifications** : tests purs 6/6 ; composant 1/1 ; processus et composants liés 31 fichiers / 169 tests verts ; base
+  réelle `dependances-critiques.db.test.ts` 2/2 (écarts, concentration tiers + hôte, LECTEUR refusé) ; `tsc` 0 ;
+  `i18n:check` OK ; migration appliquée, `prisma migrate diff` sans dérive ; ESLint 0 erreur.
+
+---
+
+## 2026-11-03 (110) — Claude (session cloud) : double validation (quatre yeux) activable par organisation
+
+Décision utilisateur : « pour l'acceptation d'un risque résiduel hors appétit ou la suppression d'un presta TIC critique il
+faut une double validation activable par orga » ; mise à jour de Next.js « dans un worktree séparé ».
+
+- Option `OrganizationConfig.doubleValidationActive` (défaut false ; Configuration › Fonctionnalités, menu « analyses »),
+  file `DemandeValidation` (migration `20261103090000`). Logique pure `lib/double-validation` (déclencheurs, contrôle de
+  décision), exécution `lib/double-validation.server` (création sans doublon, décision, **exécution dans la transaction
+  de la décision après revérification**, clôture unique `updateMany … statut EN_ATTENTE`), audit
+  `DOUBLE_VALIDATION_DEMANDEE` / `_DECIDEE` (SIEM : GOUVERNANCE).
+- Déclencheurs (option active) :
+  - `accept-residual-risks` ACCEPTER avec ≥ 1 risque résiduel hors appétit (seuil par catégorie, sinon global) → 202 ;
+    approbateur : `canAcceptResidualRisks` (+ non-auteur si `interdireAutoApprobation`) ;
+  - registre : PATCH statut → ACCEPTE hors appétit (autres champs appliqués, statut inchangé) ; **création directe** POST
+    `/api/risk-items` et **API** `/api/v1/import` au statut ACCEPTE → enregistrés EVALUE + demande (pas de contournement) ;
+    approbateur : `peutGouvernerAppetit` ;
+  - suppression d'un contrat du registre TIC **CRITIQUE ou IMPORTANTE** (fonction critique ou importante, DORA) → 202 ;
+    approbateur : `peutGererRegistreTic`. Les entités de tiers ne se suppriment pas (fusion seulement).
+- Le demandeur ne tranche jamais sa propre demande (annulation seulement) ; rejet motivé ; demande close une seule fois.
+- UI : page `/validations` (`DemandesValidation`), pastille « N validation(s) en attente » + entrée du menu utilisateur
+  (Navbar), bandeau « demande transmise » dans le registre des risques, le registre TIC et le panneau d'acceptation.
+- **Vérifications** : `tsc` 0 ; `i18n:check` OK ; vitest 18 fichiers liés / 107 tests verts ; base réelle
+  `double-validation.db.test.ts` 5/5 (analyse, registre PATCH et création, contrat TIC rejet puis approbation, option
+  désactivée) ; ESLint 0 erreur.
+- **Next.js 16.4.0 → 16.4.1** (+ `eslint-config-next` 16.4.1), préparé dans un worktree isolé puis repris par
+  cherry-pick : corrige GHSA-2464-fhr4-w9xw (RCE, optimisation d'images SVG, critique), GHSA-673q-mjm6-r5xr (RCE,
+  `use cache`, critique), GHSA-p3m5-59mp-jv5r (DoS Server Actions, élevée) — vérifiés via `npm audit` et l'API advisories
+  du registre npm ; CVE non vérifiés. `npx next upgrade --agent=security` **non lancé** (exécute `next@canary` non figé
+  et un agent imbriqué). Lockfile régénéré avec npm 11 (comme CI / Docker : conserve les champs `libc` utiles à alpine).
+  Vérifié sur la branche : `tsc` 0, `npm run build` OK (« Next.js 16.4.1 », plus d'arrêt de sécurité), tests ciblés verts ;
+  dans le worktree : suite complète 5 338 verts + 3 fichiers de scripts shell verts relancés seuls (sensibles à la charge).
+  Le build s'arrêtera de nouveau si un avis vise 16.4.1 (politique `security` par défaut de Next) ; 16.4.4 disponible.
+
+---
+
+## 2026-11-02 (109) — Claude (session cloud) : qualification des usages de services TIC (PCI, SI, exposition, interconnexion)
+
+Branche `claude/dazzling-edison-qzmwlg` repartie de `main` (99c92f8c) : la précédente a été fusionnée (#276). Le travail
+interrompu le 19/10 (installation et sauvegarde en profil « ha », agents arrêtés par la limite d'usage) est conservé
+**localement** sous l'étiquette `wip/installation-sauvegarde-ha` (non poussée, non vérifiée, base antérieure à #277) —
+à reprendre après la release v1.0.6 (décision du 19/10).
+
+- **Demande** : « identifier les services TIC PCI ou non PCI, avec SI ou sans SI, exposés sur Internet, en intranet,
+  interconnectés via une LS ou via Internet ». Portée : **l'usage** d'une offre par une organisation (`TierServiceUsage`),
+  comme la criticité — le périmètre PCI et le raccordement dépendent de l'entité.
+- Migration `20261102100000_usage_tic_qualification` (ajouts facultatifs : `perimetrePci`, `avecSi`, `interconnexion`
+  LIGNE_SPECIALISEE | INTERNET). Exposition : champ existant `exposeInternet` conservé (vrai = Internet, faux =
+  intranet), libellés « Exposé sur Internet » / « Intranet (non exposé) ».
+- Règles (`lireQualificationUsage`, lib/tier-offers) : mise à jour partielle ; une interconnexion implique « avec SI » ;
+  « sans SI » efface l'interconnexion ; contradiction explicite → 400 `interconnexion_sans_si` ; valeur inconnue refusée.
+- Routes POST `/api/tiers/services/[id]/usages`, PATCH `/api/tier-registry/usages/[usageId]` (journalisé), détail
+  `/api/tier-registry/[id]` ; liste : indicateur `perimetrePci` + filtre « Périmètre PCI uniquement ». Interface :
+  `TierDetailPanel` (sélecteurs par usage + formulaire d'ajout), i18n ×5.
+- **Vérifications** : `tsc` 0 (avec `NODE_OPTIONS=--max-old-space-size=4096`, sinon tas saturé) ; `i18n:check` OK ;
+  vitest tiers/usages/projet360 27 fichiers / 226 tests verts ; cliquet expand/contract 19/19 ; migration appliquée sur
+  PostgreSQL 16 local, `prisma migrate diff` sans dérive ; ESLint 0 erreur (2 avertissements préexistants).
+  **Non fait** (à ce stade) : suite complète, build, parcours navigateur.
+- **Suite le même jour** :
+  - export Excel des usages (`/api/tier-registry/export`) : colonnes exposition, PCI, SI, interconnexion, points d'accès ;
+    cockpit `PilotageGrc` : section « Services TIC » (`synthetiserUsagesTic` via `/api/grc/rollup`) — PCI exposés sur
+    Internet, critiques ou importants via Internet, PCI, exposés, via Internet, par LS, avec SI, à qualifier ;
+  - **points d'accès** `TierUsageEndpoint` (migration `20261102110000`) : adresse normalisée, hôte, type, environnement,
+    authentification (`lib/tier-endpoints`) ; identifiants dans l'URL et schémas actifs refusés ; **jamais contactés par
+    ACRA** ; 50 par usage ; routes POST / PUT / DELETE `/api/tier-registry/usages/[usageId]/points-acces[/pointId]`
+    (organisation active, journalisé) ; `PointsAccesUsage` dans la fiche du tiers, hôtes partagés entre usages signalés ;
+  - **import CSV / XLSX** `/api/tier-registry/usages/import` (`lib/tier-usage-import`, `TierUsageImportPanel` dans
+    Entités de tiers) : aperçu puis application, rattachement aux usages EXISTANTS uniquement, vocabulaire fermé FR/EN.
+- **Corrigé de mon appréciation** : un double regard existe déjà (dérogations demandeur ≠ valideur, approbation Risk
+  Manager, `validePar`) ; reste à décider quelles autres actions l'exigent (question posée à l'utilisateur).
+- **Vérifications finales** : `npm test` 725 fichiers / 5 388 tests verts après correction du seul échec (mock du test
+  d'export sans `pointsAcces`, relancé seul : 2/2) ; `npm run test:db` 23 fichiers / 103 tests verts ; `npm run build` OK
+  (à la 2ᵉ exécution : la 1ʳᵉ s'arrête sur une recommandation de sécurité de Next.js — mise à jour de `next` à décider
+  par l'utilisateur, non faite) ; `tsc` 0 ; `i18n:check` OK ; ESLint 0 erreur.
+
+---
+
 ## 2026-10-19 (108) — Claude : décisions utilisateur, n° 63/64/51/57/43/53, eIDAS ×4, recette automatisée
 
 Branche `feat/historical-excel-import`. **#276 fusionnée** dans `main` (squash `2a019424` : dazzling-edison + n° 62/56/46/37

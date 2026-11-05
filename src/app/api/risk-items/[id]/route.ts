@@ -3,9 +3,13 @@ import { prisma } from '@/lib/prisma'
 import { getAnalyseScope, roleSurRessource } from '@/lib/org-context.server'
 import { withAccess } from '@/lib/with-access.server'
 import { type SessionUser } from '@/lib/route-guard.server'
-import { validateRiskItemInput, cleanRiskItem } from '@/lib/risk-item'
+import { validateRiskItemInput, cleanRiskItem, champFamillePatch } from '@/lib/risk-item'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { entiteIdPourTexte } from '@/lib/entites.server'
+import { getOrgConfig } from '@/lib/org-config.server'
+import { cleanAppetitConfig } from '@/lib/appetit'
+import { risqueRegistreHorsAppetit } from '@/lib/double-validation'
+import { creerDemande } from '@/lib/double-validation.server'
 
 // `org: 'none'` : le risque est cherché dans tout le périmètre visible (SUPER_ADMIN non focalisé inclus).
 const access = { org: 'none', rateLimit: { bucket: 'risk-items' } } as const
@@ -40,11 +44,29 @@ export const PATCH = withAccess(access, async (req, { user, params: { id } }) =>
     if (!p) return NextResponse.json({ error: 'processus_invalide' }, { status: 400 })
   }
   // La provenance (traçabilité) ne se modifie pas via l'édition manuelle.
-  const { ...rest } = data
+  const { familleRisqueTic: _famille, ...rest } = data
+  // Famille de risque TIC : modifiée seulement si le corps la transmet (un client antérieur ne l'efface pas).
+  const champFamille = champFamillePatch(body)
+  if ('error' in champFamille) return NextResponse.json({ error: champFamille.error }, { status: 400 })
+  const famille = champFamille.data
+  // Double validation (option d'organisation) : passer un risque HORS APPÉTIT au statut ACCEPTE devient une demande ;
+  // les autres modifications s'appliquent, le statut reste inchangé jusqu'à l'approbation (lib/double-validation).
+  let demandeValidation: { id: string; existante: boolean } | null = null
+  if (rest.statut === 'ACCEPTE') {
+    const actuel = await prisma.riskItem.findUnique({ where: { id }, select: { statut: true, intitule: true } })
+    const cfg = await getOrgConfig(ctx.orgId)
+    if (actuel && actuel.statut !== 'ACCEPTE' && cfg.doubleValidationActive && risqueRegistreHorsAppetit({ graviteResiduelle: rest.graviteResiduelle ?? null, vraisemblanceResiduelle: rest.vraisemblanceResiduelle ?? null, taxonomieCode: rest.taxonomieCode ?? null }, cleanAppetitConfig(cfg.appetitRisque))) {
+      const { demande, existante } = await creerDemande({ organizationId: ctx.orgId, type: 'ACCEPTATION_RISQUE_REGISTRE', cibleId: id, libelle: rest.intitule || actuel.intitule, demandeurId: ctx.userId, demandeurRole: ctx.userRole, ip: getClientIp(req) })
+      demandeValidation = { id: demande.id, existante }
+      rest.statut = actuel.statut as typeof rest.statut
+    }
+  }
   // Lien au référentiel recalculé à partir du texte « entité » (identique) ou retiré (consolidation des entités).
-  const updated = await prisma.riskItem.update({ where: { id }, data: { ...rest, entiteId: await entiteIdPourTexte(ctx.orgId, rest.entite) } })
+  const updated = await prisma.riskItem.update({ where: { id }, data: { ...rest, ...famille, entiteId: await entiteIdPourTexte(ctx.orgId, rest.entite) } })
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId: ctx.userId, userRole: ctx.userRole, ip: getClientIp(req), details: { scope: 'risk-item', action: 'update', id } })
-  return NextResponse.json(updated)
+  return demandeValidation
+    ? NextResponse.json({ ...updated, doubleValidation: true, demandeId: demandeValidation.id, existante: demandeValidation.existante }, { status: 202 })
+    : NextResponse.json(updated)
 })
 
 // DELETE /api/risk-items/[id] — supprimer un risque.

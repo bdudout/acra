@@ -34,6 +34,15 @@ describe('/api/admin/version/rollback', () => {
     expect(written).toMatchObject({ action: 'rollback', snapshotId: ID, confirmVersion: '1.0.4', requestedBy: 'u1' })
     expect(auditLog).toHaveBeenCalledWith('INSTANCE_ROLLBACK_REQUESTED', expect.objectContaining({ userId: 'u1', details: expect.objectContaining({ snapshotId: ID, toVersion: '1.0.4' }) }))
   })
+  it('profil ha : 409 ha_profile, rien n’est déposé (base partagée : procédure manuelle)', async () => {
+    process.env.ACRA_DEPLOY_PROFILE = 'ha'
+    try {
+      const res = await POST(req({ snapshotId: ID, confirmVersion: '1.0.4' }))
+      expect(res.status).toBe(409); expect(await res.json()).toEqual({ error: 'ha_profile' })
+      expect(fs.existsSync(path.join(dir, 'inbox', 'request.json'))).toBe(false)
+      expect(auditLog).not.toHaveBeenCalled()
+    } finally { delete process.env.ACRA_DEPLOY_PROFILE }
+  })
   it('403 hors super-administrateur ; 401 sans session', async () => {
     role.value = 'ADMIN'
     expect((await POST(req({ snapshotId: ID, confirmVersion: '1.0.4' }))).status).toBe(403)

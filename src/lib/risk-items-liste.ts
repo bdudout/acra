@@ -22,6 +22,9 @@ export interface RisqueLeger {
   entite: string | null
   proprietaire: string | null
   statut: string
+  /** Famille de risque TIC et origine (filtres de la cartographie). */
+  familleRisqueTic?: string | null
+  provenance?: string | null
   niveauInherent: number | null
   niveauResiduel: number | null
   /** Taux d'avancement du plan d'action (calculé seulement pour le tri « actions »). */

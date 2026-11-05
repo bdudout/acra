@@ -19,6 +19,8 @@ export interface SnapshotEntry {
   id: string; reason: SnapshotReason; createdAt: string; version: string; toVersion?: string
   tiers?: SnapshotTier[]
   verified: SnapshotVerification; clone: boolean; documents: boolean; encrypted: boolean; sizeBytes: number
+  /** Profil ha : documents en S3 (non archivés) — nombre de clés référencées et contrôle de présence dans le bucket. */
+  documentsStorage?: 's3'; referencedKeys?: number; bucketCheck?: 'ok' | 'ecart' | 'non_execute'
 }
 export interface SnapshotIndex { generatedAt?: string; snapshots: SnapshotEntry[] }
 
@@ -39,7 +41,13 @@ function parseEntry(raw: unknown): SnapshotEntry | null {
   if (typeof o.sizeBytes !== 'number' || !Number.isFinite(o.sizeBytes) || o.sizeBytes < 0) return null
   const toVersion = text(o.toVersion, 40)
   const tiers = Array.isArray(o.tiers) ? o.tiers.filter((t): t is SnapshotTier => t === 'daily' || t === 'weekly' || t === 'monthly') : []
-  return { id: o.id, reason: o.reason, createdAt, version, ...(toVersion ? { toVersion } : {}), ...(tiers.length ? { tiers } : {}), verified: o.verified, clone: o.clone === true, documents: o.documents === true, encrypted: o.encrypted === true, sizeBytes: Math.floor(o.sizeBytes) }
+  const s3: Pick<SnapshotEntry, 'documentsStorage' | 'referencedKeys' | 'bucketCheck'> = {}
+  if (o.documentsStorage === 's3') {
+    s3.documentsStorage = 's3'
+    if (typeof o.referencedKeys === 'number' && Number.isInteger(o.referencedKeys) && o.referencedKeys >= 0) s3.referencedKeys = o.referencedKeys
+    if (o.bucketCheck === 'ok' || o.bucketCheck === 'ecart' || o.bucketCheck === 'non_execute') s3.bucketCheck = o.bucketCheck
+  }
+  return { id: o.id, reason: o.reason, createdAt, version, ...(toVersion ? { toVersion } : {}), ...(tiers.length ? { tiers } : {}), verified: o.verified, clone: o.clone === true, documents: o.documents === true, encrypted: o.encrypted === true, sizeBytes: Math.floor(o.sizeBytes), ...s3 }
 }
 
 /** Index publié par le script, assaini ; schéma inconnu ou entrée invalide → écartés. Plus récent d'abord. */

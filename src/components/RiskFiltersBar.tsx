@@ -2,8 +2,9 @@
 
 import { useTranslation } from '@/lib/i18n/context'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
-import { RISK_STATUTS } from '@/lib/risk-item'
-import { activeFilterCount, type RiskFilters } from '@/lib/risk-filters'
+import { RISK_STATUTS, RISK_PROVENANCES } from '@/lib/risk-item'
+import { FAMILLES_RISQUE_TIC } from '@/lib/famille-risque-tic'
+import { activeFilterCount, FAMILLE_TIC_NON_RENSEIGNEE, type RiskFilters } from '@/lib/risk-filters'
 import FiltreEntite from '@/components/FiltreEntite'
 import type { EntiteRef } from '@/lib/entites'
 
@@ -27,7 +28,7 @@ export default function RiskFiltersBar({
   const r = t.registre
   const n = activeFilterCount(filters)
   const set = (patch: Partial<RiskFilters>) => onChange({ ...filters, ...patch })
-  const sel = 'px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
+  const sel = 'max-w-full min-w-0 truncate px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm'
 
   return (
     <div className="card p-3 mb-5">
@@ -65,6 +66,17 @@ export default function RiskFiltersBar({
           <option value="moyen">{f.levels.moyen}</option>
           <option value="faible">{f.levels.faible}</option>
           <option value="nonCote">{f.levels.nonCote}</option>
+        </select>
+
+        <select value={filters.familleTic ?? ''} onChange={e => set({ familleTic: e.target.value || null })} className={sel} aria-label={f.familleTic}>
+          <option value="">{f.allFamilies}</option>
+          {FAMILLES_RISQUE_TIC.map(c => <option key={c} value={c}>{(r.familleTic.codes as Record<string, string>)[c] ?? c}</option>)}
+          <option value={FAMILLE_TIC_NON_RENSEIGNEE}>{f.familyNone}</option>
+        </select>
+
+        <select value={filters.provenance ?? ''} onChange={e => set({ provenance: e.target.value || null })} className={sel} aria-label={f.origin}>
+          <option value="">{f.allOrigins}</option>
+          {RISK_PROVENANCES.map(p => <option key={p} value={p}>{(f.origins as Record<string, string>)[p] ?? p}</option>)}
         </select>
 
         {n > 0 && <button onClick={() => onChange({ mode: filters.mode })} className="text-xs text-gray-500 hover:text-gray-700 underline">{f.reset}</button>}

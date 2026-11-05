@@ -6,6 +6,8 @@ import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import AdminNav from '@/components/AdminNav'
+import IntegriteJournal from '@/components/IntegriteJournal'
+import RetentionJournal from '@/components/RetentionJournal'
 import { isAdminRole } from '@/lib/permissions'
 import { useTranslation } from '@/lib/i18n/context'
 
@@ -137,6 +139,8 @@ export default function AuditLogPage() {
           </p>
         </div>
       </div>
+      {/* Intégrité du journal (chaîne d'empreintes) : vérification réservée au super-administrateur. */}
+      {(session?.user as { role?: string } | undefined)?.role === 'SUPER_ADMIN' && <><IntegriteJournal /><RetentionJournal /></>}
 
       {/* Filters */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 mb-5 flex flex-wrap gap-3 items-end">

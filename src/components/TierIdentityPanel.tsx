@@ -7,6 +7,7 @@
 // proposés avec leur raison, lien posé seulement au clic, jamais automatiquement.
 
 import { Fragment, useCallback, useEffect, useState } from 'react'
+import TierUsageImportPanel from '@/components/TierUsageImportPanel'
 import { useTranslation } from '@/lib/i18n/context'
 import { certainMatches } from '@/lib/tier-identity'
 import TierDetailPanel from '@/components/TierDetailPanel'
@@ -19,7 +20,7 @@ type Niveau = { menace: number; zone: string; evalues: number } | null
 type Concentration = { usagesCritiques: number; processusCritiques: number; exposesCritiques?: number }
 // Lot T2 : évaluation des usages (pire niveau, concentration) ; détail par organisation pour une tête de groupe.
 type EvaluationTier = { pire: Niveau; concentration: Concentration; groupe?: { pire: Niveau; concentration: Concentration; parOrganisation: { organizationId: string; organisation: string; synthese: Niveau; usages: number }[] } }
-type TierRow = { id: string; nom: string; lei: string | null; pays: string | null; analysesCount: number; arrangements: { id: string; reference: string }[]; coverage: 'CYBER_ONLY' | 'TIC_ONLY' | 'CYBER_AND_TIC' | 'UNUSED'; evaluation?: EvaluationTier; exposeInternet?: boolean }
+type TierRow = { id: string; nom: string; lei: string | null; pays: string | null; analysesCount: number; arrangements: { id: string; reference: string }[]; coverage: 'CYBER_ONLY' | 'TIC_ONLY' | 'CYBER_AND_TIC' | 'UNUSED'; evaluation?: EvaluationTier; exposeInternet?: boolean; perimetrePci?: boolean }
 type Unlinked = { id: string; reference: string; prestataireNom: string; lei: string | null; candidates: Candidate[] }
 type Proposal = { arrangementId: string; reference: string; prestataireNom: string; ownerNom: string }
 type Registry = { active: boolean; canManage?: boolean; isAdmin?: boolean; orgId?: string; tiers: TierRow[]; unlinkedArrangements: Unlinked[]; proposals?: Proposal[] }
@@ -45,6 +46,7 @@ export default function TierIdentityPanel({ sansTitre = false, ouvrir }: { sansT
   const [open, setOpen] = useState<string | null>(ouvrir ?? null)
   // Filtre : tiers dont au moins un usage de l'organisation est exposé à Internet.
   const [seulsExposes, setSeulsExposes] = useState(false)
+  const [seulsPci, setSeulsPci] = useState(false)
   const [mergeFrom, setMergeFrom] = useState<string | null>(null)
   const [mergeTarget, setMergeTarget] = useState('')
   const [mergePreview, setMergePreview] = useState<MergePreview | null>(null)
@@ -179,6 +181,13 @@ export default function TierIdentityPanel({ sansTitre = false, ouvrir }: { sansT
       )}
 
       {canManage && (
+        <details className="mb-2">
+          <summary className="cursor-pointer text-sm text-gray-700 dark:text-gray-200">{t.usageImport.ouvrir}</summary>
+          <div className="mt-2"><TierUsageImportPanel onImported={() => void load()} /></div>
+        </details>
+      )}
+
+      {canManage && (
         <form className="grid gap-2 sm:grid-cols-[2fr_2fr_1fr_auto] sm:items-end" onSubmit={e => { e.preventDefault(); if (form.nom.trim()) void create({ nom: form.nom, lei: form.lei || null, ...(form.pays ? { pays: form.pays } : {}) }) }}>
           <label className="text-xs font-medium text-gray-700 dark:text-gray-200">{c.formName}
             <input aria-label={c.formName} className="input mt-1 block w-full text-sm" value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))} maxLength={200} />
@@ -200,9 +209,10 @@ export default function TierIdentityPanel({ sansTitre = false, ouvrir }: { sansT
             {/* Lot T2 : export Excel des évaluations d'usages (organisation, ou groupe pour une tête de groupe). */}
             <a href={`/api/tier-registry/export?lang=${locale}`} download className="btn-secondary mb-2 inline-block text-xs">{t.tierEval.exporter}</a>
             <label className="mb-2 ml-3 inline-flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-200"><input type="checkbox" checked={seulsExposes} onChange={e => setSeulsExposes(e.target.checked)} />{c.filtreExposes}</label>
+            <label className="mb-2 ml-3 inline-flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-200"><input type="checkbox" checked={seulsPci} onChange={e => setSeulsPci(e.target.checked)} />{c.filtrePci}</label>
             <table aria-label={c.title} className="w-full text-sm">
               <thead className="text-left text-xs text-gray-600 dark:text-gray-300"><tr><th className="px-2 py-1">{c.colName}</th><th className="px-2 py-1">{c.colLei}</th><th className="px-2 py-1">{c.colCoverage}</th><th className="px-2 py-1">{c.colArrangements}</th><th className="px-2 py-1">{c.colAnalyses}</th><th className="px-2 py-1">{t.tierEval.colNiveau}</th><th className="px-2 py-1">{t.tierEval.colConcentration}</th><th className="px-2 py-1"><span className="sr-only">{c.offersAndUsages}</span></th></tr></thead>
-              <tbody>{data.tiers.filter(tier => !seulsExposes || tier.exposeInternet).map(tier => (
+              <tbody>{data.tiers.filter(tier => (!seulsExposes || tier.exposeInternet) && (!seulsPci || tier.perimetrePci)).map(tier => (
                 <Fragment key={tier.id}>
                   <tr className="border-t border-gray-100 dark:border-gray-800">
                     <td className="px-2 py-1 font-medium text-gray-900 dark:text-gray-100">

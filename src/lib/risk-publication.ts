@@ -3,6 +3,8 @@
 // (provenance ACRA, traçabilité vers le risque source). Logique PURE : la couche
 // API gère le périmètre, l'upsert et l'idempotence (clé provenance+source).
 
+import { familleDepuisDomaine360, type FamilleRisqueTic } from './famille-risque-tic'
+
 export interface AcraRisqueSource {
   id: string
   nom: string
@@ -11,6 +13,8 @@ export interface AcraRisqueSource {
   vraisemblance: number
   graviteResiduelle: number | null
   vraisemblanceResiduelle: number | null
+  /** Domaine Projet 360 (CYBER, IT, OUTSOURCING…) ; null/absent pour les autres méthodes. */
+  domaine?: string | null
 }
 
 /** Analyse ACRA (cyber) source, en entrée de la publication vers le registre GRC canonique. */
@@ -30,6 +34,8 @@ export interface PublishedRiskItem {
   graviteResiduelle: number | null
   vraisemblanceResiduelle: number | null
   statut: string
+  /** Famille de risque TIC déduite du domaine Projet 360 (null sinon). */
+  familleRisqueTic: FamilleRisqueTic | null
   provenance: 'ACRA'
   sourceType: 'analyse'
   sourceId: string // id du risque ACRA (clé d'idempotence, unique par risque)
@@ -56,9 +62,23 @@ export function mapRisqueToRiskItem(risque: AcraRisqueSource, analyse: AcraAnaly
     graviteResiduelle: gr,
     vraisemblanceResiduelle: vr,
     statut: traite ? 'TRAITE' : 'EVALUE',
+    familleRisqueTic: familleDepuisDomaine360(risque.domaine),
     provenance: 'ACRA',
     sourceType: 'analyse',
     sourceId: risque.id,
+  }
+}
+
+/**
+ * Données rafraîchies quand un risque déjà publié est republié : libellés et cotations seulement.
+ * Le statut et la famille de risque TIC décidés dans le registre ne sont jamais touchés (la famille
+ * déduite du domaine n'est posée qu'à la création ; un null volontaire reste null).
+ */
+export function donneesRepublication(item: PublishedRiskItem) {
+  return {
+    intitule: item.intitule, description: item.description, entite: item.entite,
+    graviteInherente: item.graviteInherente, vraisemblanceInherente: item.vraisemblanceInherente,
+    graviteResiduelle: item.graviteResiduelle, vraisemblanceResiduelle: item.vraisemblanceResiduelle,
   }
 }
 

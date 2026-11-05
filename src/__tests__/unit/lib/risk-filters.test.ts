@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   matchesFilters, applyFilters, riskNiveauBucket, activeFilterCount,
-  parseFilters, filtersToQuery, distinctEntites, type FilterableRisk,
+  parseFilters, filtersToQuery, distinctEntites, FAMILLE_TIC_NON_RENSEIGNEE, type FilterableRisk,
 } from '@/lib/risk-filters'
 
 function mk(p: Partial<FilterableRisk>): FilterableRisk {
@@ -123,5 +123,56 @@ describe('filtre par entité du référentiel (consolidation des entités, table
     expect(q).toContain('entiteId=dsi'); expect(q).toContain('sousEntites=0')
     expect(parseFilters(new URLSearchParams(q))).toMatchObject({ entiteId: 'dsi', sousEntites: false })
     expect(parseFilters(new URLSearchParams('entiteId=dsi')).sousEntites).toBe(true)
+  })
+})
+
+describe('filtres famille TIC et provenance (L5)', () => {
+  const base = mk({})
+  const cyber = { ...base, familleRisqueTic: 'CYBER', provenance: 'ACRA' }
+  const sans = { ...base, familleRisqueTic: null, provenance: 'MANUEL' }
+  const absent = { ...base } // champs non fournis
+
+  it('familleTic : code exact', () => {
+    expect(matchesFilters(cyber, { familleTic: 'CYBER' })).toBe(true)
+    expect(matchesFilters(cyber, { familleTic: 'IT' })).toBe(false)
+  })
+  it('familleTic NONE : famille non renseignée (null ou absente)', () => {
+    expect(matchesFilters(sans, { familleTic: FAMILLE_TIC_NON_RENSEIGNEE })).toBe(true)
+    expect(matchesFilters(absent, { familleTic: FAMILLE_TIC_NON_RENSEIGNEE })).toBe(true)
+    expect(matchesFilters(cyber, { familleTic: FAMILLE_TIC_NON_RENSEIGNEE })).toBe(false)
+    expect(matchesFilters(sans, { familleTic: 'CYBER' })).toBe(false)
+  })
+  it('provenance : valeur exacte', () => {
+    expect(matchesFilters(cyber, { provenance: 'ACRA' })).toBe(true)
+    expect(matchesFilters(sans, { provenance: 'ACRA' })).toBe(false)
+    expect(matchesFilters(absent, { provenance: 'MANUEL' })).toBe(false)
+  })
+  it('applyFilters combine les deux critères (ET)', () => {
+    expect(applyFilters([cyber, sans], { familleTic: 'CYBER', provenance: 'ACRA' })).toEqual([cyber])
+    expect(applyFilters([cyber, sans], { familleTic: 'CYBER', provenance: 'MANUEL' })).toEqual([])
+  })
+  it('compte les filtres actifs', () => {
+    expect(activeFilterCount({ familleTic: 'IT', provenance: 'ACRA' })).toBe(2)
+  })
+  it('URL : parse et sérialise, ignore codes inconnus', () => {
+    const p = (o: Record<string, string>) => ({ get: (k: string) => o[k] ?? null })
+    expect(parseFilters(p({ familleTic: 'CYBER', provenance: 'ACRA' }))).toMatchObject({ familleTic: 'CYBER', provenance: 'ACRA' })
+    expect(parseFilters(p({ familleTic: 'NONE' })).familleTic).toBe('NONE')
+    expect(parseFilters(p({ familleTic: 'bidon', provenance: 'bidon' }))).toMatchObject({ familleTic: null, provenance: null })
+    expect(filtersToQuery({ familleTic: 'IT', provenance: 'AUDIT' })).toBe('familleTic=IT&provenance=AUDIT')
+  })
+})
+
+import { fusionnerFiltresDansParams } from '@/lib/risk-filters'
+
+describe('fusionnerFiltresDansParams', () => {
+  it('écrit les filtres et conserve les autres paramètres', () => {
+    expect(fusionnerFiltresDansParams('tab=x', { statut: 'OUVERT', niveau: 'eleve' })).toBe('tab=x&statut=OUVERT&niveau=eleve')
+  })
+  it('remplace les anciens filtres et supprime ceux effacés, sans toucher au reste', () => {
+    expect(fusionnerFiltresDansParams('tab=x&statut=A&niveau=eleve&mode=inherent&sousEntites=0&entiteId=e1', { niveau: 'faible' })).toBe('tab=x&niveau=faible')
+  })
+  it('réinitialiser ne retire que les paramètres de filtre', () => {
+    expect(fusionnerFiltresDansParams('page=2&statut=A', {})).toBe('page=2')
   })
 })

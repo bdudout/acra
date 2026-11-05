@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mapRisqueToRiskItem, mapAnalyseRisques, indexPublishedRisks, publicationFailureMessage } from '@/lib/risk-publication'
+import { mapRisqueToRiskItem, mapAnalyseRisques, indexPublishedRisks, publicationFailureMessage, donneesRepublication } from '@/lib/risk-publication'
 
 const analyse = { id: 'an1', nom: 'Analyse SI RH', organisation: 'DRH' }
 
@@ -70,5 +70,29 @@ describe('publicationFailureMessage', () => {
   it('conserve le message générique pour les autres erreurs', () => {
     expect(publicationFailureMessage(500, 'internal', messages)).toBe(messages.general)
     expect(publicationFailureMessage(409, 'other', messages)).toBe(messages.general)
+  })
+})
+
+describe('mapRisqueToRiskItem — famille de risque TIC depuis le domaine Projet 360', () => {
+  const base = { description: null, gravite: 2, vraisemblance: 2, graviteResiduelle: null, vraisemblanceResiduelle: null }
+  it('domaine CYBER/IT/OUTSOURCING → famille ; autre ou absent → null', () => {
+    expect(mapRisqueToRiskItem({ ...base, id: 'a', nom: 'A', domaine: 'OUTSOURCING' }, analyse).familleRisqueTic).toBe('TIERS_TIC')
+    expect(mapRisqueToRiskItem({ ...base, id: 'b', nom: 'B', domaine: 'CYBER' }, analyse).familleRisqueTic).toBe('CYBER')
+    expect(mapRisqueToRiskItem({ ...base, id: 'c', nom: 'C', domaine: 'FRAUD' }, analyse).familleRisqueTic).toBeNull()
+    expect(mapRisqueToRiskItem({ ...base, id: 'd', nom: 'D' }, analyse).familleRisqueTic).toBeNull()
+  })
+})
+
+describe('donneesRepublication — mise à jour d’un risque déjà publié', () => {
+  it('rafraîchit libellés et cotations, sans jamais toucher la famille TIC ni le statut', () => {
+    const item = mapRisqueToRiskItem({ id: 'z', nom: 'Z', description: 'd', gravite: 3, vraisemblance: 2, graviteResiduelle: 1, vraisemblanceResiduelle: 1, domaine: 'OUTSOURCING' }, analyse)
+    expect(item.familleRisqueTic).toBe('TIERS_TIC')
+    const data = donneesRepublication(item)
+    expect(data).toEqual({
+      intitule: 'Z', description: 'd', entite: 'DRH',
+      graviteInherente: 3, vraisemblanceInherente: 2, graviteResiduelle: 1, vraisemblanceResiduelle: 1,
+    })
+    expect('familleRisqueTic' in data).toBe(false)
+    expect('statut' in data).toBe(false)
   })
 })

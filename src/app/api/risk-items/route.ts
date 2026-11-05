@@ -14,7 +14,11 @@ import { emitWebhookEvent } from '@/lib/webhook.server'
 import { entiteIdPourTexte } from '@/lib/entites.server'
 import { lirePagination, paginer, trier } from '@/lib/pagination'
 import { lireFiltresColonnes } from '@/lib/liste-colonnes'
+import { chargerRisquesLegers } from '@/lib/risk-items-liste.server'
 import { TRIS_RISQUES, COLONNES_RISQUES, baseRisques, filtrerRisques, lireNiveau, syntheseRisques, valeurTriRisque, type RisqueLeger } from '@/lib/risk-items-liste'
+import { cleanAppetitConfig } from '@/lib/appetit'
+import { statutCreationRegistre } from '@/lib/double-validation'
+import { creerDemande } from '@/lib/double-validation.server'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,16 +46,7 @@ export const GET = withAccess({ org: 'none' }, async (req, { user }) => {
   let restreint: string[] | null = null
   if (pg) {
     // Lot V1 : requête LÉGÈRE sur tout le registre (filtres, tri, compteurs), détail de la seule page.
-    const legers: RisqueLeger[] = (await prisma.riskItem.findMany({
-      where: { organizationId: orgId },
-      orderBy: [{ createdAt: 'desc' }],
-      select: { id: true, intitule: true, taxonomieCode: true, entite: true, proprietaire: true, statut: true, graviteInherente: true, vraisemblanceInherente: true, graviteResiduelle: true, vraisemblanceResiduelle: true, processus: { select: { nom: true } } },
-    })).map(r => ({
-      id: r.id, intitule: r.intitule, taxonomieCode: r.taxonomieCode, entite: r.entite, proprietaire: r.proprietaire, statut: r.statut,
-      processusNom: r.processus?.nom ?? null,
-      niveauInherent: niveauRisque(r.graviteInherente, r.vraisemblanceInherente),
-      niveauResiduel: niveauRisque(r.graviteResiduelle, r.vraisemblanceResiduelle),
-    }))
+    const legers: RisqueLeger[] = await chargerRisquesLegers(orgId)
     const base = baseRisques(legers, lireNiveau(sp.get('niveau')))
     synthese = syntheseRisques(legers, base)
     const filtres = filtrerRisques(base, { q: pg.q, colonnes: lireFiltresColonnes(sp, COLONNES_RISQUES) })
@@ -164,9 +159,12 @@ export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'risk-items
     const p = await prisma.processus.findFirst({ where: { id: data.processusId, organizationId: orgId }, select: { id: true } })
     if (!p) return NextResponse.json({ error: 'processus_invalide' }, { status: 400 })
   }
+  // Double validation : un risque hors appétit déclaré ACCEPTE est enregistré EVALUE et l'acceptation devient une demande.
+  const dv = statutCreationRegistre(data, orgConfig.doubleValidationActive, cleanAppetitConfig(orgConfig.appetitRisque))
   // Lien au référentiel des entités si le texte saisi y est identique (consolidation des entités).
-  const risk = await prisma.riskItem.create({ data: { ...data, organizationId: orgId, provenance: 'MANUEL', entiteId: await entiteIdPourTexte(orgId, data.entite) } })
+  const risk = await prisma.riskItem.create({ data: { ...dv.item, organizationId: orgId, provenance: 'MANUEL', entiteId: await entiteIdPourTexte(orgId, data.entite) } })
+  const demande = dv.demander ? (await creerDemande({ organizationId: orgId, type: 'ACCEPTATION_RISQUE_REGISTRE', cibleId: risk.id, libelle: risk.intitule, demandeurId: userId, demandeurRole: userRole, ip: getClientIp(req) })).demande : null
   await auditLog('ORGANIZATION_CONFIG_UPDATED', { userId, userRole, ip: getClientIp(req), details: { scope: 'risk-item', action: 'create', id: risk.id, intitule: data.intitule } })
   await emitWebhookEvent(orgId, 'risk.created', { id: risk.id, intitule: risk.intitule })
-  return NextResponse.json(risk, { status: 201 })
+  return NextResponse.json(demande ? { ...risk, doubleValidation: true, demandeId: demande.id } : risk, { status: 201 })
 })

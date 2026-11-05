@@ -49,6 +49,7 @@ export interface RawOrgConfig {
   acceptationRisquesActive: boolean
   gelApresAcceptationActive: boolean
   interdireAutoApprobation: boolean
+  doubleValidationActive?: boolean
   petiteStructure?: boolean
   derogationsActive: boolean
   derogationDureeDefautJours: number
@@ -83,6 +84,8 @@ export interface RawOrgConfig {
   appetenceActive?: boolean
   rapportsGrcActive?: boolean
   ropaSousTraitantActive?: boolean
+  strategieActive?: boolean
+  strategieCadreFige?: boolean
   mcpActive?: boolean
   echelleMaturite?: unknown
   processusCartographie?: unknown
@@ -119,6 +122,8 @@ export interface OrgConfigResolved {
   acceptationRisquesActive: boolean
   gelApresAcceptationActive: boolean
   interdireAutoApprobation: boolean
+  /** Double validation (quatre yeux) : acceptation hors appétit, suppression d'un contrat TIC critique (lib/double-validation). */
+  doubleValidationActive: boolean
   /** Petite structure : cumul RSSI + gestionnaire des risques + analyste (cf. permissions.exerceRole). */
   petiteStructure: boolean
   derogationsActive: boolean
@@ -167,6 +172,10 @@ export interface OrgConfigResolved {
   rapportsGrcActive: boolean
   /** Registre du sous-traitant (RGPD art. 30 §2), quand l'organisation traite pour le compte de clients ; désactivé par défaut. */
   ropaSousTraitantActive: boolean
+  /** Stratégie cyber / IT / résilience (axes, objectifs, rattachements) ; activée par défaut. */
+  strategieActive: boolean
+  /** Cadre d'une stratégie figé après validation (défaut) ; sinon modifiable avec justification historisée. */
+  strategieCadreFige: boolean
   /** Serveur MCP autorisé pour cette organisation (défaut : non). */
   mcpActive: boolean
   /** Personnalisation de l'échelle CMMI (0–5) ; [] ⇒ libellés par défaut (i18n). Cf. lib/maturity. */
@@ -207,6 +216,7 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   acceptationRisquesActive: false,
   gelApresAcceptationActive: true,
   interdireAutoApprobation: true,
+  doubleValidationActive: false,
   petiteStructure: false,
   derogationsActive: false,
   derogationDureeDefautJours: 180,
@@ -239,6 +249,8 @@ export const DEFAULT_ORG_CONFIG: OrgConfigResolved = {
   appetenceActive: false,
   rapportsGrcActive: false,
   ropaSousTraitantActive: false,
+  strategieActive: true,
+  strategieCadreFige: true,
   mcpActive: false,
   echelleMaturite: [],
   processusCartographie: {},
@@ -262,7 +274,7 @@ function isEmptyJson(v: unknown): boolean {
 }
 
 type JsonKey = 'secteursMasques' | 'entitesMesures' | 'typesImpacts' | 'referentielsActifs' | 'referentielsDesactives' | 'qualificationQuestionnaire' | 'strategiesTraitement' | 'exemplesAteliers' | 'echellesEcosysteme' | 'taxonomieRisques' | 'appetitRisque' | 'actionDelaisMois' | 'echelleMaturite' | 'processusCartographie' | 'incidentsConfig' | 'vocabulaire' | 'champsPersonnalises' | 'auditConfig' | 'rapportsConfig' | 'planificationConfig' | 'relancesConfig' | 'patternsArchiMasques' | 'risquesProjetDefaut'
-export const BOOL_KEYS = ['mcpActive', 'qualificationActive', 'qualificationObligatoire', 'conformiteActive', 'conseilsAteliersActive', 'acceptationRisquesActive', 'gelApresAcceptationActive', 'interdireAutoApprobation', 'petiteStructure', 'derogationsActive', 'derogationDoubleRegard', 'derogationSortCatalogue', 'registreRisquesActive', 'incidentsActive', 'controlePermanentActive', 'auditInterneActive', 'kriActive', 'reglementaireActive', 'secondeLigneActive', 'auditeurHorsDefinition', 'profilsOperationnelsActive', 'projets360Active', 'homologationsActive', 'recertificationActive', 'registreIaActive', 'campagnesRcsaActive', 'appetenceActive', 'rapportsGrcActive', 'ropaSousTraitantActive', 'projetSuppressionValidation'] as const
+export const BOOL_KEYS = ['mcpActive', 'qualificationActive', 'qualificationObligatoire', 'conformiteActive', 'conseilsAteliersActive', 'acceptationRisquesActive', 'gelApresAcceptationActive', 'interdireAutoApprobation', 'doubleValidationActive', 'petiteStructure', 'derogationsActive', 'derogationDoubleRegard', 'derogationSortCatalogue', 'registreRisquesActive', 'incidentsActive', 'controlePermanentActive', 'auditInterneActive', 'kriActive', 'reglementaireActive', 'secondeLigneActive', 'auditeurHorsDefinition', 'profilsOperationnelsActive', 'projets360Active', 'homologationsActive', 'recertificationActive', 'registreIaActive', 'campagnesRcsaActive', 'appetenceActive', 'rapportsGrcActive', 'ropaSousTraitantActive', 'strategieActive', 'strategieCadreFige', 'projetSuppressionValidation'] as const
 type BoolKey = (typeof BOOL_KEYS)[number]
 export const STR_KEYS = ['conformiteNiveau', 'conformiteSnapshotMode', 'conformiteSnapshotPeriode', 'derogationWorkflow'] as const
 type StrKey = (typeof STR_KEYS)[number]
@@ -319,6 +331,7 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     acceptationRisquesActive: pickBool('acceptationRisquesActive', defaults.acceptationRisquesActive),
     gelApresAcceptationActive: pickBool('gelApresAcceptationActive', defaults.gelApresAcceptationActive),
     interdireAutoApprobation: pickBool('interdireAutoApprobation', defaults.interdireAutoApprobation),
+    doubleValidationActive: pickBool('doubleValidationActive', defaults.doubleValidationActive),
     petiteStructure: pickBool('petiteStructure', defaults.petiteStructure),
     derogationsActive: pickBool('derogationsActive', defaults.derogationsActive),
     derogationDureeDefautJours: pickInt('derogationDureeDefautJours', defaults.derogationDureeDefautJours),
@@ -351,6 +364,8 @@ export function resolveOrgConfig(chainSelfFirst: (RawOrgConfig | null)[], defaul
     appetenceActive: pickBool('appetenceActive', defaults.appetenceActive),
     rapportsGrcActive: pickBool('rapportsGrcActive', defaults.rapportsGrcActive),
     ropaSousTraitantActive: pickBool('ropaSousTraitantActive', defaults.ropaSousTraitantActive),
+    strategieActive: pickBool('strategieActive', defaults.strategieActive),
+    strategieCadreFige: pickBool('strategieCadreFige', defaults.strategieCadreFige),
     mcpActive: pickBool('mcpActive', defaults.mcpActive),
     echelleMaturite: pickJson('echelleMaturite', defaults.echelleMaturite),
     processusCartographie: pickJson('processusCartographie', defaults.processusCartographie),

@@ -1,6 +1,6 @@
 ---
 name: acra-scenarios
-description: Test quotidien d'ACRA par scénarios d'usage réels — tire chaque jour une combinaison profil × organisation × cas d'usage, la joue sur l'app locale (navigateur + API), et alimente une liste d'améliorations classée par priorité et intérêt, avec un filtre « ne pas alourdir ». Ajuste le volume de tests au budget de tokens hebdomadaire restant. À utiliser pour « test quotidien ACRA », « jouer des scénarios ACRA », « tester ACRA comme un utilisateur », ou depuis la tâche planifiée de 7 h.
+description: Test quotidien d'ACRA par scénarios d'usage réels — tire chaque jour une combinaison profil × organisation × cas d'usage, la fait jouer sur l'app locale par une lentille tournante (/acra-qa, /acra-ux, /acra-test), gère l'environnement (Docker limité à la base, 2 Go, arrêt propre en fin de run) et alimente une liste d'améliorations classée par priorité et intérêt, avec un filtre « ne pas alourdir ». Ajuste le volume de tests au budget de tokens hebdomadaire restant. À utiliser pour « test quotidien ACRA », « jouer des scénarios ACRA », « tester ACRA comme un utilisateur », ou depuis la tâche planifiée de 7 h.
 ---
 
 # ACRA — Scénarios d'usage quotidiens
@@ -9,6 +9,10 @@ Tu joues ACRA **comme un vrai utilisateur** : un profil donné, dans une organis
 donnée, qui veut accomplir une tâche donnée. Tu observes ce qui marche, ce qui bloque,
 ce qui est superflu — et tu en tires des améliorations **qui gardent l'application
 souple et facile à utiliser**.
+
+Cette skill est le **chef d'orchestre** du run : budget, tirage des scénarios, environnement,
+journal et liste d'améliorations. Le **contenu du test** est confié chaque jour à une
+**lentille** différente (étape 2 bis) : 🧪 `/acra-qa`, 🎨 `/acra-ux` ou `/acra-test`.
 
 Ce n'est PAS une campagne de développement : tu **ne modifies pas le code**, tu ne
 commites rien, tu ne pousses rien. (Le développement passe par la skill `acra-engineering`.)
@@ -38,6 +42,7 @@ commites rien, tu ne pousses rien. (Le développement passe par la skill `acra-e
 | Journal + couverture des scénarios joués | `.acra-test-memory/scenarios-joues.md` | non (gitignoré) |
 | **Liste des améliorations proposées** (classée) | `.acra-test-memory/ameliorations-proposees.md` | non (gitignoré) |
 | Comptes de test par rôle | `.acra-test-memory/recette-roles.json` (et `recette-claude.json`) | non |
+| Boîte aux lettres de 🛠️ ACRA Dev (transmission des pistes) | `.acra-messages/acra-dev.md` | non (gitignoré) |
 | Ancien backlog volumineux (lecture seule, référence) | `.acra-test-memory/improvements-priority.md` | non |
 
 Ne jamais recopier les mots de passe des comptes de test dans un rapport ou dans le chat.
@@ -86,7 +91,41 @@ Utilise `references/catalogue-scenarios.md`. Pour chaque scénario, combine
 (« En tant que DPO d'une clinique de 80 personnes, je veux préparer le registre RGPD
 avant le contrôle CNIL ») et un **critère de réussite observable**.
 
+## Étape 2 bis — Lentille du jour (rotation)
+
+Lire la ligne `lentille :` de la dernière entrée du journal et prendre la suivante :
+**qa → ux → test → qa…** (journal vide : `qa`).
+
+| Lentille | Skill invoquée (outil Skill) | Ce qu'elle apporte | Consigne à lui passer en `args` |
+|---|---|---|---|
+| **qa** | `acra-qa` | non-régression sur les commits récents, droits, isolation entre organisations, cas limites | « mode A sur les commits des 7 derniers jours qui touchent l'UI ou les droits, puis les scénarios tirés ; ne PAS invoquer `acra-scenarios` (déjà en cours) » |
+| **ux** | `acra-ux` | facilité d'utilisation : clics, champs, jargon, accessibilité, simplifications | « parcours = les scénarios tirés ; écrire les propositions directement dans `ameliorations-proposees.md` ; pas de message à 🛠️ ni de rapport .docx » |
+| **test** | `acra-test` | mission suivante de sa rotation M1–M5 (backlog, vérification exécutée, sécurité, profil × secteur, reporting décideur) | « mission suivante de ta rotation ; si M4 ou M5, utiliser le profil et l'organisation tirés ; reporter aussi les constats dans `ameliorations-proposees.md` » |
+
+Règles communes passées à chaque lentille (à recopier dans `args`) : environnement **déjà
+prêt** (URL, comptes) — ne pas relancer ni arrêter Docker ou le serveur ; ne modifier aucun
+code, ne rien commiter ; principes immuables ci-dessus ; garde de durée (heure de début du
+run) ; en mode réduit, un seul parcours ; **ne pas écrire soi-même à 🛠️ `acra-dev`** (c'est
+l'étape 5 bis qui transmet, une seule fois, pour éviter les doublons).
+
+- Mode **relance** : alterner les lentilles **par scénario** (scénario 1 = lentille du jour,
+  scénario 2 = la suivante, etc.).
+- Les sous-agents lancés par `acra-qa` / `acra-ux` (🔬 `acra-verificateur`…) jouent les
+  parcours **en série** sur la même instance (jamais deux navigateurs en parallèle).
+- Si la skill de la lentille est introuvable ou échoue au démarrage : jouer les scénarios
+  soi-même (étape 4) et le noter dans le journal.
+- Noter dans l'entrée du journal : `lentille : qa|ux|test` (+ mission M1–M5 pour `test`).
+
 ## Étape 3 — Préparer l'environnement (automatique, une fois)
+
+**Ressources (Mac M1 de 8 Go, cf. `docs/HANDOFF.md` entrée 117).** Seule la base tourne
+dans Docker (`ebios_db`) ; Docker Desktop est réglé à 2 Go de RAM / 4 CPU, Resource Saver
+activé, Docker AI désactivé. Pendant les tests : jamais de `docker compose up` complet, de
+`docker build` ni de `npm run build` en parallèle d'un parcours navigateur ; un seul serveur
+de dev. Ne **jamais** réduire le disque virtuel ni faire « Reset » dans Docker Desktop
+(efface la base). Ne pas modifier soi-même les réglages de Docker Desktop : un écart est
+signalé dans le rapport.
+
 
 1. Lancer **`.claude/skills/acra-scenarios/scripts/preparer-env.sh`** (Bash, délai
    max 10 min). Il fait tout, sans intervention et de façon idempotente : démarre
@@ -97,6 +136,11 @@ avant le contrôle CNIL ») et un **critère de réussite observable**.
    `recette-roles.json`, comptes actifs) **plus `recette-superadmin@acra.test`**
    (SUPER_ADMIN, même mot de passe). Il imprime des lignes `ETAT …` puis
    `PRET url=…` ou `ECHEC etape=…`. Ne jamais afficher le mot de passe.
+   Il vérifie aussi la place disque (≥ 3 Go libres), arrête le greffon `docker-ai` s'il
+   réapparaît, contrôle que la VM Docker ne dépasse pas 2 Go (`memoire=…Mo`) et **note ce
+   qu'il a démarré lui-même** (Docker, base, serveur) pour que `arreter-env.sh` le referme.
+   - `ECHEC etape=espace` → ne pas démarrer Docker ; variante B, signalée en tête du rapport.
+   - `ALERTE_au_dela_de_2Go` → continuer, mais le signaler en tête du rapport.
    - `ECHEC etape=docker|db` → variante B (API/code) et le signaler en tête du rapport.
    - `ECHEC etape=serveur` → lire `$TMPDIR/acra-recette/dev-3005.log` (journaux hors du dépôt : un fichier écrit dans le projet relance la compilation en boucle), une seule
      nouvelle tentative, sinon variante B.
@@ -117,6 +161,9 @@ avant le contrôle CNIL ») et un **critère de réussite observable**.
    Si le rôle manque dans l'org bac à sable, l'y rattacher en local via l'ADMIN.
 
 ## Étape 4 — Jouer chaque scénario
+
+La lentille du jour (étape 2 bis) joue les scénarios avec sa propre méthode ; les règles
+ci-dessous s'appliquent à elle comme au repli « joué soi-même ».
 
 **Variante A (préférée) — navigateur** (outils `mcp__Claude_Browser__*`, onglet du preview) :
 - Partir de la page d'accueil après connexion, **sans URL directe** : le profil
@@ -177,10 +224,39 @@ Règles :
 - **Effort** : S (< ½ j) · M (1–3 j) · L (> 3 j) — à estimer en lisant le code concerné.
 - Avant d'ajouter : chercher un doublon (même cause) → incrémenter `Occur.`, ajouter le
   nouveau scénario au constat, réévaluer l'Intérêt.
-- Statuts : `nouvelle` · `confirmée` (≥ 2 occurrences) · `à revérifier` (code changé) ·
-  `corrigée` (revérifiée OK → déplacer dans « Corrigées »).
+- Statuts : `nouvelle` · `confirmée` (≥ 2 occurrences) · `transmise à 🛠️ (AAAA-MM-JJ)` ·
+  `à revérifier` (code changé) · `corrigée` (revérifiée OK → déplacer dans « Corrigées »).
 - Si un commit récent semble traiter une proposition, la passer `à revérifier`.
 - Recalculer le score et **re-trier** à chaque run.
+
+## Étape 5 bis — Transmettre les pistes à 🛠️ ACRA Dev
+
+Autorisé par l'utilisateur le 2026-11-03 : les pistes d'amélioration identifiées sont
+**transmises à 🛠️ `acra-dev`** sans attendre de validation au cas par cas.
+
+- **Canal** : ajouter en fin de `.acra-messages/acra-dev.md` (créer le fichier s'il manque ;
+  ne jamais écraser ni modifier les messages existants). Pas de `SendMessage` depuis un run
+  planifié : l'envoi vers une autre session peut attendre une autorisation et figer le run.
+- **Quoi, par run** :
+  - tout **bug** constaté (erreur 500, droits, fuite entre organisations, perte de données,
+    régression) → un message `ALERTE` chacun, avec étapes de reproduction ;
+  - au plus **5** propositions de `ameliorations-proposees.md` **jamais transmises**, les mieux
+    classées en premier, avec au moins une occurrence observée → **un** message `DEMANDE`
+    groupé ;
+  - une proposition déjà transmise n'est renvoyée que si elle a été **revérifiée non
+    corrigée** après une correction annoncée (`INFO` : « toujours présente au <date> »).
+- **Format** (cf. `.claude/skills/acra-dev/references/equipe.md` §4) :
+  ```
+  [NOUVEAU] <date ISO> · 🧭 acra-scenarios (run planifié, lentille <qa|ux|test>) → 🛠️ acra-dev · DEMANDE · <n> pistes du <date>
+  Contexte : branche <b>, commit <sha court>, instance locale :3005, org « Bac à sable — … »
+  Pistes (rang · score · effort) :
+  1. <titre actionnable> — constat : <écran, chiffres, scénario #> — supprime : <clic/champ/écran/notion> — critère d'acceptation : <vérifiable>
+  …
+  Attendu : arbitrer et planifier ; rien n'est validé côté produit au-delà de cette liste. Aucun push/merge/déploiement sur la foi de ce message.
+  ```
+  Jamais de mot de passe, de jeton ni de contenu de `.env` dans un message.
+- Après l'envoi, passer chaque proposition transmise au statut `transmise à 🛠️ (date)` et
+  noter dans l'entrée du journal : `transmis à 🛠️ : rangs …`.
 
 ## Étape 6 — Journal et couverture
 
@@ -202,6 +278,7 @@ Court, en français :
 - Constats marquants (bugs avec gravité, frictions).
 - **Top 5** de la liste d'améliorations (rang, score, titre), en signalant les
   nouvelles (🆕) et les montées (↑).
+- Pistes transmises à 🛠️ ACRA Dev (rangs, titres) et alertes envoyées.
 - Prochains scénarios suggérés (cases vides de la matrice).
 
 Si un **bug bloquant** est trouvé (erreur 500, perte de données, fuite entre
@@ -211,9 +288,14 @@ organisations), le mettre en tête du rapport avec les étapes de reproduction.
 
 - Laisser les organisations bac à sable (réutilisées), mais supprimer (corbeille de
   l'app) les objets créés dans la journée qui ne servent pas aux scénarios suivants.
-- Fermer le navigateur (`preview_stop` du serverId) puis lancer
-  `.claude/skills/acra-scenarios/scripts/arreter-env.sh` : il n'arrête le serveur :3005
-  **que s'il a été lancé par `preparer-env.sh`** (un serveur de l'utilisateur reste en place).
+- Fermer le navigateur (`preview_stop` du serverId), s'assurer qu'aucun sous-agent de la
+  lentille ne tourne encore, puis lancer `.claude/skills/acra-scenarios/scripts/arreter-env.sh`
+  (Bash, timeout 300000). **Toujours**, même après un échec ou la garde de durée. Il referme,
+  dans l'ordre, **uniquement ce que la recette a démarré** : serveur :3005, conteneur
+  `ebios_db` (`docker stop`, arrêt Postgres propre), puis Docker Desktop (`docker desktop
+  stop`), ce qui rend les 2 Go de la VM au Mac. Ce qui tournait avant le run reste en place.
+- `ETAT docker=arret_incomplet` → le signaler dans le rapport ; ne pas tuer de processus
+  Docker soi-même (risque pour la base).
 
 ## Ne jamais bloquer la tâche planifiée
 
@@ -223,15 +305,21 @@ de l'outil Bash), aucune attente d'une réponse de l'utilisateur, pas de command
 en arrière-plan laissée en suspens en fin de run, et **toujours** terminer par le
 rapport de l'étape 7 — même partiel (« run interrompu à l'étape N : raison »).
 
-**Garde de durée (2 h max).** Au tout début du run, noter l'heure :
-`date +%s > "${TMPDIR:-/tmp}/acra-recette/debut-run"`. Avant chaque scénario et avant
-chaque étape longue, calculer le temps écoulé
-(`echo $(( ($(date +%s) - $(cat "${TMPDIR:-/tmp}/acra-recette/debut-run")) / 60 ))` min) :
+**Garde de durée (2 h max).** Au tout début du run :
+`.claude/skills/acra-scenarios/scripts/garde-duree.sh debut`. Avant chaque scénario et
+avant chaque étape longue : `.claude/skills/acra-scenarios/scripts/garde-duree.sh verif`
+(rend `ECOULE=<min> DECISION=continuer|finir|arreter`) :
 - **≥ 90 min** : ne pas commencer de nouveau scénario ; finir le scénario en cours au
   plus court.
 - **≥ 110 min** : arrêter tout, écrire le journal et la liste d'améliorations avec ce
   qui est acquis, nettoyer (étape 8), puis le rapport (« run écourté par la garde de
   durée à l'étape N »).
+- **Commandes autorisées à l'avance** (`.claude/settings.local.json`) : les trois scripts de
+  la skill, `git` en lecture, `npx vitest run`, `npx tsc --noEmit`, `npm test`, `npm run
+  i18n:check`, `curl` vers localhost:3005, `docker ps`/`inspect`, la lecture du quota, le
+  navigateur intégré, l'écriture dans `.acra-test-memory/` et `.acra-messages/`. Préférer
+  ces formes exactes (une commande par appel, chemins relatifs à `ebios-rm/`, sans `cd … &&`
+  ni redirection) : une autre forme peut déclencher une demande d'autorisation et figer le run.
 - Chaque appel Bash porte un `timeout` explicite (≤ 600000) ; une commande qui
   peut attendre un service (docker, prisma, curl, node) est bornée (`--max-time`
   pour curl, fonction `borne` de `preparer-env.sh` sinon). Un outil du navigateur qui

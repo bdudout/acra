@@ -6,7 +6,8 @@ import { buildTierEvaluationWorkbook, type LigneExportTiers } from '@/lib/tier-e
 
 const lignes: LigneExportTiers[] = [
   { tiers: '=HYPERLINK("http://x")', offre: 'IaaS', organisation: 'Filiale Nord', usage: 'Hébergement de la paie', processus: 'Paie', criticite: 'CRITIQUE', statut: 'VALIDEE',
-    actuelle: { menace: 3, zone: 'danger' }, cible: { menace: 8 / 9, zone: 'veille' }, prochaine: '2027-10-10', clauses: ['securite', 'reversibilite'] },
+    actuelle: { menace: 3, zone: 'danger' }, cible: { menace: 8 / 9, zone: 'veille' }, prochaine: '2027-10-10', clauses: ['securite', 'reversibilite'],
+    exposeInternet: true, perimetrePci: true, avecSi: true, interconnexion: 'LIGNE_SPECIALISEE', pointsAcces: ['https://paie.example', 'sftp.paie.example'] },
   { tiers: 'Éditeur', offre: 'SaaS RH', organisation: 'Filiale Nord', usage: 'Paie', processus: null, criticite: null, statut: null, actuelle: null, cible: null, prochaine: null, clauses: [] },
 ]
 const load = async (buf: Buffer) => { const wb = new ExcelJS.Workbook(); await wb.xlsx.load(buf as unknown as ArrayBuffer); return wb }
@@ -26,5 +27,10 @@ describe('buildTierEvaluationWorkbook', () => {
     const ws = (await load(await buildTierEvaluationWorkbook(lignes, 'en'))).worksheets[0]
     expect(ws.name).toBe('Third-party assessment')
     expect((ws.getRow(2).values as unknown[]).map(String)).toEqual(expect.arrayContaining(['Approved', 'Danger', 'Security clauses ; Reversibility annex']))
+  })
+  it('axes de qualification : exposition, PCI, SI, interconnexion (vide si non renseigné)', async () => {
+    const ws = (await load(await buildTierEvaluationWorkbook(lignes, 'fr'))).worksheets[0]
+    expect((ws.getRow(1).values as unknown[]).map(String)).toEqual(expect.arrayContaining(['Exposition (Internet / intranet)', 'Périmètre PCI', 'Raccordement au SI', 'Interconnexion', 'Points d’accès']))
+    expect((ws.getRow(2).values as unknown[]).map(String)).toEqual(expect.arrayContaining(['Exposé sur Internet', 'PCI', 'Avec SI', 'Ligne spécialisée (LS)', 'https://paie.example ; sftp.paie.example']))
   })
 })

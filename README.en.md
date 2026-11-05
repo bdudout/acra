@@ -375,9 +375,13 @@ The script fills in automatically:
 | `NEXTAUTH_SECRET` | JWT session signing | ✅ random (48 B) |
 | `POSTGRES_PASSWORD` | PostgreSQL password | ✅ random (32 chars) |
 | `SECRETS_ENCRYPTION_KEY` | AES-256-GCM encryption of secrets in DB (OIDC, SMS, SMTP) | ✅ random (48 B) |
+| `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | Next.js Server Functions key, read when the image is built: stable from one build to the next (precaution on a single instance, mandatory for multi-instance) | ✅ base64 of 32 bytes, **never regenerated** (even with `--force`) |
+| `AUDIT_CHAIN_KEY` | Audit-log chaining key (HMAC-SHA256): keep it in a vault and back it up with the secrets; **never change it** (entries already sealed would become unverifiable). Missing in production: warning at startup | ✅ base64 of 32 bytes, **never regenerated** (even with `--force`) |
 | `DATABASE_URL` | Prisma connection | ✅ derived from PostgreSQL variables |
 | `POSTGRES_USER` / `POSTGRES_DB` | Database identity | `acra_user` / `acra_rm` |
 | `NEXTAUTH_URL` | Public URL | asked (default `http://localhost:3000`) |
+
+> **Multi-instance (high availability)**: `./scripts/setup.sh --profil ha` (or `--profil ha --auto` with the parameters in the environment) generates the Server Functions key and the Redis password, asks for the external database, S3 storage and Redis, **validates before writing** the `.env` (mode `600`), then checks with `docker compose … config`. Full procedure (French): [docs/deploiement-haute-disponibilite.md § 6](docs/deploiement-haute-disponibilite.md#6-procédure-de-déploiement).
 
 > **Manual configuration** (alternative): `cp .env.example .env` then replace all
 > `CHANGEZ_MOI` values. Generate a secret with `openssl rand -base64 48`.

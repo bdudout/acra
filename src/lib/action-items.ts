@@ -20,6 +20,7 @@ import {
 } from './risk-action'
 import { peutGererConformite, peutLireConformite, type UserRole } from './permissions'
 import { sansRubriquesVides } from './incident-gabarit'
+import { FAMILLES_RISQUE_TIC, cleanFamilleRisqueTic, type FamilleRisqueTic } from './famille-risque-tic'
 
 export const ACTION_SOURCES = ['MESURE', 'RISK_ACTION', 'CONFORMITE', 'AUDIT', 'CONTROLE', 'INCIDENT', 'PLAN_ACTION'] as const
 /** Source technique d'un plan d'action (modèle Prisma d'origine). */
@@ -50,6 +51,66 @@ export interface ActionItem {
   lien: string | null // lien profond vers la fiche source
   riskItemId: string | null // rattachement éventuel au registre canonique
   lecture?: boolean // le rôle ne peut que consulter la source (« Voir » au lieu de « Modifier »)
+  // Lot S2 (facultatifs, posés par gatherActionItems) : famille TIC du risque du registre lié, catégorie dérivée, axes.
+  familleRisqueTic?: FamilleRisqueTic | null
+  categorie?: ActionCategorie
+  axes?: AxeRattache[]
+}
+
+// ─── Catégorie automatique (lot S2) ──────────────────────────────────────────
+// Catégorie d'un plan d'action, jamais saisie : la famille de risque TIC du risque du registre lié prime (IT, CYBER,
+// CONTINUITE_METIER_TIC, CONTINUITE_IT, TIERS_TIC) ; à défaut, elle se déduit de l'origine métier :
+//   risque (non qualifié TIC) → RISQUE ; conformité → CONFORMITE ; audit et régulateur → AUDIT ;
+//   contrôle et préconisation (2e ligne, même dispositif que les contrôles) → CONTROLE ; incident → INCIDENT ;
+//   test de résilience (DORA, art. 24 à 26 : tests des outils et systèmes de TIC) → CONTINUITE_IT ;
+//   orpheline → NON_CATEGORISEE.
+export const ACTION_CATEGORIES = [...FAMILLES_RISQUE_TIC, 'RISQUE', 'CONFORMITE', 'AUDIT', 'CONTROLE', 'INCIDENT', 'NON_CATEGORISEE'] as const
+/** Catégorie d'un plan d'action (famille de risque TIC, sinon catégorie d'origine). */
+export type ActionCategorie = (typeof ACTION_CATEGORIES)[number]
+
+const CATEGORIE_PAR_ORIGINE: Record<ActionOrigine, ActionCategorie> = {
+  risque: 'RISQUE', conformite: 'CONFORMITE', audit: 'AUDIT', regulateur: 'AUDIT', controle: 'CONTROLE',
+  preconisation: 'CONTROLE', incident: 'INCIDENT', resilience: 'CONTINUITE_IT', orpheline: 'NON_CATEGORISEE',
+}
+
+/** Catégorie automatique : famille TIC du risque lié si connue, sinon catégorie déduite de l'origine. */
+export function categorieAction(item: { origine: ActionOrigine; familleRisqueTic?: string | null }): ActionCategorie {
+  return cleanFamilleRisqueTic(item.familleRisqueTic) ?? CATEGORIE_PAR_ORIGINE[item.origine] ?? 'NON_CATEGORISEE'
+}
+
+/** Axe stratégique auquel un plan d'action est rattaché (stratégie non archivée). */
+export interface AxeRattache { strategieId: string; strategieTitre: string; axeId: string; axeTitre: string }
+/** Valeur de la facette « Axe stratégique » pour les actions sans rattachement. */
+export const AXE_NON_RATTACHE = 'aucun'
+
+/** Rattachement tel que chargé (RattachementStrategique + axe + stratégie). */
+export interface RattachementRow {
+  sourceType: string; sourceId: string
+  axe: { id: string; titre: string; strategie: { id: string; titre: string } }
+}
+/** Index des axes par clé d'item (`${sourceType}:${sourceId}`, identique à ActionItem.id). */
+export function indexerAxes(rows: RattachementRow[]): Map<string, AxeRattache[]> {
+  const idx = new Map<string, AxeRattache[]>()
+  for (const r of rows) {
+    const cle = `${r.sourceType}:${r.sourceId}`
+    const liste = idx.get(cle) ?? []
+    if (!liste.some(a => a.axeId === r.axe.id)) {
+      liste.push({ strategieId: r.axe.strategie.id, strategieTitre: r.axe.strategie.titre, axeId: r.axe.id, axeTitre: r.axe.titre })
+    }
+    idx.set(cle, liste)
+  }
+  return idx
+}
+
+/** Sources dont `riskItemId` désigne un risque du REGISTRE (RiskItem) ; PLAN_ACTION y porte un risque d'analyse. */
+export const SOURCES_RISQUE_REGISTRE: readonly ActionSource[] = ['RISK_ACTION', 'AUDIT', 'INCIDENT']
+
+/** Pose famille TIC (via le risque du registre lié), catégorie et axes sur chaque item. */
+export function enrichirActions(items: ActionItem[], familles: Map<string, string | null>, axes: Map<string, AxeRattache[]>): ActionItem[] {
+  return items.map(it => {
+    const famille = it.riskItemId && SOURCES_RISQUE_REGISTRE.includes(it.source) ? cleanFamilleRisqueTic(familles.get(it.riskItemId)) : null
+    return { ...it, familleRisqueTic: famille, categorie: categorieAction({ origine: it.origine, familleRisqueTic: famille }), axes: axes.get(it.id) ?? [] }
+  })
 }
 
 // ─── Lien selon le rôle (recette n° 22) ───
@@ -311,6 +372,8 @@ export interface ActionItemFiltre {
   porteur?: string
   echeanceBucket?: EcheanceBucket
   q?: string
+  categorie?: ActionCategorie // lot S2
+  axe?: string // identifiant d'axe, ou AXE_NON_RATTACHE
 }
 
 /** Fenêtre d'échéance d'un item (retard dérivé de l'échéance vs statut effectif). */
@@ -337,6 +400,11 @@ export function filterActionItems(items: ActionItem[], f: ActionItemFiltre, now:
     if (f.priorite && it.priorite !== f.priorite) return false
     if (f.statut && effectiveStatut(it, now) !== f.statut) return false
     if (f.echeanceBucket && !matchEcheanceBucket(it, f.echeanceBucket, now)) return false
+    if (f.categorie && (it.categorie ?? categorieAction(it)) !== f.categorie) return false
+    if (f.axe) {
+      const axes = it.axes ?? []
+      if (f.axe === AXE_NON_RATTACHE ? axes.length > 0 : !axes.some(a => a.axeId === f.axe)) return false
+    }
     if (porteur && !((it.porteur ?? '').toLowerCase().includes(porteur) || (it.entite ?? '').toLowerCase().includes(porteur))) return false
     if (q && !(it.titre.toLowerCase().includes(q) || (it.description ?? '').toLowerCase().includes(q))) return false
     return true

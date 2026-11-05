@@ -12,6 +12,8 @@ import { buildContextTools } from './tools-context.server'
 import { buildProposeTools } from './tools-propose.server'
 import { recommendRisksScenariosTool, recommendControlPlanTool } from './tools-recommend.server'
 import { buildKnowledgeTools } from './tools-knowledge.server'
+import { buildDomaineTools } from './tools-domaines.server'
+import { buildStrategieTools } from './tools-strategie.server'
 
 /** Contexte serveur injecté aux outils : périmètre organisationnel + clé d'API émettrice. */
 export interface McpContext { organizationId: string; keyId: string }
@@ -79,10 +81,10 @@ export const readReferentielsTool: McpTool<McpContext> = {
 /**
  * Registre des outils MCP exposés. Phase 1 : `read_referentiels`. Phase 2
  * (contexte) : `read_taxonomie`, `read_sector_examples`, `read_risk_posture`
- * (cf. `tools-context.server.ts`).
+ * (cf. `tools-context.server.ts`). Lot S5a : lectures des domaines GRC (`tools-domaines.server.ts`).
  */
 export function buildMcpTools(): McpTool<McpContext>[] {
-  return [readReferentielsTool, ...buildContextTools(), ...buildProjetTools(), recommendRisksScenariosTool, recommendControlPlanTool, ...buildKnowledgeTools(), ...buildProposeTools()].map(annoter)
+  return [readReferentielsTool, ...buildContextTools(), ...buildProjetTools(), ...buildDomaineTools(), ...buildStrategieTools(), recommendRisksScenariosTool, recommendControlPlanTool, ...buildKnowledgeTools(), ...buildProposeTools()].map(annoter)
 }
 
 /** Titres lisibles affichés par les clients MCP (Claude, Codex, Mistral Vibe…). */
@@ -92,6 +94,10 @@ const TITRES: Record<string, string> = {
   read_notification_regimes: 'Régimes de déclaration', read_incident_types: 'Incidents types', read_dora_fields: 'Champs de déclaration DORA',
   read_catalogue: 'Catalogue sectoriel', read_resilience_tests: 'Tests de résilience', propose_risk: 'Proposer un risque', propose_measure: 'Proposer une mesure',
   propose_plan_action: 'Proposer un plan d’action', propose_conformite: 'Proposer une évaluation de conformité',
+  read_plans_actions: 'Plans d’action', read_risk_register: 'Registre des risques', read_conformite: 'Conformité et écarts',
+  read_controles: 'Contrôle permanent', read_audits: 'Missions et constats d’audit', read_incidents: 'Registre des incidents',
+  read_tic_register: 'Registre d’informations TIC (DORA)', read_resilience: 'Résilience opérationnelle',
+  read_strategies: 'Stratégies cyber / IT / résilience', read_strategie: 'Cadre d’une stratégie',
   analyse_import_preview: 'Aperçu d’import d’analyse', propose_analysis_import: 'Proposer l’import d’une analyse',
 }
 

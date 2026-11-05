@@ -5,7 +5,7 @@ import { getOrgConfig } from '@/lib/org-config.server'
 import { auditLog, getClientIp } from '@/lib/logger'
 import { peutGererRegistreTic } from '@/lib/permissions'
 import { withAccess } from '@/lib/with-access.server'
-import { cleanUsageCriticality, cleanExpositionInternet } from '@/lib/tier-offers'
+import { cleanUsageCriticality, cleanExpositionInternet, lireQualificationUsage } from '@/lib/tier-offers'
 import { validateServiceUsage } from '@/lib/tier-contract-coverage'
 
 export const dynamic = 'force-dynamic'
@@ -28,7 +28,8 @@ export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'tier-service
 
   const crit = cleanUsageCriticality(body.criticite)
   const expo = cleanExpositionInternet(body.exposeInternet)
-  if (!crit.ok || !expo.ok) return NextResponse.json({ error: 'invalid_usage_input' }, { status: 400 })
+  const qualif = lireQualificationUsage(body)
+  if (!crit.ok || !expo.ok || !qualif.ok) return NextResponse.json({ error: 'invalid_usage_input' }, { status: 400 })
 
   const role = await getEffectiveRoleForOrg(userId, instanceRole, organizationId)
   // Recette n° 13 : les gestionnaires du registre TIC (RSSI, gestionnaire des risques, conformité, DPO, ADMIN) déclarent
@@ -71,7 +72,7 @@ export const POST = withAccess({ org: 'none', rateLimit: { bucket: 'tier-service
   if (!decision.ok) return NextResponse.json({ error: decision.error }, { status: decision.error === 'beneficiary_not_confirmed' || decision.error === 'beneficiary_contract_mismatch' ? 409 : 400 })
 
   const created = await prisma.tierServiceUsage.create({
-    data: { organizationId, tierServiceId: id, processusId: process?.id ?? null, contractServiceId: contractService?.id ?? null, useCase, description, criticite: crit.value, exposeInternet: expo.value },
+    data: { organizationId, tierServiceId: id, processusId: process?.id ?? null, contractServiceId: contractService?.id ?? null, useCase, description, criticite: crit.value, exposeInternet: expo.value, ...qualif.data },
   })
   await auditLog('TIER_SERVICE_USAGE_CREATED', {
     userId, userRole: role, organizationId, ip: getClientIp(req),

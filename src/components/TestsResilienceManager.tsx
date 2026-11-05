@@ -15,7 +15,7 @@ import { TEST_RESILIENCE_TYPES, TEST_RESILIENCE_STATUTS, TESTEURS, type Constat 
 interface TestRow {
   id: string; annee: number; intitule: string; type: string; statut: string; fonctionCritique: boolean; independant: boolean
   testeur: string; perimetre: string | null; processusId: string | null; riskItemIds: unknown; datePrevue: string | null
-  dateRealisation: string | null; resultat: string | null; constats: unknown
+  dateRealisation: string | null; resultat: string | null; constats: unknown; dureeRepriseMinutes?: number | null
 }
 interface Stats {
   planifies: number; realises: number; tauxRealisation: number; fonctionsCritiquesTestees: number; nonIndependants: number
@@ -25,8 +25,9 @@ interface Stats {
 interface Form {
   id?: string; intitule: string; type: string; perimetre: string; fonctionCritique: boolean; testeur: string; independant: boolean
   statut: string; datePrevue: string; dateRealisation: string; resultat: string; constats: Constat[]; riskItemIds: string[]
+  processusId: string; dureeRepriseHeures: string
 }
-const EMPTY: Form = { intitule: '', type: 'VULNERABILITY', perimetre: '', fonctionCritique: false, testeur: 'INTERNE', independant: true, statut: 'PLANIFIE', datePrevue: '', dateRealisation: '', resultat: '', constats: [], riskItemIds: [] }
+const EMPTY: Form = { intitule: '', type: 'VULNERABILITY', perimetre: '', fonctionCritique: false, testeur: 'INTERNE', independant: true, statut: 'PLANIFIE', datePrevue: '', dateRealisation: '', resultat: '', constats: [], riskItemIds: [], processusId: '', dureeRepriseHeures: '' }
 const day = (iso: string | null) => (iso ? iso.slice(0, 10) : '')
 const asConstats = (v: unknown): Constat[] => (Array.isArray(v) ? (v as Constat[]) : [])
 const asIds = (v: unknown): string[] => (Array.isArray(v) ? (v as string[]) : [])
@@ -41,6 +42,7 @@ export default function TestsResilienceManager() {
   const [annee, setAnnee] = useState<number | null>(null)
   const [data, setData] = useState<{ annee: number; annees: number[]; canWrite: boolean; tests: TestRow[]; stats: Stats; actionsParConstat?: Record<string, Record<number, { ouvertes: number; faites: number }>> } | null>(null)
   const [risks, setRisks] = useState<{ id: string; intitule: string }[]>([])
+  const [processus, setProcessus] = useState<{ id: string; nom: string; criticiteDora: string | null }[]>([])
   const [form, setForm] = useState<Form | null>(null)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -53,6 +55,7 @@ export default function TestsResilienceManager() {
   }
   useEffect(() => {
     load(null)
+    fetch('/api/processus', { cache: 'no-store' }).then(x => (x.ok ? x.json() : null)).then(d => setProcessus(Array.isArray(d?.processus) ? d.processus : [])).catch(() => {})
     fetch('/api/risk-items?vue=options', { cache: 'no-store' }).then(x => (x.ok ? x.json() : null)).then(d => setRisks(Array.isArray(d?.risks) ? d.risks.map((x: { id: string; intitule: string }) => ({ id: x.id, intitule: x.intitule })) : [])).catch(() => {})
   }, [])
 
@@ -62,13 +65,17 @@ export default function TestsResilienceManager() {
       id: row.id, intitule: row.intitule, type: row.type, perimetre: row.perimetre ?? '', fonctionCritique: row.fonctionCritique,
       testeur: row.testeur, independant: row.independant, statut: row.statut, datePrevue: day(row.datePrevue), dateRealisation: day(row.dateRealisation),
       resultat: row.resultat ?? '', constats: asConstats(row.constats), riskItemIds: asIds(row.riskItemIds),
+      processusId: row.processusId ?? '', dureeRepriseHeures: row.dureeRepriseMinutes == null ? '' : String(row.dureeRepriseMinutes / 60),
     })
   }
 
   async function save() {
     if (!form || !data) return
     setBusy(true); setMsg(null)
-    const { id, ...body } = form
+    const { id, processusId, dureeRepriseHeures, ...reste } = form
+    // Processus testé (fonction critique ou importante) et durée de reprise constatée, saisie en heures.
+    const h = Number(dureeRepriseHeures)
+    const body = { ...reste, processusId: processusId || null, dureeRepriseMinutes: dureeRepriseHeures.trim() !== '' && Number.isFinite(h) && h >= 0 ? Math.round(h * 60) : null }
     const res = await fetch(id ? `/api/tests-resilience/${id}` : '/api/tests-resilience', {
       method: id ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...body, annee: data.annee }),
@@ -171,6 +178,13 @@ export default function TestsResilienceManager() {
             <label className="text-xs text-gray-600 dark:text-gray-300">{r.datePrevue}<input type="date" aria-label={r.datePrevue} value={form.datePrevue} onChange={e => setForm({ ...form, datePrevue: e.target.value })} className={input} /></label>
             <label className="text-xs text-gray-600 dark:text-gray-300">{r.dateRealisation}<input type="date" aria-label={r.dateRealisation} value={form.dateRealisation} onChange={e => setForm({ ...form, dateRealisation: e.target.value })} className={input} /></label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.fonctionCritique} onChange={e => setForm({ ...form, fonctionCritique: e.target.checked })} />{r.fonctionCritique}</label>
+            {/* Fonction testée et durée de reprise constatée : comparées au RTO et à la tolérance d'impact (vue des dépendances). */}
+            <label className="text-xs text-gray-600 dark:text-gray-300">{r.processusTeste}
+              <select aria-label={r.processusTeste} value={form.processusId} onChange={e => setForm({ ...form, processusId: e.target.value })} className={input}>
+                <option value="">—</option>
+                {processus.map(p => <option key={p.id} value={p.id}>{p.nom}{p.criticiteDora === 'CRITIQUE' || p.criticiteDora === 'IMPORTANTE' ? ' (FCI)' : ''}</option>)}
+              </select></label>
+            <label className="text-xs text-gray-600 dark:text-gray-300">{r.dureeReprise}<input type="number" min={0} step={0.25} aria-label={r.dureeReprise} value={form.dureeRepriseHeures} onChange={e => setForm({ ...form, dureeRepriseHeures: e.target.value })} className={input} /></label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.independant} onChange={e => setForm({ ...form, independant: e.target.checked })} />{r.independant}</label>
             <label className="text-xs text-gray-600 dark:text-gray-300 md:col-span-2">{r.resultat}<textarea aria-label={r.resultat} value={form.resultat} rows={2} onChange={e => setForm({ ...form, resultat: e.target.value })} className={input} /></label>
           </div>

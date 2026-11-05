@@ -21,13 +21,15 @@ interface Props {
   offsite?: OffsiteState | null
   offsiteMaxAgeHours?: number
   agentAvailable: boolean
+  /** Profil multi-instance : base partagée, pas de restauration d'un clic — procédure affichée à la place des boutons. */
+  haProfile?: boolean
   onChanged: () => void
 }
 
 const mb = (n: number) => `${Math.max(1, Math.round(n / 1048576))} Mo`
 const fill = (s: string, vars: Record<string, string>) => Object.entries(vars).reduce((a, [k, v]) => a.replaceAll(`{${k}}`, v), s)
 
-export default function UpdateRestorePanel({ status, run, snapshots, impacts, retentionDays = 14, offsite = null, offsiteMaxAgeHours = 48, agentAvailable, onChanged }: Props) {
+export default function UpdateRestorePanel({ status, run, snapshots, impacts, retentionDays = 14, offsite = null, offsiteMaxAgeHours = 48, agentAvailable, haProfile = false, onChanged }: Props) {
   const { t, locale } = useTranslation()
   const v = t.version
   const steps = v.updateSteps as Record<string, string>
@@ -117,10 +119,12 @@ export default function UpdateRestorePanel({ status, run, snapshots, impacts, re
                     <td className="pr-3 font-mono">{s.version}</td>
                     <td className="pr-3">{s.verified === 'full' ? v.restore.verifiedFull : v.restore.verifiedQuick}</td>
                     <td className="pr-3">{s.clone ? v.restore.yes : v.restore.no}</td>
-                    <td className="pr-3">{s.documents ? v.restore.yes : v.restore.no}</td>
+                    <td className="pr-3">{s.documentsStorage === 's3'
+                      ? <>{fill(v.restore.docsS3, { n: String(s.referencedKeys ?? '?') })}{s.bucketCheck && <span className={s.bucketCheck === 'ok' ? ' text-green-700' : ' text-red-700'}>{` · ${(v.restore.bucket as Record<string, string>)[s.bucketCheck]}`}</span>}</>
+                      : (s.documents ? v.restore.yes : v.restore.no)}</td>
                     <td className="pr-3">{mb(s.sizeBytes)}</td>
                     <td className="text-right">
-                      {agentAvailable && !inProgress && (
+                      {agentAvailable && !inProgress && !haProfile && (
                         <button type="button" className="btn-secondary text-xs" onClick={() => { setTarget(s); setTyped(''); setMessage(null) }}>{v.restore.revert}</button>
                       )}
                     </td>
@@ -132,6 +136,15 @@ export default function UpdateRestorePanel({ status, run, snapshots, impacts, re
         )}
       </div>
       {message && <p className="text-sm text-ebios-700">{message}</p>}
+
+      {haProfile && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 space-y-1">
+          <p className="font-medium">{v.restore.haTitle}</p>
+          <p>{v.restore.haIntro}</p>
+          <ol className="list-decimal pl-5 space-y-0.5">{(v.restore.haSteps as readonly string[]).map(x => <li key={x}>{x}</li>)}</ol>
+          <p>{v.restore.haDoc}</p>
+        </div>
+      )}
 
       <OffsiteSection offsite={offsite} maxAgeHours={offsiteMaxAgeHours} />
 

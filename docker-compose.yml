@@ -26,6 +26,10 @@ x-app-build: &app-build
   args:
     ACRA_VERSION: ${ACRA_VERSION:-development}
     ACRA_REVISION: ${ACRA_REVISION:-unknown}
+    # Clé des Server Functions de Next.js (lue par `next build`), générée UNE fois par scripts/setup.sh : stable d'une
+    # construction à l'autre. Vide : Next.js en génère une à chaque construction (comportement par défaut).
+    # Obligatoire en profil « ha » (docker-compose.ha.yml). Ne jamais la changer une fois en service.
+    NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY:-}
 
 services:
   db:
@@ -90,6 +94,10 @@ services:
       # Jeton protégeant les endpoints planifiés /api/cron/* (voir service "scheduler").
       # Absent ⇒ ces endpoints répondent 503 (planification désactivée).
       CRON_SECRET: ${CRON_SECRET:-}
+      # Clé de chaînage du journal d'audit (HMAC-SHA256, lib/audit-chaine), générée UNE fois par scripts/setup.sh.
+      # Ne JAMAIS la changer (les entrées déjà scellées deviendraient invérifiables) ; à conserver dans un coffre.
+      # Vide : chaînage SHA-256 sans clé (avertissement au démarrage en production).
+      AUDIT_CHAIN_KEY: ${AUDIT_CHAIN_KEY:-}
     ports:
       - "3000:3000"
     depends_on:

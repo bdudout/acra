@@ -31,6 +31,10 @@ export const QUESTIONS_360: Question360[] = [
   { id: 'p360.it.nouvelleArchitecture', domaine: 'IT', type: 'bool' },
   { id: 'p360.it.obsolescence', domaine: 'IT', type: 'bool' },
   { id: 'p360.it.maintenanceDefinie', domaine: 'IT', type: 'bool' },
+  { id: 'p360.it.pcaPra', domaine: 'IT', type: 'bool' },
+  { id: 'p360.it.sauvegardesTestees', domaine: 'IT', type: 'bool' },
+  { id: 'p360.it.rtoRpoDefinis', domaine: 'IT', type: 'bool' },
+  { id: 'p360.it.rtoCompatibleTolerance', domaine: 'IT', type: 'bool' },
   { id: 'p360.projet.delaiContraint', domaine: 'PROJECT', type: 'bool' },
   { id: 'p360.projet.budgetSousTension', domaine: 'PROJECT', type: 'bool' },
   { id: 'p360.projet.dependancesMultiples', domaine: 'PROJECT', type: 'bool' },
@@ -55,6 +59,10 @@ const RULES: R[] = [
   { key: 'integrationArchitecture', q: 'p360.it.nouvelleArchitecture', equals: true, g: 3, v: 2 },
   { key: 'obsolescence', q: 'p360.it.obsolescence', equals: true, g: 3, v: 3 },
   { key: 'maintienConditions', q: 'p360.it.maintenanceDefinie', equals: false, g: 2, v: 3 },
+  { key: 'absencePra', q: 'p360.it.pcaPra', equals: false, g: 4, v: 2 },
+  { key: 'sauvegardesNonTestees', q: 'p360.it.sauvegardesTestees', equals: false, g: 3, v: 3 },
+  { key: 'rtoRpoNonDefinis', q: 'p360.it.rtoRpoDefinis', equals: false, g: 3, v: 2 },
+  { key: 'rtoAuDelaTolerance', q: 'p360.it.rtoCompatibleTolerance', equals: false, g: 4, v: 3 },
   { key: 'derivePlanning', q: 'p360.projet.delaiContraint', equals: true, g: 2, v: 3 },
   { key: 'depassementBudget', q: 'p360.projet.budgetSousTension', equals: true, g: 2, v: 3 },
   { key: 'dependancesProjets', q: 'p360.projet.dependancesMultiples', equals: true, g: 2, v: 2 },
@@ -239,9 +247,38 @@ export interface Faits360 {
   processusCritiques: number // processus cartographiés critiques
   traitementsRgpd: number    // traitements au registre RGPD (art. 30)
   doraActif: boolean         // module de reporting réglementaire DORA actif (entité financière)
+  continuite?: ContinuiteFaits360 // objectifs de continuité (RTO/RPO/tolérance) des processus critiques + test de résilience récent
   patterns?: readonly string[] // patterns d'architecture de SI cochés dans l'analyse (vision technique)
 }
-export type SourcePrefill = 'analyseCyber' | 'tic' | 'cloud' | 'processus' | 'ropa' | 'dora' | 'patterns'
+export const SOURCES_PREFILL = ['analyseCyber', 'tic', 'cloud', 'processus', 'ropa', 'dora', 'continuite', 'patterns'] as const
+export type SourcePrefill = typeof SOURCES_PREFILL[number]
+
+/** Synthèse de continuité des processus critiques (dérivée de Processus.rto/rpo/tolérance et des tests de résilience). */
+export interface ContinuiteFaits360 {
+  critiques: number         // processus critiques ou importants
+  objectifsDefinis: number  // ... dont RTO ET RPO définis
+  comparables: number       // ... dont RTO ET tolérance d'impact définis
+  ecartsTolerance: number   // ... dont le RTO dépasse la tolérance d'impact
+  testRecent: boolean       // un test de résilience réalisé depuis moins de 12 mois
+}
+export interface ProcessusContinuite { rtoMinutes: number | null; rpoMinutes: number | null; toleranceImpactMinutes: number | null }
+
+/** Logique pure (hors Prisma) : objectifs de continuité des processus critiques et fraîcheur du dernier test réalisé. */
+export function synthetiserContinuite360(
+  processus: readonly ProcessusContinuite[],
+  tests: readonly { statut: string; dateRealisation: Date | null }[],
+  now: Date,
+): ContinuiteFaits360 {
+  const limite = new Date(now); limite.setFullYear(limite.getFullYear() - 1)
+  const comparables = processus.filter(p => p.rtoMinutes != null && p.toleranceImpactMinutes != null)
+  return {
+    critiques: processus.length,
+    objectifsDefinis: processus.filter(p => p.rtoMinutes != null && p.rpoMinutes != null).length,
+    comparables: comparables.length,
+    ecartsTolerance: comparables.filter(p => (p.rtoMinutes as number) > (p.toleranceImpactMinutes as number)).length,
+    testRecent: tests.some(t => t.statut === 'REALISE' && t.dateRealisation != null && t.dateRealisation >= limite && t.dateRealisation <= now),
+  }
+}
 
 /**
  * Réponses pré-remplies : « oui » UNIQUEMENT quand une donnée existante le prouve
@@ -258,6 +295,14 @@ export function defaultAnswers360(f: Faits360): { answers: QualificationAnswers;
   if (f.processusCritiques > 0) set('p360.metier.processusCritique', 'processus')
   if (f.traitementsRgpd > 0) set('p360.cyber.donneesSensibles', 'ropa')
   if (f.doraActif) { set('p360.metier.exigenceReglementaire', 'dora'); set('p360.fraude.fluxFinanciers', 'dora') }
+  // Continuité : « oui » prouvé par les objectifs/tests ; seul l'écart RTO > tolérance (fait établi) donne un « non ».
+  const c = f.continuite
+  if (c) {
+    if (c.critiques > 0 && c.objectifsDefinis === c.critiques) set('p360.it.rtoRpoDefinis', 'continuite')
+    if (c.ecartsTolerance > 0) { answers['p360.it.rtoCompatibleTolerance'] = false; sources['p360.it.rtoCompatibleTolerance'] = 'continuite' }
+    else if (c.comparables > 0) set('p360.it.rtoCompatibleTolerance', 'continuite')
+    if (c.testRecent) set('p360.it.pcaPra', 'continuite')
+  }
   // Patterns d'architecture : complètent les faits de l'organisation (la source d'un fait déjà établi prime).
   const fromPatterns = prefillFromPatterns(f.patterns ?? [])
   for (const q of Object.keys(fromPatterns.answers)) if (!(q in answers)) set(q, 'patterns')
@@ -332,7 +377,6 @@ export function planPopulation360(args: {
     })
 }
 
-const SOURCES_PREFILL: readonly SourcePrefill[] = ['analyseCyber', 'tic', 'cloud', 'processus', 'ropa', 'dora']
 /** Sources du pré-remplissage stockées dans la qualification (`p360._sources`), assainies. */
 export function sanitizeSources360(qualification: unknown): Record<string, SourcePrefill> {
   const raw = qualification && typeof qualification === 'object' ? (qualification as Record<string, unknown>)['p360._sources'] : null

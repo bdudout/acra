@@ -355,6 +355,17 @@ export function evaluerEfficacite(executions: ExecutionLite[]): ControleEfficaci
   return { evaluees: evaluables.length, conformes, anomalies, tauxConformite: taux, efficacite, vraisemblanceSuggeree }
 }
 
+/**
+ * Même résultat qu'`evaluerEfficacite`, à partir des COMPTES calculés par la base (exécutions évaluées et conformes) :
+ * les listes paginées n'ont plus à charger toutes les exécutions de tous les contrôles (mesures de charge du 03/11).
+ */
+export function efficaciteDepuisComptes(c: { evaluees: number; conformes: number }): ControleEfficacite {
+  if (c.evaluees === 0) return { evaluees: 0, conformes: 0, anomalies: 0, tauxConformite: null, efficacite: null, vraisemblanceSuggeree: null }
+  const taux = Math.round((c.conformes / c.evaluees) * 100)
+  const efficacite = taux >= 95 ? 'FORTE' as const : taux >= 80 ? 'MOYENNE' as const : 'FAIBLE' as const
+  return { evaluees: c.evaluees, conformes: c.conformes, anomalies: c.evaluees - c.conformes, tauxConformite: taux, efficacite, vraisemblanceSuggeree: efficacite === 'FORTE' ? 1 : efficacite === 'MOYENNE' ? 3 : 5 }
+}
+
 // ─── Efficacité établie (recette n° 36) ───
 /** En dessous de 3 exécutions évaluées, l'efficacité n'est qu'indicative (pas de « 0 % · Faible » sur une seule exécution). */
 export const SEUIL_EXECUTIONS_EFFICACITE = 3

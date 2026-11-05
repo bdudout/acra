@@ -25,7 +25,7 @@ import {
   User, ChevronDown, Settings, KeyRound, LogOut, FileWarning, Workflow, BookMarked,
   Map, BarChart3, Siren, ClipboardCheck, ClipboardList, Search, TrendingUp, Landmark,
   LayoutGrid, Radar, ScrollText, FileText, ListChecks, Bot, CalendarRange, Menu, X, Gauge, Briefcase, type LucideIcon,
-  BadgeCheck, UserCheck, BrainCircuit,
+  BadgeCheck, UserCheck, BrainCircuit, Target,
 } from 'lucide-react'
 
 export default function Navbar() {
@@ -61,6 +61,16 @@ export default function Navbar() {
       .catch(() => {})
   }, [isDerogActor, session?.user]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Double validation (quatre yeux) : demandes que l'utilisateur peut trancher → pastille vers /validations.
+  const [validationsPending, setValidationsPending] = useState(0)
+  useEffect(() => {
+    if (isLecteur || !session?.user) return
+    fetch('/api/validations')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d && typeof d.enAttente === 'number') setValidationsPending(d.enAttente) })
+      .catch(() => {})
+  }, [isLecteur, session?.user])
+
   // Modules GRC actifs (état effectif) → alimentent le modèle de navigation.
   // Initialisé depuis le cache MÉMOIRE (peek) : null au 1er rendu (SSR + 1re
   // hydratation → mode cyber par défaut, cohérent avec le HTML SSR), mais déjà
@@ -95,6 +105,7 @@ export default function Navbar() {
           campagnesRcsa: Boolean(d.campagnesRcsaActive),
           appetence: Boolean(d.appetenceActive),
           rapportsGrc: Boolean(d.rapportsGrcActive),
+          strategie: Boolean(d.strategieActive),
         }
         setModules(next)
         setCachedNavModules(next)
@@ -194,6 +205,7 @@ export default function Navbar() {
     profilsOperationnels: { href: '/maturite', Icon: ShieldCheck, label: t.nav.profilsOperationnels },
     projets:       { href: '/projets',       Icon: Briefcase,       label: t.nav.projets },
     appetence:     { href: '/appetence',     Icon: Gauge,           label: t.nav.appetence },
+    strategie:     { href: '/strategie',     Icon: Target,          label: t.nav.strategie },
     rapports:      { href: '/rapports',      Icon: FileText,        label: t.nav.rapports },
     testsResilience: { href: '/reglementaire/tests-resilience', Icon: ClipboardCheck, label: t.nav.testsResilience },
     homologations: { href: '/homologations', Icon: BadgeCheck, label: t.nav.homologations },
@@ -280,6 +292,11 @@ export default function Navbar() {
           >
             {mobileNavOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
           </button>
+          {validationsPending > 0 && (
+            <Link href="/validations" className="hidden sm:inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-900 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-100">
+              <ShieldCheck size={14} aria-hidden="true" />{t.doubleValidation.badge.replace('{n}', String(validationsPending))}
+            </Link>
+          )}
           {/* Menu utilisateur (le badge de rôle est dans l'en-tête du menu) */}
           <div className="relative" ref={menuRef}>
             <button
@@ -338,6 +355,22 @@ export default function Navbar() {
                   >
                     <Settings size={16} aria-hidden="true" />
                     {t.nav.configuration}
+                  </Link>
+                )}
+
+                {!isLecteur && (
+                  <Link
+                    href="/validations"
+                    role="menuitem"
+                    className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg ${
+                      pathname === '/validations'
+                        ? 'bg-ebios-50 text-ebios-700 font-medium'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <ShieldCheck size={16} aria-hidden="true" />
+                    {t.doubleValidation.menu}{validationsPending > 0 && ` (${validationsPending})`}
                   </Link>
                 )}
 

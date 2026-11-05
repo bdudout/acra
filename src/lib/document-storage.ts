@@ -8,7 +8,7 @@
 // Sélection par variable d'environnement. Aucune URL publique : l'accès passe
 // toujours par une route authentifiée qui lit via get().
 
-import { mkdir, writeFile, readFile, unlink } from 'node:fs/promises'
+import { mkdir, writeFile, readFile, unlink, stat } from 'node:fs/promises'
 import path from 'node:path'
 
 /** Interface de stockage de documents (put/get/delete par clé) ; implémentée par le volume local et l'adaptateur S3. */
@@ -16,6 +16,8 @@ export interface DocumentStorage {
   put(key: string, bytes: Buffer, mime?: string): Promise<void>
   get(key: string): Promise<Buffer>
   delete(key: string): Promise<void>
+  /** Présence d'un objet (taille) ou null s'il est absent ; lève si le stockage ne répond pas (contrôle de cohérence). */
+  head?(key: string): Promise<{ size: number } | null>
 }
 
 // ── Adaptateur volume local ──────────────────────────────────────────────────
@@ -44,6 +46,12 @@ export function localStorage(baseDir: string): DocumentStorage {
     async delete(key) {
       try { await unlink(resolveSafe(key)) } catch (e) {
         if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e
+      }
+    },
+    async head(key) {
+      try { const st = await stat(resolveSafe(key)); return st.isFile() ? { size: st.size } : null } catch (e) {
+        if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null
+        throw e
       }
     },
   }

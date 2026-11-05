@@ -5,12 +5,14 @@ import { NextRequest } from 'next/server'
 const gather = vi.hoisted(() => vi.fn())
 const entiteFindMany = vi.hoisted(() => vi.fn())
 const scope = vi.hoisted(() => vi.fn())
+const axesActifs = vi.hoisted(() => vi.fn())
+const cfg = vi.hoisted(() => ({ strategieActive: false }))
 vi.mock('@/lib/prisma', () => ({ prisma: { entite: { findMany: entiteFindMany } } }))
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { id: 'u', role: 'ANALYSTE' } })) }))
 vi.mock('@/lib/auth', () => ({ authOptions: {} }))
 vi.mock('@/lib/org-context.server', () => ({ getAnalyseScope: scope }))
-vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => ({ incidentsActive: true, controlePermanentActive: false, auditInterneActive: true, registreRisquesActive: true, conformiteActive: false })) }))
-vi.mock('@/lib/action-items.server', () => ({ gatherActionItems: gather }))
+vi.mock('@/lib/org-config.server', () => ({ getOrgConfig: vi.fn(async () => ({ incidentsActive: true, controlePermanentActive: false, auditInterneActive: true, registreRisquesActive: true, conformiteActive: false, strategieActive: cfg.strategieActive })) }))
+vi.mock('@/lib/action-items.server', () => ({ gatherActionItems: gather, axesStrategiquesActifs: axesActifs }))
 
 import { GET } from '@/app/api/actions/route'
 
@@ -19,6 +21,8 @@ const appel = (q = '') => GET(new NextRequest(`http://localhost/api/actions${q}`
 
 beforeEach(() => {
   vi.clearAllMocks()
+  cfg.strategieActive = false
+  axesActifs.mockResolvedValue([{ strategieId: 's1', strategieTitre: 'Cyber 2027', strategieStatut: 'VALIDEE', axeId: 'ax1', axeTitre: 'Protéger' }])
   scope.mockResolvedValue({ activeOrgId: 'o1', role: 'ANALYSTE', scope: { visibleOrgIds: ['o1'], isSuperAdmin: false } })
   gather.mockResolvedValue([item('a', { origine: 'orpheline' }), ...Array.from({ length: 59 }, (_, i) => item(`n${i}`, { origine: i % 2 ? 'audit' : 'risque' }))])
 })
@@ -67,5 +71,32 @@ describe('GET /api/actions', () => {
     const j = await (await appel('?page=1&entite=dsi')).json()
     expect(entiteFindMany.mock.calls[0][0].where).toEqual({ organizationId: { in: ['o1'] } })
     expect(j.items.map((i: { id: string }) => i.id)).toEqual(['x'])
+  })
+
+  it('lot S2 : module Stratégie transmis à gatherActionItems', async () => {
+    cfg.strategieActive = true
+    await appel()
+    expect(gather).toHaveBeenCalledWith('o1', expect.objectContaining({ strategieActive: true }), expect.anything())
+  })
+
+  it('lot S2 : rattachement possible (rôle autorisé + module actif + org active) → axes des stratégies actives', async () => {
+    cfg.strategieActive = true
+    scope.mockResolvedValue({ activeOrgId: 'o1', role: 'RSSI', scope: { visibleOrgIds: ['o1'], isSuperAdmin: false } })
+    const j = await (await appel('?page=1')).json()
+    expect(axesActifs).toHaveBeenCalledWith('o1', 'RSSI')
+    expect(j.rattachement).toEqual({ possible: true, axes: [{ strategieId: 's1', strategieTitre: 'Cyber 2027', strategieStatut: 'VALIDEE', axeId: 'ax1', axeTitre: 'Protéger' }] })
+  })
+
+  it('lot S2 : module inactif, rôle non autorisé ou bilan consolidé → pas de rattachement, aucun axe chargé', async () => {
+    let j = await (await appel('?page=1')).json()
+    expect(j.rattachement).toEqual({ possible: false, axes: [] })
+    cfg.strategieActive = true
+    scope.mockResolvedValue({ activeOrgId: 'o1', role: 'ANALYSTE', scope: { visibleOrgIds: ['o1'], isSuperAdmin: false } })
+    j = await (await appel('?page=1')).json()
+    expect(j.rattachement.possible).toBe(false)
+    scope.mockResolvedValue({ activeOrgId: null, role: 'SUPER_ADMIN', scope: { visibleOrgIds: ['o1', 'o2'], isSuperAdmin: true } })
+    j = await (await appel('?page=1')).json()
+    expect(j.rattachement.possible).toBe(false)
+    expect(axesActifs).not.toHaveBeenCalled()
   })
 })

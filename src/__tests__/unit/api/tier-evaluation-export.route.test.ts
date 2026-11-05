@@ -21,7 +21,7 @@ beforeEach(() => {
   m.cfg.mockResolvedValue({ echellesEcosysteme: null })
   m.org.mockResolvedValue({ path: '/grp/' })
   m.orgs.mockResolvedValue([{ id: 'grp', nom: 'Groupe' }, { id: 'fil1', nom: 'Filiale Nord' }, { id: 'fil2', nom: 'Hors périmètre' }])
-  m.usages.mockResolvedValue([{ organizationId: 'fil1', useCase: 'Paie', criticite: 'CRITIQUE', processus: { nom: 'Paie' }, tierService: { nom: 'IaaS', tier: { nom: 'Hébergeur' } }, evaluation: { statut: 'VALIDEE', actuelle: { dependance: 4, penetration: 3, maturite: 2, confiance: 2 }, cible: null, clauses: ['securite'], valideLe: new Date('2026-10-01') } }])
+  m.usages.mockResolvedValue([{ organizationId: 'fil1', useCase: 'Paie', criticite: 'CRITIQUE', exposeInternet: true, perimetrePci: null, avecSi: true, interconnexion: 'INTERNET', pointsAcces: [{ adresse: 'https://paie.example' }], processus: { nom: 'Paie' }, tierService: { nom: 'IaaS', tier: { nom: 'Hébergeur' } }, evaluation: { statut: 'VALIDEE', actuelle: { dependance: 4, penetration: 3, maturite: 2, confiance: 2 }, cible: null, clauses: ['securite'], valideLe: new Date('2026-10-01') } }])
 })
 
 describe('GET /api/tier-registry/export', () => {

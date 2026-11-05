@@ -20,16 +20,16 @@ import { champsManquantsProcessus } from '@/lib/processus-completude'
 interface Processus {
   id: string; parentId: string | null; nom: string; description: string | null
   proprietaire: string | null; criticite: number | null
-  criticiteDora: string | null; rtoMinutes: number | null; rpoMinutes: number | null
+  criticiteDora: string | null; rtoMinutes: number | null; rpoMinutes: number | null; toleranceImpactMinutes?: number | null
   ordre: number; actif: boolean
   // Revue périodique du BIA (lib/revues).
   derniereRevue?: string | null; createdAt?: string
 }
 type Form = {
   nom: string; parentId: string; proprietaire: string; criticite: string
-  criticiteDora: string; rtoHeures: string; rpoHeures: string; derniereRevue: string
+  criticiteDora: string; rtoHeures: string; rpoHeures: string; toleranceHeures: string; derniereRevue: string
 }
-const EMPTY: Form = { nom: '', parentId: '', proprietaire: '', criticite: '', criticiteDora: '', rtoHeures: '', rpoHeures: '', derniereRevue: '' }
+const EMPTY: Form = { nom: '', parentId: '', proprietaire: '', criticite: '', criticiteDora: '', rtoHeures: '', rpoHeures: '', toleranceHeures: '', derniereRevue: '' }
 
 // Saisie en heures (usuel pour RTO/RPO) → stockage en minutes ; '' → null.
 const heuresToMinutes = (h: string): number | null => {
@@ -81,6 +81,7 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
       criticiteDora: form.criticiteDora || null,
       rtoMinutes: heuresToMinutes(form.rtoHeures),
       rpoMinutes: heuresToMinutes(form.rpoHeures),
+      toleranceImpactMinutes: heuresToMinutes(form.toleranceHeures),
       derniereRevue: form.derniereRevue,
     }
     const res = await fetch(editId ? `/api/processus/${editId}` : '/api/processus', {
@@ -97,7 +98,7 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
     setEditId(x.id)
     setForm({
       nom: x.nom, parentId: x.parentId ?? '', proprietaire: x.proprietaire ?? '', criticite: x.criticite?.toString() ?? '',
-      criticiteDora: x.criticiteDora ?? '', rtoHeures: minutesToHeures(x.rtoMinutes), rpoHeures: minutesToHeures(x.rpoMinutes),
+      criticiteDora: x.criticiteDora ?? '', rtoHeures: minutesToHeures(x.rtoMinutes), rpoHeures: minutesToHeures(x.rpoMinutes), toleranceHeures: minutesToHeures(x.toleranceImpactMinutes ?? null),
       derniereRevue: x.derniereRevue ? x.derniereRevue.slice(0, 10) : '',
     })
     setError(null)
@@ -123,6 +124,7 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
           )}
           {n.rtoMinutes != null && <span className="text-[11px] text-gray-500 hidden sm:inline">{p.rtoShort} {formatDuree(n.rtoMinutes, p.dureeUnites)}</span>}
           {n.rpoMinutes != null && <span className="text-[11px] text-gray-500 hidden sm:inline">{p.rpoShort} {formatDuree(n.rpoMinutes, p.dureeUnites)}</span>}
+          {n.toleranceImpactMinutes != null && <span className="text-[11px] text-gray-500 hidden sm:inline">{p.toleranceShort} {formatDuree(n.toleranceImpactMinutes, p.dureeUnites)}</span>}
           {n.proprietaire && <span className="text-xs text-gray-400 hidden sm:inline">{n.proprietaire}</span>}
           {(() => {
             const manquants = champsManquantsProcessus(n)
@@ -171,7 +173,7 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
           </div>
 
           {/* Classification DORA (FCI) + objectifs de continuité (RTO=DIMA, RPO=PDMA). */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-gray-100 dark:border-gray-800">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1 border-t border-gray-100 dark:border-gray-800">
             <label className="flex flex-col gap-1 min-w-0">
               <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{p.criticiteDoraLabel}</span>
               <select value={form.criticiteDora} onChange={e => setForm(f => ({ ...f, criticiteDora: e.target.value }))} className="px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm">
@@ -189,6 +191,12 @@ export default function ProcessusManager({ canEdit }: { canEdit: boolean }) {
               <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{p.rpoLabel}</span>
               <input type="number" min={0} step={0.25} value={form.rpoHeures} onChange={e => setForm(f => ({ ...f, rpoHeures: e.target.value }))} placeholder={p.dureeHeuresPlaceholder} className="px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
               <span className="text-[11px] text-gray-400">{form.rpoHeures.trim() !== '' && Number.isFinite(Number(form.rpoHeures)) ? `${p.dureeApercu} ${formatDuree(heuresToMinutes(form.rpoHeures), p.dureeUnites)}` : p.rpoHint}</span>
+            </label>
+            <label className="flex flex-col gap-1 min-w-0">
+              <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{p.toleranceLabel}</span>
+              <input type="number" min={0} step={0.25} value={form.toleranceHeures} onChange={e => setForm(f => ({ ...f, toleranceHeures: e.target.value }))} placeholder={p.dureeHeuresPlaceholder} className="px-2 py-1.5 rounded-sm border border-gray-300 dark:bg-gray-900 dark:border-gray-600 text-sm" />
+              <span className="text-[11px] text-gray-400">{form.toleranceHeures.trim() !== '' && Number.isFinite(Number(form.toleranceHeures)) ? `${p.dureeApercu} ${formatDuree(heuresToMinutes(form.toleranceHeures), p.dureeUnites)}` : p.toleranceHint}</span>
+              {form.rtoHeures.trim() !== '' && form.toleranceHeures.trim() !== '' && Number(form.rtoHeures) > Number(form.toleranceHeures) && <span role="alert" className="text-[11px] text-red-600 dark:text-red-400">{p.rtoAuDelaTolerance}</span>}
             </label>
           </div>
           {editId && <RevuePeriodiqueChamp className="max-w-xs" valeur={form.derniereRevue} creeLe={list.find(x => x.id === editId)?.createdAt} onChange={v => setForm(f => ({ ...f, derniereRevue: v }))} />}

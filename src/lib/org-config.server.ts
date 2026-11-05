@@ -30,6 +30,7 @@ export const CONFIG_SELECT = {
   acceptationRisquesActive: true,
   gelApresAcceptationActive: true,
   interdireAutoApprobation: true,
+  doubleValidationActive: true,
   petiteStructure: true,
   derogationsActive: true,
   derogationDureeDefautJours: true,
@@ -62,6 +63,8 @@ export const CONFIG_SELECT = {
   appetenceActive: true,
   rapportsGrcActive: true,
   ropaSousTraitantActive: true,
+  strategieActive: true,
+  strategieCadreFige: true,
   mcpActive: true,
   echelleMaturite: true,
   processusCartographie: true,
@@ -151,6 +154,7 @@ async function applyInstancePolicy(cfg: OrgConfigResolved): Promise<OrgConfigRes
       appetenceActive: resolveModuleActivation(policy.appetence, cfg.appetenceActive),
       rapportsGrcActive: resolveModuleActivation(policy.rapportsGrc, cfg.rapportsGrcActive),
       ropaSousTraitantActive: resolveModuleActivation(policy.ropaSousTraitant, cfg.ropaSousTraitantActive),
+      strategieActive: resolveModuleActivation(policy.strategie, cfg.strategieActive),
     }
   } catch {
     return cfg

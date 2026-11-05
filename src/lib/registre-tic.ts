@@ -40,6 +40,12 @@ export interface ArrangementTic {
   sousTraitance?: boolean
   /** Réponses du questionnaire de qualification (cf. lib/tic-questionnaire.ts). */
   questionnaire?: ReponseQuestion[]
+  /** Stratégie de sortie (DORA art. 28 § 8) : réversibilité, bascule, réinternalisation… */
+  strategieSortie?: string | null
+  /** Prestataire ou solution de repli identifié. */
+  prestataireAlternatif?: string | null
+  /** Date du dernier test (ou exercice) de la stratégie de sortie. */
+  strategieSortieTesteeLe?: Date | string | null
 }
 
 const rempli = (v: unknown): boolean => {
@@ -54,7 +60,7 @@ const estCritiqueOuImportante = (c: NiveauCriticite): boolean => c === 'CRITIQUE
  * Champs manquants/invalides d'un arrangement (tableau vide = complet).
  * Base : référence, prestataire, type de service, criticité. Une fonction
  * critique/importante exige EN PLUS l'identifiant, le pays, la fonction et la date
- * de début (données requises par les ITS pour ces prestataires).
+ * de début (données requises par les ITS pour ces prestataires), ainsi qu'une stratégie de sortie (DORA art. 28 § 8).
  */
 export function validerArrangement(a: ArrangementTic): string[] {
   const manquants: string[] = []
@@ -68,6 +74,7 @@ export function validerArrangement(a: ArrangementTic): string[] {
     if (!rempli(a.pays)) manquants.push('pays')
     if (!rempli(a.fonctionSupportee)) manquants.push('fonctionSupportee')
     if (!rempli(a.dateDebut)) manquants.push('dateDebut')
+    if (!rempli(a.strategieSortie)) manquants.push('strategieSortie')
   }
   return manquants
 }
@@ -99,6 +106,9 @@ export function cleanArrangementInput(body: unknown): ArrangementTic {
     paysDonnees: str(b.paysDonnees),
     sousTraitance: b.sousTraitance === true || b.sousTraitance === 'true',
     questionnaire: cleanReponses(b.questionnaire),
+    strategieSortie: typeof b.strategieSortie === 'string' && b.strategieSortie.trim() ? b.strategieSortie.trim().slice(0, 4000) : null,
+    prestataireAlternatif: typeof b.prestataireAlternatif === 'string' && b.prestataireAlternatif.trim() ? b.prestataireAlternatif.trim().slice(0, 200) : null,
+    strategieSortieTesteeLe: toDate(b.strategieSortieTesteeLe),
   }
 }
 
@@ -124,6 +134,7 @@ export function validateArrangementInput(body: unknown): string | null {
 export const REGISTRE_CSV_HEADER = [
   'reference', 'prestataire', 'identifiant', 'pays', 'typeService',
   'fonctionSupportee', 'criticite', 'dateDebut', 'dateFin', 'paysDonnees',
+  'strategieSortie', 'prestataireAlternatif', 'strategieSortieTesteeLe',
   'sousTraitance', 'complet',
 ] as const
 
@@ -137,7 +148,8 @@ export function arrangementToCsvRow(a: ArrangementTic): (string | number)[] {
   return [
     a.reference, a.prestataireNom, a.identifiant ?? '', a.pays ?? '', a.typeService,
     a.fonctionSupportee ?? '', a.criticite, jourIso(a.dateDebut), jourIso(a.dateFin),
-    a.paysDonnees ?? '', a.sousTraitance ? 'oui' : 'non',
+    a.paysDonnees ?? '', a.strategieSortie ?? '', a.prestataireAlternatif ?? '', jourIso(a.strategieSortieTesteeLe),
+    a.sousTraitance ? 'oui' : 'non',
     validerArrangement(a).length === 0 ? 'oui' : 'non',
   ]
 }

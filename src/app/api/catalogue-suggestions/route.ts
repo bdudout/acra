@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { familleCatalogue } from '@/lib/famille-risque-tic'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getOrgConfig } from '@/lib/org-config.server'
@@ -168,6 +169,7 @@ export const POST = withAccess({ org: 'active', rateLimit: { bucket: 'catalogue-
         const risk = await tx.riskItem.create({ data: {
           organizationId: ctx.orgId, intitule: item.title, description: item.description ?? null,
           taxonomieCode: item.taxonomieCode && taxonomyCodes.has(item.taxonomieCode) ? item.taxonomieCode : null,
+          familleRisqueTic: familleCatalogue(item.key),
           processusId: item.processKey ? processIds.get(item.processKey) ?? null : null,
           catalogueKey: item.key, catalogueVersion: item.packVersion,
           provenance: 'ACRA', sourceType: 'catalogue', sourceId: item.key, statut: 'IDENTIFIE',

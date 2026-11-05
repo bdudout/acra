@@ -6,6 +6,7 @@ import { isAdminRole, type UserRole } from '@/lib/permissions'
 import { getAnalyseScope } from '@/lib/org-context.server'
 import { getOrgConfig } from '@/lib/org-config.server'
 import ReglementaireManager from '@/components/ReglementaireManager'
+import DependancesCritiques from '@/components/DependancesCritiques'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -28,6 +29,7 @@ export default async function ReglementairePage() {
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-8">
         <ReglementaireManager canAssess={canAssess} />
+        <DependancesCritiques />
       </main>
     </div>
   )

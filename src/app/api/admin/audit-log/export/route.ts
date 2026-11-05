@@ -50,7 +50,8 @@ export async function GET(req: NextRequest) {
   })
 
   // Build CSV
-  const HEADERS = ['date', 'action', 'userId', 'userEmail', 'userRole', 'ip', 'targetId', 'targetType', 'details']
+  // seq et hash : numéro d'ordre et empreinte de la chaîne d'audit (recoupement par un auditeur, lib/audit-chaine).
+  const HEADERS = ['date', 'action', 'userId', 'userEmail', 'userRole', 'ip', 'targetId', 'targetType', 'details', 'seq', 'hash']
 
   // [F002 corrigé] Neutralisation de l'injection de formule (CWE-1236) déléguée à
   // toCsvCell() : les objets (ex. `details`) sont d'abord sérialisés en JSON, puis

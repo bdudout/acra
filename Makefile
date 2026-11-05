@@ -4,7 +4,7 @@
 # Usage : make <cible>
 # =============================================================================
 
-.PHONY: help setup setup-auto up down logs restart build rebuild docker-usage docker-clean test db-reset db-migrate check-env
+.PHONY: help setup setup-auto setup-ha up down logs restart build rebuild docker-usage docker-clean test db-reset db-migrate check-env
 
 # Affiche l'aide par défaut
 help:
@@ -13,6 +13,7 @@ help:
 	@echo "  ─────────────────────────────────────────────────────"
 	@echo "  make setup      Configurer l'environnement (génère .env)"
 	@echo "  make setup-auto Générer .env sans interaction (secrets aléatoires)"
+	@echo "  make setup-ha   Configurer le profil multi-instance « ha » (docs/deploiement-haute-disponibilite.md)"
 	@echo "  make up         Démarrer l'application"
 	@echo "  make down       Arrêter l'application"
 	@echo "  make restart    Redémarrer l'application"
@@ -34,6 +35,10 @@ setup:
 # Génère le .env sans interaction (secrets aléatoires) — idéal CI / prod scriptée
 setup-auto:
 	@bash scripts/setup.sh --auto
+
+# Profil multi-instance « ha » : secrets, base/S3/Redis externes validés, docker compose config
+setup-ha:
+	@bash scripts/setup.sh --profil ha
 
 # ── Docker Compose ─────────────────────────────────────────────────────────────
 up: check-env

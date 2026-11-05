@@ -12,12 +12,14 @@
 import RisquesViewTabs from '@/components/RisquesViewTabs'
 import { AlertTriangle, NotebookText, X } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { FAMILLES_RISQUE_TIC } from '@/lib/famille-risque-tic'
 import { useTranslation } from '@/lib/i18n/context'
 import { apiErrorMessage } from '@/lib/api-error'
 import { taxonomieLabel, type TaxonomieNode } from '@/lib/taxonomie'
 import { RISK_STATUTS } from '@/lib/risk-item'
 import RiskActionsPanel, { type ActionsSummary } from '@/components/RiskActionsPanel'
 import RiskTiersPanel from '@/components/RiskTiersPanel'
+import PropositionsRisquesTic from '@/components/PropositionsRisquesTic'
 import AutocompleteInput from '@/components/AutocompleteInput'
 import { resolveScaleConfig, getRiskLevelFromSeuils, type ScaleConfig, type EchelleNiveau, type Seuil } from '@/lib/risk-scale'
 import { readableTextColor } from '@/lib/contrast-color'
@@ -39,7 +41,7 @@ function niveauHex(n: number | null, seuils: Seuil[]): string | null {
 }
 
 interface Risk {
-  id: string; intitule: string; taxonomieCode: string | null; processusId: string | null
+  id: string; intitule: string; taxonomieCode: string | null; familleRisqueTic?: string | null; processusId: string | null
   processusNom: string | null; entite: string | null; proprietaire: string | null; statut: string
   provenance: string
   graviteInherente: number | null; vraisemblanceInherente: number | null
@@ -51,10 +53,10 @@ interface Risk {
 }
 type Proc = { id: string; nom: string }
 type Form = {
-  intitule: string; taxonomieCode: string; processusId: string; entite: string; proprietaire: string
+  intitule: string; taxonomieCode: string; familleTic: string; processusId: string; entite: string; proprietaire: string
   statut: string; gi: string; vi: string; gr: string; vr: string
 }
-const EMPTY: Form = { intitule: '', taxonomieCode: '', processusId: '', entite: '', proprietaire: '', statut: 'IDENTIFIE', gi: '', vi: '', gr: '', vr: '' }
+const EMPTY: Form = { intitule: '', taxonomieCode: '', familleTic: '', processusId: '', entite: '', proprietaire: '', statut: 'IDENTIFIE', gi: '', vi: '', gr: '', vr: '' }
 
 export default function RegistreRisques({ canEdit, canCreateProcesses = false, scaleConfig }: { canEdit: boolean; canCreateProcesses?: boolean; scaleConfig?: Partial<ScaleConfig> | null }) {
   const { t } = useTranslation()
@@ -76,6 +78,7 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
   const [showForm, setShowForm] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
   // Valeur par défaut de l'entité : la plus fréquemment saisie dans le registre.
   const defaultEntite = synthese?.entiteFrequente ?? ''
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -109,7 +112,7 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
     if (!form.intitule.trim()) { setError(err('intitule_requis')); return }
     setBusy(true); setError(null)
     const payload = {
-      intitule: form.intitule, taxonomieCode: form.taxonomieCode || null, processusId: form.processusId || null,
+      intitule: form.intitule, taxonomieCode: form.taxonomieCode || null, familleRisqueTic: form.familleTic || null, processusId: form.processusId || null,
       entite: form.entite || null, proprietaire: form.proprietaire || null, statut: form.statut,
       graviteInherente: num(form.gi), vraisemblanceInherente: num(form.vi),
       graviteResiduelle: num(form.gr), vraisemblanceResiduelle: num(form.vr),
@@ -121,12 +124,14 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
     setBusy(false)
     if (!res.ok) { setError(err(data.error ?? 'erreur')); return }
     setForm(EMPTY); setEditId(null); setShowForm(false); reload()
+    // Double validation : l'acceptation d'un risque hors appétit attend une seconde personne habilitée.
+    setInfo(data.doubleValidation ? (data.existante ? t.doubleValidation.dejaTransmise : t.doubleValidation.transmise) : null)
   }
 
   function startEdit(x: Risk) {
     setEditId(x.id); setShowForm(true); setError(null)
     setForm({
-      intitule: x.intitule, taxonomieCode: x.taxonomieCode ?? '', processusId: x.processusId ?? '',
+      intitule: x.intitule, taxonomieCode: x.taxonomieCode ?? '', familleTic: x.familleRisqueTic ?? '', processusId: x.processusId ?? '',
       entite: x.entite ?? '', proprietaire: x.proprietaire ?? '', statut: x.statut,
       gi: x.graviteInherente?.toString() ?? '', vi: x.vraisemblanceInherente?.toString() ?? '',
       gr: x.graviteResiduelle?.toString() ?? '', vr: x.vraisemblanceResiduelle?.toString() ?? '',
@@ -206,7 +211,9 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
       </div>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{r.subtitle}</p>
       {canEdit && <SectorSuggestionsPanel canCreateProcesses={canCreateProcesses} kinds={['RISK']} associer onImported={() => { void reload() }} />}
+      {canEdit && <PropositionsRisquesTic onValidee={() => { void reload() }} />}
 
+      {info && <p role="status" className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">{info} <a href="/validations" className="underline">{t.doubleValidation.menu}</a></p>}
       {canEdit && showForm && (
         <div className="card p-4 mb-5 space-y-3">
           <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{editId ? r.editTitle : r.addTitle}</p>
@@ -222,6 +229,15 @@ export default function RegistreRisques({ canEdit, canCreateProcesses = false, s
               {procs.map(p => <option key={p.id} value={p.id}>{p.nom}</option>)}
             </select>
             <AutocompleteInput field="entite" value={form.entite} onChange={v => setForm(f => ({ ...f, entite: v }))} placeholder={r.entityPlaceholder} className={sel} />
+          </div>
+          {/* Famille de risque TIC : axe distinct de la catégorie (lib/famille-risque-tic), facultatif. */}
+          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+            <label htmlFor="registre-famille-tic" className="font-medium">{r.familleTic.label}</label>
+            <select id="registre-famille-tic" value={form.familleTic} onChange={e => setForm(f => ({ ...f, familleTic: e.target.value }))} aria-describedby="registre-famille-tic-hint" className={sel}>
+              <option value="">{r.familleTic.none}</option>
+              {FAMILLES_RISQUE_TIC.map(c => <option key={c} value={c}>{r.familleTic.codes[c]}</option>)}
+            </select>
+            <p id="registre-famille-tic-hint" className="w-full text-[11px] text-gray-500 dark:text-gray-400">{r.familleTic.hint}</p>
           </div>
           <div className="flex flex-wrap gap-4 items-center text-xs text-gray-600 dark:text-gray-300">
             <span className="font-medium">{r.inherent}:</span> {cote(form.gi, v => setForm(f => ({ ...f, gi: v })), r.gravity, graviteLevels)} {cote(form.vi, v => setForm(f => ({ ...f, vi: v })), r.likelihood, vraisLevels)}

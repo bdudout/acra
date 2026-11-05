@@ -30,5 +30,6 @@ export async function GET() {
     appetenceActive: cfg.appetenceActive,
     rapportsGrcActive: cfg.rapportsGrcActive,
     ropaSousTraitantActive: cfg.ropaSousTraitantActive,
+    strategieActive: cfg.strategieActive,
   })
 }

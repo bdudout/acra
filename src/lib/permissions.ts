@@ -459,6 +459,22 @@ export function peutGererRegistreTic(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'
 }
 
+/**
+ * Peut consulter les risques proposés depuis le registre TIC et la résilience : rôles qui lisent déjà le registre TIC
+ * et la cartographie des fonctions critiques (gouvernance et lecture globale du dispositif), sauf LECTEUR.
+ */
+export function peutVoirPropositionsRisquesTic(role: UserRole): boolean {
+  return role !== 'LECTEUR' && (peutGererRegistreTic(role) || hasGlobalReadDispositif(role))
+}
+
+/**
+ * Peut valider (→ création d'un risque au registre) ou écarter un risque proposé : comme la consultation, sauf
+ * l'AUDITEUR, qui reste en lecture seule (3ᵉ ligne indépendante — décision utilisateur du 03/11/2026).
+ */
+export function peutTraiterPropositionsRisquesTic(role: UserRole): boolean {
+  return role !== 'AUDITEUR' && peutVoirPropositionsRisquesTic(role)
+}
+
 /** Peut définir les KRI (délègue à peutDefinir2eLigne : rôles de 2ᵉ ligne). */
 export function peutDefinirKri(role: UserRole, opts?: OptionsDefinition): boolean {
   return peutDefinir2eLigne(role, opts)
@@ -487,6 +503,27 @@ export function peutLireRegistreIa(role: UserRole): boolean {
 /** Peut créer, modifier et supprimer les plans d'action unifiés (et accepter une proposition MCP de plan) : gouvernance. */
 export function peutGererPlansAction(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'DIRECTION_METIER'
+}
+
+// ─── Stratégie cyber / IT / résilience (lot S1a) ───
+/** Peut rédiger une stratégie (création, axes, objectifs, nouvelle version) : ADMIN, RSSI, RISK_MANAGER. */
+export function peutRedigerStrategie(role: UserRole): boolean {
+  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER'
+}
+
+/** Peut valider ou archiver une stratégie : ADMIN, RSSI, DIRECTION_METIER. */
+export function peutValiderStrategie(role: UserRole): boolean {
+  return isAdminRole(role) || role === 'RSSI' || role === 'DIRECTION_METIER'
+}
+
+/** Peut rattacher / retirer un élément (action, constat, contrôle…) à un axe : gouvernance + CONFORMITE, CONTROLEUR, DPO. */
+export function peutRattacherStrategie(role: UserRole): boolean {
+  return peutGererPlansAction(role) || role === 'CONFORMITE' || role === 'CONTROLEUR' || role === 'DPO'
+}
+
+/** Peut consulter les stratégies : rôles à lecture globale du dispositif (AUDITEUR en lecture seule). */
+export function peutVoirStrategie(role: UserRole): boolean {
+  return hasGlobalReadDispositif(role)
 }
 
 /** Peut gérer la conformité (tableau de bord, socle, traitements, import) : gouvernance, dont CONFORMITE et DPO. */

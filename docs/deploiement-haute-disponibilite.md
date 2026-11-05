@@ -264,9 +264,90 @@ pgbackrest --stanza=acra --delta --type=time \
 - La **phrase de chiffrement** perdue = sauvegardes inutilisables : la conserver dans le coffre de secrets.
 - Avec Patroni, l'archivage fonctionne depuis le primaire courant ; après une bascule, `pgbackrest check`
   doit réussir sur le nouveau primaire.
-- La sauvegarde logique `pg_dump` du profil mono-instance est désactivée dans le profil « ha » (service `backup`
-  dans le profil Compose `base-locale`). Un `pg_dump` hebdomadaire supplémentaire reste une bonne pratique
-  (export lisible, indépendant de la version de PostgreSQL).
+- Le service `backup` (pg_dump du conteneur `db` local) est désactivé dans le profil « ha » (profil Compose
+  `base-locale`) : il est remplacé par la **sauvegarde logique de la base externe** faite par l'agent hôte (§ 3.4).
+
+### 3.4 Sauvegarde logique, contrôle et restauration en profil « ha »
+
+Deux mécanismes **complémentaires et indépendants** :
+
+| | Archivage continu (PITR) | Sauvegarde logique ACRA |
+|---|---|---|
+| Outil | hébergeur (option A) ou pgBackRest (option B, § 3.3) | agent hôte : `scripts/update-agent.sh` → `acra-schedule.sh` → `acra-snapshot.sh` |
+| Perte maximale (RPO) | quelques secondes (`archive_timeout`) | intervalle de planification (24 h en quotidien) |
+| Format | binaire, même version majeure de PostgreSQL | `pg_dump` format custom, lisible, indépendant du fournisseur |
+| Rôle | reprise après sinistre, retour à un instant précis | point de contrôle vérifié, copie hors fournisseur, réversibilité |
+
+**Sauvegarde logique** **[vérifié : tests unitaires `acra-snapshot-ha-script.test.ts`, `acra-schedule-ha-script.test.ts`,
+et essai réel le 03/11/2026 sur PostgreSQL 16 local : dump, vérification complète, bail, inventaire des clés]** :
+
+- installer l'agent sur **un seul hôte**, celui du planificateur : `scripts/update-agent.sh --install -f docker-compose.yml
+  -f docker-compose.production.yml -f docker-compose.ha.yml` ; la surcouche `docker-compose.ha.yml` (ou
+  `ACRA_DEPLOY_PROFILE=ha`, variable ou ligne du `.env` écrite par `setup.sh --profil ha`) active le profil ;
+- `pg_dump` de la base **externe** dans un conteneur `postgres:<majeure du serveur>-alpine` (ou sur l'hôte si le client
+  y est au moins de la même version majeure, `ACRA_PG_CLIENT=host`), avec `BACKUP_DATABASE_URL` si elle est définie
+  — connexion **directe**, idéalement un rôle en lecture seule, **hors pgbouncer en mode transaction** — sinon
+  `DATABASE_URL`. Même chiffrement (`ACRA_BACKUP_AGE_RECIPIENT`), même conservation, même copie externe
+  (`acra-offsite.sh`) et mêmes empreintes `SHA256SUMS` qu'en mono-instance ;
+- **une seule sauvegarde à la fois, tous hôtes confondus** : bail en base `CronVerrou` (`script:sauvegarde-base`,
+  expiration `ACRA_BACKUP_LEASE_MINUTES`, défaut 360) ; une sauvegarde planifiée déjà faite le jour même par un autre
+  hôte est marquée (`script:sauvegarde-planifiee`) et le second hôte s'abstient (code 41, non compté comme un échec) ;
+- **vérification complète** : restauration de contrôle dans une base **jetable** et comparaison des comptes de lignes.
+  Sur une base managée qui refuse `CREATE DATABASE`, définir `ACRA_BACKUP_VERIFY_DATABASE_URL` (serveur de contrôle
+  dédié, jamais la production) ; à défaut le point reste valide avec une vérification rapide et l'impossibilité est
+  consignée au manifeste (`fullImpossible`) ;
+- **jamais de clone** ni d'arrêt de l'application (base partagée, connexions actives tolérées) ;
+- **documents** : rien n'est copié (bucket versionné, § 4). Le point consigne l'**inventaire** des clés référencées
+  par la base (`documents-keys.txt`, chiffré comme le dump, empreinte SHA-256 au manifeste, horodatage
+  `keysCapturedAt`) et le résultat du contrôle de présence dans le bucket (`bucketCheck` : `ok` / `ecart` /
+  `non_execute`), fait par l'application (tâche `coherence-documents`, HEAD de chaque clé).
+
+**Échecs visibles et relançables** : chaque sauvegarde (planifiée ou « Sauvegarder maintenant ») est rapportée à
+l'application (tâche `sauvegarde-base` dans Administration → Tâches planifiées) ; un échec y apparaît en **ÉCHEC**
+avec une alerte `TACHE_PLANIFIEE_ECHEC` au journal d'audit (transmise au SIEM) et le bouton **Relancer** dépose une
+demande de sauvegarde immédiate pour l'agent. La tâche `coherence-documents` (quotidienne à 04:00, et à chaque
+sauvegarde) passe en échec si un document référencé manque dans le bucket. **[vérifié par tests unitaires]**
+
+**Pas de restauration d'un clic sur une base partagée** : en profil « ha », l'écran *Version* liste les sauvegardes
+sans bouton « Revenir à ce point », `POST /api/admin/version/rollback` répond 409 `ha_profile` et
+`acra-snapshot.sh restore` s'arrête (code 33). Procédure (intégrité avant disponibilité) :
+
+1. **Décider l'instant** et prévenir les utilisateurs ; **arrêter les écritures** :
+   `docker compose $F stop app scheduler` (ou mode maintenance du frontal). Aucune écriture ne doit arriver sur
+   l'ancienne base après la décision.
+2. **Restaurer dans une base NEUVE**, jamais en place :
+   - PITR (recommandé si l'instant est récent) : nouveau service chez l'hébergeur, ou `pgbackrest … restore` sur un
+     nœud vierge (§ 3.3) ;
+   - sauvegarde logique ACRA : créer une base vide puis
+     ```sh
+     scripts/acra-restore-ha.sh database <identifiant du point> --target-url 'postgresql://…@hôte:5432/acra_restauree'
+     ```
+     Garde-fous : refus si la cible est la production (`DATABASE_URL`, `BACKUP_DATABASE_URL` ou
+     `MIGRATION_DATABASE_URL`, code 35, jamais forçable) ; refus si la cible n'est pas vide (code 34, `--force` pour
+     la remplacer) ; confirmation par saisie du nom de la base ; restauration en **une transaction** (échec ⇒ base
+     cible inchangée) ; empreintes du point vérifiées avant (code 21) ; point chiffré : `ACRA_BACKUP_AGE_IDENTITY`.
+3. **Contrôler** (fait par le script, code 30 en cas d'écart) : comptes de lignes du manifeste et empreinte des clés de
+   documents référencées. Une base en écart est conservée pour analyse : **ne pas basculer**.
+4. **Documents au même instant** si nécessaire (suppressions ou écrasements depuis le point) : versioning S3,
+   copie vers un **autre** bucket ou préfixe (jamais en place), limitée aux clés du point :
+   ```sh
+   scripts/acra-restore-ha.sh documents --at 2026-11-03T02:00:00Z --to-bucket acra-documents-restaures --keys-from <point>
+   ```
+   (`rclone` requis, option `version_at` **[à vérifier]** sur la version installée ; identifiants S3 passés par
+   l'environnement de rclone, jamais en argument ; copie contrôlée par `rclone check`.) **[non testé contre un vrai
+   bucket]**
+5. **Basculer** : `DATABASE_URL` (et `S3_BUCKET` / `S3_PREFIX` si les documents ont été copiés) vers la base et le
+   bucket contrôlés, dans le `.env` de **chaque** hôte ; `docker compose $F run --rm --no-deps migrator`
+   (rattrape le schéma si le point est antérieur à la version déployée) ; `docker compose $F up -d`.
+6. **Après** : lancer la tâche « Cohérence des documents » (Administration → Tâches planifiées) ; vérifier le journal
+   d'audit (Administration → Intégrité du journal) : les entrées postérieures au point sont absentes, et la
+   dernière ancre transmise au SIEM (`seq` supérieur) en garde la trace — c'est attendu après une restauration.
+   La vérification de la chaîne exige la **même** `AUDIT_CHAIN_KEY` (§ 6).
+7. Consigner l'incident (instant choisi, données perdues entre le point et l'arrêt des écritures).
+
+L'essai de restauration réel du 03/11/2026 (PostgreSQL 16 local, base jetable) a vérifié : restauration et contrôle
+réussis, refus de la base de production (35), refus d'une cible non vide (34), écart de comptes détecté (30),
+dump altéré refusé (21). **[vérifié]**
 
 ---
 
@@ -450,28 +531,119 @@ Client intégré `src/lib/redis-resp.ts` (sans dépendance) :
 
 ## 6. Procédure de déploiement
 
-Prérequis : base HA opérationnelle (§ 3), bucket S3 configuré (§ 4), DNS du domaine vers l'hôte Caddy.
+Installation pas à pas d'un hôte multi-instance : un hôte Docker porte Caddy, les N réplicas de l'application, le
+planificateur et (option d'essai) Redis ; la base, le stockage des documents et, en production, Redis sont
+**externes**. Les lettres **[vérifié]** / **[non testé]** suivent la légende du début du guide.
 
-1. Compléter `.env` (en plus des secrets habituels) :
-   `DATABASE_URL` (port d'écriture HAProxy ou point d'entrée managé), éventuellement `MIGRATION_DATABASE_URL`,
-   `NEXTAUTH_SECRET`, `NEXTAUTH_URL=https://<domaine>`, `REDIS_PASSWORD`, `S3_*`, `DOMAIN`, `ACME_EMAIL`,
-   `CRON_SECRET`, `ACRA_REPLICAS` (défaut 3), `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` (`openssl rand -base64 32`,
-   à générer **une fois** et à ne plus changer, § 2.2). Une variable obligatoire absente fait échouer
-   `docker compose config` avec un message explicite.
-2. Vérifier la configuration :
-   ```sh
-   docker compose -f docker-compose.yml -f docker-compose.production.yml -f docker-compose.ha.yml config -q
-   ```
-3. Démarrer :
-   ```sh
-   docker compose -f docker-compose.yml -f docker-compose.production.yml -f docker-compose.ha.yml up -d --build
-   ```
-   Ordre obtenu : `redis` sain → `migrator` (migrations, une seule fois) → réplicas `app` (chacun vérifie Redis
-   et la configuration S3 au démarrage, sinon s'arrête) → `caddy` et `scheduler`.
-4. Recette minimale : `/api/health` via le domaine ; connexion ; téléverser puis télécharger un document
-   (vérifier l'objet dans le bucket) ; 3 échecs de connexion répartis sur plusieurs réplicas verrouillent bien
-   le compte (si la politique est active) ; `docker stop` d'un réplica sans erreur visible ; journal du
-   `scheduler` sans double exécution.
+### Prérequis (à préparer avant de lancer le script)
+
+| Composant | Exigence | Référence |
+|---|---|---|
+| Base PostgreSQL | **managée** avec réplica et bascule (option A) ou **Patroni** 3 nœuds derrière HAProxy (option B) ; archivage continu (PITR) actif ; utilisateur dédié ; URL `postgresql://utilisateur:motdepasse@hôte:port/base` (+ `?sslmode=require` hors réseau privé). Option B : `DATABASE_URL` = port d'écriture HAProxy ou pgbouncer, `MIGRATION_DATABASE_URL` = connexion **directe** au primaire (verrou de session de Prisma Migrate) | § 3 |
+| Stockage objet S3 compatible | bucket **privé**, **versionné** (avec expiration des versions non courantes), **chiffré** par défaut (ou `S3_SSE=AES256`), identifiants dédiés limités au bucket, fournisseur UE | § 4 |
+| Redis | **managé** (primaire + réplica, bascule gérée, TLS : `rediss://…`) **ou** **Sentinel** 3 hôtes (quorum 2) ; mot de passe fort ou ACL ; `noeviction`, `appendonly yes`. À défaut, conteneur `redis` fourni = essai seulement (point de défaillance unique de la connexion) | § 5 |
+| Hôte Docker | Docker Engine + Compose ≥ 2.24.4 ; DNS du domaine vers l'hôte ; ports 80/443 ouverts ; dépôt ACRA cloné | — |
+
+### Configurer avec `scripts/setup.sh --profil ha`
+
+> **Clé de chaînage du journal d'audit (`AUDIT_CHAIN_KEY`)** — générée par `setup.sh` pour **toute** installation
+> (`openssl rand -base64 32`), mono-instance comme « ha », et **jamais régénérée** (même avec `--force`). Elle signe
+> la chaîne d'empreintes du journal d'audit (HMAC-SHA256, `src/lib/audit-chaine.ts`) et doit être **identique sur
+> tous les réplicas et tous les hôtes** (pour un hôte supplémentaire, la fournir par l'environnement : une valeur
+> différente de celle du `.env` est refusée). **À conserver dans un coffre et à sauvegarder avec les autres
+> secrets** : sans elle, la chaîne ne peut plus être vérifiée après la perte de l'hôte. **Ne jamais la changer** :
+> les entrées déjà scellées deviendraient invérifiables. Absente en production : avertissement au démarrage, non
+> bloquant (chaînage SHA-256 sans clé).
+
+Le script produit le `.env` du profil « ha » **[vérifié par tests unitaires : `src/__tests__/unit/lib/setup-script.test.ts`]** :
+
+- **génère** les secrets absents : `NEXTAUTH_SECRET`, `SECRETS_ENCRYPTION_KEY`, `CRON_SECRET`,
+  `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` (base64 de 32 octets, format exigé par Next.js — § 2.2), `AUDIT_CHAIN_KEY`
+  (ci-dessus) et, en mode
+  conteneur Redis, `REDIS_PASSWORD` (hexadécimal, inséré dans l'URL). **Un secret présent n'est jamais régénéré** ;
+  une valeur différente fournie par l'environnement est refusée ; `--force` est refusé en profil « ha » ;
+- **demande** (interactif) ou **lit dans l'environnement** (`--auto`) les paramètres externes : `DOMAIN`,
+  `ACME_EMAIL`, `NEXTAUTH_URL` (défaut `https://<DOMAIN>`), `ACRA_REPLICAS` (défaut 3), `DATABASE_URL`,
+  `MIGRATION_DATABASE_URL`, `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`,
+  `S3_SSE`, `S3_PREFIX`, et Redis (ci-dessous). Priorité : environnement > `.env` existant > question ;
+- **valide avant d'écrire** (rien n'est écrit en cas d'erreur, code 1) : URL PostgreSQL complète et externe (ni
+  `localhost` ni le service local `db`), `S3_ENDPOINT` sans chemin, nom de bucket, `S3_SSE` ∈ {vide, `AES256`},
+  `REDIS_URL` / `REDIS_SENTINELS` **exclusifs**, `REDIS_SENTINEL_MASTER` requis en Sentinel, mot de passe Redis
+  externe requis et cohérent avec celui de `REDIS_URL`, `NEXTAUTH_URL` en HTTPS, `DOMAIN`, `ACRA_REPLICAS`, et
+  aucune valeur contenant `$`, `#`, espace ou guillemet initial (Compose les interpréterait) ;
+- **écrit** `.env` en `600` (fichier temporaire puis renommage ; l'ancien est sauvegardé en `.env.backup.<date>`,
+  lui aussi en `600`) en conservant les variables qu'il ne gère pas (SMTP, etc.) ;
+- **vérifie** par `docker compose -f docker-compose.yml -f docker-compose.production.yml -f docker-compose.ha.yml config -q`
+  (code 3 en cas d'échec ; `--sans-verification` pour sauter) puis affiche les étapes suivantes ;
+- **n'affiche jamais un secret** : mots de passe des URL remplacés par `***`, secrets signalés « masqué », sortie
+  d'erreur de Compose filtrée.
+
+Choix de Redis (déduit des variables, ou question au premier passage en interactif) :
+
+| Mode | Variables | Ce que fait `docker-compose.ha.yml` |
+|---|---|---|
+| Conteneur fourni (essai) | `REDIS_PASSWORD` seul (généré) ; **pas** de ligne `REDIS_URL` | `REDIS_URL=redis://:<REDIS_PASSWORD>@redis:6379/0` |
+| Redis managé | `REDIS_URL=rediss://[utilisateur[:motdepasse]@]hôte:port[/base]`, `REDIS_PASSWORD` (= mot de passe de l'URL s'il y figure ; décodé de `%XX`), `REDIS_USERNAME` facultatif | `REDIS_URL` du `.env` ; le conteneur `redis` local démarre mais n'est pas utilisé |
+| Redis Sentinel | `REDIS_URL=` (**vide**, explicitement), `REDIS_SENTINELS`, `REDIS_SENTINEL_MASTER`, `REDIS_PASSWORD` (primaire), `REDIS_SENTINEL_PASSWORD`, `REDIS_USERNAME`, `REDIS_TLS` facultatifs | variables transmises telles quelles à l'application |
+
+```sh
+# Interactif (questions ; saisies secrètes masquées)
+./scripts/setup.sh --profil ha
+
+# Non interactif (automatisation) : paramètres par l'environnement, idéalement depuis un coffre de secrets
+DOMAIN=acra.mondomaine.fr ACME_EMAIL=exploitation@mondomaine.fr \
+DATABASE_URL='postgresql://acra:…@pg-rw.interne:5432/acra_rm?sslmode=require' \
+S3_ENDPOINT=https://s3.gra.io.cloud.ovh.net S3_REGION=gra S3_BUCKET=acra-documents \
+S3_ACCESS_KEY_ID=… S3_SECRET_ACCESS_KEY=… \
+REDIS_URL='rediss://redis.interne:6380/0' REDIS_PASSWORD=… \
+  ./scripts/setup.sh --profil ha --auto
+```
+
+Relancé, le script reprend le profil depuis `.env` (`ACRA_DEPLOY_PROFILE=ha`) et ne complète que ce qui manque.
+Passage d'une installation mono-instance existante : `NEXTAUTH_SECRET`, `SECRETS_ENCRYPTION_KEY` (secrets déjà
+chiffrés en base) et la clé des Server Functions sont **conservés** ; la `DATABASE_URL` locale (`@db:5432`) n'est pas
+reprise ; migrer d'abord les données (restauration du `pg_dump` dans la base HA, copie des documents vers le bucket —
+§ 4) **[non testé]**.
+
+À défaut du script, compléter `.env` à la main avec les mêmes variables (`openssl rand -base64 32` pour la clé des
+Server Functions, `openssl rand -hex 32` pour `REDIS_PASSWORD`) : une variable obligatoire absente fait échouer
+`docker compose config` avec un message explicite.
+
+### Démarrer
+
+```sh
+F="-f docker-compose.yml -f docker-compose.production.yml -f docker-compose.ha.yml"
+docker compose $F config -q                     # 1. configuration (déjà fait par setup.sh)
+docker compose $F build app migrator            # 2. image (clé des Server Functions embarquée)
+docker compose $F run --rm --no-deps migrator   # 3. migrations, UNE fois, avant les réplicas
+docker compose $F up -d                         # 4. redis → migrator (sans effet) → réplicas app → caddy, scheduler
+docker compose $F exec app node scripts/create-admin.mjs admin@mondomaine.fr SUPER_ADMIN   # 5. administrateur initial
+```
+
+Chaque réplica vérifie au démarrage, sinon s'arrête (code 1, message explicite dans `docker compose $F logs app`) :
+secrets et `DATABASE_URL` ; **profil « ha »** (`ACRA_DEPLOY_PROFILE=ha`, `src/lib/startup-checks.ts`) : clé des Server
+Functions présente et valide, `DOCUMENT_STORAGE=s3`, un store Redis déclaré (`REDIS_URL` ou `REDIS_SENTINELS`) ;
+puis configuration S3 complète et Redis joignable (`instrumentation.ts`). **[vérifié par tests unitaires ; démarrage
+réel non testé]**
+
+**Planificateur unique** : le service `scheduler` de **cet** hôte appelle `/api/cron/*` ; ne pas activer en plus le
+workflow `.github/workflows/scheduled-tasks.yml`, ni un second hôte avec `scheduler` (le bail `CronVerrou` empêche
+deux exécutions simultanées, pas deux exécutions successives — § 2.1).
+
+### Vérifications après installation
+
+1. `docker compose $F ps` : `redis` sain, `ACRA_REPLICAS` réplicas `app` « healthy », `caddy` et `scheduler` en marche.
+2. `https://<domaine>/api/health` répond 200 (base joignable, schéma à jour).
+3. Journal d'un réplica : `✓ [ACRA-STARTUP] Profil « ha » : …` et « Limites de débit et verrouillage de compte
+   partagés via Redis (…) » (point d'entrée affiché sans secret).
+4. Connexion ; téléverser puis télécharger un document ; l'objet apparaît dans le bucket sous `<organisation>/…`.
+5. 3 échecs de connexion répartis sur plusieurs réplicas verrouillent bien le compte (si la politique est active).
+6. `docker stop` d'un réplica : aucune erreur visible au-delà de quelques secondes ; le réplica redémarre.
+7. Journal du `scheduler` sans double exécution.
+8. Sauvegarder `.env` dans un coffre : la clé des Server Functions, `AUDIT_CHAIN_KEY` et les secrets doivent
+   survivre à la perte de l'hôte.
+9. Installer l'agent de sauvegarde sur cet hôte (§ 3.4) et vérifier, après la première sauvegarde, la ligne
+   « Sauvegarde de la base » en succès dans Administration → Tâches planifiées.
 
 ### 6.1 Mise à jour sans interruption (lot H1.4)
 
@@ -628,8 +800,21 @@ migration « contract » demande aussi une décision humaine. Le bouton reste ce
   `update.sh` refuse le profil « ha » ; drainage de `/api/health` ; bouton remplacé par la procédure ; cliquet
   expand/contract sur les migrations du dépôt ; `docker compose config` avec la clé et l'identifiant de déploiement
   fusionnés dans les arguments de construction d'`app` et de `migrator` (clé absente → échec explicite).
+- **Installation et sauvegarde (03/11/2026)** — tests unitaires : `scripts/setup.sh` (mono-instance et `--profil ha`,
+  génération et conservation des clés dont `AUDIT_CHAIN_KEY`, validation avant écriture, aucun secret affiché),
+  contrôles de démarrage du profil « ha » et avertissement `AUDIT_CHAIN_KEY`, `acra-snapshot.sh` / `acra-schedule.sh`
+  / `acra-restore-ha.sh` avec `docker` et `psql` simulés, routes `coherence-documents` et `sauvegarde-base`, écrans.
+  **Essai réel** sur PostgreSQL 16 local (bases jetables) : sauvegarde logique en profil « ha » (dump, vérification
+  complète dans une base jetable supprimée ensuite, bail `CronVerrou` pris puis libéré, inventaire des clés de
+  documents), restauration de contrôle par `acra-restore-ha.sh database` (comptes identiques), refus de la base de
+  production (35), d'une cible non vide (34), écart de comptes détecté (30), dump altéré refusé (21) ; non-régression
+  du mode mono-instance (`ACRA_DB_MODE=url`, archive des documents). `docker compose config` des trois fichiers avec
+  un `.env` factice (clé de chaînage transmise ; Redis Sentinel : `REDIS_URL` vide).
 
 **Non testé** :
+- sauvegarde dans un conteneur `postgres:<majeure>-alpine` contre une base managée réelle, `ACRA_BACKUP_VERIFY_DATABASE_URL`,
+  compte rendu à l'application par `docker compose exec` (pas de démon Docker), contrôle `coherence-documents` contre un
+  vrai bucket, `acra-restore-ha.sh documents` avec un vrai `rclone` et un bucket versionné ;
 - démarrage réel du profil « ha » (pas de démon Docker dans l'environnement de développement), donc ni
   Caddy (`Caddyfile.ha` non validé par `caddy validate`), ni la découverte DNS des réplicas, ni le contrôle de
   santé actif avec upstreams dynamiques ;

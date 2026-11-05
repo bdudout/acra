@@ -265,3 +265,20 @@ describe('efficacité établie et échantillon testé', () => {
     expect(resumeEfficaciteProvisoire({ evaluees: 2, anomalies: 0, echantillon: null }, g)).toBe('2 exécution(s) · 0 anomalie(s)')
   })
 })
+
+import { efficaciteDepuisComptes, evaluerEfficacite as evaluerEff } from '@/lib/controle'
+describe('efficaciteDepuisComptes (agrégats SQL) ≡ evaluerEfficacite (exécutions chargées)', () => {
+  const d = new Date('2026-01-01')
+  const cas = [
+    [],
+    [{ resultat: 'CONFORME', dateRealisation: d }],
+    [{ resultat: 'CONFORME', dateRealisation: d }, { resultat: 'ANOMALIE', dateRealisation: d }, { resultat: 'NON_APPLICABLE', dateRealisation: d }],
+    Array.from({ length: 20 }, (_, i) => ({ resultat: i === 0 ? 'ANOMALIE' : 'CONFORME', dateRealisation: d })),
+    Array.from({ length: 10 }, (_, i) => ({ resultat: i < 3 ? 'ANOMALIE' : 'CONFORME', dateRealisation: d })),
+  ]
+  it.each(cas.map((c, i) => [i, c] as const))('cas %i', (_i, executions) => {
+    const evaluables = executions.filter(e => e.resultat === 'CONFORME' || e.resultat === 'ANOMALIE')
+    const conformes = evaluables.filter(e => e.resultat === 'CONFORME').length
+    expect(efficaciteDepuisComptes({ evaluees: evaluables.length, conformes })).toEqual(evaluerEff(executions))
+  })
+})
