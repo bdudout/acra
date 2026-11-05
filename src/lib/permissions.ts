@@ -505,6 +505,27 @@ export function peutGererPlansAction(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'DIRECTION_METIER'
 }
 
+// ─── Stratégie cyber / IT / résilience (lot S1a) ───
+/** Peut rédiger une stratégie (création, axes, objectifs, nouvelle version) : ADMIN, RSSI, RISK_MANAGER. */
+export function peutRedigerStrategie(role: UserRole): boolean {
+  return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER'
+}
+
+/** Peut valider ou archiver une stratégie : ADMIN, RSSI, DIRECTION_METIER. */
+export function peutValiderStrategie(role: UserRole): boolean {
+  return isAdminRole(role) || role === 'RSSI' || role === 'DIRECTION_METIER'
+}
+
+/** Peut rattacher / retirer un élément (action, constat, contrôle…) à un axe : gouvernance + CONFORMITE, CONTROLEUR, DPO. */
+export function peutRattacherStrategie(role: UserRole): boolean {
+  return peutGererPlansAction(role) || role === 'CONFORMITE' || role === 'CONTROLEUR' || role === 'DPO'
+}
+
+/** Peut consulter les stratégies : rôles à lecture globale du dispositif (AUDITEUR en lecture seule). */
+export function peutVoirStrategie(role: UserRole): boolean {
+  return hasGlobalReadDispositif(role)
+}
+
 /** Peut gérer la conformité (tableau de bord, socle, traitements, import) : gouvernance, dont CONFORMITE et DPO. */
 export function peutGererConformite(role: UserRole): boolean {
   return isAdminRole(role) || role === 'RSSI' || role === 'RISK_MANAGER' || role === 'CONFORMITE' || role === 'DPO'

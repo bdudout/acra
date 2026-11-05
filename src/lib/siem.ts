@@ -56,6 +56,7 @@ const CATEGORY: Record<AuditAction, SiemCategory> = {
   PLAN_PROGRAMME_UPDATED: 'GOUVERNANCE', // plan d'audit ou de contrôle : création, lignes, soumission, validation, révision
   TACHE_PLANIFIEE_ECHEC: 'CONFIGURATION', TACHE_PLANIFIEE_RELANCEE: 'CONFIGURATION', // tâche planifiée en échec (à surveiller) / relancée par un administrateur
   PLAN_ACTION_UPDATED: 'GOUVERNANCE', // plan d'action unifié : création, modification, suppression (details.action)
+  STRATEGIE_UPDATED: 'GOUVERNANCE', STRATEGIE_VALIDATED: 'GOUVERNANCE', STRATEGIE_ARCHIVED: 'GOUVERNANCE', // stratégie : création, cadre, rattachements, versions (details.action) / validation / archivage
   CONFORMITE_UPDATED: 'GOUVERNANCE', // suivi de conformité d'organisation : arrêt, reprise d'analyse, traitements d'écart
   ENTITE_REFERENTIEL_UPDATED: 'CONFIGURATION', // référentiel des entités : création, modification, clôture, suppression
   DEROGATION_REQUESTED: 'GOUVERNANCE', DEROGATION_RSSI_OPINION: 'GOUVERNANCE', DEROGATION_DOUBLE_REVIEW: 'GOUVERNANCE',

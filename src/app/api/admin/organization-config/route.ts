@@ -98,6 +98,8 @@ export const GET = withAccess({ org: 'none', rateLimit: { bucket: 'org-config', 
     appetenceActive: cfg.appetenceActive,
     rapportsGrcActive: cfg.rapportsGrcActive,
     ropaSousTraitantActive: cfg.ropaSousTraitantActive,
+    strategieActive: cfg.strategieActive,
+    strategieCadreFige: cfg.strategieCadreFige,
     planificationConfig: sanitizePlanificationConfig(cfg.planificationConfig),
     mcpActive: cfg.mcpActive,
     echellesEcosysteme: echellesOut(cfg.echellesEcosysteme),
@@ -255,6 +257,8 @@ export const PUT = withAccess({ org: 'none', rateLimit: { bucket: 'org-config-wr
   if (typeof body.appetenceActive === 'boolean') data.appetenceActive = body.appetenceActive
   if (typeof body.rapportsGrcActive === 'boolean') data.rapportsGrcActive = body.rapportsGrcActive
   if (typeof body.ropaSousTraitantActive === 'boolean') data.ropaSousTraitantActive = body.ropaSousTraitantActive
+  if (typeof body.strategieActive === 'boolean') data.strategieActive = body.strategieActive
+  if (typeof body.strategieCadreFige === 'boolean') data.strategieCadreFige = body.strategieCadreFige
   if (typeof body.mcpActive === 'boolean') data.mcpActive = body.mcpActive
   // Taxonomie de risques : nettoyée avant stockage ([] ⇒ retour au défaut Bâle).
   // Programme d'audit et de contrôle : configuration assainie (rôles connus, bornes) avant stockage.

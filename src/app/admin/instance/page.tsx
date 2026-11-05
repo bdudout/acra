@@ -137,6 +137,7 @@ export default function AdminInstancePage() {
     { key: 'appetence', label: t.features.appetenceTitle },
     { key: 'rapportsGrc', label: t.features.rapportsGrcTitle },
     { key: 'ropaSousTraitant', label: t.features.ropaSousTraitantTitle },
+    { key: 'strategie', label: t.features.strategieTitle },
   ]
 
   if (status === 'loading' || !isAdmin) {

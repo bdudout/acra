@@ -216,6 +216,9 @@ model Organization {
   preconisations         Preconisation[]
   appetenceSnapshots     AppetenceSnapshot[]
   plansProgramme         PlanProgramme[]
+  strategies             Strategie[]
+  rattachementsStrategiques RattachementStrategique[]
+  evolutionsStrategiques StrategieEvolution[]
 
   @@index([parentId])
   @@index([path])
@@ -2340,6 +2343,10 @@ model OrganizationConfig {
   rapportsGrcActive           Boolean       @default(false)
   // Registre du sous-traitant (RGPD art. 30 §2) : module activable (3 niveaux), désactivé par défaut.
   ropaSousTraitantActive      Boolean       @default(false)
+  // Stratégie cyber / IT / résilience (axes, objectifs, rattachements) : module à 3 niveaux, activé par défaut.
+  strategieActive             Boolean       @default(true)
+  // Cadre (axes, objectifs) figé après validation (défaut) ; sinon modifiable avec justification historisée.
+  strategieCadreFige          Boolean       @default(true)
   // Serveur MCP (agents/LLM) pour cette organisation : désactivé par défaut ; exige aussi l'interrupteur d'instance `mcpEnabled`.
   mcpActive                   Boolean       @default(false)
   // Personnalisation de l'échelle de maturité CMMI (niveaux 0–5) :
@@ -3172,4 +3179,121 @@ model ScenarioSevere {
   updatedAt                DateTime  @updatedAt
 
   @@index([organizationId, processusId])
+}
+
+// ─── Stratégie cyber / IT / résilience (lot S1a) ─────────────────────────────
+// Cadre (axes, objectifs) validé puis figé ; rattachements d'éléments (actions du store unifié) au fil de l'eau.
+// Modifier le cadre d'une stratégie validée = nouvelle version (l'ancienne passe ARCHIVEE). Cf. lib/strategie.ts,
+// docs/specs/strategie-cyber-it-resilience.md.
+model Strategie {
+  id                  String       @id @default(cuid())
+  organizationId      String
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  titre               String
+  description         String?      @db.Text
+  // CYBER | IT | RESILIENCE | INTEGREE
+  type                String       @default("CYBER")
+  periodeDebut        DateTime?
+  periodeFin          DateTime?
+  // BROUILLON | VALIDEE | ARCHIVEE
+  statut              String       @default("BROUILLON")
+  version             Int          @default(1)
+  versionPrecedenteId String?
+  versionPrecedente   Strategie?   @relation("StrategieVersions", fields: [versionPrecedenteId], references: [id], onDelete: SetNull)
+  versionsSuivantes   Strategie[]  @relation("StrategieVersions")
+  valideePar          String?
+  valideeLe           DateTime?
+  // Instantané immuable du cadre validé ({ axes: [{ id, ordre, titre, description, referenceRef, objectifs: [...] }] }).
+  cadreValide         Json?
+  // Identifiants internes facultatifs (lien comptable / budgétaire) : référence ≤ 100 car. ; [{ systeme ≤ 50, valeur ≤ 100 }] ≤ 10.
+  referenceInterne     String?
+  identifiantsExternes Json?
+  createdById         String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  axes       AxeStrategique[]
+  evolutions StrategieEvolution[]
+
+  @@index([organizationId])
+  @@index([organizationId, statut])
+  @@index([versionPrecedenteId])
+}
+
+model AxeStrategique {
+  id           String    @id @default(cuid())
+  strategieId  String
+  strategie    Strategie @relation(fields: [strategieId], references: [id], onDelete: Cascade)
+  ordre        Int       @default(0)
+  titre        String
+  description  String?   @db.Text
+  // Référence facultative (ex. fonction d'un référentiel : « NIST CSF 2.0 — PR »).
+  referenceRef String?
+  // Identifiants internes facultatifs (lien comptable / budgétaire) : référence ≤ 100 car. ; [{ systeme ≤ 50, valeur ≤ 100 }] ≤ 10.
+  referenceInterne     String?
+  identifiantsExternes Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  objectifs     ObjectifStrategique[]
+  rattachements RattachementStrategique[]
+
+  @@index([strategieId])
+}
+
+model ObjectifStrategique {
+  id         String         @id @default(cuid())
+  axeId      String
+  axe        AxeStrategique @relation(fields: [axeId], references: [id], onDelete: Cascade)
+  titre      String
+  indicateur String?        @db.Text
+  cible      String?
+  echeance   DateTime?
+  kriId      String?
+  // Identifiants internes facultatifs (lien comptable / budgétaire) : référence ≤ 100 car. ; [{ systeme ≤ 50, valeur ≤ 100 }] ≤ 10.
+  referenceInterne     String?
+  identifiantsExternes Json?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([axeId])
+}
+
+model RattachementStrategique {
+  id             String         @id @default(cuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  axeId          String
+  axe            AxeStrategique @relation(fields: [axeId], references: [id], onDelete: Cascade)
+  // Source du store d'actions unifié (ACTION_SOURCES) : MESURE | RISK_ACTION | CONFORMITE | AUDIT | CONTROLE | INCIDENT | PLAN_ACTION
+  sourceType     String
+  sourceId       String
+  // MANUEL | ASSISTANT | MCP
+  provenance     String         @default("MANUEL")
+  ajoutePar      String?
+  createdAt      DateTime       @default(now())
+
+  @@unique([axeId, sourceType, sourceId])
+  @@index([organizationId])
+  @@index([organizationId, sourceType, sourceId])
+}
+
+// Historique des évolutions d'une stratégie APRÈS validation (ajouts, retraits, modifications du cadre) avec justification.
+model StrategieEvolution {
+  id             String       @id @default(cuid())
+  strategieId    String
+  strategie      Strategie    @relation(fields: [strategieId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // AJOUT_RATTACHEMENT | RETRAIT_RATTACHEMENT | AJOUT_AXE | MODIF_AXE | SUPPR_AXE | AJOUT_OBJECTIF | MODIF_OBJECTIF | SUPPR_OBJECTIF
+  type           String
+  cibleId        String?
+  avant          Json?
+  apres          Json?
+  justification  String       @db.Text
+  auteurId       String?
+  createdAt      DateTime     @default(now())
+
+  @@index([strategieId, createdAt])
+  @@index([organizationId])
 }

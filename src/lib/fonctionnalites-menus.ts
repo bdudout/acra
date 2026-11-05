@@ -9,7 +9,7 @@ export const MENUS_FONCTIONNALITES: MenuFonctionnalite[] = ['pilotage', 'analyse
 
 const MENU_DU_CHAMP: Record<string, MenuFonctionnalite> = {
   // Pilotage : appétence (RAS / RAD) et KRI.
-  kriActive: 'pilotage', appetenceActive: 'pilotage',
+  kriActive: 'pilotage', appetenceActive: 'pilotage', strategieActive: 'pilotage', strategieCadreFige: 'pilotage',
   // Gestion des risques : déroulé des analyses et projets 360.
   qualificationActive: 'analyses', qualificationObligatoire: 'analyses', conseilsAteliersActive: 'analyses',
   acceptationRisquesActive: 'analyses', gelApresAcceptationActive: 'analyses', interdireAutoApprobation: 'analyses', doubleValidationActive: 'analyses', projets360Active: 'analyses',

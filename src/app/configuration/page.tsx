@@ -203,6 +203,8 @@ export default function ConfigurationPage() {
   const [appetenceActive, setAppetenceActive] = useState(false)
   const [rapportsGrcActive, setRapportsGrcActive] = useState(false)
   const [ropaSousTraitantActive, setRopaSousTraitantActive] = useState(false)
+  const [strategieActive, setStrategieActive] = useState(true)
+  const [strategieCadreFige, setStrategieCadreFige] = useState(true)
   const [mcpActive, setMcpActive] = useState(false)
   // Politique d'instance (SUPER_ADMIN) : { <module>: 'PER_ORG'|'FORCE_ON'|'FORCE_OFF' }.
   const [modulesPolicy, setModulesPolicy] = useState<Record<string, string>>({})
@@ -281,6 +283,8 @@ export default function ConfigurationPage() {
         setAppetenceActive(data.appetenceActive === true)
         setRapportsGrcActive(data.rapportsGrcActive === true)
         setRopaSousTraitantActive(data.ropaSousTraitantActive === true)
+        setStrategieActive(data.strategieActive !== false)
+        setStrategieCadreFige(data.strategieCadreFige !== false)
         setMcpActive(data.mcpActive === true)
         if (data.modulesPolicy && typeof data.modulesPolicy === 'object') setModulesPolicy(data.modulesPolicy)
         setTaxonomieRisques(sanitizeTaxonomie(data.taxonomieRisques))
@@ -343,6 +347,8 @@ export default function ConfigurationPage() {
     appetenceActive: setAppetenceActive,
     rapportsGrcActive: setRapportsGrcActive,
     ropaSousTraitantActive: setRopaSousTraitantActive,
+    strategieActive: setStrategieActive,
+    strategieCadreFige: setStrategieCadreFige,
     mcpActive: setMcpActive,
   }
   // Intitulés des groupes d'activation : ceux de la barre de navigation (cf. lib/fonctionnalites-menus).
@@ -350,7 +356,7 @@ export default function ConfigurationPage() {
     pilotage: t.nav.grpPilotage, analyses: t.nav.grpAnalyses, registre: t.nav.grpRegistre, controleAudit: t.nav.grpControleAudit,
     conformite: t.nav.grpConformite, reglementaire: t.nav.grpReglementaire, general: t.features.groupeGeneral,
   })[menu]
-  async function saveFeature(field: 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'doubleValidationActive' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'auditeurHorsDefinition' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive' | 'campagnesRcsaActive' | 'appetenceActive' | 'rapportsGrcActive' | 'ropaSousTraitantActive', value: boolean) {
+  async function saveFeature(field: 'mcpActive' | 'qualificationActive' | 'qualificationObligatoire' | 'conformiteActive' | 'conseilsAteliersActive' | 'acceptationRisquesActive' | 'gelApresAcceptationActive' | 'interdireAutoApprobation' | 'doubleValidationActive' | 'petiteStructure' | 'derogationsActive' | 'derogationDoubleRegard' | 'derogationSortCatalogue' | 'registreRisquesActive' | 'incidentsActive' | 'controlePermanentActive' | 'auditInterneActive' | 'kriActive' | 'reglementaireActive' | 'secondeLigneActive' | 'auditeurHorsDefinition' | 'profilsOperationnelsActive' | 'projets360Active' | 'homologationsActive' | 'recertificationActive' | 'registreIaActive' | 'campagnesRcsaActive' | 'appetenceActive' | 'rapportsGrcActive' | 'ropaSousTraitantActive' | 'strategieActive' | 'strategieCadreFige', value: boolean) {
     FEATURE_SETTERS[field]?.(value) // mise à jour optimiste
     setSavingFeatures(true)
     const res = await fetch('/api/admin/organization-config', {
@@ -1382,6 +1388,11 @@ export default function ConfigurationPage() {
             {isAdmin && <p className="mb-4"><a href="/configuration/personnalisation" className="text-sm text-ebios-700 hover:underline">{t.personnalisation.configLink} →</a></p>}
             <div className="space-y-6">
               {grouperParMenu([
+                { field: 'strategieActive' as const, value: strategieActive, title: t.features.strategieTitle, desc: t.features.strategieDesc, href: '/strategie', disabled: modulesPolicy.strategie === 'FORCE_ON' || modulesPolicy.strategie === 'FORCE_OFF', indent: false, forced: modulesPolicy.strategie },
+                // Option de la stratégie (réglage d'organisation, pas de politique d'instance) : visible si le module est actif.
+                ...((modulesPolicy.strategie === 'FORCE_OFF' ? false : modulesPolicy.strategie === 'FORCE_ON' || strategieActive)
+                  ? [{ field: 'strategieCadreFige' as const, value: strategieCadreFige, title: t.features.strategieCadreFigeTitle, desc: t.features.strategieCadreFigeDesc, href: '/strategie', disabled: false, indent: true }]
+                  : []),
                 { field: 'qualificationActive' as const, value: qualificationActive, title: t.features.qualificationTitle, desc: t.features.qualificationDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
                 { field: 'qualificationObligatoire' as const, value: qualificationObligatoire, title: t.features.qualificationObligTitle, desc: t.features.qualificationObligDesc, href: 'https://club-ebios.org/site/', disabled: !qualificationActive, indent: true },
                 { field: 'conformiteActive' as const, value: conformiteActive, title: t.features.conformiteTitle, desc: t.features.conformiteDesc, href: 'https://club-ebios.org/site/', disabled: false, indent: false },
