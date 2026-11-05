@@ -5,8 +5,8 @@
 // CODES (origine, priorité, statut effectif), le client traduisant à l'affichage.
 // Spec : docs/specs/scalabilite-haute-disponibilite.md § 5 bis.
 import {
-  filterActionItems, sortActionItems, summarizeActionItems, ACTION_ORIGINES,
-  type ActionItem, type ActionItemFiltre, type ActionOrigine, type EcheanceBucket,
+  filterActionItems, sortActionItems, summarizeActionItems, ACTION_ORIGINES, ACTION_CATEGORIES, AXE_NON_RATTACHE,
+  type ActionItem, type ActionItemFiltre, type ActionOrigine, type ActionCategorie, type AxeRattache, type EcheanceBucket,
 } from './action-items'
 import { effectiveStatut, ACTION_PRIORITES, type ActionPriorite, type ActionsSummary } from './risk-action'
 import { applyColumnFilters, distinctValues, type ColumnFilters } from './table-filter'
@@ -50,6 +50,11 @@ export function lireFiltresActions(sp: URLSearchParams): FiltresActions {
   if (porteur.trim()) f.porteur = porteur
   const q = (sp.get('q') ?? '').slice(0, 200)
   if (q.trim()) f.q = q
+  // Lot S2 : catégorie (code connu) et axe stratégique (identifiant ou « aucun »).
+  const categorie = sp.get('categorie')
+  if (categorie && (ACTION_CATEGORIES as readonly string[]).includes(categorie)) f.categorie = categorie as ActionCategorie
+  const axe = (sp.get('axe') ?? '').trim()
+  if (axe && axe.length <= 64) f.axe = axe
   return { filtre: f, entite: { id: sp.get('entite') ?? '', sous: sp.get('sousEntites') !== '0' }, colonnes: lireColonnes(sp.get('col')) }
 }
 
@@ -122,13 +127,27 @@ export interface PageActions {
   synthese: SyntheseActions
   /** Valeurs distinctes (codes) des colonnes filtrables, après les filtres à facettes. */
   valeurs: Record<ColonneFiltrable, string[]>
+  /** Axes stratégiques présents dans les actions (options de la facette « Axe stratégique », lot S2). */
+  axes: AxeRattache[]
+}
+
+/** Axes distincts portés par les actions, triés par stratégie puis par titre d'axe. */
+export function axesDesActions(items: ActionItem[]): AxeRattache[] {
+  const parId = new Map<string, AxeRattache>()
+  for (const it of items) for (const a of it.axes ?? []) if (!parId.has(a.axeId)) parId.set(a.axeId, a)
+  return [...parId.values()].sort((a, b) => a.strategieTitre.localeCompare(b.strategieTitre) || a.axeTitre.localeCompare(b.axeTitre))
 }
 
 /**
  * Pipeline de la vue (inchangé) : facettes → entité → filtres de colonne → tri (colonne, sinon tri métier) → page.
  */
 export function listerActionsPage(items: ActionItem[], f: FiltresActions, pg: Pagination<TriAction>, entites: EntiteRef[], now: Date): PageActions {
-  const facettes = filtrerParEntite(filterActionItems(items, f.filtre, now), entites, f.entite.id, f.entite.sous)
+  // Lot S2 : un filtre d'axe sans objet (axe absent des actions, ou « aucun » sans aucun axe chargé) est ignoré.
+  const axes = axesDesActions(items)
+  const filtre = f.filtre.axe && (f.filtre.axe === AXE_NON_RATTACHE ? axes.length === 0 : !axes.some(a => a.axeId === f.filtre.axe))
+    ? { ...f.filtre, axe: undefined }
+    : f.filtre
+  const facettes = filtrerParEntite(filterActionItems(items, filtre, now), entites, f.entite.id, f.entite.sous)
   const valeurs = Object.fromEntries(COLONNES_FILTRABLES.map(k => [k, distinctValues(facettes, it => valeurColonne(it, k, now))])) as Record<ColonneFiltrable, string[]>
   const filtres = applyColumnFilters(facettes, f.colonnes, (it, k) => valeurColonne(it, k, now))
   const tries = pg.tri === 'defaut' ? sortActionItems(filtres, now) : sortRows(filtres, { key: pg.tri, dir: pg.ordre }, (it, k) => cleTriAction(it, k, now))
@@ -138,5 +157,6 @@ export function listerActionsPage(items: ActionItem[], f: FiltresActions, pg: Pa
     pagination: page.pagination,
     synthese: { ...summarizeActionItems(items, now), orphelines: items.filter(i => i.origine === 'orpheline').length },
     valeurs,
+    axes,
   }
 }

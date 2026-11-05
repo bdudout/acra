@@ -16,11 +16,16 @@
 //
 // Actions ORPHELINES (aucun lien source) : bandeau d'alerte + édition EN PLACE
 // via l'éditeur réutilisable `PlanActionEditor` (PATCH plans-actions).
+//
+// Lot S2 : facettes « Catégorie » (famille de risque TIC du risque lié, sinon origine) et « Axe stratégique »
+// (dont « Non rattachée ») ; menu « Rattacher à un axe » quand le serveur l'autorise (`rattachement.possible`).
 
 import { Fragment, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/context'
-import { ACTION_ORIGINES, type ActionItem, type ActionOrigine } from '@/lib/action-items'
+import { ACTION_ORIGINES, ACTION_CATEGORIES, AXE_NON_RATTACHE, categorieAction, type ActionItem, type ActionOrigine, type ActionCategorie, type AxeRattache } from '@/lib/action-items'
+import { isFamilleRisqueTic } from '@/lib/famille-risque-tic'
+import RattacherAxeMenu, { type AxeDisponibleVue } from '@/components/RattacherAxeMenu'
 import { effectiveStatut, ACTION_PRIORITES, type ActionPriorite } from '@/lib/risk-action'
 import ColumnMenu from '@/components/ColumnMenu'
 import PlanActionEditor from '@/components/PlanActionEditor'
@@ -42,6 +47,8 @@ interface ReponseActions {
   pagination?: MetaPagination
   synthese?: SyntheseActions
   valeurs?: Record<ColonneFiltrable, string[]>
+  axes?: AxeRattache[]
+  rattachement?: { possible: boolean; axes: AxeDisponibleVue[] }
 }
 
 interface Props {
@@ -89,6 +96,8 @@ export default function PlansActionsView({ orgId }: Props) {
   const statut = liste.param('statut')
   const echeance = echeanceDepuisUrl(new URLSearchParams({ echeance: liste.param('echeance'), filtre: liste.param('filtre') }))
   const porteur = liste.param('porteur')
+  const categorie = liste.param('categorie')
+  const axe = liste.param('axe')
   const filtreEntite = { id: liste.param('entite'), sous: liste.param('sousEntites') !== '0' }
   const colParam = liste.param('col')
   const colFilters = useMemo(() => lireColonnes(colParam || null), [colParam])
@@ -104,6 +113,14 @@ export default function PlansActionsView({ orgId }: Props) {
     [liste.data],
   )
   const summary = liste.data?.synthese
+  // Lot S2 : libellé de catégorie (familles TIC : libellés du registre) ; options de la facette Axe ; menu de rattachement.
+  const libelleCategorie = (c: ActionCategorie): string =>
+    isFamilleRisqueTic(c) ? t.registre.familleTic.codes[c] : t.plansActions.categories[c]
+  const axesFacette = liste.data?.axes ?? []
+  const rattachement = liste.data?.rattachement
+  const axesRattachables = rattachement?.possible ? rattachement.axes : []
+  const montrerFacetteAxe = axesFacette.length > 0 || axesRattachables.length > 0 || !!axe
+  const libelleAxe = (a: AxeRattache) => `${a.strategieTitre} — ${a.axeTitre}`
   const orphanCount = summary?.orphelines ?? 0
 
   // Filtres de colonne : le serveur filtre sur des CODES ; le menu affiche des libellés traduits.
@@ -135,8 +152,8 @@ export default function PlansActionsView({ orgId }: Props) {
     if (minuterie.current) clearTimeout(minuterie.current)
     minuterie.current = setTimeout(() => liste.definir({ porteur: v.trim() ? v : null }), 300)
   }
-  const hasFilter = !!(origine || priorite || statut || echeance || porteurSaisi.trim() || liste.recherche.trim() || Object.keys(colFilters).length)
-  const clearAll = () => { if (minuterie.current) clearTimeout(minuterie.current); if (liste.recherche) liste.setRecherche(''); setPorteurSaisi(''); liste.definir({ origine: null, priorite: null, statut: null, echeance: null, filtre: null, porteur: null, q: null, col: null }) }
+  const hasFilter = !!(origine || categorie || axe || priorite || statut || echeance || porteurSaisi.trim() || liste.recherche.trim() || Object.keys(colFilters).length)
+  const clearAll = () => { if (minuterie.current) clearTimeout(minuterie.current); if (liste.recherche) liste.setRecherche(''); setPorteurSaisi(''); liste.definir({ origine: null, categorie: null, axe: null, priorite: null, statut: null, echeance: null, filtre: null, porteur: null, q: null, col: null }) }
   const chargementInitial = liste.loading && !liste.data
 
   const fmtDate = (d: Date | null) =>
@@ -191,6 +208,25 @@ export default function PlansActionsView({ orgId }: Props) {
             {ACTION_ORIGINES.map((o) => <option key={o} value={o}>{t.plansActions.origines[o]}</option>)}
           </select>
         </label>
+        <label className="flex flex-col gap-1 text-xs text-gray-500 min-w-0">
+          <span className="font-medium">{t.plansActions.filterCategorie}</span>
+          <select value={categorie} onChange={(e) => liste.definir({ categorie: e.target.value })}
+            className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 bg-white min-w-40 max-w-64">
+            <option value="">{t.plansActions.filterAll}</option>
+            {ACTION_CATEGORIES.map((c) => <option key={c} value={c}>{libelleCategorie(c)}</option>)}
+          </select>
+        </label>
+        {montrerFacetteAxe && (
+          <label className="flex flex-col gap-1 text-xs text-gray-500 min-w-0">
+            <span className="font-medium">{t.plansActions.filterAxe}</span>
+            <select value={axe} onChange={(e) => liste.definir({ axe: e.target.value })}
+              className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 bg-white min-w-40 max-w-64">
+              <option value="">{t.plansActions.filterAll}</option>
+              <option value={AXE_NON_RATTACHE}>{t.plansActions.axeAucun}</option>
+              {axesFacette.map((a) => <option key={a.axeId} value={a.axeId}>{libelleAxe(a)}</option>)}
+            </select>
+          </label>
+        )}
         <label className="flex flex-col gap-1 text-xs text-gray-500 min-w-0">
           <span className="font-medium">{t.plansActions.filterPriorite}</span>
           <select value={priorite} onChange={(e) => liste.definir({ priorite: e.target.value })}
@@ -251,16 +287,18 @@ export default function PlansActionsView({ orgId }: Props) {
           const editing = editId === it.sourceId && isOrphan
           return <div key={it.id} className="rounded-xl border border-gray-200 bg-white p-3 shadow-xs">
             <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0"><div className="font-medium text-gray-900">{it.titre}</div>{it.description && <div className="mt-0.5 text-xs text-gray-500 line-clamp-2">{it.description}</div>}</div>
+              <div className="min-w-0"><div className="font-medium text-gray-900">{it.titre}</div>{it.description && <div className="mt-0.5 text-xs text-gray-500 line-clamp-2">{it.description}</div>}<AxesChips axes={it.axes} libelle={libelleAxe} /></div>
               <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full ${PRIORITE_STYLE[it.priorite]}`}>{t.plansActions.priorites[it.priorite]}</span>
             </div>
             <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
               <span className={`rounded-sm border px-2 py-0.5 ${ORIGINE_STYLE[it.origine]}`}>{t.plansActions.origines[it.origine]}</span>
+              <span className="rounded-sm bg-gray-50 px-2 py-0.5 text-gray-600 border border-gray-200">{libelleCategorie(it.categorie ?? categorieAction(it))}</span>
               <span className={`rounded-full px-2 py-0.5 ${STATUT_STYLE[eff]}`}>{t.plansActions.statuts[eff]}</span>
               <span className="rounded-sm bg-gray-100 px-2 py-0.5 text-gray-600">{it.porteur ?? t.plansActions.sansPorteur}</span>
               <span className="rounded-sm bg-gray-100 px-2 py-0.5 text-gray-600">{fmtDate(it.echeance)}</span>
             </div>
-            <div className="mt-3">
+            <div className="mt-3 flex flex-wrap items-start gap-3">
+              {axesRattachables.length > 0 && <RattacherAxeMenu action={it} axes={axesRattachables} onRattache={liste.recharger} />}
               {it.lien ? <Link href={it.lien} className="text-xs font-medium text-blue-600 hover:underline">{it.lecture ? t.plansActions.voir : t.plansActions.open}</Link>
                 : isOrphan && orgId ? <button type="button" onClick={() => setEditId(editing ? null : it.sourceId)} className="text-xs font-medium text-blue-600 hover:underline">{t.plansActions.open}</button> : null}
             </div>
@@ -301,12 +339,14 @@ export default function PlansActionsView({ orgId }: Props) {
                   <td className="px-3 py-2 text-gray-900 max-w-md">
                     <div className="font-medium">{it.titre}</div>
                     {it.description && <div className="text-xs text-gray-500 line-clamp-1">{it.description}</div>}
+                    <AxesChips axes={it.axes} libelle={libelleAxe} />
                   </td>
                   <td className="px-3 py-2">
                     <span className={`inline-block text-xs px-2 py-0.5 rounded-sm border ${ORIGINE_STYLE[it.origine]}`}>
                       {it.origine === 'orpheline' && <span aria-hidden="true">⚠ </span>}
                       {t.plansActions.origines[it.origine]}
                     </span>
+                    <div className="mt-0.5 text-xs text-gray-500">{libelleCategorie(it.categorie ?? categorieAction(it))}</div>
                   </td>
                   <td className="px-3 py-2 text-gray-700">{it.porteur ?? <span className="text-gray-400">{t.plansActions.sansPorteur}</span>}</td>
                   <td className="px-3 py-2">
@@ -321,11 +361,14 @@ export default function PlansActionsView({ orgId }: Props) {
                   </td>
                   <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{fmtDate(it.echeance)}</td>
                   <td className="px-3 py-2 whitespace-nowrap">
+                    <div className="flex items-center gap-3">
+                    {axesRattachables.length > 0 && <RattacherAxeMenu action={it} axes={axesRattachables} onRattache={liste.recharger} />}
                     {it.lien
                       ? <Link href={it.lien} className="text-blue-600 hover:underline text-xs font-medium">{it.lecture ? t.plansActions.voir : t.plansActions.open}</Link>
                       : isOrphan && orgId
                         ? <button type="button" onClick={() => setEditId(editing ? null : it.sourceId)} className="text-blue-600 hover:underline text-xs font-medium">{t.plansActions.open}</button>
                         : null}
+                    </div>
                   </td>
                 </tr>
                 {editing && orgId && (
@@ -345,6 +388,16 @@ export default function PlansActionsView({ orgId }: Props) {
         </table>
       </div>
       <Pagination pagination={liste.pagination} onPage={(page) => liste.definir({ page })} onTaille={(taille) => liste.definir({ taille })} />
+    </div>
+  )
+}
+
+/** Axes stratégiques rattachés à une action : puces compactes (titre d'axe tronqué), stratégie en infobulle. */
+function AxesChips({ axes, libelle }: { axes?: AxeRattache[]; libelle: (a: AxeRattache) => string }) {
+  if (!axes?.length) return null
+  return (
+    <div className="mt-1 flex flex-wrap gap-1">
+      {axes.map((a) => <span key={a.axeId} title={libelle(a)} className="inline-block max-w-[16rem] truncate rounded-sm bg-emerald-50 px-1.5 py-0.5 text-[11px] text-emerald-800 border border-emerald-200">{a.axeTitre}</span>)}
     </div>
   )
 }

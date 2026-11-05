@@ -18,10 +18,13 @@ import {
   normalizeEcosystemeMesure,
   normalizeOrphanPlanAction,
   normalizeLinkedPlanAction,
+  enrichirActions,
+  indexerAxes,
+  SOURCES_RISQUE_REGISTRE,
   type ActionItem,
 } from './action-items'
 import { uid } from './uid'
-import { analyseWhereClause, peutLireConformite, type OrgScopeContext, type UserRole } from './permissions'
+import { analyseWhereClause, peutLireConformite, peutVoirStrategie, type OrgScopeContext, type UserRole } from './permissions'
 import { accesResultats } from './acces-resultats.server'
 
 interface ModulesLike {
@@ -30,6 +33,8 @@ interface ModulesLike {
   auditInterneActive: boolean
   registreRisquesActive: boolean
   conformiteActive: boolean
+  /** Module Stratégie (lot S2) : charge les axes rattachés ; absent = non chargé (ex. contrôle d'existence d'une source). */
+  strategieActive?: boolean
 }
 
 /**
@@ -244,6 +249,48 @@ export async function gatherActionItems(
     }))
   }
 
+  // Lot S2 : famille TIC des risques du registre liés et axes des stratégies non archivées — une requête chacune
+  // (aucun N+1), seulement si nécessaire. Les rattachements sont filtrés par clé d'item : seuls ceux des actions
+  // déjà visibles ci-dessus sont projetés (aucun affaiblissement de la visibilité). Les titres de stratégie et d'axe
+  // ne sont livrés qu'aux rôles qui lisent les stratégies (peutVoirStrategie, même garde que GET /api/strategies).
+  const chargerAxes = !!mod.strategieActive && peutVoirStrategie(access.role) && items.length > 0
+  const riskItemIds = [...new Set(items.filter(i => i.riskItemId && SOURCES_RISQUE_REGISTRE.includes(i.source)).map(i => i.riskItemId as string))]
+  const [familleRows, rattachementRows] = await Promise.all([
+    riskItemIds.length
+      ? prisma.riskItem.findMany({ where: { organizationId: orgId, id: { in: riskItemIds } }, select: { id: true, familleRisqueTic: true } })
+      : Promise.resolve([]),
+    chargerAxes
+      ? prisma.rattachementStrategique.findMany({
+          where: { organizationId: orgId, sourceId: { in: [...new Set(items.map(i => i.sourceId))] }, axe: { strategie: { organizationId: orgId, statut: { not: 'ARCHIVEE' } } } },
+          select: { sourceType: true, sourceId: true, axe: { select: { id: true, titre: true, strategie: { select: { id: true, titre: true } } } } },
+          orderBy: { createdAt: 'asc' },
+        })
+      : Promise.resolve([]),
+  ])
+  const familles = new Map(familleRows.map(r => [r.id, r.familleRisqueTic]))
+  const enrichis = enrichirActions(items, familles, indexerAxes(rattachementRows))
+
   // Recette n° 22 : pas de lien vers une source que le rôle ne peut pas ouvrir ; « Voir » pour la consultation.
-  return items.map(it => ({ ...it, ...lienSelonRole(it.lien, access.role) }))
+  return enrichis.map(it => ({ ...it, ...lienSelonRole(it.lien, access.role) }))
+}
+
+/** Axe proposé au rattachement depuis /actions (stratégie non archivée de l'organisation). */
+export interface AxeDisponible { strategieId: string; strategieTitre: string; strategieStatut: string; axeId: string; axeTitre: string }
+
+/** Plafond du menu « Rattacher à un axe ». */
+export const AXES_DISPONIBLES_MAX = 200
+
+/**
+ * Axes des stratégies NON archivées de l'organisation (menu « Rattacher à un axe »), en une requête bornée ;
+ * vide pour un rôle qui ne lit pas les stratégies (peutVoirStrategie).
+ */
+export async function axesStrategiquesActifs(orgId: string, role: UserRole): Promise<AxeDisponible[]> {
+  if (!peutVoirStrategie(role)) return []
+  const axes = await prisma.axeStrategique.findMany({
+    take: AXES_DISPONIBLES_MAX,
+    where: { strategie: { organizationId: orgId, statut: { not: 'ARCHIVEE' } } },
+    select: { id: true, titre: true, strategie: { select: { id: true, titre: true, statut: true } } },
+    orderBy: [{ strategie: { createdAt: 'desc' } }, { ordre: 'asc' }, { createdAt: 'asc' }],
+  })
+  return axes.map(a => ({ strategieId: a.strategie.id, strategieTitre: a.strategie.titre, strategieStatut: a.strategie.statut, axeId: a.id, axeTitre: a.titre }))
 }

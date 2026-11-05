@@ -47,7 +47,12 @@ vi.mock('@/lib/i18n/context', () => ({
         orphanAlert: '{n} orpheline(s)', save: 'Enregistrer',
         priorites: { CRITIQUE: 'Critique', MAJEUR: 'Majeur', MODERE: 'Modéré' },
         statuts: { A_FAIRE: 'À faire', EN_COURS: 'En cours', FAIT: 'Fait', EN_RETARD: 'En retard' },
+        filterCategorie: 'Catégorie', filterAxe: 'Axe stratégique', axeAucun: 'Non rattachée',
+        categories: { RISQUE: 'Risque', CONFORMITE: 'Conformité', AUDIT: 'Audit', CONTROLE: 'Contrôle', INCIDENT: 'Incident', NON_CATEGORISEE: 'Non catégorisée' },
+        rattacher: { bouton: 'Rattacher à un axe', menu: 'Axes des stratégies actives', validee: 'validée', ok: 'Rattachée à « {axe} ».', erreur: 'Échec du rattachement.', deja: 'Déjà rattachée.' },
       },
+      registre: { familleTic: { codes: { IT: 'Informatique', CYBER: 'Cybersécurité', CONTINUITE_METIER_TIC: 'Continuité métier TIC', CONTINUITE_IT: 'Continuité IT', TIERS_TIC: 'Tiers TIC' } } },
+      strategie: { ui: { annuler: 'Annuler', justification: { titre: 'Justification', aide: 'Aide', champ: 'Motif', confirmer: 'Confirmer' } } },
     },
   }),
 }))
@@ -67,6 +72,7 @@ const items: SerializedActionItem[] = [
 
 let donnees: SerializedActionItem[] = items
 let entitesServeur: EntiteRef[] = []
+let rattachementServeur: unknown = undefined
 let fetchMock: ReturnType<typeof vi.fn>
 const hydrate = (l: SerializedActionItem[]): ActionItem[] => l.map(i => ({ ...i, echeance: i.echeance ? new Date(i.echeance) : null }))
 const serveur = (url: string) => {
@@ -74,7 +80,7 @@ const serveur = (url: string) => {
   const pg = lirePagination(sp, { tris: TRIS_ACTIONS, triDefaut: 'defaut' })!
   const f = lireFiltresActions(sp)
   f.filtre.q = pg.q || undefined
-  return listerActionsPage(hydrate(donnees), f, pg, entitesServeur, new Date())
+  return { ...listerActionsPage(hydrate(donnees), f, pg, entitesServeur, new Date()), ...(rattachementServeur ? { rattachement: rattachementServeur } : {}) }
 }
 const appelsActions = () => fetchMock.mock.calls.map(c => String(c[0])).filter(u => u.startsWith('/api/actions'))
 const rendre = (props: { orgId?: string } = {}, url = '', d: SerializedActionItem[] = items) => {
@@ -86,6 +92,7 @@ const rendre = (props: { orgId?: string } = {}, url = '', d: SerializedActionIte
 beforeEach(() => {
   nav.replace.mockClear()
   entitesServeur = []
+  rattachementServeur = undefined
   fetchMock = vi.fn(async (url: string, opts?: { method?: string }) => {
     if (opts?.method === 'PATCH') return { ok: true, json: async () => ({}) }
     if (url.startsWith('/api/actions')) return { ok: true, json: async () => JSON.parse(JSON.stringify(serveur(url))) }
@@ -239,5 +246,84 @@ describe('PlansActionsView — filtre par entité (consolidation, lot E5)', () =
     rendre({}, '', [mk({ id: 'l1', titre: 'Lecture', lien: '/conformite', lecture: true }), mk({ id: 'l2', titre: 'Sans accès', source: 'CONFORMITE', origine: 'conformite', lien: null, lecture: true })])
     expect((await screen.findAllByText('Voir')).length).toBeGreaterThan(0)
     expect(screen.queryByText('Ouvrir')).toBeNull()
+  })
+})
+
+describe('PlansActionsView — catégorie et axe stratégique (lot S2)', () => {
+  const AXES = [
+    { strategieId: 's1', strategieTitre: 'Cyber 2027', strategieStatut: 'BROUILLON', axeId: 'ax1', axeTitre: 'Protéger' },
+    { strategieId: 's2', strategieTitre: 'Résilience', strategieStatut: 'VALIDEE', axeId: 'ax2', axeTitre: 'Rétablir' },
+  ]
+  const postes = () => fetchMock.mock.calls.filter(c => c[1]?.method === 'POST')
+
+  it('facette Catégorie (familles TIC comprises) : état dans l’URL', async () => {
+    rendre()
+    await pret()
+    fireEvent.change(screen.getByLabelText('Catégorie'), { target: { value: 'CYBER' } })
+    expect(nav.replace).toHaveBeenLastCalledWith('/actions?categorie=CYBER', { scroll: false })
+    expect(screen.getByRole('option', { name: 'Cybersécurité' })).toBeInTheDocument()
+  })
+
+  it('facette Axe stratégique : axes présents + « Non rattachée » ; filtre serveur', async () => {
+    const ax = { strategieId: 's1', strategieTitre: 'Cyber 2027', axeId: 'ax1', axeTitre: 'Protéger' }
+    rendre({}, '', [{ ...mk({ id: 'a', titre: 'Rattachée' }), axes: [ax] }, { ...mk({ id: 'b', titre: 'Libre' }), axes: [] }])
+    await screen.findAllByText('Libre')
+    fireEvent.change(screen.getByLabelText('Axe stratégique'), { target: { value: 'aucun' } })
+    expect(nav.replace).toHaveBeenLastCalledWith('/actions?axe=aucun', { scroll: false })
+    await waitFor(() => expect(screen.queryAllByText('Rattachée')).toHaveLength(0))
+    expect(screen.getByRole('option', { name: 'Cyber 2027 — Protéger' })).toBeInTheDocument()
+  })
+
+  it('pastille d’axe : titre de l’axe seul (tronqué), stratégie en infobulle', async () => {
+    const ax = { strategieId: 's1', strategieTitre: 'Stratégie cyber 2027-2029', axeId: 'ax1', axeTitre: 'Gouverner le risque cyber' }
+    rendre({}, '', [{ ...mk({ id: 'a', titre: 'Rattachée' }), axes: [ax] }])
+    await screen.findAllByText('Rattachée')
+    const puce = within(screen.getByTestId('actions-desktop-table')).getByText('Gouverner le risque cyber')
+    expect(puce).toHaveAttribute('title', 'Stratégie cyber 2027-2029 — Gouverner le risque cyber')
+    expect(puce).toHaveClass('truncate')
+    expect(puce.parentElement).toHaveClass('flex-wrap')
+  })
+
+  it('sans droit de rattachement : aucun bouton « Rattacher à un axe »', async () => {
+    rendre({ orgId: 'o1' })
+    await pret()
+    expect(screen.queryByRole('button', { name: 'Rattacher à un axe' })).toBeNull()
+  })
+
+  it('stratégie en brouillon : rattachement direct (POST rattachements), puis rechargement', async () => {
+    rattachementServeur = { possible: true, axes: AXES }
+    rendre({ orgId: 'o1' })
+    await pret()
+    fireEvent.click(within(screen.getByTestId('actions-desktop-table')).getAllByRole('button', { name: 'Rattacher à un axe' })[0])
+    const avant = appelsActions().length
+    fireEvent.click(screen.getByRole('menuitem', { name: /Protéger/ }))
+    await waitFor(() => expect(postes()).toHaveLength(1))
+    const [url, opts] = postes()[0]
+    expect(url).toBe('/api/strategies/s1/rattachements')
+    expect(JSON.parse(opts.body)).toEqual({ axeId: 'ax1', sourceType: 'INCIDENT', sourceId: 'x' }) // 1re ligne : l'incident en retard (tri)
+    await waitFor(() => expect(appelsActions().length).toBeGreaterThan(avant))
+  })
+
+  it('stratégie VALIDEE : justification demandée avant l’envoi', async () => {
+    rattachementServeur = { possible: true, axes: AXES }
+    rendre({ orgId: 'o1' })
+    await pret()
+    fireEvent.click(within(screen.getByTestId('actions-desktop-table')).getAllByRole('button', { name: 'Rattacher à un axe' })[0])
+    fireEvent.click(screen.getByRole('menuitem', { name: /Rétablir/ }))
+    expect(postes()).toHaveLength(0)
+    fireEvent.change(screen.getByLabelText('Motif'), { target: { value: 'Revue annuelle' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer' }))
+    await waitFor(() => expect(postes()).toHaveLength(1))
+    expect(JSON.parse(postes()[0][1].body)).toMatchObject({ axeId: 'ax2', justification: 'Revue annuelle' })
+  })
+
+  it('axe déjà rattaché : absent du menu', async () => {
+    rattachementServeur = { possible: true, axes: AXES }
+    const ax = { strategieId: 's1', strategieTitre: 'Cyber 2027', axeId: 'ax1', axeTitre: 'Protéger' }
+    rendre({ orgId: 'o1' }, '', [{ ...mk({ id: 'a', titre: 'Rattachée' }), axes: [ax] }])
+    await screen.findAllByText('Rattachée')
+    fireEvent.click(within(screen.getByTestId('actions-desktop-table')).getByRole('button', { name: 'Rattacher à un axe' }))
+    expect(screen.queryByRole('menuitem', { name: /Protéger/ })).toBeNull()
+    expect(screen.getByRole('menuitem', { name: /Rétablir/ })).toBeInTheDocument()
   })
 })
